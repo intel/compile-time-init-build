@@ -1,5 +1,7 @@
 #pragma once
 
+#include <lookup/detail/select.hpp>
+
 #include <algorithm>
 #include <bit>
 #include <array>
@@ -13,7 +15,7 @@ namespace lookup {
             constexpr static auto key_lt = [](auto lhs, auto rhs){return lhs.key_ < rhs.key_;};
             constexpr static auto min_key = std::min_element(InputValues::entries.begin(), InputValues::entries.end(), key_lt)->key_;
             constexpr static auto max_key = std::max_element(InputValues::entries.begin(), InputValues::entries.end(), key_lt)->key_;
-            constexpr static auto storage_size = 1 << std::bit_width(max_key - min_key);
+            constexpr static auto storage_size = max_key - min_key + 1;
             constexpr static auto num_keys = InputValues::entries.size();
             constexpr static auto load_factor = (num_keys * 100) / storage_size;
         };
@@ -41,14 +43,8 @@ namespace lookup {
 
             [[nodiscard]] constexpr auto operator[](key_type key) const -> value_type {
                 const auto index = key - min_key;
-                const auto safe_index = index % storage.size();
-                const auto stored_value = storage[safe_index];
-
-                if (index == safe_index) {
-                    return stored_value;
-                } else {
-                    return default_value;
-                }
+                return *detail::select_lt(index, storage.size(), &(storage[index]), &default_value);
+                
             }
         };
 
