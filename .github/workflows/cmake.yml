@@ -15,12 +15,39 @@ jobs:
     strategy:
       matrix:
        include:
+         - compiler: clang-12
+           cc: " /usr/lib/llvm-12/bin/clang"
+           cxx: "/usr/lib/llvm-12/bin/clang++"
          - compiler: clang-11
            cc: " /usr/lib/llvm-11/bin/clang"
            cxx: "/usr/lib/llvm-11/bin/clang++"
+         - compiler: clang-10
+           cc: " /usr/lib/llvm-10/bin/clang"
+           cxx: "/usr/lib/llvm-10/bin/clang++"
+         - compiler: clang-9
+           cc: " /usr/lib/llvm-9/bin/clang"
+           cxx: "/usr/lib/llvm-9/bin/clang++"
+         - compiler: clang-8
+           cc: " /usr/lib/llvm-8/bin/clang"
+           cxx: "/usr/lib/llvm-8/bin/clang++"
+         - compiler: clang-7
+           cc: " /usr/lib/llvm-7/bin/clang"
+           cxx: "/usr/lib/llvm-7/bin/clang++"
+         - compiler: clang-6
+           cc: " /usr/lib/llvm-6/bin/clang"
+           cxx: "/usr/lib/llvm-6/bin/clang++"
+         - compiler: gcc-10
+           cc: "/usr/bin/gcc-10"
+           cxx: "/usr/bin/g++-10"
          - compiler: gcc-9
            cc: "/usr/bin/gcc-9"
            cxx: "/usr/bin/g++-9"
+         - compiler: gcc-8
+           cc: "/usr/bin/gcc-8"
+           cxx: "/usr/bin/g++-8"
+         - compiler: gcc-7
+           cc: "/usr/bin/gcc-7"
+           cxx: "/usr/bin/g++-7"
 
           
     steps:
