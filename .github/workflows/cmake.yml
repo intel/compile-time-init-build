@@ -15,9 +15,11 @@ jobs:
     strategy:
       matrix:
        include:
-         - cc: " /usr/lib/llvm-11/bin/clang"
+         - compiler: clang-11
+           cc: " /usr/lib/llvm-11/bin/clang"
            cxx: "/usr/lib/llvm-11/bin/clang++"
-         - cc: "/usr/bin/gcc-9"
+         - compiler: gcc-9
+           cc: "/usr/bin/gcc-9"
            cxx: "/usr/bin/g++-9"
 
           
