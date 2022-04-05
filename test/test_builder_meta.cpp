@@ -13,9 +13,7 @@ struct test_builder_meta :
         TestInterfaceTag>
 {};
 
-TEST_CASE("given a builder_meta subclass", "[builder_meta]") {
-    SECTION("the builder and interface type traits return correct values") {
-        REQUIRE(std::is_same_v<TestBuilderTag, cib::traits::builder_t<test_builder_meta>>);
-        REQUIRE(std::is_same_v<TestInterfaceTag, cib::traits::interface_t<test_builder_meta>>);
-    }
+TEST_CASE("builder_meta builder and interface type traits return correct values") {
+    REQUIRE(std::is_same_v<TestBuilderTag, cib::traits::builder_t<test_builder_meta>>);
+    REQUIRE(std::is_same_v<TestInterfaceTag, cib::traits::interface_t<test_builder_meta>>);
 }
