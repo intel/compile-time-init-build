@@ -47,7 +47,7 @@ namespace cib::detail {
         ValueT const & value;
         CallableT const & op;
 
-        CIB_CONSTEVAL fold_helper(
+        CIB_CONSTEXPR fold_helper(
             ValueT const & value,
             CallableT const & op
         )
@@ -56,7 +56,7 @@ namespace cib::detail {
         {}
 
         template<typename StateT>
-        [[nodiscard]] CIB_CONSTEVAL inline auto operator+(
+        [[nodiscard]] CIB_CONSTEXPR inline auto operator+(
             StateT const & state
         ) const {
             return op(value, state);
@@ -67,7 +67,7 @@ namespace cib::detail {
         typename... T,
         typename InitT,
         typename CallableT>
-    [[nodiscard]] CIB_CONSTEVAL inline static auto fold_right(
+    [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
         std::tuple<T...> const & t,
         InitT const & init,
         CallableT const & op
@@ -81,7 +81,7 @@ namespace cib::detail {
         typename T,
         T... i,
         typename CallableT>
-    CIB_CONSTEVAL inline static void for_each(
+    CIB_CONSTEXPR inline static void for_each(
         std::integer_sequence<T, i...> const &,
         CallableT const & op
     ) {
@@ -92,7 +92,7 @@ namespace cib::detail {
         typename T,
         T size,
         typename CallableT>
-    CIB_CONSTEVAL inline void for_each(
+    CIB_CONSTEXPR inline void for_each(
         std::integral_constant<T, size> const &,
         CallableT const & op
     ) {
@@ -103,7 +103,7 @@ namespace cib::detail {
     template<
         typename... Ts,
         typename CallableT>
-    CIB_CONSTEVAL inline void for_each(
+    CIB_CONSTEXPR inline void for_each(
         std::tuple<Ts...> const & tuple,
         CallableT const & op
     ) {
@@ -188,12 +188,12 @@ namespace cib {
 
         template<
             typename ExtensionPathT,
-            typename... ArgTs>
+            typename... Args>
         struct extend_t : public config_item {
-            std::tuple<ArgTs...> argsTuple;
+            std::tuple<Args...> argsTuple;
 
             CIB_CONSTEVAL extend_t(
-                ArgTs const & ... args
+                Args const & ... args
             )
                 : argsTuple{args...}
             {
@@ -234,10 +234,10 @@ namespace cib {
                 }
             }
 
-            template<typename BuildersT, typename... Args>
+            template<typename BuildersT, typename... InitArgs>
             CIB_CONSTEVAL auto init(
                 BuildersT const & buildersTuple,
-                Args const & ...
+                InitArgs const & ...
             ) const {
                 return std::apply([&](auto const & ... builders){
                     static_assert(
@@ -246,39 +246,6 @@ namespace cib {
 
                     return std::make_tuple(add(ExtensionPathT{}, builders)...);
                 }, buildersTuple);
-            }
-        };
-
-        template<typename... ExtensionPointTs>
-        struct exports : public config_item {
-            template<typename... Args>
-            CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
-                return std::tuple<std::pair<ExtensionPointTs, traits::builder_t<ExtensionPointTs>>...>{};
-            }
-        };
-
-        template<typename ComponentArgs, typename... ComponentTs>
-        struct components_t : public detail::config_item {
-            template<typename BuildersT, typename... Args>
-            CIB_CONSTEVAL auto init(
-                BuildersT const & buildersTuple,
-                Args const & ... args
-            ) const {
-                return std::apply([&](auto const & ... componentArgs){
-                    return detail::fold_right(std::tuple<ComponentTs...>{}, buildersTuple, [&](auto const & c, auto const & builders){
-                        return c.config.init(builders, args..., componentArgs...);
-                    });
-                }, ComponentArgs::value);
-
-            }
-
-            template<typename... Args>
-            CIB_CONSTEVAL auto exports_tuple(
-                Args const & ... args
-            ) const {
-                return std::apply([&](auto const & ... componentArgs){
-                    return std::tuple_cat(ComponentTs::config.exports_tuple(args..., componentArgs...)...);
-                }, ComponentArgs::value);
             }
         };
     }
@@ -321,17 +288,44 @@ namespace cib {
     };
 
     template<typename... ExtensionPointTs>
-    CIB_CONSTEXPR auto exports = detail::exports<ExtensionPointTs...>{};
+    struct exports : public detail::config_item {
+        template<typename... Args>
+        CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
+            return std::tuple<std::pair<ExtensionPointTs, traits::builder_t<ExtensionPointTs>>...>{};
+        }
+    };
 
     template<
         typename... ExtensionPointPathTs,
-        typename... ArgTs>
-    [[nodiscard]] CIB_CONSTEVAL auto extend(ArgTs const & ... args) {
-        return detail::extend_t<detail::path<ExtensionPointPathTs...>, ArgTs...>{args...};
+        typename... Args>
+    [[nodiscard]] CIB_CONSTEVAL auto extend(Args const & ... args) {
+        return detail::extend_t<detail::path<ExtensionPointPathTs...>, Args...>{args...};
     }
 
-    template<typename... ComponentTs>
-    CIB_CONSTEXPR auto components = detail::components_t<ComponentTs...>{};
+    template<typename ComponentArgs, typename... ComponentTs>
+    struct components : public detail::config_item {
+        template<typename BuildersT, typename... Args>
+        CIB_CONSTEVAL auto init(
+            BuildersT const & buildersTuple,
+            Args const & ... args
+        ) const {
+            return std::apply([&](auto const & ... componentArgs){
+                return detail::fold_right(std::tuple<ComponentTs...>{}, buildersTuple, [&](auto const & c, auto const & builders){
+                    return c.config.init(builders, args..., componentArgs...);
+                });
+            }, ComponentArgs::value);
+
+        }
+
+        template<typename... Args>
+        CIB_CONSTEVAL auto exports_tuple(
+            Args const & ... args
+        ) const {
+            return std::apply([&](auto const & ... componentArgs){
+                return std::tuple_cat(ComponentTs::config.exports_tuple(args..., componentArgs...)...);
+            }, ComponentArgs::value);
+        }
+    };
 
     template<
         typename ConditionT,
@@ -470,28 +464,30 @@ namespace cib {
      * for all builder/implementation combinations. This 'value' field is where the built Builder is stored.
      */
     template<typename ConfigT>
-    static void init() {
-        detail::for_each(initialized_builders_v<ConfigT>, [](auto b){
-            // Tag/CleanTag is the type name of the builder_meta in the tuple
-            using Tag = decltype(b.first);
-            using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
+    struct nexus {
+        static void init() {
+            detail::for_each(initialized_builders_v<ConfigT>, [](auto b){
+                // Tag/CleanTag is the type name of the builder_meta in the tuple
+                using Tag = decltype(b.first);
+                using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
 
-            // the built implementation is stored in Build<>::value
-            auto & builtValue = builder<ConfigT, CleanTag>;
-            using BuiltType = std::remove_reference_t<decltype(builtValue)>;
+                // the built implementation is stored in Build<>::value
+                auto & builtValue = builder<ConfigT, CleanTag>;
+                using BuiltType = std::remove_reference_t<decltype(builtValue)>;
 
-            // if the built type is a pointer, then it is a function pointer and we should return its value
-            // directly to the 'built<>' abstract interface variable.
-            if constexpr(std::is_pointer_v<BuiltType>) {
-                built<CleanTag> = builtValue;
+                // if the built type is a pointer, then it is a function pointer and we should return its value
+                // directly to the 'built<>' abstract interface variable.
+                if constexpr(std::is_pointer_v<BuiltType>) {
+                    built<CleanTag> = builtValue;
 
-            // if the built type is not a pointer, then it is a class and the 'built<>' variable is a pointer to
-            // the base class. we will need to get a pointer to the builtValue in order to initialize 'built<>'.
-            } else {
-                built<CleanTag> = &builtValue;
-            }
-        });
-    }
+                // if the built type is not a pointer, then it is a class and the 'built<>' variable is a pointer to
+                // the base class. we will need to get a pointer to the builtValue in order to initialize 'built<>'.
+                } else {
+                    built<CleanTag> = &builtValue;
+                }
+            });
+        }
+    };
 }
 
 
@@ -507,23 +503,23 @@ namespace cib {
      * Modules can add their own callback function to this builder to be executed when
      * the builder is executed with the same function arguments.
      *
-     * @tparam SizeT
+     * @tparam Size
      *      Maximum number of callbacks that may be registered.
      *
-     * @tparam ArgTs
+     * @tparam Args
      *      List of argument types that must be passed into the callback when it is invoked.
      */
-    template<int SizeT = 0, typename... ArgTs>
+    template<int Size = 0, typename... Args>
     struct callback {
     private:
-        using func_ptr_t = void(*)(ArgTs...);
+        using func_ptr_t = void(*)(Args...);
 
-        std::array<func_ptr_t, SizeT> funcs;
+        std::array<func_ptr_t, Size> funcs;
 
         template<typename BuilderValue>
-        static void run(ArgTs... args) {
+        static void run(Args... args) {
             CIB_CONSTEXPR auto handlerBuilder = BuilderValue::value;
-            CIB_CONSTEXPR auto numFuncs = std::integral_constant<int, SizeT>{};
+            CIB_CONSTEXPR auto numFuncs = std::integral_constant<int, Size>{};
 
             detail::for_each(numFuncs, [&](auto i){
                 CIB_CONSTEXPR auto func = handlerBuilder.funcs[i];
@@ -545,12 +541,12 @@ namespace cib {
                 funcs[i] = prev_funcs[i];
             }
 
-            funcs[SizeT - 1] = new_func;
+            funcs[Size - 1] = new_func;
         }
 
         // cib uses "add(...)" to add features to service builders
         CIB_CONSTEVAL auto add(func_ptr_t const & func) const {
-            return callback<SizeT + 1, ArgTs...>{funcs, func};
+            return callback<Size + 1, Args...>{funcs, func};
         }
 
         /**
@@ -570,11 +566,11 @@ namespace cib {
         }
     };
 
-    template<typename... ArgTs>
+    template<typename... Args>
     struct callback_meta :
         public cib::builder_meta<
-            callback<0, ArgTs...>,
-            void(*)(ArgTs...)>
+            callback<0, Args...>,
+            void(*)(Args...)>
     {};
 }
 
