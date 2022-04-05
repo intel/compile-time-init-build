@@ -12,24 +12,65 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+       include:
+         - compiler: clang-12
+           cc: " /usr/lib/llvm-12/bin/clang"
+           cxx: "/usr/lib/llvm-12/bin/clang++"
+         - compiler: clang-11
+           cc: " /usr/lib/llvm-11/bin/clang"
+           cxx: "/usr/lib/llvm-11/bin/clang++"
+         - compiler: clang-10
+           cc: " /usr/lib/llvm-10/bin/clang"
+           cxx: "/usr/lib/llvm-10/bin/clang++"
+         - compiler: clang-9
+           cc: " /usr/lib/llvm-9/bin/clang"
+           cxx: "/usr/lib/llvm-9/bin/clang++"
+         - compiler: clang-8
+           cc: " /usr/lib/llvm-8/bin/clang"
+           cxx: "/usr/lib/llvm-8/bin/clang++"
+         - compiler: clang-7
+           cc: " /usr/lib/llvm-7/bin/clang"
+           cxx: "/usr/lib/llvm-7/bin/clang++"
+         - compiler: gcc-10
+           cc: "/usr/bin/gcc-10"
+           cxx: "/usr/bin/g++-10"
+         - compiler: gcc-9
+           cc: "/usr/bin/gcc-9"
+           cxx: "/usr/bin/g++-9"
+         - compiler: gcc-8 g++-8
+           cc: "/usr/bin/gcc-8"
+           cxx: "/usr/bin/g++-8"
+         - compiler: gcc-7 g++-7
+           cc: "/usr/bin/gcc-7"
+           cxx: "/usr/bin/g++-7"
 
+          
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-    
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-    - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      - name: install compiler
+        run: sudo apt update && sudo apt-get install -y ${{ matrix.compiler }}
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.  
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C ${{env.BUILD_TYPE}}
-      
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Build
+        # Build your program with the given configuration
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        # Execute tests defined by the CMake configuration.  
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: ctest -C ${{env.BUILD_TYPE}}
+
