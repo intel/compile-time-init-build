@@ -248,12 +248,51 @@ namespace cib {
                 }, buildersTuple);
             }
         };
+
+        template<typename... ExtensionPointTs>
+        struct exports : public detail::config_item {
+            template<typename... Args>
+            CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
+                return std::tuple<std::pair<ExtensionPointTs, traits::builder_t<ExtensionPointTs>>...>{};
+            }
+        };
+
+        template<typename ComponentArgs, typename... ComponentTs>
+        struct components : public detail::config_item {
+            template<typename BuildersT, typename... Args>
+            CIB_CONSTEVAL auto init(
+                BuildersT const & buildersTuple,
+                Args const & ... args
+            ) const {
+                return std::apply([&](auto const & ... componentArgs){
+                    return detail::fold_right(std::tuple<ComponentTs...>{}, buildersTuple, [&](auto const & c, auto const & builders){
+                        return c.config.init(builders, args..., componentArgs...);
+                    });
+                }, ComponentArgs::value);
+            }
+
+            template<typename... Args>
+            CIB_CONSTEVAL auto exports_tuple(
+                Args const & ... args
+            ) const {
+                return std::apply([&](auto const & ... componentArgs){
+                    return std::tuple_cat(ComponentTs::config.exports_tuple(args..., componentArgs...)...);
+                }, ComponentArgs::value);
+            }
+        };
     }
+
+    template<auto Value>
+    CIB_CONSTEXPR static auto as_constant_v = std::integral_constant<std::remove_cv_t<std::remove_reference_t<decltype(Value)>>, Value>{};
 
     template<auto... Args>
     struct args {
-        static CIB_CONSTEXPR auto value = std::make_tuple(Args...);
+        static CIB_CONSTEXPR auto value = std::make_tuple(as_constant_v<Args>...);
     };
+
+    template<typename Args, typename... Services>
+    CIB_CONSTEXPR static detail::components<Args, Services...> components{};
+
 
     template<typename... ConfigTs>
     struct config : public detail::config_item {
@@ -287,13 +326,8 @@ namespace cib {
         }
     };
 
-    template<typename... ExtensionPointTs>
-    struct exports : public detail::config_item {
-        template<typename... Args>
-        CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
-            return std::tuple<std::pair<ExtensionPointTs, traits::builder_t<ExtensionPointTs>>...>{};
-        }
-    };
+    template<typename... Services>
+    CIB_CONSTEXPR static detail::exports<Services...> exports{};
 
     template<
         typename... ExtensionPointPathTs,
@@ -302,44 +336,18 @@ namespace cib {
         return detail::extend_t<detail::path<ExtensionPointPathTs...>, Args...>{args...};
     }
 
-    template<typename ComponentArgs, typename... ComponentTs>
-    struct components : public detail::config_item {
-        template<typename BuildersT, typename... Args>
-        CIB_CONSTEVAL auto init(
-            BuildersT const & buildersTuple,
-            Args const & ... args
-        ) const {
-            return std::apply([&](auto const & ... componentArgs){
-                return detail::fold_right(std::tuple<ComponentTs...>{}, buildersTuple, [&](auto const & c, auto const & builders){
-                    return c.config.init(builders, args..., componentArgs...);
-                });
-            }, ComponentArgs::value);
-
-        }
-
-        template<typename... Args>
-        CIB_CONSTEVAL auto exports_tuple(
-            Args const & ... args
-        ) const {
-            return std::apply([&](auto const & ... componentArgs){
-                return std::tuple_cat(ComponentTs::config.exports_tuple(args..., componentArgs...)...);
-            }, ComponentArgs::value);
-        }
-    };
-
     template<
         typename ConditionT,
         typename... ConfigTs>
     struct conditional {
-        ConditionT condition;
+        CIB_CONSTEXPR static ConditionT condition{};
         config<ConfigTs...> body;
 
         CIB_CONSTEVAL conditional(
-            ConditionT const & condition,
+            ConditionT,
             ConfigTs const & ... configs
         )
            : body{configs...}
-           , condition{condition}
         {}
 
         template<
@@ -347,33 +355,33 @@ namespace cib {
             typename... Args>
         CIB_CONSTEVAL auto init(
             BuildersT const & buildersTuple,
-            Args const & ... args
+            Args...
         ) const {
-            if (condition(args...)) {
-                return body.init(buildersTuple, args...);
+            if constexpr (condition(Args{}...)) {
+                return body.init(buildersTuple, Args{}...);
             } else {
                 return buildersTuple;
             }
         }
 
         template<typename... Args>
-        CIB_CONSTEVAL auto exports_tuple(Args const & ... args) const {
-            if (condition(args...)) {
-                return body.exports_tuple(args...);
+        CIB_CONSTEVAL auto exports_tuple(Args...) const {
+            if constexpr (condition(Args{}...)) {
+                return body.exports_tuple(Args{}...);
             } else {
                 return std::make_tuple();
             }
         }
     };
 
+
+
     template<
         typename Lhs,
         typename Rhs>
     struct equality {
-        Lhs lhs;
-        Rhs rhs;
-
-        CIB_CONSTEVAL equality(Lhs const & lhs, Rhs const & rhs) : lhs{lhs}, rhs{rhs} {}
+        CIB_CONSTEXPR static Lhs lhs{};
+        CIB_CONSTEXPR static Rhs rhs{};
 
         template<typename... Args>
         CIB_CONSTEVAL bool operator()(Args const & ... args) const {
@@ -381,16 +389,24 @@ namespace cib {
         }
     };
 
-    template<typename ArgType>
+    template<typename MatchType>
     struct arg_t {
         template<typename Rhs>
-        CIB_CONSTEVAL auto operator==(Rhs const & rhs) const {
-            return equality{*this, rhs};
+        CIB_CONSTEVAL equality<arg_t<MatchType>, Rhs> operator==(Rhs const &) const {
+            return {};
         }
 
         template<typename... Args>
-        CIB_CONSTEVAL auto operator()(Args const &... args) const {
-            return std::get<ArgType>(std::make_tuple(args...));
+        CIB_CONSTEVAL auto operator()(Args... args) const {
+            return detail::fold_right(std::make_tuple(args...), detail::int_<0>, [=](auto elem, auto state){
+                using ElemType = typename std::remove_cv_t<std::remove_reference_t<decltype(elem)>>::value_type;
+
+                if constexpr (std::is_same_v<ElemType, MatchType>) {
+                    return elem;
+                } else {
+                    return state;
+                }
+            });
         }
     };
 
@@ -444,12 +460,6 @@ namespace cib {
         });
     };
 
-    template<typename ConfigT, typename T>
-    using builder_t = decltype(initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>());
-
-    template<typename ConfigT, typename T>
-    CIB_CONSTINIT static inline builder_t<ConfigT, T> builder = initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>();
-
     /**
      * Type trait for building a Builder and storing its Implementation.
      *
@@ -465,6 +475,12 @@ namespace cib {
      */
     template<typename ConfigT>
     struct nexus {
+        template<typename T>
+        using builder_t = decltype(initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>());
+
+        template<typename T>
+        CIB_CONSTINIT static inline builder_t<T> builder = initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>();
+
         static void init() {
             detail::for_each(initialized_builders_v<ConfigT>, [](auto b){
                 // Tag/CleanTag is the type name of the builder_meta in the tuple
@@ -472,7 +488,7 @@ namespace cib {
                 using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
 
                 // the built implementation is stored in Build<>::value
-                auto & builtValue = builder<ConfigT, CleanTag>;
+                auto & builtValue = builder<CleanTag>;
                 using BuiltType = std::remove_reference_t<decltype(builtValue)>;
 
                 // if the built type is a pointer, then it is a function pointer and we should return its value
