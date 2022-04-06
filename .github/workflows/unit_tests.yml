@@ -9,7 +9,7 @@ on:
 env:
   BUILD_TYPE: Debug
 
-
+jobs:
   build_and_test:
     runs-on: ubuntu-latest
     strategy:
