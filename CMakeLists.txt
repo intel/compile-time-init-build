@@ -24,7 +24,7 @@ add_custom_command(
         ${CMAKE_SOURCE_DIR}/include/cib/*
         ${CMAKE_SOURCE_DIR}/include/cib/detail/*
     COMMAND
-        python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/core.hpp > ${CMAKE_BINARY_DIR}/cib.hpp
+        python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp > ${CMAKE_BINARY_DIR}/cib.hpp
     OUTPUT
         ${CMAKE_BINARY_DIR}/cib.hpp
 )
