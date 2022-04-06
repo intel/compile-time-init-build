@@ -14,6 +14,7 @@ TEST_CASE("an empty configuration should compile and initialize") {
 }
 
 
+
 template<int Id>
 static bool is_callback_invoked = false;
 
@@ -223,7 +224,7 @@ TEST_CASE("configuration with conditional features") {
     is_callback_invoked<1> = false;
     is_callback_invoked<2> = false;
 
-    SECTION("services can be invoked directly from nexus") {
+    SECTION("component 0 is enabled") {
         cib::nexus<ConditionalConfig<0>> nexus{};
 
         REQUIRE_FALSE(is_callback_invoked<0>);
@@ -237,5 +238,37 @@ TEST_CASE("configuration with conditional features") {
         REQUIRE_FALSE(is_callback_invoked<2>);
         nexus.builder<TestCallback<2>>();
         REQUIRE_FALSE(is_callback_invoked<2>);
+    }
+
+    SECTION("component 1 is enabled") {
+        cib::nexus<ConditionalConfig<1>> nexus{};
+
+        REQUIRE_FALSE(is_callback_invoked<0>);
+        nexus.builder<TestCallback<0>>();
+        REQUIRE_FALSE(is_callback_invoked<0>);
+
+        REQUIRE_FALSE(is_callback_invoked<1>);
+        nexus.builder<TestCallback<1>>();
+        REQUIRE(is_callback_invoked<1>);
+
+        REQUIRE_FALSE(is_callback_invoked<2>);
+        nexus.builder<TestCallback<2>>();
+        REQUIRE_FALSE(is_callback_invoked<2>);
+    }
+
+    SECTION("component 2 is enabled") {
+        cib::nexus<ConditionalConfig<2>> nexus{};
+
+        REQUIRE_FALSE(is_callback_invoked<0>);
+        nexus.builder<TestCallback<0>>();
+        REQUIRE_FALSE(is_callback_invoked<0>);
+
+        REQUIRE_FALSE(is_callback_invoked<1>);
+        nexus.builder<TestCallback<1>>();
+        REQUIRE_FALSE(is_callback_invoked<1>);
+
+        REQUIRE_FALSE(is_callback_invoked<2>);
+        nexus.builder<TestCallback<2>>();
+        REQUIRE(is_callback_invoked<2>);
     }
 }
