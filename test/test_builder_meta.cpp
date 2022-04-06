@@ -1,4 +1,4 @@
-#include <cib/core.hpp>
+#include <cib/cib.hpp>
 
 #include <type_traits>
 

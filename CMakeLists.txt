@@ -16,4 +16,19 @@ target_include_directories(Cib
 
 target_sources(Cib
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/core.hpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp)
+
+
+add_custom_command(
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/include/cib/*
+        ${CMAKE_SOURCE_DIR}/include/cib/detail/*
+    COMMAND
+        python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/core.hpp > ${CMAKE_BINARY_DIR}/cib.hpp
+    OUTPUT
+        ${CMAKE_BINARY_DIR}/cib.hpp
+)
+
+add_custom_target(release
+    DEPENDS
+        ${CMAKE_BINARY_DIR}/cib.hpp)
