@@ -43,10 +43,6 @@ jobs:
          - compiler: gcc-8 g++-8
            cc: "/usr/bin/gcc-8"
            cxx: "/usr/bin/g++-8"
-         - compiler: gcc-7 g++-7
-           cc: "/usr/bin/gcc-7"
-           cxx: "/usr/bin/g++-7"
-
           
     steps:
       - uses: actions/checkout@v3
