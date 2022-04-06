@@ -13,3 +13,5 @@ process is executed at compile-time using constexpr or consteval functions.
 Firmware using *cib* is implemented as a collection of **components**. Each 
 component provides **services** and **features** to the build. Component
 **features** extend and provide new functionality to **services**.
+
+*cib* is currently in a prerelease state and its API is subject to change.
