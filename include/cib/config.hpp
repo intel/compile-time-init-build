@@ -3,7 +3,7 @@
 #include "detail/compiler.hpp"
 #include "detail/meta.hpp"
 #include "detail/builder_traits.hpp"
-#include "detail/config.hpp"
+#include "detail/config_details.hpp"
 #include "detail/conditional.hpp"
 #include "detail/components.hpp"
 #include "detail/exports.hpp"
@@ -19,38 +19,97 @@
 
 
 namespace cib {
+    /**
+     * List of arguments to configure compile-time initialization of components.
+     *
+     * @see cib::conditional
+     */
     template<auto... Args>
     using args = detail::args<Args...>;
 
-    template<typename ArgType>
-    CIB_CONSTEXPR static detail::arg<ArgType> arg{};
-
-    template<typename... ConfigTs>
-    [[nodiscard]] CIB_CONSTEVAL auto config(ConfigTs const & ... configs) {
+    /**
+     * Container for project and component configuration declarations.
+     *
+     * Each component or project type must contain a static constexpr "config"
+     * field that contains the cib configuration for that component or project.
+     * cib::config can be used to compose multiple configuration declarations.
+     *
+     * @see cib::components
+     * @see cib::extend
+     * @see cib::exports
+     * @see cib::conditional
+     */
+    template<typename... Configs>
+    [[nodiscard]] CIB_CONSTEVAL auto config(Configs const & ... configs) {
         return detail::config{configs...};
     }
 
-    template<typename Args, typename... Services>
-    CIB_CONSTEXPR static detail::components<Args, Services...> components{};
+    /**
+     * Compose one or more components into a project or larger component.
+     *
+     * @tparam Args
+     *      Template instantiation of cib::args filled with compile-time
+     *      configurations values.
+     *
+     * @tparam Components
+     *      List of components to be added to the configuration.
+     *
+     * @see cib::args
+     */
+    template<typename Args, typename... Components>
+    CIB_CONSTEXPR static detail::components<Args, Components...> components{};
 
+    /**
+     * Declare a list of services for use in the project.
+     *
+     * @tparam Services
+     */
     template<typename... Services>
     CIB_CONSTEXPR static detail::exports<Services...> exports{};
 
-    template<
-        typename... ServicePaths,
-        typename... Args>
+    /**
+     * Extend a service with new functionality.
+     *
+     * @tparam Service
+     *      Type name of the service to extend.
+     *
+     * @tparam ServiceTemplateArgs
+     *      Template arguments to be passed to the service's
+     *      builder add function.
+     *
+     * @param args
+     *      Value arguments to be passed to the service's builder add function.
+     */
+    template<typename Service, typename... ServiceTemplateArgs, typename... Args>
     [[nodiscard]] CIB_CONSTEVAL auto extend(Args const & ... args) {
-        return detail::extend_t<detail::path<ServicePaths...>, Args...>{args...};
+        return detail::extend<detail::path<Service, ServiceTemplateArgs...>, Args...>{args...};
     }
 
-    template<
-        typename Condition,
-        typename... Configs>
+    /**
+     * Reference an argument by type.
+     *
+     * @tparam ArgType
+     *      The type of argument to reference from the args list.
+     */
+    template<typename ArgType>
+    CIB_CONSTEXPR static detail::arg<ArgType> arg{};
+
+    /**
+     * Include configs based on predicate.
+     *
+     * If predicate evaluates to true, then the configs will be added to the
+     * configuration. Otherwise the configs contained in this conditional
+     * will not be added.
+     *
+     * @param condition
+     * @param configs
+     */
+    template<typename Predicate, typename... Configs>
     [[nodiscard]] CIB_CONSTEVAL auto conditional(
-        Condition const & condition,
+        Predicate const & predicate,
         Configs const & ... configs
     ) {
-        return detail::conditional{condition, configs...};
+        return detail::conditional{predicate, configs...};
     }
 }
 

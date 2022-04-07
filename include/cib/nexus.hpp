@@ -1,3 +1,4 @@
+#include "detail/nexus_details.hpp"
 #include "detail/compiler.hpp"
 #include "detail/meta.hpp"
 #include "built.hpp"
@@ -10,69 +11,43 @@
 
 
 namespace cib {
-    template<typename ConfigT>
-    struct initialized_builders {
-        CIB_CONSTEXPR static auto value = ConfigT::config.init(ConfigT::config.exports_tuple());
-        using type = decltype(value);
-    };
-
-    template<typename ConfigT>
-    using initialized_builders_t = typename initialized_builders<ConfigT>::type;
-
-    template<typename ConfigT>
-    CIB_CONSTEXPR static auto & initialized_builders_v = initialized_builders<ConfigT>::value;
-
-    template<typename ConfigT, typename Tag>
-    struct initialized {
-        CIB_CONSTEXPR static auto value = detail::fold_right(initialized_builders_v<ConfigT>, 0, [](auto b, auto retval){
-            if constexpr (std::is_same_v<decltype(b.first), Tag>) {
-                return b.second;
-            } else {
-                return retval;
-            }
-        });
-    };
-
     /**
-     * Type trait for building a Builder and storing its Implementation.
+     * Combines all components in a single location so their features can
+     * extend services.
      *
-     * @tparam Builders
-     *      A type with a 'static constexpr value' field that contains a std::tuple of all the initialized builders.
+     * @tparam Config
+     *      Project configuration class that contains a single constexpr static
+     *      "config" field describing the cib::config
      *
-     * @tparam Tag
-     *      The typename of a the Builder to be built into an implementation.
+     * @see cib::config
      */
-    /**
-     * Build the builder. Passing in a type with a 'static constexpr value' member field is a pattern that works
-     * for all builder/implementation combinations. This 'value' field is where the built Builder is stored.
-     */
-    template<typename ConfigT>
+    template<typename Config>
     struct nexus {
         template<typename T>
-        using builder_t = decltype(initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>());
+        using service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
 
         template<typename T>
-        CIB_CONSTINIT static inline builder_t<T> builder = initialized<ConfigT, T>::value.template build<initialized<ConfigT, T>>();
+        CIB_CONSTINIT static inline service_t<T> service = initialized<Config, T>::value.template build<initialized<Config, T>>();
 
         static void init() {
-            detail::for_each(initialized_builders_v<ConfigT>, [](auto b){
+            detail::for_each(initialized_builders_v<Config>, [](auto b){
                 // Tag/CleanTag is the type name of the builder_meta in the tuple
                 using Tag = decltype(b.first);
                 using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
 
                 // the built implementation is stored in Build<>::value
-                auto & builtValue = builder<CleanTag>;
+                auto & builtValue = service<CleanTag>;
                 using BuiltType = std::remove_reference_t<decltype(builtValue)>;
 
                 // if the built type is a pointer, then it is a function pointer and we should return its value
                 // directly to the 'built<>' abstract interface variable.
                 if constexpr(std::is_pointer_v<BuiltType>) {
-                    built<CleanTag> = builtValue;
+                    cib::service<CleanTag> = builtValue;
 
                 // if the built type is not a pointer, then it is a class and the 'built<>' variable is a pointer to
                 // the base class. we will need to get a pointer to the builtValue in order to initialize 'built<>'.
                 } else {
-                    built<CleanTag> = &builtValue;
+                    cib::service<CleanTag> = &builtValue;
                 }
             });
         }

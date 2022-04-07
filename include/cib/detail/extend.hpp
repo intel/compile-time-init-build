@@ -12,10 +12,10 @@ namespace cib::detail {
     template<
         typename ExtensionPath,
         typename... Args>
-    struct extend_t : public config_item {
+    struct extend : public config_item {
         std::tuple<Args...> args_tuple;
 
-        [[nodiscard]] CIB_CONSTEVAL extend_t(
+        [[nodiscard]] CIB_CONSTEVAL extend(
             Args const & ... args
         )
             : args_tuple{args...}

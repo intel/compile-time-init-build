@@ -15,7 +15,7 @@ namespace cib {
      * @see cib::builder_meta
      */
     template<typename ServiceMeta>
-    traits::interface_t<ServiceMeta> built;
+    traits::interface_t<ServiceMeta> service;
 }
 
 
