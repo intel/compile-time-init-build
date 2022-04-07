@@ -70,7 +70,7 @@ jobs:
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
         run: ctest -C ${{env.BUILD_TYPE}}
 
-  release:
+  build_single_header:
     needs: build_and_test
     runs-on: ubuntu-latest
     steps:
@@ -91,10 +91,5 @@ jobs:
           name: cib.hpp
           path: build/cib.hpp
 
-      - name: Release
-        uses: softprops/action-gh-release@v0.1.14
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: build/cib.hpp
 
 
