@@ -1,8 +1,8 @@
+#include "builder_meta.hpp"
+
+
 #ifndef COMPILE_TIME_INIT_BUILD_BUILT_HPP
 #define COMPILE_TIME_INIT_BUILD_BUILT_HPP
-
-
-#include "builder_meta.hpp"
 
 
 namespace cib {

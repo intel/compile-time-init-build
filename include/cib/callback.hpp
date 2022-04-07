@@ -1,13 +1,13 @@
-#ifndef COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
-#define COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
-
-
 #include "builder_meta.hpp"
 #include "detail/meta.hpp"
 #include "detail/compiler.hpp"
 
 #include <array>
 #include <type_traits>
+
+
+#ifndef COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
+#define COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
 
 
 namespace cib {

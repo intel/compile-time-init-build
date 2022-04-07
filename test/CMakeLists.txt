@@ -3,7 +3,7 @@ project(compile_time_init_build)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(tests test_meta.cpp test_builder_meta.cpp test_callback.cpp test_nexus.cpp)
+add_executable(tests detail/meta.cpp builder_meta.cpp callback.cpp nexus.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(tests

@@ -1,12 +1,12 @@
-#ifndef COMPILE_TIME_INIT_BUILD_NEXUS_HPP
-#define COMPILE_TIME_INIT_BUILD_NEXUS_HPP
-
-
 #include "detail/compiler.hpp"
 #include "detail/meta.hpp"
 #include "built.hpp"
 
 #include <type_traits>
+
+
+#ifndef COMPILE_TIME_INIT_BUILD_NEXUS_HPP
+#define COMPILE_TIME_INIT_BUILD_NEXUS_HPP
 
 
 namespace cib {

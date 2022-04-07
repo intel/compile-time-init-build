@@ -21,6 +21,7 @@ target_sources(Cib
 
 add_custom_command(
     DEPENDS
+        ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py
         ${CMAKE_SOURCE_DIR}/include/cib/*
         ${CMAKE_SOURCE_DIR}/include/cib/detail/*
     COMMAND
