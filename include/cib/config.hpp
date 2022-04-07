@@ -1,13 +1,13 @@
-#ifndef COMPILE_TIME_INIT_BUILD_CONFIG_HPP
-#define COMPILE_TIME_INIT_BUILD_CONFIG_HPP
-
-
 #include "detail/compiler.hpp"
 #include "detail/meta.hpp"
 #include "builder_meta.hpp"
 
 #include <tuple>
 #include <type_traits>
+
+
+#ifndef COMPILE_TIME_INIT_BUILD_CONFIG_HPP
+#define COMPILE_TIME_INIT_BUILD_CONFIG_HPP
 
 
 namespace cib {

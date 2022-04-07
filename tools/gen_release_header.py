@@ -4,8 +4,10 @@
 import re
 from pathlib import Path
 import sys
+import os
 
 
+version = os.popen("git describe --tags").read().strip()
 visited_includes = set()
 
 def process(base_filepath):
@@ -19,6 +21,7 @@ def process(base_filepath):
                     sub_filepath = Path(m.group(1))
                     process(base_filepath.parent / sub_filepath)
                 else:
+                    line = re.sub("\.\.~~VERSION~~\.\.", version, line)
                     print(line, end="")
 
 

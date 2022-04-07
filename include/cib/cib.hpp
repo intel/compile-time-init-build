@@ -31,6 +31,9 @@
 
 /*
  * cib - Compile-time Initialization and Build
+ * ..~~VERSION~~..
+ *
+ * For the documentation and the latest version, see the official github repo:
  * https://github.com/intel/compile-time-init-build
  */
 
