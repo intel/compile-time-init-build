@@ -33,5 +33,7 @@ jobs:
         uses: softprops/action-gh-release@v0.1.14
         with:
           files: build/cib.hpp
+          draft: true
+          append_body: true
 
 
