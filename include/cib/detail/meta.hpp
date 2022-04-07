@@ -12,6 +12,13 @@ namespace cib::detail {
     template<int value>
     CIB_CONSTEXPR auto int_ = std::integral_constant<int, value>{};
 
+    template<typename Lhs, typename Rhs>
+    CIB_CONSTEXPR static auto is_same_v =
+        std::is_same_v<
+            std::remove_cv_t<std::remove_reference_t<Lhs>>,
+            std::remove_cv_t<std::remove_reference_t<Rhs>>
+        >;
+
     /**
      * Used by fold_right to leverage c++17 fold expressions with arbitrary
      * callables.
