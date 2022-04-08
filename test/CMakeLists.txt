@@ -23,14 +23,17 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Wimplicit
     )
 
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 9.0.0)
+    EXECUTE_PROCESS( COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string )
+    string (REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
+
+    if (${CLANG_VERSION_STRING} VERSION_GREATER 9.0.0)
         target_compile_options(tests
             PRIVATE
                 -Wmisleading-indentation
         )
     endif()
 
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 8.0.0)
+    if (${CLANG_VERSION_STRING} VERSION_GREATER 8.0.0)
         target_compile_options(tests
             PRIVATE
                 # this complains about many cases in which ctad is supported and intended
@@ -38,7 +41,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         )
     endif()
 
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 7.0.0)
+    if (${CLANG_VERSION_STRING} VERSION_GREATER 7.0.0)
         target_compile_options(tests
             PRIVATE
                 -Wextra-semi-stmt
