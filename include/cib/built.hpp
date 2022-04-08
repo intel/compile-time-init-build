@@ -1,5 +1,5 @@
 #include "builder_meta.hpp"
-
+#include "detail/builder_traits.hpp"
 
 #ifndef COMPILE_TIME_INIT_BUILD_BUILT_HPP
 #define COMPILE_TIME_INIT_BUILD_BUILT_HPP
@@ -7,12 +7,15 @@
 
 namespace cib {
     /**
-     * Pointer to a concrete built service.
+     * Pointer to a built service implementation.
      *
-     * @tparam Tag Type name of the service.
+     * @tparam ServiceMeta
+     *      Tag name of the service.
+     *
+     * @see cib::builder_meta
      */
-    template<typename Tag>
-    traits::interface_t<Tag> built;
+    template<typename ServiceMeta>
+    traits::interface_t<ServiceMeta> service;
 }
 
 
