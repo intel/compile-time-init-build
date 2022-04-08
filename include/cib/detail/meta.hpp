@@ -10,7 +10,7 @@
 
 namespace cib::detail {
     template<int value>
-    CIB_CONSTEXPR auto int_ = std::integral_constant<int, value>{};
+    CIB_CONSTEXPR static auto int_ = std::integral_constant<int, value>{};
 
     template<typename Lhs, typename Rhs>
     CIB_CONSTEXPR static auto is_same_v =
@@ -34,22 +34,22 @@ namespace cib::detail {
         typename ValueType,
         typename CallableType>
     struct fold_helper {
-        ValueType const & element;
-        CallableType const & operation;
+        ValueType const & element_;
+        CallableType const & operation_;
 
-        [[nodiscard]] CIB_CONSTEXPR fold_helper(
+        CIB_CONSTEXPR fold_helper(
             ValueType const & element,
             CallableType const & operation
         )
-            : element{element}
-            , operation{operation}
+            : element_{element}
+            , operation_{operation}
         {}
 
         template<typename StateType>
         [[nodiscard]] CIB_CONSTEXPR inline auto operator+(
             StateType const & state
         ) const {
-            return operation(element, state);
+            return operation_(element_, state);
         }
     };
 
@@ -87,7 +87,6 @@ namespace cib::detail {
     /**
      * Perform an operation on each element of an integral sequence.
      *
-     * @param sequence
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
      */
@@ -106,7 +105,6 @@ namespace cib::detail {
      * Perform an operation on each element of an integral sequence from 0 to
      * num_elements.
      *
-     * @param num_elements
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
      */
@@ -125,7 +123,6 @@ namespace cib::detail {
     /**
      * Perform an operation on each element of a tuple.
      *
-     * @param num_elements
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
      */

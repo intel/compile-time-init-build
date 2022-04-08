@@ -20,13 +20,14 @@ namespace cib {
 
     template<typename Config, typename Tag>
     struct initialized {
-        CIB_CONSTEXPR static auto value = detail::fold_right(initialized_builders_v<Config>, 0, [](auto b, auto retval){
-            if constexpr (std::is_same_v<decltype(b.first), Tag>) {
-                return b.second;
-            } else {
-                return retval;
-            }
-        });
+        CIB_CONSTEXPR static auto value =
+            detail::fold_right(initialized_builders_v<Config>, 0, [](auto b, [[maybe_unused]] auto retval){
+                if constexpr (std::is_same_v<decltype(b.first), Tag>) {
+                    return b.second;
+                } else {
+                    return retval;
+                }
+            });
     };
 }
 

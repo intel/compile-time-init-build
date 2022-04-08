@@ -11,23 +11,23 @@
 
 namespace cib::detail {
     template<typename... ConfigTs>
-    struct config : public detail::config_item {
-        std::tuple<ConfigTs...> configsTuple;
+    struct [[nodiscard]] config : public detail::config_item {
+        std::tuple<ConfigTs...> configs_tuple;
 
-        [[nodiscard]] CIB_CONSTEVAL config(
+        CIB_CONSTEVAL explicit config(
             ConfigTs const & ... configs
         )
-            : configsTuple{configs...}
+            : configs_tuple{configs...}
         {
             // pass
         }
 
         template<typename BuildersT, typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto init(
-            BuildersT const & buildersTuple,
+            BuildersT const & builders_tuple,
             Args const & ... args
         ) const {
-            return detail::fold_right(configsTuple, buildersTuple, [&](auto const & c, auto builders){
+            return detail::fold_right(configs_tuple, builders_tuple, [&](auto const & c, auto builders){
                 return c.init(builders, args...);
             });
         }
@@ -36,9 +36,9 @@ namespace cib::detail {
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
             Args const & ... args
         ) const {
-            return std::apply([&](auto const & ... configsPack){
-                return std::tuple_cat(configsPack.exports_tuple(args...)...);
-            }, configsTuple);
+            return std::apply([&](auto const & ... configs_pack){
+                return std::tuple_cat(configs_pack.exports_tuple(args...)...);
+            }, configs_tuple);
         }
     };
 }
