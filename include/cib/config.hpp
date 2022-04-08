@@ -100,9 +100,6 @@ namespace cib {
      * If predicate evaluates to true, then the configs will be added to the
      * configuration. Otherwise the configs contained in this conditional
      * will not be added.
-     *
-     * @param condition
-     * @param configs
      */
     template<typename Predicate, typename... Configs>
     [[nodiscard]] CIB_CONSTEVAL auto conditional(

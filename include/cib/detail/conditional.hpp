@@ -16,7 +16,7 @@ namespace cib::detail {
         CIB_CONSTEXPR static Condition condition{};
         detail::config<Configs...> body;
 
-        CIB_CONSTEVAL conditional(
+        CIB_CONSTEVAL explicit conditional(
             Condition,
             Configs const & ... configs
         )
@@ -63,13 +63,13 @@ namespace cib::detail {
     template<typename MatchType>
     struct arg {
         template<typename Rhs>
-        CIB_CONSTEVAL equality<arg<MatchType>, Rhs> operator==(Rhs const &) const {
+        [[nodiscard]] CIB_CONSTEVAL equality<arg<MatchType>, Rhs> operator==(Rhs const &) const {
             return {};
         }
 
         template<typename... Args>
         CIB_CONSTEVAL auto operator()(Args... args) const {
-            return detail::fold_right(std::make_tuple(args...), detail::int_<0>, [=](auto elem, auto state){
+            return detail::fold_right(std::make_tuple(args...), detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state){
                 using ElemType = typename std::remove_cv_t<std::remove_reference_t<decltype(elem)>>::value_type;
 
                 if constexpr (std::is_same_v<ElemType, MatchType>) {

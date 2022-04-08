@@ -67,13 +67,13 @@ namespace cib {
         CIB_CONSTEVAL callback() = default;
 
         template<typename PrevFuncsType>
-        CIB_CONSTEVAL callback(
+        CIB_CONSTEVAL explicit callback(
             PrevFuncsType const & prev_funcs,
             func_ptr_t new_func
         )
             : funcs{}
         {
-            for (int i = 0; i < prev_funcs.size(); i++) {
+            for (unsigned int i = 0; i < prev_funcs.size(); i++) {
                 funcs[i] = prev_funcs[i];
             }
 
@@ -86,8 +86,6 @@ namespace cib {
          * Do not call this function directly. The library will add functions
          * to service builders based on a project's cib::config and cib::extend
          * declarations.
-         *
-         * @param func
          *
          * @return
          *      A version of this callback builder with the addition of func.

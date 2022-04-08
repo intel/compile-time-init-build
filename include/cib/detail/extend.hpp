@@ -15,7 +15,7 @@ namespace cib::detail {
     struct extend : public config_item {
         std::tuple<Args...> args_tuple;
 
-        [[nodiscard]] CIB_CONSTEVAL extend(
+        CIB_CONSTEVAL explicit extend(
             Args const & ... args
         )
             : args_tuple{args...}
