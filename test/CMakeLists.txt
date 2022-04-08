@@ -12,7 +12,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Weverything
             -Wshadow-all
             -Warray-bounds-pointer-arithmetic
-            -Wextra-semi-stmt
+
             -Wfor-loop-analysis
             -Wgcc-compat
             -Wglobal-constructors
@@ -23,11 +23,34 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Wimplicit
     )
 
+    if (CLANG_VERSION_MAJOR VERSION_GREATER 9.0)
+        target_compile_options(tests
+            PRIVATE
+                -Wmisleading-indentation
+        )
+    elseif (CLANG_VERSION_MAJOR VERSION_GREATER 8.0)
+        target_compile_options(tests
+            PRIVATE
+                # this complains about many cases in which ctad is supported and intended
+                -Wno-ctad-maybe-unsupported
+        )
+    elseif (CLANG_VERSION_MAJOR VERSION_GREATER 7.0)
+        target_compile_options(tests
+            PRIVATE
+                -Wextra-semi-stmt
+        )
+    endif()
+
+
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tests
         PRIVATE
             -fmax-errors=2
             -Wshadow
+            -Wmisleading-indentation
+
+            # this complains about many cases in which ctad is supported and intended
+            -Wno-ctad-maybe-unsupported
     )
 endif()
 
@@ -46,7 +69,6 @@ target_compile_options(tests
         -Wignored-qualifiers
         -Wold-style-cast
         -Wunused
-        -Wmisleading-indentation
         -Weffc++
 
         # not feasible to change tuple padding for now
@@ -63,9 +85,6 @@ target_compile_options(tests
         -Wno-c++98-compat
         -Wno-c++11-compat
         -Wno-c++14-compat
-
-        # this complains about many cases in which ctad is supported and intended
-        -Wno-ctad-maybe-unsupported
 )
 
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain Cib)
