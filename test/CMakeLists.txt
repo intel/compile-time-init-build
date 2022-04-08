@@ -8,7 +8,7 @@ add_executable(tests detail/meta.cpp builder_meta.cpp callback.cpp nexus.cpp)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(tests
         PRIVATE
-            -ferror-limit=2
+            -ferror-limit=8
             -Weverything
             -Wshadow-all
             -Warray-bounds-pointer-arithmetic
@@ -45,7 +45,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tests
         PRIVATE
-            -fmax-errors=2
+            -fmax-errors=8
             -Wshadow
             -Wmisleading-indentation
 
