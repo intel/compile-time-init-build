@@ -23,25 +23,27 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Wimplicit
     )
 
-    if (CLANG_VERSION_MAJOR VERSION_GREATER 9.0)
+    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 9.0.0)
         target_compile_options(tests
             PRIVATE
                 -Wmisleading-indentation
         )
-    elseif (CLANG_VERSION_MAJOR VERSION_GREATER 8.0)
+    endif()
+
+    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 8.0.0)
         target_compile_options(tests
             PRIVATE
                 # this complains about many cases in which ctad is supported and intended
                 -Wno-ctad-maybe-unsupported
         )
-    elseif (CLANG_VERSION_MAJOR VERSION_GREATER 7.0)
+    endif()
+
+    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 7.0.0)
         target_compile_options(tests
             PRIVATE
                 -Wextra-semi-stmt
         )
     endif()
-
-
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(tests
         PRIVATE
