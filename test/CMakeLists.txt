@@ -43,7 +43,6 @@ target_compile_options(tests
         -Wformat-security
         -Wextra-semi
         -Wfloat-conversion
-        -Wframe-address
         -Wignored-qualifiers
         -Wold-style-cast
         -Wunused
