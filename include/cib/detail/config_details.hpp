@@ -11,7 +11,7 @@
 
 namespace cib::detail {
     template<typename... ConfigTs>
-    struct [[nodiscard]] config : public detail::config_item {
+    struct config : public detail::config_item {
         std::tuple<ConfigTs...> configs_tuple;
 
         CIB_CONSTEVAL explicit config(
