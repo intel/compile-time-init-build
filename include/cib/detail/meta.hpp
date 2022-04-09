@@ -1,4 +1,5 @@
 #include "compiler.hpp"
+#include "tuple.hpp"
 
 #include <tuple>
 #include <type_traits>
@@ -79,7 +80,38 @@ namespace cib::detail {
         InitType const & initial_state,
         CallableType const & operation
     ) {
-        return std::apply([&](auto const & ... element_pack){
+        return apply([&](auto const & ... element_pack){
+            return (fold_helper{element_pack, operation} + ... + initial_state);
+        }, elements);
+    }
+
+    /**
+     * fold_right a tuple of elements.
+     *
+     * Fold operations are sometimes called accumulate or reduce in other
+     * languages or libraries.
+     *
+     * https://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+     *
+     * @param operation
+     *      A callable that takes the current element being processed
+     *      and the current state, and returns the state to be used
+     *      to process the next element. Called for each element in
+     *      the tuple.
+     *
+     * @return
+     *      The final state of all of the operations.
+     */
+    template<
+        typename... ElementTypes,
+        typename InitType,
+        typename CallableType>
+    [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
+        tuple<ElementTypes...> const & elements,
+        InitType const & initial_state,
+        CallableType const & operation
+    ) {
+        return apply([&](auto const & ... element_pack){
             return (fold_helper{element_pack, operation} + ... + initial_state);
         }, elements);
     }
@@ -133,7 +165,25 @@ namespace cib::detail {
         std::tuple<ElementTypes...> const & elements,
         CallableType const & operation
     ) {
-        std::apply([&](auto const & ... element_pack){
+        apply([&](auto const & ... element_pack){
+            (operation(element_pack) , ...);
+        }, elements);
+    }
+
+    /**
+     * Perform an operation on each element of a tuple.
+     *
+     * @param operation
+     *      The operation to perform. Must be a callable that accepts a single parameter.
+     */
+    template<
+        typename... ElementTypes,
+        typename CallableType>
+    CIB_CONSTEXPR inline void for_each(
+        tuple<ElementTypes...> const & elements,
+        CallableType const & operation
+    ) {
+        apply([&](auto const & ... element_pack){
             (operation(element_pack) , ...);
         }, elements);
     }

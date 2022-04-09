@@ -3,11 +3,19 @@ project(compile_time_init_build)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(tests detail/meta.cpp builder_meta.cpp callback.cpp nexus.cpp)
+add_executable(tests
+    detail/type_list.cpp
+    detail/meta.cpp
+    builder_meta.cpp
+    callback.cpp
+    nexus.cpp
+    big_nexus.cpp
+)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(tests
         PRIVATE
+            -ftime-trace
             -ferror-limit=8
             -Weverything
             -Wshadow-all
@@ -21,6 +29,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -Widiomatic-parentheses
             -Wnewline-eof
             -Wimplicit
+
+            -Wno-missing-prototypes
     )
 
     EXECUTE_PROCESS( COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string )

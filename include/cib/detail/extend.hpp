@@ -1,4 +1,5 @@
 #include "config_item.hpp"
+#include "tuple.hpp"
 
 #include <tuple>
 #include <utility>
@@ -13,7 +14,7 @@ namespace cib::detail {
         typename ExtensionPath,
         typename... Args>
     struct extend : public config_item {
-        std::tuple<Args...> args_tuple;
+        tuple<Args...> args_tuple;
 
         CIB_CONSTEVAL explicit extend(
             Args const & ... args
@@ -30,9 +31,11 @@ namespace cib::detail {
             path<TargetBuilder> const &,
             Builder const & b
         ) const {
-            if constexpr (is_same_v<TargetBuilder, decltype(b.first)>) {
-                return std::apply([&](auto const & ... args){
-                    return std::pair(b.first, b.second.add(args...));
+            if constexpr (is_same_v<TargetBuilder, typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service>) {
+                return apply([&](auto const & ... args){
+                    return ServiceEntry<
+                        typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
+                        decltype(b.builder.add(args...))>{b.builder.add(args...)};
                 }, args_tuple);
             } else {
                 return b;
@@ -48,9 +51,11 @@ namespace cib::detail {
             path<TargetBuilder, SubBuilder, SubBuilders...> const &,
             Builder const & b
         ) const {
-            if constexpr (is_same_v<TargetBuilder, decltype(b.first)>) {
-                return std::apply([&](auto const & ... args){
-                    return std::pair(b.first, b.second.template add<SubBuilder, SubBuilders...>(args...));
+            if constexpr (is_same_v<TargetBuilder, typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service>) {
+                return apply([&](auto const & ... args){
+                    return ServiceEntry<
+                        typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
+                        decltype(b.builder.template add<SubBuilder, SubBuilders...>(args...))>{b.builder.template add<SubBuilder, SubBuilders...>(args...)};
                 }, args_tuple);
             } else {
                 return b;
@@ -62,14 +67,20 @@ namespace cib::detail {
             Builders const & builders_tuple,
             InitArgs const & ...
         ) const {
-            return std::apply([&](auto const & ... builders){
+            return apply([&](auto const & ... builders){
                 static_assert(
-                    (is_same_v<typename ExtensionPath::First, decltype(builders.first)> + ... + 0) == 1,
-                    "Extensions must match exactly one exported builder.");
+                    (is_same_v<typename ExtensionPath::First, typename std::remove_cv_t<std::remove_reference_t<decltype(builders)>>::Service> + ... + 0) > 0,
+                    "Extension didn't match any service");
 
-                return std::make_tuple(add(ExtensionPath{}, builders)...);
+                static_assert(
+                    (is_same_v<typename ExtensionPath::First, typename std::remove_cv_t<std::remove_reference_t<decltype(builders)>>::Service> + ... + 0) <= 1,
+                    "Extension matched more than 1 service");
+
+                return detail::tuple(add(ExtensionPath{}, builders)...);
             }, builders_tuple);
         }
+
+
     };
 }
 

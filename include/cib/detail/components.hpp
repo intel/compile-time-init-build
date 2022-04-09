@@ -1,8 +1,9 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
 #include "meta.hpp"
+#include "tuple.hpp"
+#include "type_list.hpp"
 
-#include <tuple>
 #include <type_traits>
 
 
@@ -18,8 +19,8 @@ namespace cib::detail {
             Builders const & builders_tuple,
             Args const & ... args
         ) const {
-            return std::apply([&](auto const & ... component_args){
-                return detail::fold_right(std::tuple<Components...>{}, builders_tuple, [&](auto const & c, auto const & builders){
+            return apply([&](auto const & ... component_args){
+                return detail::fold_right(tuple{Components{}...}, builders_tuple, [&](auto const & c, auto const & builders){
                     return c.config.init(builders, args..., component_args...);
                 });
             }, ComponentArgs::value);
@@ -29,8 +30,8 @@ namespace cib::detail {
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
             Args const & ... args
         ) const {
-            return std::apply([&](auto const & ... component_args){
-                return std::tuple_cat(Components::config.exports_tuple(args..., component_args...)...);
+            return apply([&](auto const & ... component_args){
+                return type_list_cat(Components::config.exports_tuple(args..., component_args...)...);
             }, ComponentArgs::value);
         }
     };
@@ -40,7 +41,7 @@ namespace cib::detail {
 
     template<auto... Args>
     struct args {
-        static CIB_CONSTEXPR auto value = std::make_tuple(as_constant_v<Args>...);
+        static CIB_CONSTEXPR auto value = tuple{as_constant_v<Args>...};
     };
 }
 
