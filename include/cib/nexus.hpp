@@ -27,7 +27,8 @@ namespace cib {
         using service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
 
         template<typename T>
-        CIB_CONSTINIT static inline service_t<T> service = initialized<Config, T>::value.template build<initialized<Config, T>>();
+        CIB_CONSTINIT static inline service_t<T> service =
+            initialized<Config, T>::value.template build<initialized<Config, T>>();
 
         static void init() {
             detail::for_each(initialized_builders_v<Config>, [](auto b){

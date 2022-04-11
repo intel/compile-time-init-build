@@ -33,8 +33,8 @@ namespace cib::detail {
         ) const {
             if constexpr (is_same_v<TargetBuilder, typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service>) {
                 return apply([&](auto const & ... args){
-                    return ServiceEntry<
-                        typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
+                    return service_entry <
+                           typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
                         decltype(b.builder.add(args...))>{b.builder.add(args...)};
                 }, args_tuple);
             } else {
@@ -53,8 +53,8 @@ namespace cib::detail {
         ) const {
             if constexpr (is_same_v<TargetBuilder, typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service>) {
                 return apply([&](auto const & ... args){
-                    return ServiceEntry<
-                        typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
+                    return service_entry <
+                           typename std::remove_cv_t<std::remove_reference_t<decltype(b)>>::Service,
                         decltype(b.builder.template add<SubBuilder, SubBuilders...>(args...))>{b.builder.template add<SubBuilder, SubBuilders...>(args...)};
                 }, args_tuple);
             } else {

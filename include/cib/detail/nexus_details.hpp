@@ -2,8 +2,8 @@
 #include "meta.hpp"
 #include "type_list.hpp"
 #include "tuple.hpp"
-
-#include <type_traits>
+#include "exports.hpp"
+#include "find.hpp"
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
@@ -21,9 +21,6 @@ namespace cib {
     };
 
     template<typename ServiceBuilderList>
-    using to_tuple_t = typename to_tuple<ServiceBuilderList>::type;
-
-    template<typename ServiceBuilderList>
     constexpr static auto to_tuple_v = to_tuple<ServiceBuilderList>::value;
 
     template<typename Config>
@@ -35,16 +32,15 @@ namespace cib {
     template<typename Config>
     CIB_CONSTEXPR static auto & initialized_builders_v = initialized_builders<Config>::value;
 
+    struct ServiceTagMetaFunc {
+        template<typename T>
+        using invoke = typename T::Service;
+    };
+
     template<typename Config, typename Tag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            detail::fold_right(initialized_builders_v<Config>, 0, [](auto b, [[maybe_unused]] auto retval){
-                if constexpr (std::is_same_v<typename decltype(b)::Service, Tag>) {
-                    return b.builder;
-                } else {
-                    return retval;
-                }
-            });
+            cib::detail::find<Tag, ServiceTagMetaFunc>(initialized_builders_v<Config>).builder;
     };
 }
 

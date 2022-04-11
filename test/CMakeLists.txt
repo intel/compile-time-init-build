@@ -40,6 +40,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(tests
             PRIVATE
                 -Wmisleading-indentation
+                -Wno-c++20-compat
         )
     endif()
 
