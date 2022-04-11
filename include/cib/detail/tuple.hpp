@@ -19,12 +19,21 @@ namespace cib::detail {
             : tuple_element<Tn>{values}...
         {}
 
+        template<int Index>
+        constexpr auto const & get() {
+            using T = __type_pack_element<Index, Tn...>;
+            return tuple_element<T>::value;
+        }
+
+        template<typename T>
+        constexpr T const & get() {
+            return tuple_element<T>::value;
+        }
+
         constexpr static auto size() {
             return sizeof...(Tn);
         }
     };
-
-
 
     template<typename T, typename... Values>
     constexpr T const & get(tuple<Values...> const & t) {
@@ -39,7 +48,7 @@ namespace cib::detail {
 
     template<typename Callable, typename... Values>
     constexpr auto apply(Callable operation, tuple<Values...> const & t) {
-        return operation(get<Values>(t)...);
+        return operation(t.tuple_element<Values>::value...);
     }
 
     struct index_pair {
