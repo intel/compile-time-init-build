@@ -37,10 +37,13 @@ namespace cib {
         using invoke = typename T::Service;
     };
 
-    template<typename Config, typename Tag>
+    template<typename Config, typename RawTag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            cib::detail::find<Tag, ServiceTagMetaFunc>(initialized_builders_v<Config>).builder;
+            cib::detail::get<RawTag>(initialized_builders_v<Config>).builder;
+
+//        CIB_CONSTEXPR static auto value =
+//            cib::detail::find<Tag, ServiceTagMetaFunc>(initialized_builders_v<Config>).builder;
     };
 }
 

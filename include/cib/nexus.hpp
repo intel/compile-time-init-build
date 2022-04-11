@@ -24,11 +24,23 @@ namespace cib {
     template<typename Config>
     struct nexus {
         template<typename T>
-        using service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
+        using raw_service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
+
+        template<typename T>
+        CIB_CONSTINIT static inline raw_service_t<T> raw_service =
+            initialized<Config, T>::value.template build<initialized<Config, T>>();
+
+        template<typename Tag>
+        using service_name_to_raw_type_t =
+            typename std::remove_const_t<std::remove_reference_t<decltype(cib::detail::find<Tag, cib::ServiceTagMetaFunc>(cib::initialized_builders_v<Config>))>>;
+
+        template<typename T>
+        using service_t =
+            decltype(initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>());
 
         template<typename T>
         CIB_CONSTINIT static inline service_t<T> service =
-            initialized<Config, T>::value.template build<initialized<Config, T>>();
+            initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>();
 
         static void init() {
             detail::for_each(initialized_builders_v<Config>, [](auto b){
@@ -36,8 +48,10 @@ namespace cib {
                 using Tag = typename decltype(b)::Service;
                 using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
 
+                using CleanTypename = std::remove_cv_t<std::remove_reference_t<decltype(b)>>;
+
                 // the built implementation is stored in Build<>::value
-                auto & builtValue = service<CleanTag>;
+                auto & builtValue = raw_service<CleanTypename>;
                 using BuiltType = std::remove_reference_t<decltype(builtValue)>;
 
                 // if the built type is a pointer, then it is a function pointer and we should return its value

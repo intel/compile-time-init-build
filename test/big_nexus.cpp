@@ -183,4 +183,6 @@ struct BigConfig {
 void make_nexus() {
     cib::nexus<BigConfig> nexus{};
     nexus.init();
+
+    nexus.service<TestCallback<0>>();
 }
