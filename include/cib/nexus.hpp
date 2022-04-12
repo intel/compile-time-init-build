@@ -46,7 +46,7 @@ namespace cib {
 
         static void init() {
             detail::for_each(initialized_builders_v<Config>, [](auto b){
-                // Tag/CleanTag is the type name of the builder_meta in the tuple
+                // Tag/CleanTag is the type name of the builder_meta in the ordered_set
                 using Tag = typename decltype(b)::Service;
                 using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
 

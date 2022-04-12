@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 #include "meta.hpp"
 #include "type_list.hpp"
-#include "tuple.hpp"
+#include "ordered_set.hpp"
 #include "exports.hpp"
 #include "find.hpp"
 
@@ -16,7 +16,7 @@ namespace cib {
 
     template<typename... ServiceBuilders>
     struct to_tuple<detail::type_list<ServiceBuilders...>> {
-        using type = detail::tuple<ServiceBuilders...>;
+        using type = detail::ordered_set<ServiceBuilders...>;
         constexpr static inline auto value = type{ServiceBuilders{}...};
     };
 

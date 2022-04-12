@@ -16,8 +16,8 @@ namespace cib::detail {
     };
 
     template<typename... Tn>
-    struct tuple : public tuple_element<Tn>... {
-        constexpr tuple(Tn... values)
+    struct ordered_set : public tuple_element<Tn>... {
+        constexpr ordered_set(Tn... values)
             : tuple_element<Tn>{values}...
         {}
 
@@ -38,7 +38,7 @@ namespace cib::detail {
     };
 
     template<typename Callable, typename... Values>
-    constexpr auto apply(Callable operation, tuple<Values...> const & t) {
+    constexpr auto apply(Callable operation, ordered_set<Values...> const & t) {
         return operation(t.tuple_element<Values>::value...);
     }
 
@@ -69,8 +69,8 @@ namespace cib::detail {
             return indices;
         }();
 
-        auto const outer_tuple = tuple{tuples...};
-        return tuple{outer_tuple.template get<element_indices[Indices].outer>().template get<element_indices[Indices].inner>()...};
+        auto const outer_tuple = ordered_set{tuples...};
+        return ordered_set{outer_tuple.template get<element_indices[Indices].outer>().template get<element_indices[Indices].inner>()...};
     }
 
     template<typename... Tuples>
@@ -82,7 +82,7 @@ namespace cib::detail {
 
 namespace std {
     template<typename... Values>
-    struct tuple_size<cib::detail::tuple<Values...>>
+    struct tuple_size<cib::detail::ordered_set<Values...>>
         : std::integral_constant<std::size_t, sizeof...(Values)>
     {};
 }

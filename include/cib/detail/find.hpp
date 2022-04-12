@@ -1,4 +1,4 @@
-#include "tuple.hpp"
+#include "ordered_set.hpp"
 #include "quicksort.hpp"
 
 #include <string_view>
@@ -104,7 +104,7 @@ namespace cib::detail {
     }
 
     template<typename Tag, typename MetaFunc, typename... Types>
-    constexpr auto const & find(tuple<Types...> const & t) {
+    constexpr auto const & find(ordered_set<Types...> const & t) {
 
         #if defined(__GNUC__)
             // g++-9 doesn't compile when we use type_names<...> directly, so we have

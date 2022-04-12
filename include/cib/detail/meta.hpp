@@ -1,5 +1,5 @@
 #include "compiler.hpp"
-#include "tuple.hpp"
+#include "ordered_set.hpp"
 
 #include <tuple>
 #include <type_traits>
@@ -55,7 +55,7 @@ namespace cib::detail {
     };
 
     /**
-     * fold_right a tuple of elements.
+     * fold_right a ordered_set of elements.
      *
      * Fold operations are sometimes called accumulate or reduce in other
      * languages or libraries.
@@ -66,7 +66,7 @@ namespace cib::detail {
      *      A callable that takes the current element being processed
      *      and the current state, and returns the state to be used
      *      to process the next element. Called for each element in
-     *      the tuple.
+     *      the ordered_set.
      *
      * @return
      *      The final state of all of the operations.
@@ -86,7 +86,7 @@ namespace cib::detail {
     }
 
     /**
-     * fold_right a tuple of elements.
+     * fold_right a ordered_set of elements.
      *
      * Fold operations are sometimes called accumulate or reduce in other
      * languages or libraries.
@@ -97,7 +97,7 @@ namespace cib::detail {
      *      A callable that takes the current element being processed
      *      and the current state, and returns the state to be used
      *      to process the next element. Called for each element in
-     *      the tuple.
+     *      the ordered_set.
      *
      * @return
      *      The final state of all of the operations.
@@ -107,9 +107,9 @@ namespace cib::detail {
         typename InitType,
         typename CallableType>
     [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
-        tuple<ElementTypes...> const & elements,
-        InitType const & initial_state,
-        CallableType const & operation
+            ordered_set<ElementTypes...> const & elements,
+            InitType const & initial_state,
+            CallableType const & operation
     ) {
         return apply([&](auto const & ... element_pack){
             return (fold_helper{element_pack, operation} + ... + initial_state);
@@ -153,7 +153,7 @@ namespace cib::detail {
     }
 
     /**
-     * Perform an operation on each element of a tuple.
+     * Perform an operation on each element of a ordered_set.
      *
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
@@ -171,7 +171,7 @@ namespace cib::detail {
     }
 
     /**
-     * Perform an operation on each element of a tuple.
+     * Perform an operation on each element of a ordered_set.
      *
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
@@ -180,8 +180,8 @@ namespace cib::detail {
         typename... ElementTypes,
         typename CallableType>
     CIB_CONSTEXPR inline void for_each(
-        tuple<ElementTypes...> const & elements,
-        CallableType const & operation
+            ordered_set<ElementTypes...> const & elements,
+            CallableType const & operation
     ) {
         apply([&](auto const & ... element_pack){
             (operation(element_pack) , ...);
