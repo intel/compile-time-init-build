@@ -32,16 +32,21 @@ namespace cib::detail {
         return service_name;
     }
 
+
     template<typename MetaFunc, typename... Types>
-    constexpr static auto type_names = [](){
+    CIB_CONSTEXPR static auto create_type_names() {
         unsigned int i = 0;
-        auto names = std::array<typename_map_entry, sizeof...(Types)>{
+        std::array<typename_map_entry, sizeof...(Types)> names = {
             typename_map_entry{name<typename MetaFunc::template invoke<Types>>(), i++}...
         };
 
         quicksort(names);
         return names;
-    }();
+    }
+
+    template<typename MetaFunc, typename... Types>
+    constexpr static std::array<typename_map_entry, sizeof...(Types)> type_names =
+        create_type_names<MetaFunc, Types...>();
 
     template<typename ElemType>
     CIB_CONSTEVAL static auto binary_search(
@@ -78,14 +83,29 @@ namespace cib::detail {
 
     template<typename Tag, typename MetaFunc, typename... Types>
     constexpr auto const & find(tuple<Types...> const & t) {
-        constexpr auto index =
-            binary_search(
-                type_names<MetaFunc, Types...>,
-                typename_map_entry{name<Tag>(), 0}
-            ).index;
 
-        return cib::detail::get<index>(t);
+        #if defined(__GNUC__)
+            // g++-9 doesn't compile when we use type_names<...> directly, so we have
+            // to use the function again instead.
+            // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64989
+            constexpr auto index =
+                binary_search(
+                    create_type_names<MetaFunc, Types...>(),
+                    typename_map_entry{name<Tag>(), 0}
+                ).index;
+        #else
+            constexpr auto index =
+                binary_search(
+                    type_names<MetaFunc, Types...>,
+                    typename_map_entry{name<Tag>(), 0}
+                ).index;
+        #endif
+
+        return t.template get<index>();
     }
+
+
+
 }
 
 

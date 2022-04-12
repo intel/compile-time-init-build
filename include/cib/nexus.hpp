@@ -23,6 +23,7 @@ namespace cib {
      */
     template<typename Config>
     struct nexus {
+    private:
         template<typename T>
         using raw_service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
 
@@ -38,6 +39,7 @@ namespace cib {
         using service_t =
             decltype(initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>());
 
+    public:
         template<typename T>
         CIB_CONSTINIT static inline service_t<T> service =
             initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>();

@@ -9,7 +9,6 @@ add_executable(tests
     builder_meta.cpp
     callback.cpp
     nexus.cpp
-    big_nexus.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

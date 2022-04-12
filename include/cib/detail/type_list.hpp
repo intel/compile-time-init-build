@@ -1,3 +1,5 @@
+#include "type_pack_element.hpp"
+
 #include <type_traits>
 #include <utility>
 #include <array>
@@ -11,13 +13,13 @@ namespace cib::detail {
     template<typename... Values>
     struct type_list {
         constexpr static auto size = sizeof...(Values);
+
+        template<unsigned int Index>
+        constexpr auto get() const {
+            constexpr auto value = type_pack_element<Index, Values...>{};
+            return value;
+        }
     };
-    
-    template<unsigned int Index, typename... Values>
-    constexpr auto get(type_list<Values...>) {
-        constexpr auto value = __type_pack_element<Index, Values...>{};
-        return value;
-    }
 //
 //    struct index_pair {
 //        unsigned int outer;
@@ -34,7 +36,8 @@ namespace cib::detail {
         constexpr auto num_type_lists = sizeof...(type_lists);
         constexpr std::array<unsigned int, num_type_lists> type_list_sizes{type_lists.size...};
 
-        constexpr auto element_indices = [&](){
+        // gcc thinks this is unused
+        [[maybe_unused]] constexpr auto element_indices = [&](){
             constexpr auto total_num_elements = (type_lists.size + ... + 0);
             std::array<cib::detail::index_pair, total_num_elements> indices{};
             unsigned int flat_index = 0;
@@ -53,13 +56,11 @@ namespace cib::detail {
         return
             type_list<
                 decltype(
-                    cib::detail::get<
+                    outer_type_list.template get<
+                        element_indices[Indices].outer
+                    >().template get<
                         element_indices[Indices].inner
-                    >(
-                        cib::detail::get<
-                            element_indices[Indices].outer
-                        >(outer_type_list)
-                    )
+                    >()
                 )...
             >{};
     }

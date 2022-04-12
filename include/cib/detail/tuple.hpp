@@ -1,3 +1,5 @@
+#include "type_pack_element.hpp"
+
 #include <type_traits>
 #include <utility>
 #include <array>
@@ -20,13 +22,13 @@ namespace cib::detail {
         {}
 
         template<int Index>
-        constexpr auto const & get() {
-            using T = __type_pack_element<Index, Tn...>;
+        constexpr auto const & get() const {
+            using T = type_pack_element<Index, Tn...>;
             return tuple_element<T>::value;
         }
 
         template<typename T>
-        constexpr T const & get() {
+        constexpr T const & get() const {
             return tuple_element<T>::value;
         }
 
@@ -34,17 +36,6 @@ namespace cib::detail {
             return sizeof...(Tn);
         }
     };
-
-    template<typename T, typename... Values>
-    constexpr T const & get(tuple<Values...> const & t) {
-        return t.tuple_element<T>::value;
-    }
-
-    template<int Index, typename... Values>
-    constexpr auto const & get(tuple<Values...> const & t) {
-        using T = __type_pack_element<Index, Values...>;
-        return get<T>(t);
-    }
 
     template<typename Callable, typename... Values>
     constexpr auto apply(Callable operation, tuple<Values...> const & t) {
@@ -79,7 +70,7 @@ namespace cib::detail {
         }();
 
         auto const outer_tuple = tuple{tuples...};
-        return tuple{get<element_indices[Indices].inner>(get<element_indices[Indices].outer>(outer_tuple))...};
+        return tuple{outer_tuple.template get<element_indices[Indices].outer>().template get<element_indices[Indices].inner>()...};
     }
 
     template<typename... Tuples>

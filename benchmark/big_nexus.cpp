@@ -57,28 +57,28 @@ struct TestComponent {
 
             cib::extend<TestCallback<offset>>([](){
                 is_callback_invoked<offset> = true;
+            }),
+
+            cib::extend<TestCallback<offset>>([](){
+                is_callback_invoked<offset> = true;
+            }),
+
+            cib::extend<TestCallback<offset>>([](){
+                is_callback_invoked<offset> = true;
+            }),
+
+            cib::extend<TestCallback<offset>>([](){
+                is_callback_invoked<offset> = true;
+            }),
+
+            cib::extend<TestCallback<offset>>([](){
+                is_callback_invoked<offset> = true;
+            }),
+
+            cib::extend<TestCallback<offset>>([](){
+                is_callback_invoked<offset> = true;
             })//,
-//
-//            cib::extend<TestCallback<offset>>([](){
-//                is_callback_invoked<offset> = true;
-//            }),
-//
-//            cib::extend<TestCallback<offset>>([](){
-//                is_callback_invoked<offset> = true;
-//            }),
-//
-//            cib::extend<TestCallback<offset>>([](){
-//                is_callback_invoked<offset> = true;
-//            }),
-//
-//            cib::extend<TestCallback<offset>>([](){
-//                is_callback_invoked<offset> = true;
-//            }),
-//
-//            cib::extend<TestCallback<offset>>([](){
-//                is_callback_invoked<offset> = true;
-//            }),
-//
+
 //            cib::extend<TestCallback<offset>>([](){
 //                is_callback_invoked<offset> = true;
 //            }),
@@ -135,17 +135,17 @@ struct BigConfig {
                 TestComponent<6>,
                 TestComponent<7>,
                 TestComponent<8>,
-                TestComponent<9>
-//                TestComponent<10>,
-//                TestComponent<11>,
-//                TestComponent<12>,
-//                TestComponent<13>,
-//                TestComponent<14>,
-//                TestComponent<15>,
-//                TestComponent<16>,
-//                TestComponent<17>,
-//                TestComponent<18>,
-//                TestComponent<19>,
+                TestComponent<9>,
+                TestComponent<10>,
+                TestComponent<11>,
+                TestComponent<12>,
+                TestComponent<13>,
+                TestComponent<14>,
+                TestComponent<15>,
+                TestComponent<16>,
+                TestComponent<17>,
+                TestComponent<18>,
+                TestComponent<19>//,
 //                TestComponent<20>,
 //                TestComponent<21>,
 //                TestComponent<22>,
@@ -180,9 +180,8 @@ struct BigConfig {
         );
 };
 
-void make_nexus() {
+int main() {
     cib::nexus<BigConfig> nexus{};
     nexus.init();
-
     nexus.service<TestCallback<0>>();
 }
