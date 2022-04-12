@@ -88,7 +88,6 @@ jobs:
 
 
   build_single_header:
-    needs: build_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -108,5 +107,31 @@ jobs:
           name: cib.hpp
           path: build/cib.hpp
 
+  performance_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
 
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: install compiler
+        run: sudo apt update && sudo apt-get install -y clang-12
+
+      - name: Configure CMake
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark
+
+      - name: 'Upload Compilation Trace'
+        uses: actions/upload-artifact@v3
+        with:
+          name: compilation_trace.json
+          path: build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
 
