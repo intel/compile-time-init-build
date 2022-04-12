@@ -34,7 +34,7 @@ jobs:
          - compiler: clang-7
            cc: " /usr/lib/llvm-7/bin/clang"
            cxx: "/usr/lib/llvm-7/bin/clang++"
-         - compiler: gcc-11
+         - compiler: gcc-11 g++-11
            cc: "/usr/bin/gcc-11"
            cxx: "/usr/bin/g++-11"
          - compiler: gcc-10
