@@ -70,8 +70,8 @@ namespace cib::detail {
     ) {
         constexpr auto num_tuples = sizeof...(tuples);
         constexpr std::array<unsigned int, num_tuples> tuple_sizes{tuples.size()...};
-        constexpr auto total_num_elements = (tuples.size() + ...);
         constexpr auto element_indices = [&](){
+            constexpr auto total_num_elements = (tuples.size() + ...);
             std::array<index_pair, total_num_elements> indices{};
             unsigned int flat_index = 0;
             for (unsigned int outer_index = 0; outer_index < num_tuples; outer_index++) {
