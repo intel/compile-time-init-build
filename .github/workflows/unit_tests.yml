@@ -122,8 +122,8 @@ jobs:
 
       - name: Configure CMake
         env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
+          CC: clang-12
+          CXX: clang++-12
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
@@ -133,5 +133,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: compilation_trace.json
-          path: build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
+          path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
 
