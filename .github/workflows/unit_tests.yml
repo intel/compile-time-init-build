@@ -61,11 +61,11 @@ jobs:
            cc: "/usr/bin/gcc-9"
            cxx: "/usr/bin/g++-9"
          - compiler: gcc-8
-           install: sudo apt update && sudo apt-get install -y gcc-8
+           install: sudo apt update && sudo apt-get install -y gcc-8 g++-8
            cc: "/usr/bin/gcc-8"
            cxx: "/usr/bin/g++-8"
          - compiler: gcc-7
-           install: sudo apt update && sudo apt-get install -y gcc-7
+           install: sudo apt update && sudo apt-get install -y gcc-7 g++-7
            cc: "/usr/bin/gcc-7"
            cxx: "/usr/bin/g++-7"
           
