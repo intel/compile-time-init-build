@@ -34,6 +34,9 @@ jobs:
          - compiler: clang-7
            cc: " /usr/lib/llvm-7/bin/clang"
            cxx: "/usr/lib/llvm-7/bin/clang++"
+         - compiler: gcc-11
+           cc: "/usr/bin/gcc-11"
+           cxx: "/usr/bin/g++-11"
          - compiler: gcc-10
            cc: "/usr/bin/gcc-10"
            cxx: "/usr/bin/g++-10"
@@ -47,7 +50,7 @@ jobs:
           submodules: recursive
 
       - name: install compiler
-        run: sudo apt update && sudo apt-get install -y ${{ matrix.compiler }}
+        run: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y ${{ matrix.compiler }}
 
       - name: Configure CMake
         env:
