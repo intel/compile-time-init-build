@@ -47,7 +47,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             PRIVATE
                 # this complains about many cases in which ctad is supported and intended
                 -Wno-ctad-maybe-unsupported
-                -ftime-trace
         )
     endif()
 
