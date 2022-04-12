@@ -23,11 +23,33 @@ namespace cib::detail {
         }
     };
 
+    // clang-8 and below don't have constexpr find_first_of on std::string_view
+    CIB_CONSTEVAL std::string_view::size_type find_first_of(std::string_view str, char c) {
+        using size_type = std::string_view::size_type;
+        for (size_type i = 0; i < str.size(); i++) {
+            if (str[i] == c) {
+                return i;
+            }
+        }
+
+        return str.size();
+    }
+
+    // clang-8 and below don't have constexpr find_last_of on std::string_view
+    CIB_CONSTEVAL std::string_view::size_type find_last_of(std::string_view str, char c) {
+        using size_type = std::string_view::size_type;
+        for (size_type i = str.size() - 1; true; i--) {
+            if (str[i] == c) {
+                return i;
+            }
+        }
+    }
+
     template<typename Tag>
     CIB_CONSTEVAL static std::string_view name() {
         constexpr std::string_view function_name = __PRETTY_FUNCTION__;
-        constexpr auto lhs = function_name.find_first_of('<');
-        constexpr auto rhs = function_name.find_last_of('>');
+        constexpr auto lhs = find_first_of(function_name, '<');
+        constexpr auto rhs = find_last_of(function_name, '>');
         constexpr auto service_name = function_name.substr(lhs, rhs - lhs);
         return service_name;
     }
