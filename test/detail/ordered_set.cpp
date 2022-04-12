@@ -9,7 +9,7 @@ template<int Value>
 using int_t = std::integral_constant<int, Value>;
 
 TEST_CASE("make empty set", "[ordered_set]") {
-    auto const t = ordered_set();
+    auto const t = ordered_set<>();
     REQUIRE(t.size() == 0);
 }
 
@@ -37,32 +37,32 @@ TEST_CASE("make set with a multiple elements", "[ordered_set]") {
 }
 
 TEST_CASE("compare equality of empty sets", "[ordered_set]") {
-    auto const lhs = ordered_set();
-    auto const rhs = ordered_set();
+    auto const lhs = ordered_set<>();
+    auto const rhs = ordered_set<>();
 
     REQUIRE(lhs == rhs);
     REQUIRE_FALSE(lhs != rhs);
 }
 
 TEST_CASE("compare equality of sets with different types", "[ordered_set]") {
-    auto const lhs = ordered_set();
-    auto const rhs = ordered_set(12);
+    auto const lhs = ordered_set<>();
+    auto const rhs = ordered_set<int>(12);
 
     REQUIRE_FALSE(lhs == rhs);
     REQUIRE(lhs != rhs);
 }
 
 TEST_CASE("compare equality of sets with same types and values", "[ordered_set]") {
-    auto const lhs = ordered_set(12, true, 'c');
-    auto const rhs = ordered_set(12, true, 'c');
+    auto const lhs = ordered_set<int, bool, char>(12, true, 'c');
+    auto const rhs = ordered_set<int, bool, char>(12, true, 'c');
 
     REQUIRE(lhs == rhs);
     REQUIRE_FALSE(lhs != rhs);
 }
 
 TEST_CASE("compare equality of sets with same types and different values", "[ordered_set]") {
-    auto const lhs = ordered_set(3, true, 'c');
-    auto const rhs = ordered_set(12, true, 'c');
+    auto const lhs = ordered_set<int, bool, char>(3, true, 'c');
+    auto const rhs = ordered_set<int, bool, char>(12, true, 'c');
 
     REQUIRE_FALSE(lhs == rhs);
     REQUIRE(lhs != rhs);
@@ -71,19 +71,19 @@ TEST_CASE("compare equality of sets with same types and different values", "[ord
 TEST_CASE("concatenate two sets", "[ordered_set]") {
     auto const t = 
         cib::detail::tuple_cat(
-            ordered_set(3),
-            ordered_set('c'));
+            ordered_set<int>(3),
+            ordered_set<char>('c'));
 
-    REQUIRE(t == ordered_set(3, 'c'));
+    REQUIRE(t == ordered_set<int, char>(3, 'c'));
 }
 
 TEST_CASE("concatenate empty set with non-empty set", "[ordered_set]") {
     auto const t =
         cib::detail::tuple_cat(
-            ordered_set(3),
-            ordered_set());
+            ordered_set<int>(3),
+            ordered_set<>());
 
-    REQUIRE(t == ordered_set(3));
+    REQUIRE(t == ordered_set<int>(3));
 }
 
 
