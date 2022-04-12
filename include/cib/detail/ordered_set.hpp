@@ -35,6 +35,20 @@ namespace cib::detail {
         constexpr static auto size() {
             return sizeof...(Tn);
         }
+
+        CIB_CONSTEXPR bool operator==(ordered_set<Tn...> const & rhs) const {
+            return ((tuple_element<Tn>::value == rhs.tuple_element<Tn>::value) && ... && true);
+        }
+
+        template<typename... RhsTn>
+        CIB_CONSTEXPR bool operator==(ordered_set<RhsTn...>) const {
+            return false;
+        }
+
+        template<typename... RhsTn>
+        CIB_CONSTEXPR bool operator!=(ordered_set<RhsTn...> const & rhs) const {
+            return !(*this == rhs);
+        }
     };
 
     template<typename Callable, typename... Values>

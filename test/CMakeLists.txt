@@ -9,7 +9,7 @@ add_executable(tests
     builder_meta.cpp
     callback.cpp
     nexus.cpp
-)
+        detail/ordered_set.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(tests
