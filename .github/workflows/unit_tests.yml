@@ -15,8 +15,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        single_header: [0, 1]
         compiler:
+          - name: clang-14
+            single_header: 1
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
+            cc: " /usr/lib/llvm-14/bin/clang"
+            cxx: "/usr/lib/llvm-14/bin/clang++"
           - name: clang-14
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
             cc: " /usr/lib/llvm-14/bin/clang"
@@ -49,6 +53,11 @@ jobs:
             install: sudo apt update && sudo apt-get install -y clang-7
             cc: " /usr/lib/llvm-7/bin/clang"
             cxx: "/usr/lib/llvm-7/bin/clang++"
+          - name: gcc-11
+            single_header: 1
+            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
+            cc: "/usr/bin/gcc-11"
+            cxx: "/usr/bin/g++-11"
           - name: gcc-11
             install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
             cc: "/usr/bin/gcc-11"
