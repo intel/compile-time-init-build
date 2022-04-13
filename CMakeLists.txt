@@ -7,6 +7,7 @@ enable_testing()
 
 add_subdirectory(lib/Catch2)
 add_subdirectory(test)
+add_subdirectory(benchmark)
 
 add_library(Cib INTERFACE)
 

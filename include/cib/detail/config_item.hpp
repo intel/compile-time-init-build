@@ -1,4 +1,6 @@
 #include "compiler.hpp"
+#include "ordered_set.hpp"
+#include "type_list.hpp"
 
 #include <tuple>
 
@@ -24,7 +26,7 @@ namespace cib::detail {
 
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
-            return std::make_tuple();
+            return type_list<>{};
         }
     };
 }

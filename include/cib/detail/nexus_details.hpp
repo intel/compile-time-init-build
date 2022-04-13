@@ -1,7 +1,9 @@
 #include "compiler.hpp"
 #include "meta.hpp"
-
-#include <type_traits>
+#include "type_list.hpp"
+#include "ordered_set.hpp"
+#include "exports.hpp"
+#include "find.hpp"
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
@@ -9,26 +11,38 @@
 
 
 namespace cib {
+    template<typename ServiceBuilderList>
+    struct to_tuple;
+
+    template<typename... ServiceBuilders>
+    struct to_tuple<detail::type_list<ServiceBuilders...>> {
+        using type = detail::ordered_set<ServiceBuilders...>;
+        constexpr static inline auto value = type{ServiceBuilders{}...};
+    };
+
+    template<typename ServiceBuilderList>
+    constexpr static auto to_tuple_v = to_tuple<ServiceBuilderList>::value;
+
     template<typename Config>
     struct initialized_builders {
-        CIB_CONSTEXPR static auto value = Config::config.init(Config::config.exports_tuple());
+        CIB_CONSTEXPR static auto value = Config::config.init(to_tuple_v<decltype(Config::config.exports_tuple())>);
         using type = decltype(value);
     };
 
     template<typename Config>
     CIB_CONSTEXPR static auto & initialized_builders_v = initialized_builders<Config>::value;
 
-    template<typename Config, typename Tag>
+    struct ServiceTagMetaFunc {
+        template<typename T>
+        using invoke = typename T::Service;
+    };
+
+    template<typename Config, typename RawTag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            detail::fold_right(initialized_builders_v<Config>, 0, [](auto b, [[maybe_unused]] auto retval){
-                if constexpr (std::is_same_v<decltype(b.first), Tag>) {
-                    return b.second;
-                } else {
-                    return retval;
-                }
-            });
+            initialized_builders_v<Config>.template get<RawTag>().builder;
     };
+
 }
 
 

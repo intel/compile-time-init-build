@@ -1,5 +1,7 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
+#include "ordered_set.hpp"
+#include "type_list.hpp"
 
 #include <tuple>
 
@@ -42,7 +44,7 @@ namespace cib::detail {
             if constexpr (condition(Args{}...)) {
                 return body.exports_tuple(Args{}...);
             } else {
-                return std::make_tuple();
+                return type_list<>{};
             }
         }
     };

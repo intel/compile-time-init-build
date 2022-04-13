@@ -1,6 +1,8 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
 #include "meta.hpp"
+#include "ordered_set.hpp"
+#include "type_list.hpp"
 
 #include <tuple>
 
@@ -27,7 +29,7 @@ namespace cib::detail {
             BuildersT const & builders_tuple,
             Args const & ... args
         ) const {
-            return detail::fold_right(configs_tuple, builders_tuple, [&](auto const & c, auto builders){
+            return fold_right(configs_tuple, builders_tuple, [&](auto const & c, auto builders){
                 return c.init(builders, args...);
             });
         }
@@ -36,8 +38,8 @@ namespace cib::detail {
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
             Args const & ... args
         ) const {
-            return std::apply([&](auto const & ... configs_pack){
-                return std::tuple_cat(configs_pack.exports_tuple(args...)...);
+            return apply([&](auto const & ... configs_pack){
+                return type_list_cat(configs_pack.exports_tuple(args...)...);
             }, configs_tuple);
         }
     };
