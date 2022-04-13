@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(compile_time_init_build)
 
-set(CMAKE_CXX_STANDARD 17)
 
 add_executable(compilation_benchmark
     big_nexus.cpp

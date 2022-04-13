@@ -16,11 +16,52 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
+          # test the generated single header
           - name: clang-14
             single_header: 1
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
             cc: " /usr/lib/llvm-14/bin/clang"
             cxx: "/usr/lib/llvm-14/bin/clang++"
+          - name: gcc-11
+            single_header: 1
+            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
+            cc: "/usr/bin/gcc-11"
+            cxx: "/usr/bin/g++-11"
+
+          # test c++20 build
+          - name: clang-14
+            cxx_standard: 20
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
+            cc: " /usr/lib/llvm-14/bin/clang"
+            cxx: "/usr/lib/llvm-14/bin/clang++"
+          - name: clang-13
+            cxx_standard: 20
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13
+            cc: " /usr/lib/llvm-13/bin/clang"
+            cxx: "/usr/lib/llvm-13/bin/clang++"
+          - name: clang-12
+            cxx_standard: 20
+            install: sudo apt update && sudo apt-get install -y clang-12
+            cc: " /usr/lib/llvm-12/bin/clang"
+            cxx: "/usr/lib/llvm-12/bin/clang++"
+          - name: clang-11
+            cxx_standard: 20
+            install: sudo apt update && sudo apt-get install -y clang-11
+            cc: " /usr/lib/llvm-11/bin/clang"
+            cxx: "/usr/lib/llvm-11/bin/clang++"
+            # gcc-11 c++20 is disabled because it fails to compile the unit tests
+#          - name: gcc-11
+#            cxx_standard: 20
+#            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
+#            cc: "/usr/bin/gcc-11"
+#            cxx: "/usr/bin/g++-11"
+          - name: gcc-10
+            cxx_standard: 20
+            install: sudo apt update && sudo apt-get install -y gcc-10
+            cc: "/usr/bin/gcc-10"
+            cxx: "/usr/bin/g++-10"
+
+          # test c++17 build
           - name: clang-14
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
             cc: " /usr/lib/llvm-14/bin/clang"
@@ -53,11 +94,7 @@ jobs:
             install: sudo apt update && sudo apt-get install -y clang-7
             cc: " /usr/lib/llvm-7/bin/clang"
             cxx: "/usr/lib/llvm-7/bin/clang++"
-          - name: gcc-11
-            single_header: 1
-            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
-            cc: "/usr/bin/gcc-11"
-            cxx: "/usr/bin/g++-11"
+
           - name: gcc-11
             install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
             cc: "/usr/bin/gcc-11"
@@ -88,6 +125,7 @@ jobs:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
           SINGLE_HEADER: ${{ matrix.compiler.single_header }}
+          CXX_STANDARD: ${{ matrix.compiler.cxx_standard }}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build Unit Tests
