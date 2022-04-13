@@ -87,7 +87,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
-          SINGLE_HEADER: ${{ matrix.single_header }}
+          SINGLE_HEADER: ${{ matrix.compiler.single_header }}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build Unit Tests
