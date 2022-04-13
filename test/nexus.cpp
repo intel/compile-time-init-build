@@ -86,7 +86,7 @@ struct Gorp {
 struct MediumConfig {
     constexpr static auto config =
         cib::config(
-            cib::components<cib::args<>, Foo, Bar, Gorp>
+            cib::components<Foo, Bar, Gorp>
         );
 };
 
@@ -161,10 +161,9 @@ template<int ConditionalValue>
 struct ConditionalTestProject {
     constexpr static auto config =
         cib::config(
+            cib::args<ConditionalValue>,
             cib::exports<TestCallback<0>>,
-            cib::components<
-                cib::args<ConditionalValue>,
-                SimpleConditionalComponent>
+            cib::components<SimpleConditionalComponent>
         );
 };
 
@@ -204,6 +203,8 @@ template<int EnabledId>
 struct ConditionalConfig {
     constexpr static auto config =
         cib::config(
+            cib::args<EnabledId>,
+
             cib::exports<
                 TestCallback<0>,
                 TestCallback<1>,
@@ -211,7 +212,6 @@ struct ConditionalConfig {
             >,
 
             cib::components<
-                cib::args<EnabledId>,
                 ConditionalComponent<0>,
                 ConditionalComponent<1>,
                 ConditionalComponent<2>

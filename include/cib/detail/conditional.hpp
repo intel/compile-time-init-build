@@ -1,5 +1,6 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
+#include "config_details.hpp"
 #include "ordered_set.hpp"
 #include "type_list.hpp"
 
@@ -16,13 +17,13 @@ namespace cib::detail {
         typename... Configs>
     struct conditional : public config_item {
         CIB_CONSTEXPR static Condition condition{};
-        detail::config<Configs...> body;
+        detail::config<detail::args<>, Configs...> body;
 
         CIB_CONSTEVAL explicit conditional(
             Condition,
             Configs const & ... configs
         )
-           : body{configs...}
+           : body{{}, configs...}
         {}
 
         template<

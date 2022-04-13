@@ -125,7 +125,6 @@ struct BigConfig {
     constexpr static auto config =
         cib::config(
             cib::components<
-                cib::args<>,
                 TestComponent<0>,
                 TestComponent<1>,
                 TestComponent<2>,

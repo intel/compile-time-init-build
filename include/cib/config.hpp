@@ -25,7 +25,7 @@ namespace cib {
      * @see cib::conditional
      */
     template<auto... Args>
-    using args = detail::args<Args...>;
+    constexpr static detail::args<Args...> args{};
 
     /**
      * Container for project and component configuration declarations.
@@ -41,7 +41,12 @@ namespace cib {
      */
     template<typename... Configs>
     [[nodiscard]] CIB_CONSTEVAL auto config(Configs const & ... configs) {
-        return detail::config{configs...};
+        return detail::config{args<>, configs...};
+    }
+
+    template<auto... Args, typename... Configs>
+    [[nodiscard]] CIB_CONSTEVAL auto config(detail::args<Args...> config_args, Configs const & ... configs) {
+        return detail::config{config_args, configs...};
     }
 
     /**

@@ -12,36 +12,24 @@
 
 
 namespace cib::detail {
-    template<typename ComponentArgs, typename... Components>
+    template<typename... Components>
     struct components : public detail::config_item {
         template<typename Builders, typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto init(
             Builders const & builders_tuple,
             Args const & ... args
         ) const {
-            return apply([&](auto const & ... component_args){
-                return detail::fold_right(ordered_set{Components{}...}, builders_tuple, [&](auto const & c, auto const & builders){
-                    return c.config.init(builders, args..., component_args...);
-                });
-            }, ComponentArgs::value);
+            return detail::fold_right(ordered_set{Components{}...}, builders_tuple, [&](auto const & c, auto const & builders){
+                return c.config.init(builders, args...);
+            });
         }
 
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
             Args const & ... args
         ) const {
-            return apply([&](auto const & ... component_args){
-                return type_list_cat(Components::config.exports_tuple(args..., component_args...)...);
-            }, ComponentArgs::value);
+            return type_list_cat(Components::config.exports_tuple(args...)...);
         }
-    };
-
-    template<auto Value>
-    CIB_CONSTEXPR static auto as_constant_v = std::integral_constant<std::remove_cv_t<std::remove_reference_t<decltype(Value)>>, Value>{};
-
-    template<auto... Args>
-    struct args {
-        static CIB_CONSTEXPR auto value = ordered_set{as_constant_v<Args>...};
     };
 }
 
