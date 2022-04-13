@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(compile_time_init_build)
 
-set(CMAKE_CXX_STANDARD 17)
+
+if (DEFINED ENV{CXX_STANDARD})
+    set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
+else()
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+message("CMAKE_CXX_STANDARD = ${CMAKE_CXX_STANDARD}")
 
 enable_testing()
 
