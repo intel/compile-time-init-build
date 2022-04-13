@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(compile_time_init_build)
 
 
-if (DEFINED ENV{CXX_STANDARD} AND NOT ENV{CXX_STANDARD} EQUAL "")
+if (DEFINED ENV{CXX_STANDARD} AND NOT $ENV{CXX_STANDARD} EQUAL "")
     set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
 else()
     set(CMAKE_CXX_STANDARD 17)
