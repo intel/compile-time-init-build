@@ -9,28 +9,46 @@ add_subdirectory(lib/Catch2)
 add_subdirectory(test)
 add_subdirectory(benchmark)
 
-add_library(Cib INTERFACE)
-
-target_include_directories(Cib
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-target_sources(Cib
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp)
-
-
 add_custom_command(
     DEPENDS
         ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py
         ${CMAKE_SOURCE_DIR}/include/cib/*
         ${CMAKE_SOURCE_DIR}/include/cib/detail/*
     COMMAND
-        python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp > ${CMAKE_BINARY_DIR}/cib.hpp
+        mkdir ${CMAKE_BINARY_DIR}/include/
+    COMMAND
+        mkdir ${CMAKE_BINARY_DIR}/include/cib/
+    COMMAND
+        python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp > ${CMAKE_BINARY_DIR}/include/cib/cib.hpp
     OUTPUT
-        ${CMAKE_BINARY_DIR}/cib.hpp
+        ${CMAKE_BINARY_DIR}/include/cib/cib.hpp
 )
 
-add_custom_target(release
+add_custom_target(release_header
     DEPENDS
-        ${CMAKE_BINARY_DIR}/cib.hpp)
+        ${CMAKE_BINARY_DIR}/include/cib/cib.hpp)
+
+
+
+add_library(Cib INTERFACE)
+
+if ($ENV{SINGLE_HEADER})
+    message("Using single-header version of cib.hpp.")
+
+    add_dependencies(Cib release_header)
+
+    target_include_directories(Cib
+        INTERFACE
+            ${CMAKE_BINARY_DIR}/include/)
+
+else()
+    message("Using multi-header version of cib.hpp.")
+
+    target_include_directories(Cib
+        INTERFACE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+    target_sources(Cib
+        INTERFACE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp)
+endif()
