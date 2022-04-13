@@ -131,7 +131,7 @@ jobs:
         run: |
           echo '::echo::on'
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark | tee ${{github.workspace}}/compilation_output.log
-          echo "::set-output name=compile_benchmark_time::"`grep "Clang front-end timer" compilation_output.log | grep -o "^\s\+\S\+\s" | grep -o "\S\+"`
+          echo "::set-output name=compile_benchmark_time::"`grep "Clang front-end timer" ${{github.workspace}}/compilation_output.log | grep -o "^\s\+\S\+\s" | grep -o "\S\+"`
           echo '::echo::off'
 
       - name: Post compilation performance to pull rquest
