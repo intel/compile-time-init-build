@@ -15,15 +15,13 @@ add_subdirectory(lib/Catch2)
 add_subdirectory(test)
 add_subdirectory(benchmark)
 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include/cib/)
+
 add_custom_command(
     DEPENDS
         ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py
         ${CMAKE_SOURCE_DIR}/include/cib/*
         ${CMAKE_SOURCE_DIR}/include/cib/detail/*
-    COMMAND
-        mkdir ${CMAKE_BINARY_DIR}/include/
-    COMMAND
-        mkdir ${CMAKE_BINARY_DIR}/include/cib/
     COMMAND
         python3 ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp > ${CMAKE_BINARY_DIR}/include/cib/cib.hpp
     OUTPUT
