@@ -27,6 +27,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ${{github.workspace}}/build/include/cib/cib.hpp
+          generate_release_notes: true
           draft: true
 
 
