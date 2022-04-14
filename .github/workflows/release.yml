@@ -24,7 +24,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target release_header
 
       - name: Release
-        uses: softprops/action-gh-release@v0.1.14
+        uses: softprops/action-gh-release@v1
         with:
           files: ${{github.workspace}}/build/include/cib/cib.hpp
           draft: true
