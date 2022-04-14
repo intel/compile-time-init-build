@@ -179,4 +179,4 @@ For more details on contributing, please see [CONTRIBUTING.md](CONTRIBUTING.md)
 ## Licensing
 
 The code in this project is licensed under the BSL-1.0 license. See 
-[LICENSE.md](LICENSE.md) for more details.
+[LICENSE](LICENSE) for more details.
