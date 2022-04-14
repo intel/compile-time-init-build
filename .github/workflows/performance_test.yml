@@ -34,7 +34,7 @@ jobs:
           echo "::set-output name=compile_benchmark_time::"`grep "Clang front-end timer" ${{github.workspace}}/build/compilation_output.log | grep -o "^\s\+\S\+\s" | grep -o "\S\+"`
 
       - name: Post compilation performance to pull rquest
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
