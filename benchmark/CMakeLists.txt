@@ -28,4 +28,4 @@ target_compile_options(compilation_benchmark
         -ftemplate-backtrace-limit=0
 )
 
-target_link_libraries(compilation_benchmark PRIVATE Cib)
+target_link_libraries(compilation_benchmark PRIVATE cib)

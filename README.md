@@ -30,7 +30,7 @@ in your repo and add the cib directory in your CMakeLists.txt file:
 
 ```cmake
 add_subdirectory(lib/compile-time-init-build)
-target_link_libraries(your_target PRIVATE Cib)
+target_link_libraries(your_target PRIVATE cib)
 ```
 
 With either of these methods, include the cib.hpp header in your code to use it.
