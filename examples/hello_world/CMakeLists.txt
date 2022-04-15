@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(cib_example_bare_cmake)
+project(hello_world)
 
-add_executable(cib_example_bare_cmake main.cpp)
+add_executable(hello_world main.cpp)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -12,4 +12,4 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cib)
 
-target_link_libraries(cib_example_bare_cmake cib)
+target_link_libraries(hello_world cib)
