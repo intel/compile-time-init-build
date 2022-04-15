@@ -155,3 +155,26 @@ jobs:
         with:
           name: cib.hpp
           path: ${{github.workspace}}/build/include/cib/cib.hpp
+
+
+  build_hello_world_example:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: install compiler
+        run: sudo apt update && sudo apt-get install -y clang-12
+
+      - name: build
+        env:
+          CC: clang-12
+          CXX: clang++-12
+        run: |
+          cd ${{github.workspace}}/examples/hello_world
+          cmake -B build
+          cmake --build build
