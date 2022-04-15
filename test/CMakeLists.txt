@@ -81,29 +81,20 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 
+
+
+
 target_compile_options(tests
     PRIVATE
         -ftemplate-backtrace-limit=0
 )
 
-
-
-include(FetchContent)
-FetchContent_Declare(
-    Catch2
-    GIT_SHALLOW    TRUE
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.0.0-preview4)
-FetchContent_MakeAvailable(Catch2)
-
-#find_package(Catch2 REQUIRED)
-
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
 
 # ensure the catch2 headers do not produce warnings
-target_include_directories(tests SYSTEM PUBLIC ${Catch2_SOURCE_DIR}/lib/Catch2/src/)
+target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)
 
-list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/lib/Catch2/extras)
 include(CTest)
 include(Catch)
 catch_discover_tests(tests)
