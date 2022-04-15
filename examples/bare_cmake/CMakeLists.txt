@@ -8,9 +8,9 @@ include(FetchContent)
 FetchContent_Declare(
     cib
     GIT_REPOSITORY https://github.com/intel/compile-time-init-build.git
-    GIT_TAG        28e97c097da70598a5a166be68edd15925c86226
+    GIT_TAG        c7f2eff37bb78a4700ac2c62fdd810486faf9d8a
 )
 FetchContent_MakeAvailable(cib)
 
-find_package(cib REQUIRED)
+#find_package(cib REQUIRED)
 target_link_libraries(cib_example_bare_cmake cib::cib)

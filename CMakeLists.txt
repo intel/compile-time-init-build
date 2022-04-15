@@ -9,6 +9,7 @@ endif()
 project(
     cib
     VERSION 0.1.0
+    LANGUAGES CXX
     DESCRIPTION "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
@@ -107,7 +108,8 @@ if (NOT_SUBPROJECT)
             "${PROJECT_BINARY_DIR}/cib-config.cmake"
             "${PROJECT_BINARY_DIR}/cib-config-version.cmake"
         DESTINATION
-            ${CMAKE_INSTALL_DATAROOTDIR}/cib/cmake
+            ${CMAKE_INSTALL_LIBDIR}/cmake/cib
+            #${CMAKE_INSTALL_DATAROOTDIR}/cmake/cib
     )
 
     install(

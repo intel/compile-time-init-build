@@ -96,6 +96,7 @@ FetchContent_Declare(
     GIT_TAG        v3.0.0-preview4)
 FetchContent_MakeAvailable(Catch2)
 
+#find_package(Catch2 REQUIRED)
 
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
 
