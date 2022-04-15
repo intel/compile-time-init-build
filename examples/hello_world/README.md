@@ -134,3 +134,7 @@ Don't Panic.
 The quick brown fox jumps over the lazy dog.
 Hello, world!
 ```
+
+### User guide
+
+For more details on how to use *cib*, see the [User Guide](../../USER_GUIDE.md).

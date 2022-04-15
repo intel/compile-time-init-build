@@ -78,6 +78,8 @@ int main() {
 A larger and more illustrative example can be found in this repo at
 [examples/hello_world](examples/hello_world).
 
+For more details on how to use *cib*, see the [User Guide](USER_GUIDE.md).
+
 ### Building
 
 *cib* is built with CMake. The single header is built with the 
