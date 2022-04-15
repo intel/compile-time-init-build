@@ -13,7 +13,7 @@ struct lazy_dog {
 
     constexpr static auto config =
         cib::config(
-            cib::extend<say_message>(talk_about_the_dog)
+            cib::extend<say_message>(&talk_about_the_dog)
         );
 };
 
