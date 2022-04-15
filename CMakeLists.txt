@@ -69,8 +69,8 @@ write_basic_package_version_file(
 )
 
 configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/cib_config.cmake.in"
-    "${PROJECT_BINARY_DIR}/cib_config.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/cib-config.cmake.in"
+    "${PROJECT_BINARY_DIR}/cib-config.cmake"
     INSTALL_DESTINATION
         ${CMAKE_INSTALL_DATAROOTDIR}/cib/cmake
 )
@@ -84,7 +84,7 @@ install(
 
 install(
     FILES
-        "${PROJECT_BINARY_DIR}/cib_config.cmake"
+        "${PROJECT_BINARY_DIR}/cib-config.cmake"
         "${PROJECT_BINARY_DIR}/cib_config_version.cmake"
     DESTINATION
         ${CMAKE_INSTALL_DATAROOTDIR}/cib/cmake
