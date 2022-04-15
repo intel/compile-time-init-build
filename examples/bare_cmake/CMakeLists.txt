@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
     cib
     GIT_REPOSITORY https://github.com/intel/compile-time-init-build.git
-    GIT_TAG        v0.1.0
+    GIT_TAG        7d90ed8182d8cfe18d09feb5288c185b74ab71bb
 )
 
 FetchContent_MakeAvailable(cib)
