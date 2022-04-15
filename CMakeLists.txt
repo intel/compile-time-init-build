@@ -63,7 +63,7 @@ install(
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-    "cib_config_version.cmake"
+    "cib-config-version.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
@@ -85,7 +85,7 @@ install(
 install(
     FILES
         "${PROJECT_BINARY_DIR}/cib-config.cmake"
-        "${PROJECT_BINARY_DIR}/cib_config_version.cmake"
+        "${PROJECT_BINARY_DIR}/cib-config-version.cmake"
     DESTINATION
         ${CMAKE_INSTALL_DATAROOTDIR}/cib/cmake
 )
