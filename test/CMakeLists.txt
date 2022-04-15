@@ -81,12 +81,15 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 
+
+
+
 target_compile_options(tests
     PRIVATE
         -ftemplate-backtrace-limit=0
 )
 
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain Cib)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
 
 # ensure the catch2 headers do not produce warnings
 target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)

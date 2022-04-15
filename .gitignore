@@ -3,3 +3,4 @@
 /Testing/
 /cmake-build*
 /venv/
+/examples/hello_world/build/

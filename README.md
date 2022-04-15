@@ -30,7 +30,7 @@ in your repo and add the cib directory in your CMakeLists.txt file:
 
 ```cmake
 add_subdirectory(lib/compile-time-init-build)
-target_link_libraries(your_target PRIVATE Cib)
+target_link_libraries(your_target PRIVATE cib)
 ```
 
 With either of these methods, include the cib.hpp header in your code to use it.
@@ -40,94 +40,43 @@ With either of these methods, include the cib.hpp header in your code to use it.
 Since *cib* is a library for efficiently building firmware through composition
 a simple example takes a few more lines than a typical "Hello, world!"
 
-#### core.hpp
-The `core` component of this example **exports** the `say_message` **service**. Pay close
-attention to the `#include` directives in each file.
 ```c++
 #include <cib/cib.hpp>
+#include <iostream>
 
 struct say_message : public cib::callback_meta<>{};
 
+// the 'core' component exposes the 'say_message' service for others to extend
 struct core {
-    constexpr static auto config =
-        cib::config(cib::exports<say_message>);
+    constexpr static auto config = cib::exports<say_message>;
 };
-```
-#### hello_world.hpp
-The `hello_world` component **extends** the `say_message` **service** with new
-contained in a lambda.
-```c++
-#include <iostream>
-#include <cib/cib.hpp>
 
+// the 'say_hello_world' component extends 'say_message' with its own functionality
+struct say_hello_world {
+    constexpr static auto config =
+        cib::extend<say_message>([](){
+            std::cout << "Hello, world!" << std::endl;
+        });
+};
+
+// the 'hello_world' project composes 'core' and 'say_hello_world'
 struct hello_world {
     constexpr static auto config =
-        cib::config(
-            cib::extend<say_message>([](){
-                std::cout << "Hello, world!" << std::endl;
-            })        
-        );
+        cib::components<core, say_hello_world>;
 };
-```
-#### lazy_dog.hpp
-Another component, `lazy_dog` is also extending the `say_message` **service**.
-This time it is using a function pointer instead of a lambda. The function 
-definition of `talk_about_the_dog` could also be placed in a `lazy_dog.cpp` 
-file if desired.
-```c++
-#include <iostream>
-#include <cib/cib.hpp>
 
-struct lazy_dog {
-    static void talk_about_the_dog() {
-        std::cout << "The quick brown fox jumps over the lazy dog." << std::endl;
-    }
-    
-    constexpr static auto config =
-        cib::config(
-            cib::extend<say_message>(talk_about_the_dog)        
-        );
-};
-```
-#### my_project.hpp
-All the components are brought together in the project configuration, `my_project`.
-```c++
-#include "core.hpp"
-#include "hello_world.hpp"
-#include "lazy_dog.hpp"
-
-struct my_project {
-    constexpr static auto config =
-        cib::components<core, hello_world, lazy_dog>;
-};
-```
-#### main.cpp
-The `cib::nexus` brings all the **services** and **features** together. This is
-where the compile-time initialization and build process actually occurs.
-```c++
-#include "my_project.hpp"
-
-cib::nexus<my_project> nexus{};
+// the nexus instantiates the project
+cib::nexus<hello_world> nexus{};
 
 int main() {
-    // services can be accessed directly from the nexus...
+    // the fully extended and built services are ready to be used
     nexus.service<say_message>();
-    
-    // ...or they can be accessed anywhere through cib::service
-    nexus.init();
-    cib::service<say_message>();
+    return 0;
 }
 ```
-#### Execution
-All of the initialization and registration occurs at compile-time, but the
-new functionality is still executed at run-time:
-```
-shell> ./my_project
-Hello, world!
-The quick brown fox jumps over the lazy dog.
-Hello, world!
-The quick brown fox jumps over the lazy dog.
-```
+
+A larger and more illustrative example can be found in this repo at
+[examples/hello_world](examples/hello_world).
 
 ### Building
 
@@ -135,6 +84,7 @@ The quick brown fox jumps over the lazy dog.
 `release_header` target:
 
 ```shell
+git clone https://github.com/intel/compile-time-init-build.git
 cmake -B build
 cmake --build build -t release_header
 ls build/include/cib/ | grep cib.hpp
@@ -142,6 +92,10 @@ ls build/include/cib/ | grep cib.hpp
 
 This combines all the *cib* header files in the `include` tree by recursively
 including the `#include` directives and ignoring all other macros.
+
+**NOTE:** *cib* uses git submodules to include its testing dependencies. The 
+CMake configuration *should* fetch the submodules for you, but only if the
+repository was cloned as a git repo and not downloaded as an archive.
 
 Unit tests are registered with CTest:
 
