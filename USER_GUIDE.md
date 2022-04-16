@@ -53,6 +53,9 @@ struct runtime_init : public cib::callback_meta<>{};
 
 /// Invoked each iteration through the main loop
 struct main_loop : public cib::callback_meta<>{};
+
+/// Invoked each time the serial port interrupt is triggered
+struct serial_port_interrupt : public cib::callback_meta<>{};
 ```
 
 *Components* use `cib::exports` in their configuration to *export* services to 
@@ -61,7 +64,7 @@ features. All *services* must be exported for them to be extended.
 ```c++
 struct board_component {
     constexpr static auto config =
-         cib::exports<serial_port_rx, runtime_init, main_loop>; 
+         cib::exports<serial_port_interrupt, runtime_init, main_loop>; 
 };
 ```
 
@@ -97,7 +100,14 @@ the application is entirely contained within the components it comprises.
 Only a small amount of startup and glue-code is necessary outside *cib*
 *components*.
 
-### Nexus
+```c++
+struct my_project {
+    constexpr static auto config =
+        cib::components<board_component, serial_component, echo_component>;
+};
+```
+
+### `cib::nexus`
 
 > The `cib::nexus` combines all the *services* and *features* within a project.
 It performs the compile-time initialization and build process across all
@@ -121,7 +131,7 @@ The `cib::nexus` implements the heart of *cib*. Once a *cib* configuration has
 been created, using the `cib::nexus` is easy:
 
 ```c++
-cib::nexus<hello_world> nexus{};
+cib::nexus<my_project> nexus{};
 
 int main() {
     nexus.init();
@@ -137,3 +147,33 @@ Services can be accessed with the `service<...>` template variable on a
 `cib::nexus` instance. Because the `runtime_init` and `main_loop` services
 extend `cib::callback_meta`, their *service implementation* is a simple 
 function pointer.
+
+### `cib::service`
+
+> `cib::service` is a type-erased template variable pointer to a *service 
+implementation*. 
+
+There are cases in which a *service* must be invoked but the `cib::nexus` 
+instance is not available. For example, when registering interrupts with
+an interrupt service.
+
+```c++
+struct serial_port_rx : public cib::callback_meta<0, char>{};
+
+struct serial_component {
+    constexpr static auto config =
+        cib::config(
+            cib::exports<serial_port_rx>,
+            
+            cib::extend<serial_port_interrupt>([](){
+                auto const rx_byte = pop_serial_data();
+                
+                // it is impossible to reference the "nexus" variable in 
+                // "main.cpp". cib::service can be used instead.
+                cib::service<serial_port_rx>(rx_byte);
+            }),
+            
+            cib::extend<runtime_init>(&serial_port_init())
+        );
+};
+```
