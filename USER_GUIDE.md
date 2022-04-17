@@ -10,6 +10,14 @@
 concept is written, it will be *italic*. Whenever a C++ type or function is
 written, it will be formatted as `code`.
 
+- Component
+  - Service
+    - Metadata
+      - Builder
+      - Implementaion
+  - Feature
+- Nexus
+
 ### Services
 
 > A *service* is something that can be *extended* with new functionality. 
@@ -141,6 +149,10 @@ int main() {
         nexus.service<main_loop>();
     }
 }
+
+INTERRUPT void serial_port_isr() {
+    nexus.service<serial_port_interrupt>();
+}
 ```
 
 Services can be accessed with the `service<...>` template variable on a 
@@ -155,7 +167,7 @@ implementation*.
 
 There are cases in which a *service* must be invoked but the `cib::nexus` 
 instance is not available. For example, when registering interrupts with
-an interrupt service.
+an interrupt service. 
 
 ```c++
 struct serial_port_rx : public cib::callback_meta<0, char>{};
@@ -177,3 +189,26 @@ struct serial_component {
         );
 };
 ```
+
+### `cib::service_meta`
+
+The *service metadata* describes to *cib* how a *service* is built and its 
+type-erased implementation interface. (`cib::callback_meta`)[include/cib/callback.hpp]
+is an example of *service metadata*. Services that use the callback *service*
+type extend `cib::callback_meta`.
+
+```c++
+struct main_loop : public cib::callback_meta<> {};
+```
+
+### Service Builder
+
+A *service builder* is responsible for building up the *service* during
+the initialization and build process. Every time the `cib::extend<T>(feature)`
+declaration is used, the *builder* for the *service* named `T` will have its
+`add(feature)` method called. This registers the *feature* with the *service*.
+
+### Service Implementation Interface
+
+The *service implementation interface* is the type-erased interface that can be used
+to invoke the *service* through `cib::service<T>`. 
