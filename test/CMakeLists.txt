@@ -9,6 +9,7 @@ add_executable(tests
     callback.cpp
     nexus.cpp
     detail/ordered_set.cpp
+    readme_hello_world.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

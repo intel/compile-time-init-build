@@ -32,17 +32,20 @@ namespace cib::detail {
             }
         }
 
-        return str.size();
+        return 0;
     }
 
     // clang-8 and below don't have constexpr find_last_of on std::string_view
     CIB_CONSTEVAL std::string_view::size_type find_last_of(std::string_view str, char c) {
         using size_type = std::string_view::size_type;
-        for (size_type i = str.size() - 1; true; i--) {
+        size_type match = str.size();
+        for (size_type i = 0; i < str.size(); i++) {
             if (str[i] == c) {
-                return i;
+                match = i;
             }
         }
+
+        return match;
     }
 
     template<typename Tag>
