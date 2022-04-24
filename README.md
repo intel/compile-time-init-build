@@ -75,6 +75,8 @@ int main() {
 }
 ```
 
+Try out this example live at [Compiler Explorer](https://godbolt.org/z/4rsfWaPnP).
+
 A larger and more illustrative example can be found in this repo at
 [examples/hello_world](examples/hello_world).
 
