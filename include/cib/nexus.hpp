@@ -24,47 +24,33 @@ namespace cib {
     template<typename Config>
     struct nexus {
     private:
-        template<typename T>
-        using raw_service_t = decltype(initialized<Config, T>::value.template build<initialized<Config, T>>());
-
-        template<typename T>
-        CIB_CONSTINIT static inline raw_service_t<T> raw_service =
-            initialized<Config, T>::value.template build<initialized<Config, T>>();
+        using this_t = nexus<Config>;
 
         template<typename Tag>
         using service_name_to_raw_type_t =
             typename std::remove_const_t<std::remove_reference_t<decltype(cib::detail::find<Tag, cib::ServiceTagMetaFunc>(cib::initialized_builders_v<Config>))>>;
 
-        template<typename T>
-        using service_t =
-            decltype(initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>());
+        // Workaround unfortunate bug in clang where it can't deduce "auto" sometimes
+        #define CIB_BUILD_SERVICE initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>()
 
     public:
         template<typename T>
-        CIB_CONSTINIT static inline service_t<T> service =
-            initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>();
+        constexpr static decltype(CIB_BUILD_SERVICE) service = CIB_BUILD_SERVICE;
+        #undef CIB_BUILD_SERVICE
 
         static void init() {
             detail::for_each(initialized_builders_v<Config>, [](auto b){
-                // Tag/CleanTag is the type name of the builder_meta in the ordered_set
-                using Tag = typename decltype(b)::Service;
-                using CleanTag = std::remove_cv_t<std::remove_reference_t<Tag>>;
+                using service_tag = typename decltype(b)::Service;
+                using clean_service_tag = std::remove_cv_t<std::remove_reference_t<service_tag>>;
 
-                using CleanTypename = std::remove_cv_t<std::remove_reference_t<decltype(b)>>;
+                auto & service_impl = this_t::service<clean_service_tag>;
+                using service_impl_type = std::remove_reference_t<decltype(service_impl)>;
 
-                // the built implementation is stored in Build<>::value
-                auto & builtValue = raw_service<CleanTypename>;
-                using BuiltType = std::remove_reference_t<decltype(builtValue)>;
+                if constexpr(std::is_pointer_v<service_impl_type>) {
+                    cib::service<clean_service_tag> = service_impl;
 
-                // if the built type is a pointer, then it is a function pointer and we should return its value
-                // directly to the 'built<>' abstract interface variable.
-                if constexpr(std::is_pointer_v<BuiltType>) {
-                    cib::service<CleanTag> = builtValue;
-
-                // if the built type is not a pointer, then it is a class and the 'built<>' variable is a pointer to
-                // the base class. we will need to get a pointer to the builtValue in order to initialize 'built<>'.
                 } else {
-                    cib::service<CleanTag> = &builtValue;
+                    cib::service<clean_service_tag> = &service_impl;
                 }
             });
         }
