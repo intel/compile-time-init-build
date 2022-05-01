@@ -11,25 +11,25 @@
 
 namespace cib::detail {
     template<typename T>
-    struct tuple_element {
+    struct ordered_set_element {
         T value;
     };
 
     template<typename... Tn>
-    struct ordered_set : public tuple_element<Tn>... {
+    struct ordered_set : public ordered_set_element<Tn>... {
         constexpr ordered_set(Tn... values)
-            : tuple_element<Tn>{values}...
+            : ordered_set_element<Tn>{values}...
         {}
 
         template<int Index>
         constexpr auto const & get() const {
             using T = type_pack_element<Index, Tn...>;
-            return tuple_element<T>::value;
+            return ordered_set_element<T>::value;
         }
 
         template<typename T>
         constexpr T const & get() const {
-            return tuple_element<T>::value;
+            return ordered_set_element<T>::value;
         }
 
         constexpr static auto size() {
@@ -37,7 +37,7 @@ namespace cib::detail {
         }
 
         CIB_CONSTEXPR bool operator==(ordered_set<Tn...> const & rhs) const {
-            return ((tuple_element<Tn>::value == rhs.tuple_element<Tn>::value) && ... && true);
+            return ((ordered_set_element<Tn>::value == rhs.ordered_set_element<Tn>::value) && ... && true);
         }
 
         template<typename... RhsTn>
@@ -53,7 +53,7 @@ namespace cib::detail {
 
     template<typename Callable, typename... Values>
     constexpr auto apply(Callable operation, ordered_set<Values...> const & t) {
-        return operation(t.tuple_element<Values>::value...);
+        return operation(t.ordered_set_element<Values>::value...);
     }
 
     struct index_pair {

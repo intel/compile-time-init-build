@@ -9,6 +9,7 @@ add_executable(tests
     callback.cpp
     nexus.cpp
     detail/ordered_set.cpp
+    detail/indexed_tuple.cpp
     readme_hello_world.cpp
 )
 

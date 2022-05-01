@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 #include "meta.hpp"
 #include "type_list.hpp"
-#include "ordered_set.hpp"
+#include "indexed_tuple.hpp"
 #include "exports.hpp"
 #include "find.hpp"
 
@@ -11,13 +11,18 @@
 
 
 namespace cib {
+    struct extract_service_tag {
+        template<typename T>
+        using invoke = typename T::Service;
+    };
+
     template<typename ServiceBuilderList>
     struct to_tuple;
 
     template<typename... ServiceBuilders>
     struct to_tuple<detail::type_list<ServiceBuilders...>> {
-        using type = detail::ordered_set<ServiceBuilders...>;
-        constexpr static inline auto value = type{ServiceBuilders{}...};
+        using type = decltype(detail::make_indexed_tuple(detail::index_metafunc_<extract_service_tag>{}, ServiceBuilders{}...));
+        constexpr static inline type value = detail::make_indexed_tuple(detail::index_metafunc_<extract_service_tag>{}, ServiceBuilders{}...);
     };
 
     template<typename ServiceBuilderList>
@@ -32,15 +37,10 @@ namespace cib {
     template<typename Config>
     CIB_CONSTEXPR static auto & initialized_builders_v = initialized_builders<Config>::value;
 
-    struct ServiceTagMetaFunc {
-        template<typename T>
-        using invoke = typename T::Service;
-    };
-
-    template<typename Config, typename RawTag>
+    template<typename Config, typename Tag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            initialized_builders_v<Config>.template get<RawTag>().builder;
+            initialized_builders_v<Config>.template get(cib::detail::tag_<Tag>{}).builder;
     };
 
 }

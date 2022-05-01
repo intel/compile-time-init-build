@@ -1,5 +1,6 @@
 #include "compiler.hpp"
 #include "ordered_set.hpp"
+#include "indexed_tuple.hpp"
 
 #include <tuple>
 #include <type_traits>
@@ -116,6 +117,20 @@ namespace cib::detail {
         }, elements);
     }
 
+    template<
+        typename... ElementTypes,
+        typename InitType,
+        typename CallableType>
+    [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
+            indexed_tuple<ElementTypes...> const & elements,
+            InitType const & initial_state,
+            CallableType const & operation
+    ) {
+        return apply([&](auto const & ... element_pack){
+            return (fold_helper{element_pack.value, operation} + ... + initial_state);
+        }, elements);
+    }
+
     /**
      * Perform an operation on each element of an integral sequence.
      *
@@ -181,6 +196,18 @@ namespace cib::detail {
         typename CallableType>
     CIB_CONSTEXPR inline void for_each(
             ordered_set<ElementTypes...> const & elements,
+            CallableType const & operation
+    ) {
+        apply([&](auto const & ... element_pack){
+            (operation(element_pack) , ...);
+        }, elements);
+    }
+
+    template<
+        typename... ElementTypes,
+        typename CallableType>
+    CIB_CONSTEXPR inline void for_each(
+            indexed_tuple<ElementTypes...> const & elements,
             CallableType const & operation
     ) {
         apply([&](auto const & ... element_pack){
