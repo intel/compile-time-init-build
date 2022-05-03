@@ -20,11 +20,11 @@ namespace cib::detail {
             return value;
         }
     };
-//
-//    struct index_pair {
-//        unsigned int outer;
-//        unsigned int inner;
-//    };
+
+    struct type_list_index_pair {
+        unsigned int outer;
+        unsigned int inner;
+    };
 
     template<
         unsigned int... Indices,
@@ -39,7 +39,7 @@ namespace cib::detail {
         // gcc thinks this is unused
         [[maybe_unused]] constexpr auto element_indices = [&](){
             constexpr auto total_num_elements = (type_lists.size + ... + 0);
-            std::array<cib::detail::index_pair, total_num_elements> indices{};
+            std::array<cib::detail::type_list_index_pair, total_num_elements> indices{};
             unsigned int flat_index = 0;
             for (unsigned int outer_index = 0; outer_index < num_type_lists; outer_index++) {
                 for (unsigned int inner_index = 0; inner_index < type_list_sizes[outer_index]; inner_index++) {

@@ -1,6 +1,5 @@
 #include "config_item.hpp"
 #include "indexed_tuple.hpp"
-#include "ordered_set.hpp"
 
 #include <utility>
 
@@ -14,12 +13,12 @@ namespace cib::detail {
         typename ExtensionPath,
         typename... Args>
     struct extend : public config_item {
-        ordered_set<Args...> args_tuple;
+        decltype(make_indexed_tuple(std::declval<Args>()...)) args_tuple;
 
         CIB_CONSTEVAL explicit extend(
             Args const & ... args
         )
-            : args_tuple{args...}
+            : args_tuple{make_indexed_tuple(args...)}
         {
             // pass
         }

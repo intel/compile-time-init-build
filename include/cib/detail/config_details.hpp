@@ -1,10 +1,8 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
 #include "meta.hpp"
-#include "ordered_set.hpp"
 #include "indexed_tuple.hpp"
 #include "type_list.hpp"
-
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP
@@ -17,7 +15,7 @@ namespace cib::detail {
 
     template<auto... Args>
     struct args {
-        static CIB_CONSTEXPR auto value = ordered_set{as_constant_v<Args>...};
+        static CIB_CONSTEXPR auto value = make_indexed_tuple(self_type_index, as_constant_v<Args>...);
     };
 
     template<typename ConfigArgs, typename... ConfigTs>

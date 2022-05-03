@@ -20,6 +20,13 @@ namespace cib::detail {
     template<typename T, int Index, typename... IndexTs>
     struct indexed_tuple_element;
 
+    struct self_type {
+        template<typename T>
+        using invoke = T;
+    } ;
+
+    constexpr static index_metafunc_<self_type> self_type_index{};
+
     template<typename T, int Index>
     struct indexed_tuple_element<T, Index> {
         T value;
