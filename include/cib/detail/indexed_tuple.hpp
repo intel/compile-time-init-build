@@ -67,11 +67,13 @@ namespace cib::detail {
 
         using IndexedTupleElementTs::get...;
 
-//        template<typename T>
-//        constexpr void get(T) const {}
-
         [[nodiscard]] constexpr int size() const {
             return sizeof...(IndexedTupleElementTs);
+        }
+
+        template<typename Callable>
+        constexpr auto apply(Callable operation) const {
+            return operation(IndexedTupleElementTs::value...);
         }
     };
 
@@ -98,7 +100,7 @@ namespace cib::detail {
 
     template<typename Callable, typename... Elements>
     constexpr auto apply(Callable operation, indexed_tuple<Elements...> const & t) {
-        return operation(t.Elements::value...);
+        return t.apply(operation);
     }
 
     struct indexed_tuple_pair {

@@ -40,7 +40,7 @@ namespace cib {
     template<typename Config, typename Tag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            initialized_builders_v<Config>.template get(cib::detail::tag_<Tag>{}).builder;
+            initialized_builders_v<Config>.get(cib::detail::tag_<Tag>{}).builder;
     };
 
 }
