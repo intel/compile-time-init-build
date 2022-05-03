@@ -2,8 +2,6 @@
 #include <utility>
 #include <array>
 
-#include "detail/tuple_details.hpp"
-
 
 #ifndef COMPILE_TIME_INIT_BUILD_TUPLE_HPP
 #define COMPILE_TIME_INIT_BUILD_TUPLE_HPP
