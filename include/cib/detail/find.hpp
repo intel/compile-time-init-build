@@ -22,41 +22,26 @@ namespace cib::detail {
             return name > rhs.name;
         }
     };
-
-    // clang-8 and below don't have constexpr find_first_of on std::string_view
-    CIB_CONSTEVAL std::string_view::size_type find_first_of(std::string_view str, char c) {
-        using size_type = std::string_view::size_type;
-        for (size_type i = 0; i < str.size(); i++) {
-            if (str[i] == c) {
-                return i;
-            }
-        }
-
-        return 0;
-    }
-
-    // clang-8 and below don't have constexpr find_last_of on std::string_view
-    CIB_CONSTEVAL std::string_view::size_type find_last_of(std::string_view str, char c) {
-        using size_type = std::string_view::size_type;
-        size_type match = str.size();
-        for (size_type i = 0; i < str.size(); i++) {
-            if (str[i] == c) {
-                match = i;
-            }
-        }
-
-        return match;
-    }
-
+    
     template<typename Tag>
     CIB_CONSTEVAL static std::string_view name() {
         constexpr std::string_view function_name = __PRETTY_FUNCTION__;
-        constexpr auto lhs = find_first_of(function_name, '<');
-        constexpr auto rhs = find_last_of(function_name, '>');
-        constexpr auto service_name = function_name.substr(lhs, rhs - lhs);
+        
+        #if defined(__clang__)
+            constexpr auto lhs = 44;
+            constexpr auto rhs = function_name.size() - 2;
+        #elif defined(__GNUC__) || defined(__GNUG__)
+            constexpr auto lhs = 59;
+            constexpr auto rhs = function_name.size() - 51;
+        #else
+            constexpr auto lhs = 0;
+            constexpr auto rhs = function_name.size();
+            static_assert(false, "Compiler not supported.");
+        #endif
+
+        constexpr auto service_name = function_name.substr(lhs, rhs - lhs + 1);
         return service_name;
     }
-
 
     template<typename MetaFunc, typename... Types>
     CIB_CONSTEXPR static auto create_type_names() {
