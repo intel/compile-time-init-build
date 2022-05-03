@@ -13,14 +13,17 @@ struct A {};
 struct B {};
 struct C {};
 struct D {};
+struct E {};
+struct F {};
+struct G {};
+struct H {};
+struct I {};
+struct J {};
+struct K {};
+struct L {};
 
-template<typename KeyT, typename ValueT>
-struct map_entry {
-    using Key = KeyT;
-    using Value = ValueT;
 
-    ValueT value;
-};
+
 
 TEST_CASE("make empty cib::tuple", "[tuple]") {
     auto const t = cib::make_tuple();
@@ -60,6 +63,14 @@ TEST_CASE("self_type_index", "[tuple]") {
     REQUIRE(t.get(tag_<long>) == 10);
 }
 
+
+template<typename KeyT, typename ValueT>
+struct map_entry {
+    using Key = KeyT;
+    using Value = ValueT;
+
+    ValueT value;
+};
 
 struct extract_key {
     template<typename T>
@@ -193,4 +204,65 @@ TEST_CASE("tuple_cat last empty", "[tuple]") {
     REQUIRE(t.get(index_<1>) == 2);
     REQUIRE(t.get(index_<2>) == 3);
     REQUIRE(t.get(index_<3>) == 4);
+}
+
+template<typename KeyT0, typename KeyT1, typename KeyT2, typename ValueT>
+struct multi_map_entry {
+    using Key0 = KeyT0;
+    using Key1 = KeyT1;
+    using Key2 = KeyT2;
+    using Value = ValueT;
+
+    ValueT value;
+};
+
+struct extract_key_0 {
+    template<typename T>
+    using invoke = typename T::Key0;
+};
+
+struct extract_key_1 {
+    template<typename T>
+    using invoke = typename T::Key1;
+};
+
+struct extract_key_2 {
+    template<typename T>
+    using invoke = typename T::Key2;
+};
+
+TEST_CASE("make_tuple with multiple calculated index", "[tuple]") {
+    auto const t =
+        cib::make_tuple(
+            index_metafunc_<extract_key_0>,
+            index_metafunc_<extract_key_1>,
+            index_metafunc_<extract_key_2>,
+            multi_map_entry<A, B, C, int>{42},
+            multi_map_entry<D, E, F, int>{12},
+            multi_map_entry<G, H, I, int>{55},
+            multi_map_entry<J, K, L, int>{99}
+        );
+
+    REQUIRE(t.size() == 4);
+
+    REQUIRE(t.get(index_<0>).value == 42);
+    REQUIRE(t.get(index_<1>).value == 12);
+    REQUIRE(t.get(index_<2>).value == 55);
+    REQUIRE(t.get(index_<3>).value == 99);
+
+    REQUIRE(t.get(tag_<A>).value == 42);
+    REQUIRE(t.get(tag_<B>).value == 42);
+    REQUIRE(t.get(tag_<C>).value == 42);
+
+    REQUIRE(t.get(tag_<D>).value == 12);
+    REQUIRE(t.get(tag_<E>).value == 12);
+    REQUIRE(t.get(tag_<F>).value == 12);
+
+    REQUIRE(t.get(tag_<G>).value == 55);
+    REQUIRE(t.get(tag_<H>).value == 55);
+    REQUIRE(t.get(tag_<I>).value == 55);
+
+    REQUIRE(t.get(tag_<J>).value == 99);
+    REQUIRE(t.get(tag_<K>).value == 99);
+    REQUIRE(t.get(tag_<L>).value == 99);
 }
