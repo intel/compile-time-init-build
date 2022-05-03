@@ -20,7 +20,7 @@ namespace cib::detail {
 
     template<typename ConfigArgs, typename... ConfigTs>
     struct config : public detail::config_item {
-        decltype(make_tuple(std::declval<ConfigTs>()...)) configs_tuple;
+        tuple<ConfigTs...> configs_tuple;
 
         CIB_CONSTEVAL explicit config(
             ConfigArgs,

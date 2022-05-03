@@ -23,28 +23,57 @@ struct map_entry {
 };
 
 TEST_CASE("make empty cib::tuple", "[tuple]") {
-    auto const t = cib::tuple<>{};
+    auto const t = cib::make_tuple();
     REQUIRE(t.size() == 0);
 }
 
-TEST_CASE("make small cib::tuple", "[tuple]") {
-    auto const t =
-        cib::tuple{
-            cib::tuple_element<int, 0, A>{5},
-            cib::tuple_element<int, 1, B>{10}
-        };
+TEST_CASE("single make_tuple", "[tuple]") {
+    auto const t = cib::make_tuple(42);
+
+    REQUIRE(t.size() == 1);
+    REQUIRE(t.get(index_<0>) == 42);
+}
+
+TEST_CASE("simple make_tuple", "[tuple]") {
+    auto const t = cib::make_tuple(5, 10);
 
     REQUIRE(t.size() == 2);
     REQUIRE(t.get(index_<0>) == 5);
     REQUIRE(t.get(index_<1>) == 10);
-    REQUIRE(t.get(tag_<A>) == 5);
-    REQUIRE(t.get(tag_<B>) == 10);
 }
+
+TEST_CASE("self_type_index", "[tuple]") {
+    auto const t = cib::make_tuple(
+        cib::self_type_index,
+        5,
+        false,
+        10l
+    );
+
+    REQUIRE(t.size() == 3);
+    REQUIRE(t.get(index_<0>) == 5);
+    REQUIRE(t.get(index_<1>) == false);
+    REQUIRE(t.get(index_<2>) == 10);
+
+    REQUIRE(t.get(tag_<int>) == 5);
+    REQUIRE(t.get(tag_<bool>) == false);
+    REQUIRE(t.get(tag_<long>) == 10);
+}
+
 
 struct extract_key {
     template<typename T>
     using invoke = typename T::Key;
 };
+
+TEST_CASE("make empty tuple with calculated index", "[tuple]") {
+    auto const t =
+        cib::make_tuple(
+            index_metafunc_<extract_key>
+        );
+
+    REQUIRE(t.size() == 0);
+}
 
 TEST_CASE("make_tuple with calculated index", "[tuple]") {
     auto const t =
@@ -69,13 +98,6 @@ TEST_CASE("make_tuple with calculated index", "[tuple]") {
     REQUIRE(t.get(tag_<D>).value == 99);
 }
 
-TEST_CASE("simple make_tuple", "[tuple]") {
-    auto const t = cib::make_tuple(5, 10);
-
-    REQUIRE(t.size() == 2);
-    REQUIRE(t.get(index_<0>) == 5);
-    REQUIRE(t.get(index_<1>) == 10);
-}
 
 TEST_CASE("tuple_cat", "[tuple]") {
     auto const t0 = cib::make_tuple(5, 10);
@@ -88,4 +110,87 @@ TEST_CASE("tuple_cat", "[tuple]") {
     REQUIRE(t.get(index_<1>) == 10);
     REQUIRE(t.get(index_<2>) == 12);
     REQUIRE(t.get(index_<3>) == 30);
+}
+
+TEST_CASE("tuple_cat left empty", "[tuple]") {
+    auto const t0 = cib::make_tuple();
+    auto const t1 = cib::make_tuple(12, 30);
+
+    auto const t = tuple_cat(t0, t1);
+
+    REQUIRE(t.size() == 2);
+    REQUIRE(t.get(index_<0>) == 12);
+    REQUIRE(t.get(index_<1>) == 30);
+}
+
+TEST_CASE("tuple_cat right empty", "[tuple]") {
+    auto const t0 = cib::make_tuple(12, 30);
+    auto const t1 = cib::make_tuple();
+
+    auto const t = tuple_cat(t0, t1);
+
+    REQUIRE(t.size() == 2);
+    REQUIRE(t.get(index_<0>) == 12);
+    REQUIRE(t.get(index_<1>) == 30);
+}
+
+TEST_CASE("tuple_cat both empty", "[tuple]") {
+    auto const t0 = cib::make_tuple();
+    auto const t1 = cib::make_tuple();
+
+    auto const t = tuple_cat(t0, t1);
+
+    REQUIRE(t.size() == 0);
+}
+
+TEST_CASE("tuple_cat three empty", "[tuple]") {
+    auto const t0 = cib::make_tuple();
+    auto const t1 = cib::make_tuple();
+    auto const t2 = cib::make_tuple();
+
+    auto const t = tuple_cat(t0, t1, t2);
+
+    REQUIRE(t.size() == 0);
+}
+
+TEST_CASE("tuple_cat middle empty", "[tuple]") {
+    auto const t0 = cib::make_tuple(1, 2);
+    auto const t1 = cib::make_tuple();
+    auto const t2 = cib::make_tuple(3, 4);
+
+    auto const t = tuple_cat(t0, t1, t2);
+
+    REQUIRE(t.size() == 4);
+    REQUIRE(t.get(index_<0>) == 1);
+    REQUIRE(t.get(index_<1>) == 2);
+    REQUIRE(t.get(index_<2>) == 3);
+    REQUIRE(t.get(index_<3>) == 4);
+}
+
+TEST_CASE("tuple_cat first empty", "[tuple]") {
+    auto const t0 = cib::make_tuple();
+    auto const t1 = cib::make_tuple(1, 2);
+    auto const t2 = cib::make_tuple(3, 4);
+
+    auto const t = tuple_cat(t0, t1, t2);
+
+    REQUIRE(t.size() == 4);
+    REQUIRE(t.get(index_<0>) == 1);
+    REQUIRE(t.get(index_<1>) == 2);
+    REQUIRE(t.get(index_<2>) == 3);
+    REQUIRE(t.get(index_<3>) == 4);
+}
+
+TEST_CASE("tuple_cat last empty", "[tuple]") {
+    auto const t0 = cib::make_tuple(1, 2);
+    auto const t1 = cib::make_tuple(3, 4);
+    auto const t2 = cib::make_tuple();
+
+    auto const t = tuple_cat(t0, t1, t2);
+
+    REQUIRE(t.size() == 4);
+    REQUIRE(t.get(index_<0>) == 1);
+    REQUIRE(t.get(index_<1>) == 2);
+    REQUIRE(t.get(index_<2>) == 3);
+    REQUIRE(t.get(index_<3>) == 4);
 }

@@ -13,7 +13,7 @@ namespace cib::detail {
         typename ExtensionPath,
         typename... Args>
     struct extend : public config_item {
-        decltype(make_tuple(std::declval<Args>()...)) args_tuple;
+        tuple<Args...> args_tuple;
 
         CIB_CONSTEVAL explicit extend(
             Args const & ... args
