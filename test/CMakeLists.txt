@@ -4,7 +4,6 @@ project(compile_time_init_build)
 
 add_executable(tests
     detail/type_list.cpp
-    detail/meta.cpp
     builder_meta.cpp
     callback.cpp
     nexus.cpp

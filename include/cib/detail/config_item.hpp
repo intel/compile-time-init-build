@@ -1,8 +1,6 @@
 #include "compiler.hpp"
 #include "type_list.hpp"
 
-#include <tuple>
-
 
 #ifndef COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP
 #define COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP

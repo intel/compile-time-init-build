@@ -136,12 +136,12 @@ TEST_CASE("test conditional expressions") {
     }
 
     SECTION("true evaluation with std::apply") {
-        constexpr bool true_result = std::apply(exp, std::make_tuple(int_<42>));
+        constexpr bool true_result = apply(exp, cib::detail::make_indexed_tuple(int_<42>));
         REQUIRE(true_result);
     }
 
     SECTION("false evaluation") {
-        constexpr bool false_result = std::apply(exp, std::make_tuple(int_<8>));
+        constexpr bool false_result = apply(exp, cib::detail::make_indexed_tuple(int_<8>));
         REQUIRE_FALSE(false_result);
     }
 }

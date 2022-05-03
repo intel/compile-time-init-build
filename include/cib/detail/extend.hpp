@@ -2,7 +2,6 @@
 #include "indexed_tuple.hpp"
 #include "ordered_set.hpp"
 
-#include <tuple>
 #include <utility>
 
 

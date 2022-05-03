@@ -2,9 +2,9 @@
 #include "config_item.hpp"
 #include "meta.hpp"
 #include "ordered_set.hpp"
+#include "indexed_tuple.hpp"
 #include "type_list.hpp"
 
-#include <tuple>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP
@@ -22,13 +22,13 @@ namespace cib::detail {
 
     template<typename ConfigArgs, typename... ConfigTs>
     struct config : public detail::config_item {
-        std::tuple<ConfigTs...> configs_tuple;
+        decltype(make_indexed_tuple(std::declval<ConfigTs>()...)) configs_tuple;
 
         CIB_CONSTEVAL explicit config(
             ConfigArgs,
             ConfigTs const & ... configs
         )
-            : configs_tuple{configs...}
+            : configs_tuple{make_indexed_tuple(configs...)}
         {
             // pass
         }
