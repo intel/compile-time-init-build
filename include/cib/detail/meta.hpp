@@ -1,5 +1,5 @@
 #include "compiler.hpp"
-#include "tuple.hpp"
+#include "../tuple.hpp"
 
 #include <type_traits>
 
@@ -75,9 +75,9 @@ namespace cib::detail {
         typename InitType,
         typename CallableType>
     [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
-            tuple<ElementTypes...> const & elements,
-            InitType const & initial_state,
-            CallableType const & operation
+        tuple<ElementTypes...> const & elements,
+        InitType const & initial_state,
+        CallableType const & operation
     ) {
         return apply([&](auto const & ... element_pack){
             return (fold_helper{element_pack, operation} + ... + initial_state);
@@ -130,8 +130,8 @@ namespace cib::detail {
         typename... ElementTypes,
         typename CallableType>
     CIB_CONSTEXPR inline void for_each(
-            tuple<ElementTypes...> const & elements,
-            CallableType const & operation
+        tuple<ElementTypes...> const & elements,
+        CallableType const & operation
     ) {
         apply([&](auto const & ... element_pack){
             (operation(element_pack) , ...);

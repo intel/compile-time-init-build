@@ -2,7 +2,7 @@
 #include "config_item.hpp"
 #include "config_details.hpp"
 #include "type_list.hpp"
-#include "tuple.hpp"
+#include "../tuple.hpp"
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_CONDITIONAL_HPP

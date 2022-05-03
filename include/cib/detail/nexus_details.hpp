@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 #include "meta.hpp"
 #include "type_list.hpp"
-#include "tuple.hpp"
+#include "../tuple.hpp"
 #include "exports.hpp"
 
 
@@ -20,8 +20,8 @@ namespace cib {
 
     template<typename... ServiceBuilders>
     struct to_tuple<detail::type_list<ServiceBuilders...>> {
-        using type = decltype(detail::make_tuple(detail::index_metafunc_<extract_service_tag>, ServiceBuilders{}...));
-        constexpr static inline type value = detail::make_tuple(detail::index_metafunc_<extract_service_tag>, ServiceBuilders{}...);
+        using type = decltype(make_tuple(index_metafunc_<extract_service_tag>, ServiceBuilders{}...));
+        constexpr static inline type value = make_tuple(index_metafunc_<extract_service_tag>, ServiceBuilders{}...);
     };
 
     template<typename ServiceBuilderList>
@@ -39,7 +39,7 @@ namespace cib {
     template<typename Config, typename Tag>
     struct initialized {
         CIB_CONSTEXPR static auto value =
-            initialized_builders_v<Config>.get(cib::detail::tag_<Tag>).builder;
+            initialized_builders_v<Config>.get(cib::tag_<Tag>).builder;
     };
 
 }

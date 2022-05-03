@@ -3,11 +3,11 @@
 #include <array>
 
 
-#ifndef COMPILE_TIME_INIT_BUILD_INDEXED_TUPLE_HPP
-#define COMPILE_TIME_INIT_BUILD_INDEXED_TUPLE_HPP
+#ifndef COMPILE_TIME_INIT_BUILD_TUPLE_HPP
+#define COMPILE_TIME_INIT_BUILD_TUPLE_HPP
 
 
-namespace cib::detail {
+namespace cib {
     template<typename T>
     struct tag_t {};
 
@@ -75,21 +75,21 @@ namespace cib::detail {
         }
     };
 
-    template<typename... IndexedTupleElementTs>
-    struct tuple : public IndexedTupleElementTs... {
-        constexpr tuple(IndexedTupleElementTs... values)
-            : IndexedTupleElementTs{values}...
+    template<typename... TupleElementTs>
+    struct tuple : public TupleElementTs... {
+        constexpr tuple(TupleElementTs... values)
+            : TupleElementTs{values}...
         {}
 
-        using IndexedTupleElementTs::get...;
+        using TupleElementTs::get...;
 
         [[nodiscard]] constexpr int size() const {
-            return sizeof...(IndexedTupleElementTs);
+            return sizeof...(TupleElementTs);
         }
 
         template<typename Callable>
         constexpr auto apply(Callable operation) const {
-            return operation(IndexedTupleElementTs::value...);
+            return operation(TupleElementTs::value...);
         }
     };
 
@@ -119,7 +119,7 @@ namespace cib::detail {
         return t.apply(operation);
     }
 
-    struct indexed_tuple_pair {
+    struct tuple_pair {
         unsigned int outer;
         unsigned int inner;
     };
@@ -127,7 +127,7 @@ namespace cib::detail {
     template<
         int... Indices,
         typename... Tuples>
-    constexpr auto indexed_tuple_cat_impl(
+    constexpr auto tuple_cat_impl(
         std::integer_sequence<int, Indices...>,
         Tuples... tuples
     ) {
@@ -135,7 +135,7 @@ namespace cib::detail {
         constexpr std::array<unsigned int, num_tuples> tuple_sizes{tuples.size()...};
         constexpr auto element_indices = [&](){
             constexpr auto total_num_elements = (tuples.size() + ...);
-            std::array<indexed_tuple_pair, total_num_elements> indices{};
+            std::array<tuple_pair, total_num_elements> indices{};
             unsigned int flat_index = 0;
             for (unsigned int outer_index = 0; outer_index < num_tuples; outer_index++) {
                 for (unsigned int inner_index = 0; inner_index < tuple_sizes[outer_index]; inner_index++) {
@@ -154,18 +154,18 @@ namespace cib::detail {
     }
 
     template<typename... Tuples>
-    constexpr auto indexed_tuple_cat(Tuples... tuples) {
+    constexpr auto tuple_cat(Tuples... tuples) {
         constexpr auto total_num_elements = (tuples.size() + ...);
-        return indexed_tuple_cat_impl(std::make_integer_sequence<int, total_num_elements>{}, tuples...);
+        return tuple_cat_impl(std::make_integer_sequence<int, total_num_elements>{}, tuples...);
     }
 }
 
 namespace std {
-    template<typename... Values>
-    struct tuple_size<cib::detail::tuple<Values...>>
-        : std::integral_constant<std::size_t, sizeof...(Values)>
+    template<typename... Elements>
+    struct tuple_size<cib::tuple<Elements...>>
+        : std::integral_constant<std::size_t, sizeof...(Elements)>
     {};
 }
 
 
-#endif //COMPILE_TIME_INIT_BUILD_INDEXED_TUPLE_HPP
+#endif //COMPILE_TIME_INIT_BUILD_TUPLE_HPP

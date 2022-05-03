@@ -2,12 +2,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using cib::detail::tag_;
-using cib::detail::index_;
-using cib::detail::index_metafunc_;
-using cib::detail::tuple_element;
-using cib::detail::tuple;
-using cib::detail::make_tuple;
+using cib::tag_;
+using cib::index_;
+using cib::index_metafunc_;
 
 template<int Value>
 using int_t = std::integral_constant<int, Value>;
@@ -25,16 +22,16 @@ struct map_entry {
     ValueT value;
 };
 
-TEST_CASE("make empty tuple", "[tuple]") {
-    auto const t = tuple<>{};
+TEST_CASE("make empty cib::tuple", "[tuple]") {
+    auto const t = cib::tuple<>{};
     REQUIRE(t.size() == 0);
 }
 
-TEST_CASE("make small tuple", "[tuple]") {
+TEST_CASE("make small cib::tuple", "[tuple]") {
     auto const t =
-        tuple{
-            tuple_element<int, 0, A>{5},
-            tuple_element<int, 1, B>{10}
+        cib::tuple{
+            cib::tuple_element<int, 0, A>{5},
+            cib::tuple_element<int, 1, B>{10}
         };
 
     REQUIRE(t.size() == 2);
@@ -51,7 +48,7 @@ struct extract_key {
 
 TEST_CASE("make_tuple with calculated index", "[tuple]") {
     auto const t =
-        make_tuple(
+        cib::make_tuple(
             index_metafunc_<extract_key>,
             map_entry<A, int>{42},
             map_entry<B, int>{12},
@@ -73,18 +70,18 @@ TEST_CASE("make_tuple with calculated index", "[tuple]") {
 }
 
 TEST_CASE("simple make_tuple", "[tuple]") {
-    auto const t = make_tuple(5, 10);
+    auto const t = cib::make_tuple(5, 10);
 
     REQUIRE(t.size() == 2);
     REQUIRE(t.get(index_<0>) == 5);
     REQUIRE(t.get(index_<1>) == 10);
 }
 
-TEST_CASE("indexed_tuple_cat", "[tuple]") {
-    auto const t0 = make_tuple(5, 10);
-    auto const t1 = make_tuple(12, 30);
+TEST_CASE("tuple_cat", "[tuple]") {
+    auto const t0 = cib::make_tuple(5, 10);
+    auto const t1 = cib::make_tuple(12, 30);
 
-    auto const t = indexed_tuple_cat(t0, t1);
+    auto const t = tuple_cat(t0, t1);
 
     REQUIRE(t.size() == 4);
     REQUIRE(t.get(index_<0>) == 5);
