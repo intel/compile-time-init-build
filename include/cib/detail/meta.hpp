@@ -1,5 +1,5 @@
 #include "compiler.hpp"
-#include "indexed_tuple.hpp"
+#include "tuple.hpp"
 
 #include <type_traits>
 
@@ -54,7 +54,7 @@ namespace cib::detail {
     };
 
     /**
-     * fold_right a indexed_tuple of elements.
+     * fold_right a tuple of elements.
      *
      * Fold operations are sometimes called accumulate or reduce in other
      * languages or libraries.
@@ -65,7 +65,7 @@ namespace cib::detail {
      *      A callable that takes the current element being processed
      *      and the current state, and returns the state to be used
      *      to process the next element. Called for each element in
-     *      the indexed_tuple.
+     *      the tuple.
      *
      * @return
      *      The final state of all of the operations.
@@ -75,7 +75,7 @@ namespace cib::detail {
         typename InitType,
         typename CallableType>
     [[nodiscard]] CIB_CONSTEXPR inline static auto fold_right(
-            indexed_tuple<ElementTypes...> const & elements,
+            tuple<ElementTypes...> const & elements,
             InitType const & initial_state,
             CallableType const & operation
     ) {
@@ -121,7 +121,7 @@ namespace cib::detail {
     }
 
     /**
-     * Perform an operation on each element of a indexed_tuple.
+     * Perform an operation on each element of a tuple.
      *
      * @param operation
      *      The operation to perform. Must be a callable that accepts a single parameter.
@@ -130,7 +130,7 @@ namespace cib::detail {
         typename... ElementTypes,
         typename CallableType>
     CIB_CONSTEXPR inline void for_each(
-            indexed_tuple<ElementTypes...> const & elements,
+            tuple<ElementTypes...> const & elements,
             CallableType const & operation
     ) {
         apply([&](auto const & ... element_pack){

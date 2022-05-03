@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
 #include "meta.hpp"
-#include "indexed_tuple.hpp"
+#include "tuple.hpp"
 #include "type_list.hpp"
 
 
@@ -15,18 +15,18 @@ namespace cib::detail {
 
     template<auto... Args>
     struct args {
-        static CIB_CONSTEXPR auto value = make_indexed_tuple(self_type_index, as_constant_v<Args>...);
+        static CIB_CONSTEXPR auto value = make_tuple(self_type_index, as_constant_v<Args>...);
     };
 
     template<typename ConfigArgs, typename... ConfigTs>
     struct config : public detail::config_item {
-        decltype(make_indexed_tuple(std::declval<ConfigTs>()...)) configs_tuple;
+        decltype(make_tuple(std::declval<ConfigTs>()...)) configs_tuple;
 
         CIB_CONSTEVAL explicit config(
             ConfigArgs,
             ConfigTs const & ... configs
         )
-            : configs_tuple{make_indexed_tuple(configs...)}
+            : configs_tuple{make_tuple(configs...)}
         {
             // pass
         }

@@ -9,66 +9,75 @@
 
 namespace cib::detail {
     template<typename T>
-    struct tag_ {};
-
-    template<int Index>
-    struct index_ {};
+    struct tag_t {};
 
     template<typename T>
-    struct index_metafunc_ {};
+    constexpr static tag_t<T> tag_{};
+
+    template<int Index>
+    struct index_t {};
+
+    template<int Index>
+    constexpr static index_t<Index> index_{};
+
+    template<typename T>
+    struct index_metafunc_t {};
+
+    template<typename T>
+    constexpr static index_metafunc_t<T> index_metafunc_{};
 
     template<typename T, int Index, typename... IndexTs>
-    struct indexed_tuple_element;
+    struct tuple_element;
 
     struct self_type {
         template<typename T>
         using invoke = T;
     } ;
 
-    constexpr static index_metafunc_<self_type> self_type_index{};
+    constexpr static index_metafunc_t<self_type> self_type_index{};
 
     template<typename T, int Index>
-    struct indexed_tuple_element<T, Index> {
+    struct tuple_element<T, Index> {
         T value;
 
-        [[nodiscard]] constexpr T const & get(index_<Index>) const {
+        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
             return value;
         }
     };
 
     template<typename T, int Index, typename IndexT0>
-    struct indexed_tuple_element<T, Index, IndexT0> {
+    struct tuple_element<T, Index, IndexT0> {
         T value;
 
-        [[nodiscard]] constexpr T const & get(index_<Index>) const {
+        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
             return value;
         }
 
-        [[nodiscard]] constexpr T const & get(tag_<IndexT0>) const {
+        [[nodiscard]] constexpr T const & get(tag_t<IndexT0>) const {
             return value;
         }
     };
 
     template<typename T, int Index, typename IndexT0, typename IndexT1>
-    struct indexed_tuple_element<T, Index, IndexT0, IndexT1> {
+    struct tuple_element<T, Index, IndexT0, IndexT1> {
         T value;
 
-        [[nodiscard]] constexpr T const & get(index_<Index>) const {
+        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
             return value;
         }
 
-        [[nodiscard]] constexpr T const & get(tag_<IndexT0>) const {
+        [[nodiscard]] constexpr T const & get(tag_t<IndexT0>) const {
             return value;
         }
 
-        [[nodiscard]] constexpr T const & get(tag_<IndexT1>) const {
+        [[nodiscard]] constexpr T const & get(tag_t<IndexT1>) const {
             return value;
         }
     };
 
     template<typename... IndexedTupleElementTs>
-    struct indexed_tuple : public IndexedTupleElementTs... {
-        constexpr indexed_tuple(IndexedTupleElementTs... values)
+    struct tuple : public IndexedTupleElementTs... {
+        constexpr tuple(IndexedTupleElementTs... values)
             : IndexedTupleElementTs{values}...
         {}
 
@@ -85,28 +94,28 @@ namespace cib::detail {
     };
 
     template<int... Indices, typename... Ts>
-    [[nodiscard]] constexpr auto make_indexed_tuple(std::integer_sequence<int, Indices...>, Ts const & ... values) {
-        return indexed_tuple{indexed_tuple_element<Ts, Indices>{values}...};
+    [[nodiscard]] constexpr auto make_tuple(std::integer_sequence<int, Indices...>, Ts const & ... values) {
+        return tuple{tuple_element<Ts, Indices>{values}...};
     }
 
     template<int... Indices, typename IndexMetafuncT0, typename... Ts>
-    [[nodiscard]] constexpr auto make_indexed_tuple(std::integer_sequence<int, Indices...>, index_metafunc_<IndexMetafuncT0>, Ts const & ... values) {
-        return indexed_tuple{indexed_tuple_element<Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>>{values}...};
+    [[nodiscard]] constexpr auto make_tuple(std::integer_sequence<int, Indices...>, index_metafunc_t<IndexMetafuncT0>, Ts const & ... values) {
+        return tuple{tuple_element<Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>>{values}...};
     }
 
     template<typename... Ts>
-    [[nodiscard]] constexpr auto make_indexed_tuple(Ts const & ... values) {
-        return make_indexed_tuple(std::make_integer_sequence<int, sizeof...(values)>{}, values...);
+    [[nodiscard]] constexpr auto make_tuple(Ts const & ... values) {
+        return make_tuple(std::make_integer_sequence<int, sizeof...(values)>{}, values...);
     }
 
     template<typename IndexMetafuncT0, typename... Ts>
-    [[nodiscard]] constexpr auto make_indexed_tuple(index_metafunc_<IndexMetafuncT0>, Ts const & ... values) {
-        return make_indexed_tuple(std::make_integer_sequence<int, sizeof...(values)>{}, index_metafunc_<IndexMetafuncT0>{}, values...);
+    [[nodiscard]] constexpr auto make_tuple(index_metafunc_t<IndexMetafuncT0>, Ts const & ... values) {
+        return make_tuple(std::make_integer_sequence<int, sizeof...(values)>{}, index_metafunc_<IndexMetafuncT0>, values...);
     }
 
 
     template<typename Callable, typename... Elements>
-    constexpr auto apply(Callable operation, indexed_tuple<Elements...> const & t) {
+    constexpr auto apply(Callable operation, tuple<Elements...> const & t) {
         return t.apply(operation);
     }
 
@@ -137,10 +146,10 @@ namespace cib::detail {
             return indices;
         }();
 
-        auto const outer_tuple = make_indexed_tuple(tuples...);
+        auto const outer_tuple = make_tuple(tuples...);
 
-        return make_indexed_tuple(
-            outer_tuple.get(index_<element_indices[Indices].outer>{}).get(index_<element_indices[Indices].inner>{})...
+        return make_tuple(
+            outer_tuple.get(index_<element_indices[Indices].outer>).get(index_<element_indices[Indices].inner>)...
         );
     }
 
@@ -153,7 +162,7 @@ namespace cib::detail {
 
 namespace std {
     template<typename... Values>
-    struct tuple_size<cib::detail::indexed_tuple<Values...>>
+    struct tuple_size<cib::detail::tuple<Values...>>
         : std::integral_constant<std::size_t, sizeof...(Values)>
     {};
 }
