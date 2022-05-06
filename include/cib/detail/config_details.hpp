@@ -20,13 +20,13 @@ namespace cib::detail {
 
     template<typename ConfigArgs, typename... ConfigTs>
     struct config : public detail::config_item {
-        tuple<ConfigTs...> configs_tuple;
+        cib::tuple<ConfigTs...> configs_tuple;
 
         CIB_CONSTEVAL explicit config(
             ConfigArgs,
             ConfigTs const & ... configs
         )
-            : configs_tuple{make_tuple(configs...)}
+            : configs_tuple{cib::make_tuple(configs...)}
         {
             // pass
         }

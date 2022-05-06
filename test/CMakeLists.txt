@@ -7,7 +7,8 @@ add_executable(tests
     builder_meta.cpp
     callback.cpp
     nexus.cpp
-    detail/tuple.cpp
+    tuple.cpp
+    set.cpp
     readme_hello_world.cpp
 )
 

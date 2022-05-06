@@ -40,6 +40,7 @@ namespace cib {
 
     template<typename T, int Index>
     struct tuple_element<T, Index> {
+        using value_type = T;
         T value;
 
         [[nodiscard]] constexpr T const & get(index_t<Index>) const {
@@ -49,6 +50,7 @@ namespace cib {
 
     template<typename T, int Index, typename IndexT0>
     struct tuple_element<T, Index, IndexT0> {
+        using value_type = T;
         T value;
 
         [[nodiscard]] constexpr T const & get(index_t<Index>) const {
@@ -62,6 +64,7 @@ namespace cib {
 
     template<typename T, int Index, typename IndexT0, typename IndexT1>
     struct tuple_element<T, Index, IndexT0, IndexT1> {
+        using value_type = T;
         T value;
 
         [[nodiscard]] constexpr T const & get(index_t<Index>) const {
@@ -79,6 +82,7 @@ namespace cib {
 
     template<typename T, int Index, typename IndexT0, typename IndexT1, typename IndexT2>
     struct tuple_element<T, Index, IndexT0, IndexT1, IndexT2> {
+        using value_type = T;
         T value;
 
         [[nodiscard]] constexpr T const & get(index_t<Index>) const {
@@ -205,7 +209,7 @@ namespace cib {
     }
 
     template<typename... Ts>
-    using tuple = decltype(make_tuple(std::declval<Ts>()...));
+    using tuple = decltype(cib::make_tuple(std::declval<Ts>()...));
 
     template<typename Callable, typename... Elements>
     constexpr auto apply(Callable operation, tuple_impl<Elements...> const & t) {
