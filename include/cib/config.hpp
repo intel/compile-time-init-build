@@ -86,7 +86,7 @@ namespace cib {
      */
     template<typename Service, typename... ServiceTemplateArgs, typename... Args>
     [[nodiscard]] CIB_CONSTEVAL auto extend(Args const & ... args) {
-        return detail::extend<detail::path<Service, ServiceTemplateArgs...>, Args...>{args...};
+        return detail::extend<Service, Args...>{args...};
     }
 
     /**

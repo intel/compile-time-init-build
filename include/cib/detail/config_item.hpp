@@ -1,5 +1,6 @@
 #include "compiler.hpp"
 #include "type_list.hpp"
+#include "../tuple.hpp"
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP
@@ -7,23 +8,15 @@
 
 
 namespace cib::detail {
-    template<typename FirstT, typename... PathSegmentTs>
-    struct path {
-        using First = FirstT;
-    };
-
     struct config_item {
-        template<typename Builders, typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto init(
-            Builders const & builders_tuple,
-            Args const & ...
-        ) const {
-            return builders_tuple;
-        }
-
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
             return type_list<>{};
+        }
+
+        template<typename... Args>
+        [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ...) const {
+            return cib::tuple<>{};
         }
     };
 }

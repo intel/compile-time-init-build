@@ -12,6 +12,9 @@ namespace cib::detail {
     template<int value>
     CIB_CONSTEXPR static auto int_ = std::integral_constant<int, value>{};
 
+    template<std::size_t value>
+    CIB_CONSTEXPR static auto size_ = std::integral_constant<std::size_t, value>{};
+
     template<typename Lhs, typename Rhs>
     CIB_CONSTEXPR static auto is_same_v =
         std::is_same_v<
