@@ -13,12 +13,12 @@ namespace cib::detail {
         typename ExtensionPath,
         typename... Args>
     struct extend : public config_item {
-        tuple<Args...> args_tuple;
+        cib::tuple<Args...> args_tuple;
 
         CIB_CONSTEVAL explicit extend(
             Args const & ... args
         )
-            : args_tuple{make_tuple(args...)}
+            : args_tuple{cib::make_tuple(args...)}
         {
             // pass
         }
@@ -75,7 +75,7 @@ namespace cib::detail {
                     (is_same_v<typename ExtensionPath::First, typename std::remove_cv_t<std::remove_reference_t<decltype(builders)>>::Service> + ... + 0) <= 1,
                     "Extension matched more than 1 service");
 
-                return make_tuple(index_metafunc_<extract_service_tag>, add(ExtensionPath{}, builders)...);
+                return cib::make_tuple(index_metafunc_<extract_service_tag>, add(ExtensionPath{}, builders)...);
             }, builders_tuple);
         }
 

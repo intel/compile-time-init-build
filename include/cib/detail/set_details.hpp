@@ -179,7 +179,7 @@ namespace cib::detail {
         auto const tuples =
             cib::make_tuple(lhs, rhs);
 
-        return make_tuple(tuples.get(index_<IndexList::result().data[Indices].src>).get(index_<IndexList::result().data[Indices].index>)...);
+        return cib::make_tuple(tuples.get(index_<IndexList::result().data[Indices].src>).get(index_<IndexList::result().data[Indices].index>)...);
     }
 
     template<
