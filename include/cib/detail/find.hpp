@@ -23,38 +23,27 @@ namespace cib::detail {
         }
     };
 
-    // clang-8 and below don't have constexpr find_first_of on std::string_view
-    CIB_CONSTEVAL std::string_view::size_type find_first_of(std::string_view str, char c) {
-        using size_type = std::string_view::size_type;
-        for (size_type i = 0; i < str.size(); i++) {
-            if (str[i] == c) {
-                return i;
-            }
-        }
-
-        return 0;
-    }
-
-    // clang-8 and below don't have constexpr find_last_of on std::string_view
-    CIB_CONSTEVAL std::string_view::size_type find_last_of(std::string_view str, char c) {
-        using size_type = std::string_view::size_type;
-        size_type match = str.size();
-        for (size_type i = 0; i < str.size(); i++) {
-            if (str[i] == c) {
-                match = i;
-            }
-        }
-
-        return match;
-    }
-
     template<typename Tag>
-    CIB_CONSTEVAL static std::string_view name() {
-        constexpr std::string_view function_name = __PRETTY_FUNCTION__;
-        constexpr auto lhs = find_first_of(function_name, '<');
-        constexpr auto rhs = find_last_of(function_name, '>');
-        constexpr auto service_name = function_name.substr(lhs, rhs - lhs);
-        return service_name;
+    constexpr static std::string_view name() {
+        #if defined(__clang__)
+            constexpr std::string_view function_name = __PRETTY_FUNCTION__;
+            constexpr auto lhs = 44;
+            constexpr auto rhs = function_name.size() - 2;
+
+        #elif defined(__GNUC__) || defined(__GNUG__)
+            constexpr std::string_view function_name = __PRETTY_FUNCTION__;
+            constexpr auto lhs = 59;
+            constexpr auto rhs = function_name.size() - 51;
+
+        #elif #elif defined(_MSC_VER)
+            constexpr std::string_view function_name = __FUNCSIG__;
+            constexpr auto lhs = 0;
+            constexpr auto rhs = function_name.size();
+        #else
+            static_assert(false, "Unknown compiler, can't build type name.");
+        #endif
+
+        return function_name.substr(lhs, rhs - lhs + 1);
     }
 
 
