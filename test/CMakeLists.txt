@@ -6,6 +6,7 @@ add_executable(tests
     detail/type_list.cpp
     detail/type_pack_element.cpp
     detail/meta.cpp
+    detail/type_to_string_view.cpp
     builder_meta.cpp
     callback.cpp
     nexus.cpp
