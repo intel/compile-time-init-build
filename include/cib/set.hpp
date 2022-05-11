@@ -76,9 +76,37 @@ namespace cib {
     }
 
     template<typename MetaFunc, typename Tuple>
-    constexpr static auto create_demux_tags(MetaFunc, Tuple t){
-        constexpr auto const value = t.apply([](auto... elements_pack){
-            constexpr auto const_type_names = cib::detail::create_type_names<MetaFunc, decltype(elements_pack)...>(0);
+    struct create_demux_tags_t;
+
+    template<typename MetaFunc, typename... TupleElems>
+    struct create_demux_tags_t<MetaFunc, cib::tuple_impl<TupleElems...>> {
+        constexpr static auto invoke() {
+            constexpr auto value = [](){
+                constexpr auto const_type_names = cib::detail::create_type_names<MetaFunc, typename TupleElems::value_type...>(0);
+                auto type_names = const_type_names;
+
+                // assign all type_names with the same name the same src id
+                auto prev_name = type_names.front();
+                std::size_t name_dst_index = 0;
+                for (auto & name : type_names) {
+                    if (name != prev_name) {
+                        prev_name = name;
+                        name_dst_index += 1;
+                    }
+                    name.src = name_dst_index;
+                }
+
+                return type_names;
+            }();
+
+            return value;
+        }
+    };
+
+    template<typename MetaFunc, typename... TupleElems>
+    constexpr static auto create_demux_tags(MetaFunc, cib::tuple_impl<TupleElems...>){
+        constexpr auto const value = [](){
+            constexpr auto const_type_names = cib::detail::create_type_names<MetaFunc, typename TupleElems::value_type...>(0);
             auto type_names = const_type_names;
 
             // assign all type_names with the same name the same src id
@@ -93,7 +121,7 @@ namespace cib {
             }
 
             return type_names;
-        });
+        }();
 
         return value;
     }
@@ -105,16 +133,16 @@ namespace cib {
         typename MetaFunc,
         typename Tuple>
     [[nodiscard]] constexpr auto demux(
-        MetaFunc f,
+        MetaFunc,
         Tuple t
     ) {
         using detail::size_;
 
         // workaround for gcc bug
         #if not (defined(__clang__)) && (defined(__GNUC__) || defined(__GNUG__))
-            #define tags create_demux_tags(f, t)
+            #define tags create_demux_tags_t<MetaFunc, Tuple>::invoke()
         #else
-            constexpr auto tags = create_demux_tags(f, t);
+            constexpr auto tags = create_demux_tags_t<MetaFunc, Tuple>::invoke();
         #endif
 
         constexpr std::size_t num_bins =
