@@ -21,7 +21,7 @@ namespace cib {
 
     template<typename... ServiceBuilders>
     struct to_tuple<detail::type_list<ServiceBuilders...>> {
-        using type = tuple<index_metafunc_t<extract_service_tag>, ServiceBuilders...>;
+        using type = cib::tuple<index_metafunc_t<extract_service_tag>, ServiceBuilders...>;
         constexpr static inline type value{};
     };
 

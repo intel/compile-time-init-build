@@ -15,12 +15,12 @@ namespace cib::detail {
     struct extend : public config_item {
         using service_type = ServiceType;
         constexpr static auto builder = cib::traits::builder_v<service_type>;
-        tuple<Args...> args_tuple;
+        cib::tuple<Args...> args_tuple;
 
         CIB_CONSTEVAL explicit extend(
             Args const & ... args
         )
-            : args_tuple{make_tuple(args...)}
+            : args_tuple{cib::make_tuple(args...)}
         {
             // pass
         }

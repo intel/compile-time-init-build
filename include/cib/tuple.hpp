@@ -257,9 +257,9 @@ namespace cib {
             return indices;
         }();
 
-        auto const outer_tuple = make_tuple(tuples...);
+        auto const outer_tuple = cib::make_tuple(tuples...);
 
-        return make_tuple(
+        return cib::make_tuple(
             outer_tuple.get(index_<element_indices[Indices].outer>).get(index_<element_indices[Indices].inner>)...
         );
     }

@@ -16,7 +16,7 @@ namespace cib::detail {
     struct components : public detail::config_item {
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
-            return tuple_cat(Components::config.extends_tuple(args...)...);
+            return cib::tuple_cat(Components::config.extends_tuple(args...)...);
         }
     };
 }

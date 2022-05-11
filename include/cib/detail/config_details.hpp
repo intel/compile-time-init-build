@@ -15,7 +15,7 @@ namespace cib::detail {
 
     template<auto... Args>
     struct args {
-        static CIB_CONSTEXPR auto value = make_tuple(self_type_index, as_constant_v<Args>...);
+        static CIB_CONSTEXPR auto value = cib::make_tuple(self_type_index, as_constant_v<Args>...);
     };
 
     template<typename ConfigArgs, typename... ConfigTs>
