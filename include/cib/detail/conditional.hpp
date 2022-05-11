@@ -25,15 +25,6 @@ namespace cib::detail {
         {}
 
         template<typename... Args>
-        CIB_CONSTEVAL auto exports_tuple(Args...) const {
-            if constexpr (condition(Args{}...)) {
-                return body.exports_tuple(Args{}...);
-            } else {
-                return type_list<>{};
-            }
-        }
-
-        template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ...) const {
             if constexpr (condition(Args{}...)) {
                 return body.extends_tuple(Args{}...);

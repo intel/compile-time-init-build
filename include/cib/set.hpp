@@ -77,7 +77,7 @@ namespace cib {
 
     template<typename MetaFunc, typename Tuple>
     constexpr static auto create_demux_tags(MetaFunc, Tuple t){
-        constexpr auto value = t.apply([](auto... elements_pack){
+        constexpr auto const value = t.apply([](auto... elements_pack){
             constexpr auto const_type_names = cib::detail::create_type_names<MetaFunc, decltype(elements_pack)...>(0);
             auto type_names = const_type_names;
 
@@ -126,7 +126,7 @@ namespace cib {
             std::array<std::size_t, num_bins> bin_size_{};
 
             std::size_t begin = 0;
-            auto end = begin;
+            std::size_t end = begin;
             for (std::size_t bin_index = 0; bin_index < num_bins; bin_index++) {
                 while (end != tags.size() && tags[end].src == bin_index) {
                     end++;
@@ -144,8 +144,8 @@ namespace cib {
         constexpr std::array<std::size_t, num_bins> bin_offset = [&](){
             std::array<std::size_t, num_bins> bin_offset_{};
 
-            auto begin = 0;
-            auto end = begin;
+            std::size_t begin = 0;
+            std::size_t end = begin;
             for (std::size_t bin_index = 0; bin_index < num_bins; bin_index++) {
                 while (end != tags.size() && tags[end].src == bin_index) {
                     end++;

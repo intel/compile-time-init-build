@@ -2,6 +2,7 @@
 #include "config_item.hpp"
 #include "type_list.hpp"
 #include "builder_traits.hpp"
+#include "extend.hpp"
 
 #include <utility>
 
@@ -19,13 +20,11 @@ namespace cib::detail {
         BuilderT builder;
     };
 
-
-
     template<typename... Services>
     struct exports : public detail::config_item {
-        template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
-            return type_list<service_entry<Services, traits::builder_t<Services>>...>{};
+        template<typename... InitArgs>
+        [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(InitArgs const & ...) const {
+            return cib::make_tuple(extend<Services>{}...);
         }
     };
 }

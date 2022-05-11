@@ -10,11 +10,6 @@
 namespace cib::detail {
     struct config_item {
         template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(Args const & ...) const {
-            return type_list<>{};
-        }
-
-        template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ...) const {
             return cib::tuple<>{};
         }

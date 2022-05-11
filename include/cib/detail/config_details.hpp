@@ -32,17 +32,6 @@ namespace cib::detail {
         }
 
         template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
-            Args const & ... args
-        ) const {
-            return apply([&](auto const & ... config_args){
-                return apply([&](auto const & ... configs_pack){
-                    return type_list_cat(configs_pack.exports_tuple(args..., config_args...)...);
-                }, configs_tuple);
-            }, ConfigArgs::value);
-        }
-
-        template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
             return apply([&](auto const & ... config_args){
                 return apply([&](auto const & ... configs_pack){

@@ -18,11 +18,6 @@ namespace cib::detail {
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
             return tuple_cat(Components::config.extends_tuple(args...)...);
         }
-
-        template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(Args const & ... args) const {
-            return type_list_cat(Components::config.exports_tuple(args...)...);
-        }
     };
 }
 
