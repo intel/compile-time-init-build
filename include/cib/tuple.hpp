@@ -226,7 +226,7 @@ namespace cib {
         Operation op
     ) {
         return tuple.apply([&](auto... elements){
-            return make_tuple(meta_func, op(elements)...);
+            return cib::make_tuple(meta_func, op(elements)...);
         });
     }
 

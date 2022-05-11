@@ -61,7 +61,7 @@ namespace cib {
         std::integer_sequence<IndexType, Indexes...>,
         Operation op
     ) {
-        return make_tuple(op(std::integral_constant<IndexType, Indexes>{})...);
+        return cib::make_tuple(op(std::integral_constant<IndexType, Indexes>{})...);
     }
 
     template<
@@ -185,8 +185,8 @@ namespace cib {
             return bin_offset_;
         }();
 
-        return make_tuple(size_<num_bins>, [&](auto bin_index){
-            return make_tuple(size_<bin_size[bin_index]>, [&](auto offset_into_bin){
+        return cib::make_tuple(size_<num_bins>, [&](auto bin_index){
+            return cib::make_tuple(size_<bin_size[bin_index]>, [&](auto offset_into_bin){
                 constexpr int tuple_index =
                     tags[bin_offset[bin_index] + offset_into_bin].index;
 
