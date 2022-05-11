@@ -52,7 +52,6 @@ namespace cib {
                 index_metafunc_<extract_service_tag>,
                 demux(get_service{}, Config::config.extends_tuple()),
                 [](auto extensions){
-                    using detail::int_;
                     constexpr auto initial_builder = extensions.get(index_<0>).builder;
                     using service = get_service_from_tuple::invoke<decltype(extensions)>;
                     auto built_service = detail::fold_right(extensions, initial_builder, [](auto extension, auto outer_builder){
