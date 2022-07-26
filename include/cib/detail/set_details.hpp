@@ -3,6 +3,7 @@
 #include <string_view>
 #include <array>
 
+
 #ifndef CIB_SET_DETAILS_HPP
 #define CIB_SET_DETAILS_HPP
 
@@ -104,11 +105,11 @@ namespace cib::detail {
 
         } else {
             std::size_t i = 0;
+
             std::array<typename_map_entry, sizeof...(Types)> names = {
                 typename_map_entry{name<typename MetaFunc::template invoke<Types>>(), i++, src}...
             };
 
-            //std::sort(names.begin(), names.end());
             detail::quicksort(names);
             return names;
         }
@@ -170,9 +171,6 @@ namespace cib::detail {
         LhsTuple lhs,
         RhsTuple rhs
     ) {
-//        constexpr auto index_list =
-//            IndexList::result().data;
-
         auto const tuples =
             cib::make_tuple(lhs, rhs);
 
