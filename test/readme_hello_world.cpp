@@ -26,7 +26,7 @@ struct hello_world {
 };
 
 // the nexus instantiates the project
-cib::nexus<hello_world> nexus{};
+static cib::nexus<hello_world> nexus{};
 
 
 TEST_CASE("make sure the simple hello world example compiles") {

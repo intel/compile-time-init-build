@@ -26,15 +26,11 @@ namespace cib {
     private:
         using this_t = nexus<Config>;
 
-        template<typename Tag>
-        using service_name_to_raw_type_t =
-            typename std::remove_const_t<std::remove_reference_t<decltype(cib::detail::find<Tag, cib::ServiceTagMetaFunc>(cib::initialized_builders_v<Config>))>>;
-
         // Workaround unfortunate bug in clang where it can't deduce "auto" sometimes
-        #define CIB_BUILD_SERVICE initialized<Config, service_name_to_raw_type_t<T>>::value.template build<initialized<Config, service_name_to_raw_type_t<T>>>()
+        #define CIB_BUILD_SERVICE initialized<Config, Tag>::value.template build<initialized<Config, Tag>>()
 
     public:
-        template<typename T>
+        template<typename Tag>
         constexpr static decltype(CIB_BUILD_SERVICE) service = CIB_BUILD_SERVICE;
         #undef CIB_BUILD_SERVICE
 

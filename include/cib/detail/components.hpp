@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 #include "config_item.hpp"
 #include "meta.hpp"
-#include "ordered_set.hpp"
+#include "../tuple.hpp"
 #include "type_list.hpp"
 
 #include <type_traits>
@@ -19,7 +19,7 @@ namespace cib::detail {
             Builders const & builders_tuple,
             Args const & ... args
         ) const {
-            return detail::fold_right(ordered_set{Components{}...}, builders_tuple, [&](auto const & c, auto const & builders){
+            return detail::fold_right(cib::make_tuple(Components{}...), builders_tuple, [&](auto const & c, auto const & builders){
                 return c.config.init(builders, args...);
             });
         }
