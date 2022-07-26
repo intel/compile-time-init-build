@@ -2,6 +2,7 @@
 #include "meta.hpp"
 #include "type_list.hpp"
 #include "../tuple.hpp"
+#include "../set.hpp"
 #include "exports.hpp"
 
 
@@ -27,9 +28,42 @@ namespace cib {
     template<typename ServiceBuilderList>
     constexpr static auto to_tuple_v = to_tuple<ServiceBuilderList>::value;
 
+    struct get_service {
+        template<typename T>
+        using invoke = typename std::remove_cv_t<std::remove_reference_t<T>>::service_type;
+    };
+
+    struct get_service_from_tuple {
+        template<typename T>
+        using invoke =
+            typename std::remove_cv_t<
+                std::remove_reference_t<
+                    decltype(
+                        std::declval<T>().get(index_<0>)
+                    )
+                >
+            >::service_type;
+    };
+
     template<typename Config>
     struct initialized_builders {
-        CIB_CONSTEXPR static auto value = Config::config.init(to_tuple_v<decltype(Config::config.exports_tuple())>);
+        CIB_CONSTEXPR static auto value =
+            transform(
+                index_metafunc_<extract_service_tag>,
+                demux(get_service{}, Config::config.extends_tuple()),
+                [](auto extensions){
+                    constexpr auto initial_builder = extensions.get(index_<0>).builder;
+                    using service = get_service_from_tuple::invoke<decltype(extensions)>;
+                    auto built_service = detail::fold_right(extensions, initial_builder, [](auto extension, auto outer_builder){
+                        return detail::fold_right(extension.args_tuple, outer_builder, [](auto arg, auto inner_builder) {
+                            return inner_builder.add(arg);
+                        });
+                    });
+
+                    return detail::service_entry<service, decltype(built_service)>{built_service};
+                }
+            );
+
         using type = decltype(value);
     };
 

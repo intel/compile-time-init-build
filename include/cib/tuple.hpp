@@ -212,8 +212,22 @@ namespace cib {
     using tuple = decltype(cib::make_tuple(std::declval<Ts>()...));
 
     template<typename Callable, typename... Elements>
-    constexpr auto apply(Callable operation, tuple_impl<Elements...> const & t) {
+    CIB_CONSTEXPR auto apply(Callable operation, tuple_impl<Elements...> const & t) {
         return t.apply(operation);
+    }
+
+    template<
+        typename MetaFunc,
+        typename Tuple,
+        typename Operation>
+    [[nodiscard]] CIB_CONSTEXPR auto transform(
+        MetaFunc meta_func,
+        Tuple tuple,
+        Operation op
+    ) {
+        return tuple.apply([&](auto... elements){
+            return cib::make_tuple(meta_func, op(elements)...);
+        });
     }
 
     struct tuple_pair {

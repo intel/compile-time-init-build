@@ -47,8 +47,8 @@ namespace cib::detail {
 namespace cib::detail {
     struct typename_map_entry {
         std::string_view name;
-        unsigned int index;
-        unsigned int src;
+        std::size_t index;
+        std::size_t src;
 
         constexpr auto operator<(typename_map_entry rhs) const {
             return name < rhs.name;
@@ -99,18 +99,18 @@ namespace cib::detail {
     }
 
     template<typename MetaFunc, typename... Types>
-    constexpr static auto create_type_names(unsigned int src) {
+    constexpr static auto create_type_names(std::size_t src) {
         if constexpr (sizeof...(Types) == 0) {
             return std::array<typename_map_entry, 0>{};
 
         } else {
-            unsigned int i = 0;
+            std::size_t i = 0;
+
             std::array<typename_map_entry, sizeof...(Types)> names = {
                 typename_map_entry{name<typename MetaFunc::template invoke<Types>>(), i++, src}...
             };
 
             detail::quicksort(names);
-
             return names;
         }
     }
@@ -138,8 +138,6 @@ namespace cib::detail {
         typename... LhsElems,
         typename... RhsElems>
     struct set_operation_impl_t<Algorithm, MetaFunc, tuple_impl<LhsElems...>, tuple_impl<RhsElems...>> {
-
-
         constexpr static auto result = [](){
             constexpr auto lhs_tags = create_type_names<MetaFunc, typename LhsElems::value_type...>(0);
             constexpr auto rhs_tags = create_type_names<MetaFunc, typename RhsElems::value_type...>(1);
@@ -173,9 +171,6 @@ namespace cib::detail {
         LhsTuple lhs,
         RhsTuple rhs
     ) {
-//        constexpr auto index_list =
-//            IndexList::result().data;
-
         auto const tuples =
             cib::make_tuple(lhs, rhs);
 

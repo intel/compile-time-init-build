@@ -84,9 +84,9 @@ namespace cib {
      * @param args
      *      Value arguments to be passed to the service's builder add function.
      */
-    template<typename Service, typename... ServiceTemplateArgs, typename... Args>
+    template<typename Service, typename... Args>
     [[nodiscard]] CIB_CONSTEVAL auto extend(Args const & ... args) {
-        return detail::extend<detail::path<Service, ServiceTemplateArgs...>, Args...>{args...};
+        return detail::extend<Service, Args...>{args...};
     }
 
     /**

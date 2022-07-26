@@ -12,6 +12,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             -ferror-limit=8
             -ftime-report
             -ftime-trace
+            -ftime-trace-granularity=10
     )
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

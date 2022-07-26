@@ -14,21 +14,9 @@
 namespace cib::detail {
     template<typename... Components>
     struct components : public detail::config_item {
-        template<typename Builders, typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto init(
-            Builders const & builders_tuple,
-            Args const & ... args
-        ) const {
-            return detail::fold_right(cib::make_tuple(Components{}...), builders_tuple, [&](auto const & c, auto const & builders){
-                return c.config.init(builders, args...);
-            });
-        }
-
         template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
-            Args const & ... args
-        ) const {
-            return type_list_cat(Components::config.exports_tuple(args...)...);
+        [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
+            return cib::tuple_cat(Components::config.extends_tuple(args...)...);
         }
     };
 }

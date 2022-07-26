@@ -31,25 +31,11 @@ namespace cib::detail {
             // pass
         }
 
-        template<typename BuildersT, typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto init(
-            BuildersT const & builders_tuple,
-            Args const & ... args
-        ) const {
-            return apply([&](auto const & ... config_args){
-                return fold_right(configs_tuple, builders_tuple, [&](auto const & c, auto builders){
-                    return c.init(builders, args..., config_args...);
-                });
-            }, ConfigArgs::value);
-        }
-
         template<typename... Args>
-        [[nodiscard]] CIB_CONSTEVAL auto exports_tuple(
-            Args const & ... args
-        ) const {
+        [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
             return apply([&](auto const & ... config_args){
                 return apply([&](auto const & ... configs_pack){
-                    return type_list_cat(configs_pack.exports_tuple(args..., config_args...)...);
+                    return tuple_cat(configs_pack.extends_tuple(args..., config_args...)...);
                 }, configs_tuple);
             }, ConfigArgs::value);
         }
