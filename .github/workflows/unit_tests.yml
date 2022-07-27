@@ -120,7 +120,7 @@ jobs:
 
       - name: Install Conan
         id: conan
-        uses: turtlebrowser/get-conan@b9f8889
+        uses: turtlebrowser/get-conan@b9f8889ab27f3d0f2ccb6d24fba79ea64638f253
 
       - name: Install Dependencies
         run: mkdir ${{github.workspace}}/build && cd build && conan install .. -pr:b=default &&
@@ -151,8 +151,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@b9f8889ab27f3d0f2ccb6d24fba79ea64638f253
+
+      - name: Install Dependencies
+        run: mkdir ${{github.workspace}}/build && cd build && conan install .. -pr:b=default &&
 
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
