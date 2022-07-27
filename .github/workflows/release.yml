@@ -24,7 +24,7 @@ jobs:
           CXX: ${{ matrix.compiler.cxx }}
           SINGLE_HEADER: ${{ matrix.compiler.single_header }}
           CXX_STANDARD: ${{ matrix.compiler.cxx_standard }}
-        run: mkdir ${{github.workspace}}/build && cd ${{github.workspace}}/build && conan install .. -pr:b=default && conan build ..
+        run: mkdir ${{github.workspace}}/build && cd ${{github.workspace}}/build && conan install .. --build=missing -pr:b=default && conan build ..
 
       - name: Create Package
         run: cd ${{github.workspace}}/build && conan create ..
