@@ -13,14 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
-      - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@b9f8889ab27f3d0f2ccb6d24fba79ea64638f253
+
+      - name: Conan Install and Build
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+          SINGLE_HEADER: ${{ matrix.compiler.single_header }}
+          CXX_STANDARD: ${{ matrix.compiler.cxx_standard }}
+        run: mkdir ${{github.workspace}}/build && cd ${{github.workspace}}/build && conan install .. --build=missing -pr:b=default && conan build ..
+
+      - name: Create Package
+        run: cd ${{github.workspace}}/build && conan create ..
 
       - name: Build
-        # Build your program with the given configuration
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target release_header
 
       - name: Release

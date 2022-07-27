@@ -17,7 +17,6 @@ add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_17)
 
 
-
 if(NOT_SUBPROJECT)
     if (DEFINED ENV{CXX_STANDARD} AND NOT $ENV{CXX_STANDARD} EQUAL "")
         set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
@@ -25,21 +24,8 @@ if(NOT_SUBPROJECT)
         set(CMAKE_CXX_STANDARD 17)
     endif()
 
-    find_package(Git QUIET)
-    if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-        message("Updating git submodules...")
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_RETVAL)
-        if(NOT GIT_RETVAL EQUAL "0")
-            message(FATAL_ERROR "git submodule update failed!")
-        endif()
-    endif()
-
     # Enable functional and performance test suites.
     enable_testing()
-    add_subdirectory(lib/Catch2)
     add_subdirectory(test)
     add_subdirectory(benchmark)
 
