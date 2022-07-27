@@ -89,9 +89,11 @@ For more details on how to use *cib*, see the [User Guide](USER_GUIDE.md).
 
 ```shell
 git clone https://github.com/intel/compile-time-init-build.git
-cmake -B build
-cmake --build build -t release_header
-ls build/include/cib/ | grep cib.hpp
+mkdir compile-time-init-build/build && cd compile-time-init-build/build
+conan install ..
+cmake ..
+cmake .. -t release_header
+ls include/cib/ | grep cib.hpp
 ```
 
 This combines all the *cib* header files in the `include` tree by recursively
@@ -103,10 +105,10 @@ repository was cloned as a git repo and not downloaded as an archive.
 
 Unit tests are registered with CTest:
 
-```shell
-cmake -B build
-cmake --build build -t tests
-ctest
+```shell\
+mkdir build && cd build
+conan install ..
+conan build ..
 ```
 
 This will build and run all the unit tests with CMake and Catch2.
