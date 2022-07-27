@@ -24,7 +24,7 @@ jobs:
         uses: turtlebrowser/get-conan@b9f8889ab27f3d0f2ccb6d24fba79ea64638f253
 
       - name: Install Dependencies
-        run: mkdir ${{github.workspace}}/build && cd ${{github.workspace}}/build && conan install .. -pr:b=default &&
+        run: mkdir ${{github.workspace}}/build && cd ${{github.workspace}}/build && conan install .. -pr:b=default
 
       - name: Configure CMake
         env:
