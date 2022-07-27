@@ -91,6 +91,7 @@ target_compile_options(tests
 include(${CMAKE_BINARY_DIR}/conan_toolchain.cmake)
 include(${CMAKE_BINARY_DIR}/Catch2Config.cmake)
 
+target_include_directories(tests PUBLIC ${Catch2_INCLUDE_DIRS})
 target_link_libraries(tests Catch2::Catch2WithMain cib)
 
 include(CTest)
