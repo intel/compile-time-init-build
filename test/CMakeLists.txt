@@ -83,21 +83,17 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 endif()
 
-
-
-
-
 target_compile_options(tests
     PRIVATE
         -ftemplate-backtrace-limit=0
 )
 
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
+include(${CMAKE_BINARY_DIR}/conan_toolchain.cmake)
+include(${CMAKE_BINARY_DIR}/Catch2Config.cmake)
 
-# ensure the catch2 headers do not produce warnings
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)
+target_link_libraries(tests Catch2::Catch2WithMain cib)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/lib/Catch2/extras)
 include(CTest)
 include(Catch)
+
 catch_discover_tests(tests)
