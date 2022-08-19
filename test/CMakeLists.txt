@@ -15,6 +15,15 @@ add_executable(tests
     flow/flow.cpp
     sc/format.cpp
     sc/string_constant.cpp
+    container/Array.cpp
+    container/ConstexprMap.cpp
+    container/ConstexprMultiMap.cpp
+    container/ConstexprSet.cpp
+    container/DoubleLinkedList.cpp
+    container/LinkedList.cpp
+    container/Vector.cpp
+    container/PriorityQueue.cpp
+    container/Queue.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

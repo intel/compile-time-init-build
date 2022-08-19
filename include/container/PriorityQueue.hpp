@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Logger.hpp>
+#include <log/log.hpp>
 #include <container/Array.hpp>
 
 #include <cstddef>

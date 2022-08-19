@@ -53,6 +53,4 @@ public:
         size -= 1;
         return entry;
     }
-
-
 };

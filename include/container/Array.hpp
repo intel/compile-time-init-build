@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Logger.hpp>
-#include <StringCatalog.hpp>
+#include <log/log.hpp>
+#include <sc/string_constant.hpp>
 
 #include <cstddef>
 #include <initializer_list>
@@ -39,7 +39,7 @@ public:
         if (src.size() > Size) {
             FATAL(
                 "Initializer list size {} is bigger than allocated array size {}",
-                src.size(), int_<Size>);
+                src.size(), sc::int_<Size>);
 
         } else {
             auto dst_index = 0;
@@ -57,7 +57,7 @@ public:
         if (src.size() > Size) {
             FATAL(
                 "Source size {} is bigger than allocated array size {}",
-                src.size(), int_<Size>);
+                src.size(), sc::int_<Size>);
 
         } else {
             auto dst_index = 0;
@@ -110,7 +110,7 @@ public:
         if (index >= Size) {
             FATAL(
                 "Array index {} is outside array size {}",
-                index, int_<Size>);
+                index, sc::int_<Size>);
 
             return storage[0];
 
@@ -124,7 +124,7 @@ public:
         if (index >= Size) {
             FATAL(
                 "Array index {} is outside array size {}",
-                index, int_<Size>);
+                index, sc::int_<Size>);
 
             return storage[0];
 

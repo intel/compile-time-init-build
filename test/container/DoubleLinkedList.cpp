@@ -1,24 +1,8 @@
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-
-#include <core/mock/MockLogger.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <container/DoubleLinkedList.hpp>
 
 namespace {
-    using ::testing::_;
-
-    class DoubleLinkedListTest : public ::testing::Test {
-    protected:
-        MockLogger logger;
-
-        void SetUp() override {
-            mockLoggerPtr = &logger;
-            EXPECT_CALL(logger, fatal(_)).Times(0);
-            EXPECT_CALL(logger, fatal(_, _, _)).Times(0);
-        }
-    };
-
     struct IntNode {
         int value;
         IntNode * prev;
@@ -33,32 +17,32 @@ namespace {
         {}
     };
 
-    TEST_F(DoubleLinkedListTest, PushBackPopFront) {
+    TEST_CASE("PushBackPopFront", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n{5};
 
         list.pushBack(&n);
         auto poppedNode = list.popFront();
 
-        EXPECT_EQ(poppedNode->value, 5);
+        REQUIRE(poppedNode->value == 5);
     }
 
 
-    TEST_F(DoubleLinkedListTest, IsEmpty) {
+    TEST_CASE("IsEmpty", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n{5};
 
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.isEmpty());
 
         list.pushBack(&n);
-        EXPECT_FALSE(list.isEmpty());
+        REQUIRE_FALSE(list.isEmpty());
 
         list.popFront();
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.isEmpty());
     }
 
 
-    TEST_F(DoubleLinkedListTest, PushBack2PopFront2) {
+    TEST_CASE("PushBack2PopFront2", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -66,28 +50,28 @@ namespace {
         list.pushBack(&n1);
         list.pushBack(&n2);
 
-        EXPECT_EQ(list.popFront()->value, 1);
-        EXPECT_EQ(list.popFront()->value, 2);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 1);
+        REQUIRE(list.popFront()->value == 2);
+        REQUIRE(list.isEmpty());
     }
 
 
-    TEST_F(DoubleLinkedListTest, PushBack2PopFront2_sequentially) {
+    TEST_CASE("PushBack2PopFront2_sequentially", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
 
         list.pushBack(&n1);
-        EXPECT_EQ(list.popFront()->value, 1);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 1);
+        REQUIRE(list.isEmpty());
 
         list.pushBack(&n2);
-        EXPECT_EQ(list.popFront()->value, 2);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 2);
+        REQUIRE(list.isEmpty());
     }
 
 
-    TEST_F(DoubleLinkedListTest, PushBack2PopFront2_multipleLists) {
+    TEST_CASE("PushBack2PopFront2_multipleLists", "[double_linked_list]") {
         DoubleLinkedList<IntNode> listA{};
         DoubleLinkedList<IntNode> listB{};
         IntNode n1{1};
@@ -97,14 +81,14 @@ namespace {
         listA.pushBack(&n2);
         listA.popFront();
         listA.popFront();
-        EXPECT_TRUE(listA.isEmpty());
+        REQUIRE(listA.isEmpty());
 
         listB.pushBack(&n1);
-        EXPECT_EQ(listB.popFront()->value, 1);
-        EXPECT_TRUE(listB.isEmpty());
+        REQUIRE(listB.popFront()->value == 1);
+        REQUIRE(listB.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveMiddleNode) {
+    TEST_CASE("RemoveMiddleNode", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -116,12 +100,12 @@ namespace {
 
         list.remove(&n2);
 
-        EXPECT_EQ(list.popFront()->value, 1);
-        EXPECT_EQ(list.popFront()->value, 3);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 1);
+        REQUIRE(list.popFront()->value == 3);
+        REQUIRE(list.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveOnlyNode) {
+    TEST_CASE("RemoveOnlyNode", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
 
@@ -129,10 +113,10 @@ namespace {
 
         list.remove(&n1);
 
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveFirstNode) {
+    TEST_CASE("RemoveFirstNode", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -142,11 +126,11 @@ namespace {
 
         list.remove(&n1);
 
-        EXPECT_EQ(list.popFront()->value, 2);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 2);
+        REQUIRE(list.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveLastNode) {
+    TEST_CASE("RemoveLastNode", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -156,12 +140,12 @@ namespace {
 
         list.remove(&n2);
 
-        EXPECT_EQ(list.popFront()->value, 1);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 1);
+        REQUIRE(list.isEmpty());
     }
 
 
-    TEST_F(DoubleLinkedListTest, Begin) {
+    TEST_CASE("Begin", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -171,10 +155,10 @@ namespace {
         list.pushBack(&n2);
         list.pushBack(&n3);
 
-        EXPECT_EQ(std::begin(list)->value, 1);
+        REQUIRE(std::begin(list)->value == 1);
     }
 
-    TEST_F(DoubleLinkedListTest, IteratorPreIncrement) {
+    TEST_CASE("IteratorPreIncrement", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -185,17 +169,17 @@ namespace {
         list.pushBack(&n3);
 
         auto i = std::begin(list);
-        EXPECT_EQ(i->value, 1);
+        REQUIRE(i->value == 1);
 
 
-        EXPECT_EQ((++i)->value, 2);
-        EXPECT_EQ(i->value, 2);
+        REQUIRE((++i)->value == 2);
+        REQUIRE(i->value == 2);
 
-        EXPECT_EQ((++i)->value, 3);
-        EXPECT_EQ(i->value, 3);
+        REQUIRE((++i)->value == 3);
+        REQUIRE(i->value == 3);
     }
 
-    TEST_F(DoubleLinkedListTest, IteratorPostIncrement) {
+    TEST_CASE("IteratorPostIncrement", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -206,25 +190,25 @@ namespace {
         list.pushBack(&n3);
 
         auto i = std::begin(list);
-        EXPECT_EQ(i->value, 1);
+        REQUIRE(i->value == 1);
 
-        EXPECT_EQ((i++)->value, 1);
-        EXPECT_EQ(i->value, 2);
+        REQUIRE((i++)->value == 1);
+        REQUIRE(i->value == 2);
 
-        EXPECT_EQ((i++)->value, 2);
-        EXPECT_EQ(i->value, 3);
+        REQUIRE((i++)->value == 2);
+        REQUIRE(i->value == 3);
     }
 
-    TEST_F(DoubleLinkedListTest, IteratorEquality) {
+    TEST_CASE("IteratorEquality", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
 
         list.pushBack(&n1);
 
-        EXPECT_EQ(std::begin(list), std::begin(list));
+        REQUIRE(std::begin(list) == std::begin(list));
     }
 
-    TEST_F(DoubleLinkedListTest, IteratorInequality) {
+    TEST_CASE("IteratorInequality", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -235,24 +219,24 @@ namespace {
         list.pushBack(&n3);
 
         auto i = std::begin(list);
-        EXPECT_EQ(i, std::begin(list));
-        EXPECT_NE(i, std::end(list));
+        REQUIRE(i == std::begin(list));
+        REQUIRE(i != std::end(list));
 
         i++;
-        EXPECT_NE(i, std::begin(list));
-        EXPECT_NE(i, std::end(list));
+        REQUIRE(i != std::begin(list));
+        REQUIRE(i != std::end(list));
 
         i++;
-        EXPECT_NE(i, std::begin(list));
-        EXPECT_NE(i, std::end(list));
+        REQUIRE(i != std::begin(list));
+        REQUIRE(i != std::end(list));
 
         i++;
-        EXPECT_NE(i, std::begin(list));
-        EXPECT_EQ(i, std::end(list));
+        REQUIRE(i != std::begin(list));
+        REQUIRE(i == std::end(list));
     }
 
 
-    TEST_F(DoubleLinkedListTest, RemoveAllNodes) {
+    TEST_CASE("RemoveAllNodes", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -263,10 +247,10 @@ namespace {
         list.remove(&n2);
         list.remove(&n1);
 
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveAndAddSameNode) {
+    TEST_CASE("RemoveAndAddSameNode", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -276,12 +260,12 @@ namespace {
 
         list.remove(&n2);
         list.pushBack(&n2);
-        EXPECT_EQ(list.popFront()->value, 1);
-        EXPECT_EQ(list.popFront()->value, 2);
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.popFront()->value == 1);
+        REQUIRE(list.popFront()->value == 2);
+        REQUIRE(list.isEmpty());
     }
 
-    TEST_F(DoubleLinkedListTest, RemoveEmptyList) {
+    TEST_CASE("RemoveEmptyList", "[double_linked_list]") {
         DoubleLinkedList<IntNode> list{};
         IntNode n1{1};
         IntNode n2{2};
@@ -289,6 +273,6 @@ namespace {
         list.remove(&n1);
         list.remove(&n2);
 
-        EXPECT_TRUE(list.isEmpty());
+        REQUIRE(list.isEmpty());
     }
 }
