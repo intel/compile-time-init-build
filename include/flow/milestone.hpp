@@ -26,10 +26,21 @@ namespace flow {
             , log_name{log_name_ptr}
         {}
 
+        constexpr milestone_base()
+            : run{nullptr}
+            , log_name{nullptr}
+        {}
+
         constexpr milestone_base(milestone_base const & rhs) = default;
         constexpr milestone_base & operator=(milestone_base const & rhs) = default;
         constexpr milestone_base(milestone_base && rhs) = default;
         constexpr milestone_base & operator=(milestone_base && rhs) = default;
+
+        [[nodiscard]] constexpr bool operator==(milestone_base const & rhs) const {
+            return
+                this->run == rhs.run &&
+                this->log_name == rhs.log_name;
+        }
 
         constexpr void operator()() const {
             run();
@@ -43,9 +54,7 @@ namespace flow {
         LhsT const & lhs,
         RhsT const & rhs
     ) {
-        return detail::dependency{
-            detail::convert_milestone_to_ptr(lhs),
-            detail::convert_milestone_to_ptr(rhs)};
+        return detail::dependency{lhs, rhs};
     }
 
     template<
@@ -55,9 +64,7 @@ namespace flow {
         LhsT const & lhs,
         RhsT const & rhs
     ) {
-        return detail::parallel{
-            detail::convert_milestone_to_ptr(lhs),
-            detail::convert_milestone_to_ptr(rhs)};
+        return detail::parallel{lhs, rhs};
     }
 
     /**

@@ -12,8 +12,8 @@ namespace flow {
      * flow::impl is a constant representation of a series of Milestones and actions to
      * be executed in a specific order.
      *
-     * flow::Builder allows multiple independent modules to collaboratively specify
-     * a flow::impl. Use flow::Builder to create Flows. Independent modules can then add
+     * flow::builder allows multiple independent components to collaboratively specify
+     * a flow::impl. Use flow::builder to create Flows. Independent components can then add
      * their own actions and milestones to a flow::impl relative to other actions and
      * milestones.
      *
@@ -23,7 +23,7 @@ namespace flow {
      * @tparam NumSteps
      *      The number of Milestones this flow::impl represents.
      *
-     * @see flow::Builder
+     * @see flow::builder
      */
     template<typename Name, int NumSteps>
     class impl {
@@ -47,20 +47,20 @@ namespace flow {
         /**
          * Create a new flow::impl of Milestones.
          *
-         * Do not call this constructor directly, use flow::Builder instead.
+         * Do not call this constructor directly, use flow::builder instead.
          *
          * @param newMilestones
          *      Array of Milestones to execute in the flow.
          *
          * @param buildStatus
-         *      flow::Builder will report whether the flow::impl can be built successfully,
+         *      flow::builder will report whether the flow::impl can be built successfully,
          *      or if there was some other error while building the flow::impl. This can be
          *      used along with static_assert to ensure the flow is built correctly.
          *
-         * @see flow::Builder
+         * @see flow::builder
          */
         constexpr impl(
-            milestone_base const * newMilestones[],
+            milestone_base newMilestones[],
             build_status newBuildStatus
         )
             : functionPtrs()
@@ -68,12 +68,12 @@ namespace flow {
         {
             if constexpr (loggingEnabled) {
                 for (int i = 0; i < NumSteps; i++) {
-                    functionPtrs[(i * 2)] = newMilestones[i]->log_name;
-                    functionPtrs[(i * 2) + 1] = newMilestones[i]->run;
+                    functionPtrs[(i * 2)] = newMilestones[i].log_name;
+                    functionPtrs[(i * 2) + 1] = newMilestones[i].run;
                 }
             } else {
                 for (int i = 0; i < NumSteps; i++) {
-                    functionPtrs[i] = newMilestones[i]->run;
+                    functionPtrs[i] = newMilestones[i].run;
                 }
             }
         }
@@ -113,7 +113,7 @@ namespace flow {
         constexpr static bool active = false;
 
         constexpr impl(
-            milestone_base const * newMilestones[],
+            milestone_base newMilestones[],
             build_status newBuildStatus
         )
             : buildStatus(newBuildStatus)

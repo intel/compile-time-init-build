@@ -1,315 +1,356 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <flow/flow.hpp>
+#include <cib/cib.hpp>
 
 #include <string>
 
+namespace {
+    auto actual = std::string("");
 
-auto actual = std::string("");
 
+    constexpr auto milestone0 = flow::milestone("milestone0"_sc);
+    constexpr auto milestone1 = flow::milestone("milestone1"_sc);
 
-auto milestone0 = flow::milestone("milestone0"_sc);
-auto milestone1 = flow::milestone("milestone1"_sc);
 
+    constexpr static auto a = flow::action("a"_sc, [] {
+        actual += "a";
+    });
 
-constexpr auto a = flow::action("a"_sc, [] {
-    actual += "a";
-});
+    constexpr auto b = flow::action("b"_sc, [] {
+        actual += "b";
+    });
 
-constexpr auto b = flow::action("b"_sc, [] {
-    actual += "b";
-});
+    constexpr auto c = flow::action("c"_sc, [] {
+        actual += "c";
+    });
 
-constexpr auto c = flow::action("c"_sc, [] {
-    actual += "c";
-});
+    constexpr auto d = flow::action("d"_sc, [] {
+        actual += "d";
+    });
 
-constexpr auto d = flow::action("d"_sc, [] {
-    actual += "d";
-});
 
+    TEST_CASE("build and run empty flow", "[flow]") {
+        flow::builder<> builder;
+        auto const flow = builder.internal_build<0>();
+        flow();
+    }
 
-TEST_CASE("build and run empty flow", "[flow]") {
-    flow::Builder<> builder;
-    auto const flow = builder.internalBuild<0>();
-    flow();
-}
+    TEST_CASE("add single action", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-TEST_CASE("add single action", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        builder.add(a);
 
-    builder.add(a);
+        auto const flow = builder.internal_build<1>();
+        flow();
 
-    auto const flow = builder.internalBuild<1>();
-    flow();
+        REQUIRE(flow.getBuildStatus() == flow::build_status::SUCCESS);
+        REQUIRE(actual == "a");
+    }
 
-    REQUIRE(flow.getBuildStatus() == flow::build_status::SUCCESS);
-    REQUIRE(actual == "a");
-}
+    TEST_CASE("two milestone linear before dependency", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-TEST_CASE("two milestone linear before dependency", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        /*
+         * A fundamental feature of flows are their ability to traverse a graph
+         * of dependencies and execute a series of tasks in the correct order.
+         * The Flow::add function is used to add these ordering relationships to
+         * the flow.
+         */
+        builder.add(a >> milestone0);
 
-    /*
-     * A fundamental feature of flows are their ability to traverse a graph
-     * of dependencies and execute a series of tasks in the correct order.
-     * The Flow::add function is used to add these ordering relationships to
-     * the flow.
-     */
-    builder.add(a >> milestone0);
+        /*
+         * Because we previously created a dependent relationship between
+         * 'action' and 'done', the flow knows to execute 'action' before it is
+         * finished.
+         */
+        auto const flow = builder.internal_build<2>();
+        flow();
 
-    /*
-     * Because we previously created a dependent relationship between
-     * 'action' and 'done', the flow knows to execute 'action' before it is
-     * finished.
-     */
-    auto const flow = builder.internalBuild<2>();
-    flow();
+        REQUIRE(actual == "a");
+    }
 
-    REQUIRE(actual == "a");
-}
+    TEST_CASE("actions get executed once", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-TEST_CASE("actions get executed once", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        builder.add(a >> milestone0);
+        builder.add(a >> milestone1);
+        builder.add(milestone0 >> milestone1);
 
-    builder.add(a >> milestone0);
-    builder.add(a >> milestone1);
-    builder.add(milestone0 >> milestone1);
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+        REQUIRE(actual == "a");
+    }
 
-    REQUIRE(actual == "a");
-}
+    TEST_CASE("two milestone linear after dependency", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-TEST_CASE("two milestone linear after dependency", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        builder.add(a >> milestone0);
 
-    auto milestone0 = flow::milestone("milestone0"_sc);
-    auto milestone1 = flow::milestone("milestone1"_sc);
+        builder.add(milestone0 >> milestone1);
 
-    builder.add(a >> milestone0);
+        builder.add(milestone0 >> b >> milestone1);
 
-    builder.add(milestone0 >> milestone1);
+        auto const flow = builder.internal_build<4>();
+        flow();
 
-    builder.add(milestone0 >> b >> milestone1);
+        REQUIRE(actual == "ab");
+    }
 
-    auto const flow = builder.internalBuild<4>();
-    flow();
+    TEST_CASE("three milestone linear before and after dependency", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual == "ab");
-}
 
-TEST_CASE("three milestone linear before and after dependency", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        builder.add(a >> b >> c);
 
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a >> b >> c);
+        REQUIRE(actual == "abc");
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("just two actions in order", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual == "abc");
-}
+        builder.add(a >> b);
 
-TEST_CASE("just two actions in order", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<2>();
+        flow();
 
-    builder.add(a >> b);
+        REQUIRE(actual == "ab");
+    }
 
-    auto const flow = builder.internalBuild<2>();
-    flow();
+    TEST_CASE("insert action between two actions", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual == "ab");
-}
+        builder.add(a >> c);
 
-TEST_CASE("insert action between two actions", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        builder.add(a >> b >> c);
 
-    builder.add(a >> c);
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a >> b >> c);
+        REQUIRE(actual == "abc");
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add single parallel 2", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual == "abc");
-}
+        builder.add(a && b);
 
-TEST_CASE("add single parallel 2", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<2>();
+        flow();
 
-    builder.add(a && b);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.size() == 2);
+    }
 
-    auto const flow = builder.internalBuild<2>();
-    flow();
+    TEST_CASE("add single parallel 3", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.size() == 2);
-}
+        builder.add(a && b && c);
 
-TEST_CASE("add single parallel 3", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a && b && c);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.size() == 3);
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.size() == 3);
-}
+        builder.add(a && b && c);
+        builder.add(c >> a);
 
-TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a && b && c);
-    builder.add(c >> a);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.find('c') < actual.find('a'));
+        REQUIRE(actual.size() == 3);
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('c') < actual.find('a'));
-    REQUIRE(actual.size() == 3);
-}
+        builder.add(a && b && c);
+        builder.add(a >> c);
 
-TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a && b && c);
-    builder.add(a >> c);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.find('a') < actual.find('c'));
+        REQUIRE(actual.size() == 3);
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add parallel rhs", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
-}
+        builder.add(a >> (b && c));
 
-TEST_CASE("add parallel rhs", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a >> (b && c));
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.find('a') < actual.find('b'));
+        REQUIRE(actual.find('a') < actual.find('c'));
+        REQUIRE(actual.size() == 3);
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add parallel lhs", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('b'));
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
-}
+        builder.add((a && b) >> c);
 
-TEST_CASE("add parallel lhs", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add((a && b) >> c);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.find('a') < actual.find('c'));
+        REQUIRE(actual.find('b') < actual.find('c'));
+        REQUIRE(actual.size() == 3);
+    }
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+    TEST_CASE("add parallel in the middle", "[flow]") {
+        flow::builder<decltype("MiddleParallelFlow"_sc)> builder;
+        actual = "";
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.find('b') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
-}
+        builder.add(a >> (b && c) >> d);
 
-TEST_CASE("add parallel in the middle", "[flow]") {
-    flow::Builder<decltype("MiddleParallelFlow"_sc)> builder;
-    actual = "";
+        auto const flow = builder.internal_build<4>();
+        flow();
 
-    builder.add(a >> (b && c) >> d);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.find('d') != std::string::npos);
 
-    auto const flow = builder.internalBuild<4>();
-    flow();
+        REQUIRE(actual.find('a') < actual.find('b'));
+        REQUIRE(actual.find('a') < actual.find('c'));
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('d') != std::string::npos);
+        REQUIRE(actual.find('b') < actual.find('d'));
+        REQUIRE(actual.find('c') < actual.find('d'));
 
-    REQUIRE(actual.find('a') < actual.find('b'));
-    REQUIRE(actual.find('a') < actual.find('c'));
+        REQUIRE(actual.size() == 4);
+    }
 
-    REQUIRE(actual.find('b') < actual.find('d'));
-    REQUIRE(actual.find('c') < actual.find('d'));
+    TEST_CASE("add dependency lhs", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.size() == 4);
-}
+        builder.add((a >> b) && c);
 
-TEST_CASE("add dependency lhs", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add((a >> b) && c);
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+        REQUIRE(actual.find('a') < actual.find('b'));
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.size() == 3);
+    }
 
-    REQUIRE(actual.find('a') < actual.find('b'));
+    TEST_CASE("add dependency rhs", "[flow]") {
+        flow::builder<> builder;
+        actual = "";
 
-    REQUIRE(actual.size() == 3);
-}
+        builder.add(a && (b >> c));
 
-TEST_CASE("add dependency rhs", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+        auto const flow = builder.internal_build<3>();
+        flow();
 
-    builder.add(a && (b >> c));
+        REQUIRE(actual.find('a') != std::string::npos);
+        REQUIRE(actual.find('b') != std::string::npos);
+        REQUIRE(actual.find('c') != std::string::npos);
 
-    auto const flow = builder.internalBuild<3>();
-    flow();
+        REQUIRE(actual.find('b') < actual.find('c'));
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
+        REQUIRE(actual.size() == 3);
+    }
 
-    REQUIRE(actual.find('b') < actual.find('c'));
+    struct TestFlowAlpha : public flow::service<> {};
+    struct TestFlowBeta : public flow::service<> {};
 
-    REQUIRE(actual.size() == 3);
-}
+    struct SingleFlowSingleActionConfig {
+        constexpr static auto config =
+            cib::config(
+                cib::exports<TestFlowAlpha>,
+                cib::extend<TestFlowAlpha>(a)
+        );
+    };
 
-TEST_CASE("add single combination 2", "[flow]") {
-    flow::Builder<> builder;
-    actual = "";
+    TEST_CASE("add single action through cib::nexus", "[flow]") {
+        cib::nexus<SingleFlowSingleActionConfig> nexus{};
+        actual = "";
 
-    builder.add(a, b);
+        nexus.service<TestFlowAlpha>();
 
-    auto const flow = builder.internalBuild<2>();
-    flow();
+        REQUIRE(actual == "a");
+    }
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
+    struct MultiFlowMultiActionConfig {
+        constexpr static auto config =
+            cib::config(
+                cib::exports<
+                    TestFlowAlpha,
+                    TestFlowBeta>,
 
-    REQUIRE(actual.size() == 2);
+                cib::extend<TestFlowAlpha>(a),
+                cib::extend<TestFlowAlpha>(a >> b),
+
+                cib::extend<TestFlowBeta>(d),
+                cib::extend<TestFlowBeta>(c >> d)
+        );
+    };
+
+    TEST_CASE("add multi action through cib::nexus", "[flow]") {
+        cib::nexus<MultiFlowMultiActionConfig> nexus{};
+        actual = "";
+
+        nexus.service<TestFlowAlpha>();
+        nexus.service<TestFlowBeta>();
+
+        REQUIRE(actual == "abcd");
+    }
+
+    TEST_CASE("add multi action through cib::nexus, run through cib::service", "[flow]") {
+        cib::nexus<MultiFlowMultiActionConfig> nexus{};
+        nexus.init();
+
+        actual = "";
+
+        cib::service<TestFlowAlpha>();
+        cib::service<TestFlowBeta>();
+
+        REQUIRE(actual == "abcd");
+    }
 }

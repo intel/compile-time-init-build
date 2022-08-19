@@ -9,7 +9,7 @@
 
 namespace flow {
     /**
-     * flow::builder enables multiple independent modules to collaboratively build
+     * flow::builder enables multiple independent components to collaboratively build
      * a flow::impl.
      *
      * flow::builder is fully constexpr and is not intended to ever execute at
@@ -27,15 +27,18 @@ namespace flow {
      *
      * @see flow::impl
      */
-    template<typename NameT = void, std::size_t NodeCapacity = 64, std::size_t DependencyCapacity = 16>
-    class Builder {
+    template<
+        typename NameT = void,
+        std::size_t NodeCapacity = 64,
+        std::size_t DependencyCapacity = 16>
+    class builder {
     private:
         /**
          * A type to map milestone sources to milestone destinations. Like edges
          * on a graph.
          */
         using GraphType =
-            ConstexprMultiMap<milestone_base const *, milestone_base const *, NodeCapacity, DependencyCapacity>;
+            ConstexprMultiMap<milestone_base, milestone_base, NodeCapacity, DependencyCapacity>;
 
         GraphType dependencyGraph;
 
@@ -51,7 +54,7 @@ namespace flow {
          */
         static constexpr bool hasNoIncomingEdges(
             GraphType & graph,
-            milestone_base const * node
+            milestone_base node
         ) {
             // std::find_if is not constexpr in c++17 :(
             for (auto s : graph) {
@@ -63,9 +66,9 @@ namespace flow {
             return true;
         }
 
-        [[nodiscard]] constexpr ConstexprSet<milestone_base const *, NodeCapacity> getNodesWithNoIncomingEdge() const {
+        [[nodiscard]] constexpr ConstexprSet<milestone_base, NodeCapacity> getNodesWithNoIncomingEdge() const {
             GraphType graph = dependencyGraph;
-            ConstexprSet<milestone_base const *, NodeCapacity> nodesWithNoIncomingEdge;
+            ConstexprSet<milestone_base, NodeCapacity> nodesWithNoIncomingEdge;
 
             for (auto const &entry : graph) {
                 nodesWithNoIncomingEdge.add(entry.key);
@@ -83,7 +86,7 @@ namespace flow {
     public:
         using Name = NameT;
 
-        constexpr Builder()
+        constexpr builder()
             : dependencyGraph()
         {}
 
@@ -114,14 +117,14 @@ namespace flow {
          * "c".
          */
         template<typename T>
-        constexpr void add(T const & flowDescription) {
+        constexpr auto add(T const & flowDescription) {
             if constexpr(std::is_base_of_v<milestone_base, T>) {
-                dependencyGraph.put(&flowDescription);
+                dependencyGraph.put(flowDescription);
 
             } else {
                 flowDescription.walk(
-                    [&](milestone_base const * lhs, milestone_base const * rhs) {
-                        if (rhs == nullptr) {
+                    [&](milestone_base lhs, milestone_base rhs) {
+                        if (rhs == milestone_base{nullptr, nullptr}) {
                             dependencyGraph.put(lhs);
                         } else {
                             dependencyGraph.put(lhs, rhs);
@@ -129,14 +132,9 @@ namespace flow {
                     }
                 );
             }
-        }
 
-        template<typename T1, typename T2, typename... Tn>
-        constexpr void add(T1 const &flowDesc1, T2 const &flowDesc2, Tn const &... flowDescN) {
-            add(flowDesc1);
-            add(flowDesc2, flowDescN...);
+            return *this;
         }
-
 
         /**
          * Create a flow::impl object combining all the specifications previously given
@@ -152,10 +150,10 @@ namespace flow {
          *      A flow::impl with all dependencies and requirements resolved.
          */
         template<int OptimizedFlowCapacity>
-        [[nodiscard]] constexpr flow::impl<Name, OptimizedFlowCapacity> internalBuild() const {
+        [[nodiscard]] constexpr flow::impl<Name, OptimizedFlowCapacity> internal_build() const {
             // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
             GraphType graph = dependencyGraph;
-            milestone_base const *orderedList[NodeCapacity] = {};
+            milestone_base orderedList[NodeCapacity] = {};
             int listSize = 0;
 
             auto nodesWithNoIncomingEdge = getNodesWithNoIncomingEdge();
@@ -210,7 +208,7 @@ namespace flow {
          */
         [[nodiscard]] constexpr std::size_t size() const {
             GraphType graph = dependencyGraph;
-            ConstexprSet<milestone_base const *, NodeCapacity> allNodes;
+            ConstexprSet<milestone_base, NodeCapacity> allNodes;
 
             for (auto entry : graph) {
                 allNodes.add(entry.key);
@@ -229,17 +227,11 @@ namespace flow {
         ///////////////////////////////////////////////////////////////////////////
         using FunctionPtr = std::add_pointer<void()>::type;
 
-        /**
-         * Never called, but the return type is used by cib to determine what the
-         * abstract interface is.
-         */
-        FunctionPtr base() const;
-
         template<typename BuilderValue>
         static void runImpl() {
             constexpr auto builder = BuilderValue::value;
             constexpr auto size = builder.size();
-            constexpr auto flow = builder.template internalBuild<size>();
+            constexpr auto flow = builder.template internal_build<size>();
 
             static_assert(flow.getBuildStatus() == build_status::SUCCESS);
 
@@ -251,4 +243,23 @@ namespace flow {
             return runImpl<BuilderValue>;
         }
     };
+
+    /**
+     * Extend this to create named flow services.
+     *
+     * Types that extend flow::meta can be used as unique names with
+     * cib::exports and cib::extend.
+     *
+     * @see cib::exports
+     * @see cib::extend
+     */
+    template<
+        typename NameT = void,
+        std::size_t NodeCapacity = 64,
+        std::size_t DependencyCapacity = 16>
+    struct service :
+        public cib::builder_meta<
+            builder<NameT, NodeCapacity, DependencyCapacity>,
+            FunctionPtr>
+    {};
 }
