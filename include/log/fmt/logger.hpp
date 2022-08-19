@@ -12,11 +12,9 @@
 #include <log/fmt/catalog.hpp>
 #include <log/log_level.hpp>
 
-
 template <>
 struct fmt::formatter<log_level> {
-    constexpr auto
-    parse(format_parse_context &ctx) { return ctx.begin(); }
+    constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
 
     template<typename FormatContext>
     auto format(const log_level &level, FormatContext &ctx) {
@@ -42,55 +40,57 @@ struct fmt::formatter<log_level> {
     }
 };
 
-const auto loggingStartTime = std::chrono::high_resolution_clock::now();
+namespace {
+    const auto loggingStartTime = std::chrono::high_resolution_clock::now();
 
-template<typename StringType>
-inline char const * trimSourceFilename(StringType src) {
-    return std::strstr(src, "src");
-}
-
-template<typename T>
-struct FormatHelper {
-    constexpr static T str{};
-
-    constexpr FormatHelper(T) {}
-
-    template<typename... Ts>
-    constexpr static auto f(Ts... args) {
-        return format(str, args...);
+    template<typename StringType>
+    inline char const * trimSourceFilename(StringType src) {
+        return std::strstr(src, "src");
     }
-};
+
+    template<typename T>
+    struct FormatHelper {
+        constexpr static T str{};
+
+        constexpr FormatHelper(T) {}
+
+        template<typename... Ts>
+        constexpr static auto f(Ts... args) {
+            return format(str, args...);
+        }
+    };
+
+
+    auto outputLine = [](auto filename, auto lineNumber, auto level, auto msg){
+        auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::high_resolution_clock::now() - loggingStartTime).count();
+
+        fmt::print(
+            "{:>8}us {}: {}\n",
+            currentTime,
+            level,
+            msg);
+    };
+
+    template<
+        typename FilenameStringType,
+        typename LineNumberType,
+        typename MsgType>
+    void log(
+        FilenameStringType filename,
+        LineNumberType lineNumber,
+        log_level level,
+        MsgType msg
+    ) {
+        auto formattedMsg = msg.args.apply([&](auto... args){
+            return fmt::format(msg.str.value, args...);
+        });
+
+        outputLine(filename, lineNumber, level, formattedMsg);
+    }
+}
 
 #define LOG(LEVEL, MSG, ...) log(__FILE__, __LINE__, LEVEL, FormatHelper{MSG ## _sc}.f(__VA_ARGS__))
-
-
-auto outputLine = [](auto filename, auto lineNumber, auto level, auto msg){
-    auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::high_resolution_clock::now() - loggingStartTime).count();
-
-    fmt::print(
-        "{:>8}us {}: {}\n",
-        currentTime,
-        level,
-        msg);
-};
-
-template<
-    typename FilenameStringType,
-    typename LineNumberType,
-    typename MsgType>
-void log(
-    FilenameStringType filename,
-    LineNumberType lineNumber,
-    log_level level,
-    MsgType msg
-) {
-    auto formattedMsg = msg.args.apply([&](auto... args){
-        return fmt::format(msg.str.value, args...);
-    });
-
-    outputLine(filename, lineNumber, level, formattedMsg);
-}
 
 #define TRACE(...) LOG(log_level::TRACE, __VA_ARGS__)
 #define INFO(...) LOG(log_level::INFO, __VA_ARGS__)
