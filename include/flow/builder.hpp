@@ -124,7 +124,7 @@ namespace flow {
             } else {
                 flowDescription.walk(
                     [&](milestone_base lhs, milestone_base rhs) {
-                        if (rhs == milestone_base{nullptr, nullptr}) {
+                        if (rhs == milestone_base{}) {
                             dependencyGraph.put(lhs);
                         } else {
                             dependencyGraph.put(lhs, rhs);

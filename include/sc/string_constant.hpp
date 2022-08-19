@@ -4,7 +4,6 @@
 #include <sc/fwd.hpp>
 #include <sc/detail/string_meta.hpp>
 
-#include <tuple>
 #include <utility>
 #include <string_view>
 #include <limits>
@@ -107,6 +106,18 @@ namespace sc {
             StrT
         ) noexcept {
             return create<detail::Replace<This, pos, count, StrT>>();
+        }
+
+        [[nodiscard]] constexpr static uint64_t hash() {
+            // http://www.cse.yorku.ca/~oz/hash.html @ Aug. 19, 2022
+            // this is a very slightly cleaned up version of djb2
+            uint64_t hash = 5381;
+
+            for (uint64_t const c :  value) {
+                hash = hash * 33 + c;
+            }
+
+            return hash;
         }
     };
 

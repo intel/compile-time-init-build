@@ -190,17 +190,17 @@ namespace sc {
     }
 
     TEST_CASE("lazy_runtime_values", "[sc::format]") {
-        REQUIRE(format("{}"_sc, 0) == (lazy_string_format{"{}"_sc, std::make_tuple(0)}));
-        REQUIRE(format("{}"_sc, 1) == (lazy_string_format{"{}"_sc, std::make_tuple(1)}));
-        REQUIRE(format("I am {} and my sister is {}"_sc, 6, 8) == (lazy_string_format{"I am {} and my sister is {}"_sc, std::make_tuple(6, 8)}));
-        REQUIRE(format("{}"_sc, 100) != (lazy_string_format{"{}"_sc, std::make_tuple(99)}));
-        REQUIRE(format("{}"_sc, true) == (lazy_string_format{"{}"_sc, std::make_tuple(true)}));
+        REQUIRE(format("{}"_sc, 0) == (lazy_string_format{"{}"_sc, cib::make_tuple(0)}));
+        REQUIRE(format("{}"_sc, 1) == (lazy_string_format{"{}"_sc, cib::make_tuple(1)}));
+        REQUIRE(format("I am {} and my sister is {}"_sc, 6, 8) == (lazy_string_format{"I am {} and my sister is {}"_sc, cib::make_tuple(6, 8)}));
+        REQUIRE(format("{}"_sc, 100) != (lazy_string_format{"{}"_sc, cib::make_tuple(99)}));
+        REQUIRE(format("{}"_sc, true) == (lazy_string_format{"{}"_sc, cib::make_tuple(true)}));
     }
 
     TEST_CASE("mixed_runtime_compile_time", "[sc::format]") {
         REQUIRE(
             format("My name is {} and I am {} years old"_sc, "Olivia"_sc, 8) ==
-            (lazy_string_format{"My name is Olivia and I am {} years old"_sc, std::make_tuple(8)}));
+            (lazy_string_format{"My name is Olivia and I am {} years old"_sc, cib::make_tuple(8)}));
     }
 
     TEST_CASE("format_a_formatted_string", "[sc::format]") {
@@ -219,7 +219,7 @@ namespace sc {
             ==
             (lazy_string_format{
                 "The value is (year={})."_sc,
-                std::make_tuple(2022)
+                cib::make_tuple(2022)
             })
         );
 
@@ -231,7 +231,7 @@ namespace sc {
             ==
             (lazy_string_format{
                 "a1{}2{}3b4{}5{}6c"_sc,
-                std::make_tuple(10, 20, 30, 40)
+                cib::make_tuple(10, 20, 30, 40)
             })
         );
     }

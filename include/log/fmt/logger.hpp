@@ -76,16 +76,6 @@ auto outputLine = [](auto filename, auto lineNumber, auto level, auto msg){
 };
 
 template<
-    typename... Ts,
-    typename CallableT>
-[[nodiscard]] constexpr static auto unpack(
-    std::tuple<Ts...> elems,
-    CallableT op
-) {
-    return std::apply(op, elems);
-}
-
-template<
     typename FilenameStringType,
     typename LineNumberType,
     typename MsgType>
@@ -95,7 +85,7 @@ void log(
     log_level level,
     MsgType msg
 ) {
-    auto formattedMsg = unpack(msg.args, [&](auto... args){
+    auto formattedMsg = msg.args.apply([&](auto... args){
         return fmt::format(msg.str.value, args...);
     });
 

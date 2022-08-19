@@ -6,8 +6,6 @@
 #include <sc/to_string_constant.hpp>
 #include <sc/lazy_string_format.hpp>
 
-#include <tuple>
-
 
 namespace sc::detail {
     struct fast_format_spec {

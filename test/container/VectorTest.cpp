@@ -4,8 +4,6 @@
 #include <core/mock/MockLogger.hpp>
 #include <container/Vector.hpp>
 
-#include <tuple>
-
 
 using ::testing::_;
 

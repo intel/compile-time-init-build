@@ -4,6 +4,8 @@
 #include <sc/fwd.hpp>
 #include <sc/string_constant.hpp>
 
+#include <cib/tuple.hpp>
+
 
 namespace sc {
     template<
@@ -11,7 +13,7 @@ namespace sc {
         typename ArgTupleT>
     struct lazy_string_format {
         constexpr static StringConstantT str{};
-        constexpr static bool has_args = std::tuple_size_v<ArgTupleT> > 0;
+        constexpr static bool has_args = ArgTupleT::size() > 0;
         ArgTupleT args;
 
         constexpr lazy_string_format()
@@ -28,7 +30,7 @@ namespace sc {
 
     template<class CharT, CharT... charsLhs, CharT... charsRhs>
     [[nodiscard]] constexpr auto operator==(
-        lazy_string_format<string_constant<CharT, charsLhs...>, std::tuple<>>,
+        lazy_string_format<string_constant<CharT, charsLhs...>, cib::tuple<>>,
         string_constant<CharT, charsRhs...>
     ) noexcept {
         return bool_<false>;
@@ -36,7 +38,7 @@ namespace sc {
 
     template<class CharT, CharT... chars>
     [[nodiscard]] constexpr auto operator==(
-        lazy_string_format<string_constant<CharT, chars...>, std::tuple<>>,
+        lazy_string_format<string_constant<CharT, chars...>, cib::tuple<>>,
         string_constant<CharT, chars...>
     ) noexcept {
         return bool_<true>;
@@ -56,7 +58,7 @@ namespace sc {
 
     template<class CharT, CharT... charsLhs, CharT... charsRhs>
     [[nodiscard]] constexpr auto operator!=(
-        lazy_string_format<string_constant<CharT, charsLhs...>, std::tuple<>>,
+        lazy_string_format<string_constant<CharT, charsLhs...>, cib::tuple<>>,
         string_constant<CharT, charsRhs...>
     ) noexcept {
         return bool_<true>;
@@ -64,7 +66,7 @@ namespace sc {
 
     template<class CharT, CharT... chars>
     [[nodiscard]] constexpr auto operator!=(
-        lazy_string_format<string_constant<CharT, chars...>, std::tuple<>>,
+        lazy_string_format<string_constant<CharT, chars...>, cib::tuple<>>,
         string_constant<CharT, chars...>
     ) noexcept {
         return bool_<false>;
@@ -122,7 +124,7 @@ namespace sc {
     ) noexcept {
         return lazy_string_format{
             lhs.str + rhs.str,
-            std::tuple_cat(lhs.args, rhs.args)};
+            cib::tuple_cat(lhs.args, rhs.args)};
     }
 
     template<
@@ -158,8 +160,8 @@ namespace sc {
         typename StringConstantLhsT,
         typename StringConstantRhsT>
     [[nodiscard]] constexpr auto operator+(
-        lazy_string_format<StringConstantLhsT, std::tuple<>> lhs,
-        lazy_string_format<StringConstantRhsT, std::tuple<>> rhs
+        lazy_string_format<StringConstantLhsT, cib::tuple<>> lhs,
+        lazy_string_format<StringConstantRhsT, cib::tuple<>> rhs
     ) noexcept {
         return lhs.str + rhs.str;
     }
@@ -169,7 +171,7 @@ namespace sc {
         typename CharT,
         CharT... chars>
     [[nodiscard]] constexpr auto operator+(
-        lazy_string_format<StringConstantLhsT, std::tuple<>> lhs,
+        lazy_string_format<StringConstantLhsT, cib::tuple<>> lhs,
         string_constant<CharT, chars...> rhs
     ) noexcept {
         return lhs.str + rhs;
@@ -181,7 +183,7 @@ namespace sc {
         typename StringConstantRhsT>
     [[nodiscard]] constexpr auto operator+(
         string_constant<CharT, chars...> lhs,
-        lazy_string_format<StringConstantRhsT, std::tuple<>> rhs
+        lazy_string_format<StringConstantRhsT, cib::tuple<>> rhs
     ) noexcept {
         return lhs + rhs.str;
     }

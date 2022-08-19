@@ -3,12 +3,13 @@
 
 #include <sc/string_constant.hpp>
 #include <sc/detail/conversions.hpp>
-#include <sc/detail/meta.hpp>
 #include <sc/detail/format_spec.hpp>
 #include <sc/lazy_string_format.hpp>
 
+#include <cib/tuple.hpp>
+#include <cib/detail/meta.hpp>
+
 #include <type_traits>
-#include <tuple>
 #include <string_view>
 #include <array>
 
@@ -263,12 +264,12 @@ namespace sc {
             }();
 
             if constexpr (has_runtime_args) {
-                return detail::fold_right(std::make_tuple(args...), std::make_tuple(), [](auto arg, auto state) {
+                return cib::detail::fold_right(cib::make_tuple(args...), cib::make_tuple(), [](auto arg, auto state) {
                     if constexpr (std::is_integral_v<decltype(arg)>) {
-                        return std::tuple_cat(std::make_tuple(arg), state);
+                        return cib::tuple_cat(cib::make_tuple(arg), state);
 
                     } else if constexpr (is_lazy_format_string_v<decltype(arg)>) {
-                        return std::tuple_cat(arg.args, state);
+                        return cib::tuple_cat(arg.args, state);
 
                     } else {
                         return state;
@@ -276,7 +277,7 @@ namespace sc {
                 });
 
             } else {
-                return std::make_tuple();
+                return cib::make_tuple();
             }
         }();
 

@@ -2,6 +2,7 @@
 #include <utility>
 #include <array>
 
+#include <cib/detail/compiler.hpp>
 
 #ifndef COMPILE_TIME_INIT_BUILD_TUPLE_HPP
 #define COMPILE_TIME_INIT_BUILD_TUPLE_HPP
@@ -123,6 +124,14 @@ namespace cib {
         template<typename Callable>
         constexpr auto apply(Callable operation) const {
             return operation(TupleElementTs::value...);
+        }
+
+        [[nodiscard]] constexpr bool operator==(tuple_impl<TupleElementTs...> const & rhs) const {
+            return ((this->TupleElementTs::value == rhs.TupleElementTs::value) && ... && true);
+        }
+
+        [[nodiscard]] constexpr bool operator!=(tuple_impl<TupleElementTs...> const & rhs) const {
+            return ((this->TupleElementTs::value != rhs.TupleElementTs::value) || ... || true);
         }
     };
 

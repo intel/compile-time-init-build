@@ -14,21 +14,34 @@ namespace flow {
         FunctionPtr run;
         FunctionPtr log_name;
 
+        #if defined(__GNUC__) && __GNUC__ < 12
+            uint64_t hash;
+        #endif
+
         template<typename Name, int NumSteps>
         friend class impl;
 
     public:
+        template<typename Name>
         constexpr milestone_base(
-            FunctionPtr run_ptr,
-            FunctionPtr log_name_ptr
+            Name name,
+            FunctionPtr run_ptr
         )
             : run{run_ptr}
-            , log_name{log_name_ptr}
+            , log_name{[](){TRACE("flow.milestone({})", Name{});}}
+
+            #if defined(__GNUC__) && __GNUC__ < 12
+                , hash{name.hash()}
+            #endif
         {}
 
         constexpr milestone_base()
             : run{nullptr}
             , log_name{nullptr}
+
+            #if defined(__GNUC__) && __GNUC__ < 12
+                , hash{0u}
+            #endif
         {}
 
         constexpr milestone_base(milestone_base const & rhs) = default;
@@ -37,9 +50,13 @@ namespace flow {
         constexpr milestone_base & operator=(milestone_base && rhs) = default;
 
         [[nodiscard]] constexpr bool operator==(milestone_base const & rhs) const {
-            return
-                this->run == rhs.run &&
-                this->log_name == rhs.log_name;
+            #if defined(__GNUC__) && __GNUC__ < 12
+                return this->hash == rhs.hash;
+            #elif
+                return
+                    (this->run) == (rhs.run) &&
+                    (this->log_name) == (rhs.log_name);
+            #endif
         }
 
         constexpr void operator()() const {
@@ -76,7 +93,7 @@ namespace flow {
      */
     template<typename NameType>
     [[nodiscard]] constexpr auto action(NameType name, FunctionPtr f) {
-        return milestone_base{f, detail::log_flow_milestone<NameType>};
+        return milestone_base{name, f};
     }
 
     /**
@@ -85,6 +102,6 @@ namespace flow {
      */
     template<typename NameType>
     [[nodiscard]] constexpr auto milestone(NameType name) {
-        return milestone_base{[]{}, detail::log_flow_milestone<NameType>};
+        return milestone_base{name, [](){}};
     }
 }
