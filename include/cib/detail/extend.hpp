@@ -1,5 +1,5 @@
-#include "config_item.hpp"
-#include "../tuple.hpp"
+#include <cib/detail/config_item.hpp>
+#include <cib/tuple.hpp>
 
 #include <utility>
 

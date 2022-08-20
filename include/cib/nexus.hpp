@@ -1,7 +1,7 @@
-#include "detail/nexus_details.hpp"
-#include "detail/compiler.hpp"
-#include "detail/meta.hpp"
-#include "built.hpp"
+#include <cib/detail/nexus_details.hpp>
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/built.hpp>
 
 #include <type_traits>
 
@@ -35,7 +35,7 @@ namespace cib {
         #undef CIB_BUILD_SERVICE
 
         static void init() {
-            detail::for_each(initialized_builders_v<Config>, [](auto b){
+            initialized_builders_v<Config>.for_each([](auto b){
                 using service_tag = typename decltype(b)::Service;
                 using clean_service_tag = std::remove_cv_t<std::remove_reference_t<service_tag>>;
 

@@ -2,6 +2,7 @@
 #include <utility>
 #include <array>
 
+#include <cib/detail/compiler.hpp>
 
 #ifndef COMPILE_TIME_INIT_BUILD_TUPLE_HPP
 #define COMPILE_TIME_INIT_BUILD_TUPLE_HPP
@@ -102,27 +103,108 @@ namespace cib {
         }
     };
 
+    namespace detail {
+                /**
+         * Used by fold_right to leverage c++17 fold expressions with arbitrary
+         * callables.
+         *
+         * @tparam ValueType
+         *      The type of the element from the value pack.
+         *
+         * @tparam CallableType
+         *      A callable that takes two arguments, current element to be
+         *      processed and the fold state.
+         */
+        template<
+            typename ValueType,
+            typename CallableType>
+        struct fold_helper {
+            ValueType const & element_;
+            CallableType const & operation_;
+
+            CIB_CONSTEXPR fold_helper(
+                ValueType const & element,
+                CallableType const & operation
+            )
+                : element_{element}
+                , operation_{operation}
+            {}
+
+            template<typename StateType>
+            [[nodiscard]] CIB_CONSTEXPR inline auto operator+(
+                StateType const & state
+            ) const {
+                return operation_(element_, state);
+            }
+        };
+    }
 
     template<typename... TupleElementTs>
     struct tuple_impl : public TupleElementTs... {
-        constexpr tuple_impl(TupleElementTs... values)
+        CIB_CONSTEXPR tuple_impl(TupleElementTs... values)
             : TupleElementTs{values}...
         {}
 
         template <std::enable_if_t<(sizeof...(TupleElementTs) >= 0), bool> = true>
-        constexpr tuple_impl()
+        CIB_CONSTEXPR tuple_impl()
             : TupleElementTs{}...
         {}
 
         using TupleElementTs::get...;
 
-        [[nodiscard]] constexpr static int size() {
+        [[nodiscard]] CIB_CONSTEXPR static int size() {
             return sizeof...(TupleElementTs);
         }
 
         template<typename Callable>
-        constexpr auto apply(Callable operation) const {
+        CIB_CONSTEXPR auto apply(Callable operation) const {
             return operation(TupleElementTs::value...);
+        }
+
+        /**
+         * Perform an operation on each element.
+         *
+         * @param operation
+         *      The operation to perform. Must be a callable that accepts a single parameter.
+         */
+        template<typename Callable>
+        CIB_CONSTEXPR void for_each(Callable operation) const {
+            (operation(TupleElementTs::value) , ...);
+        }
+
+        /**
+         * fold_right a tuple of elements.
+         *
+         * Fold operations are sometimes called accumulate or reduce in other
+         * languages or libraries.
+         *
+         * https://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+         *
+         * @param operation
+         *      A callable that takes the current element being processed
+         *      and the current state, and returns the state to be used
+         *      to process the next element. Called for each element in
+         *      the tuple.
+         *
+         * @return
+         *      The final state of all of the operations.
+         */
+        template<
+            typename InitType,
+            typename CallableType>
+        [[nodiscard]] CIB_CONSTEXPR inline auto fold_right(
+            InitType const & initial_state,
+            CallableType const & operation
+        ) const {
+            return (detail::fold_helper{TupleElementTs::value, operation} + ... + initial_state);
+        }
+
+        [[nodiscard]] CIB_CONSTEXPR bool operator==(tuple_impl<TupleElementTs...> const & rhs) const {
+            return ((this->TupleElementTs::value == rhs.TupleElementTs::value) && ... && true);
+        }
+
+        [[nodiscard]] CIB_CONSTEXPR bool operator!=(tuple_impl<TupleElementTs...> const & rhs) const {
+            return ((this->TupleElementTs::value != rhs.TupleElementTs::value) || ... || false);
         }
     };
 

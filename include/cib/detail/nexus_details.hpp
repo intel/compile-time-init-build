@@ -1,9 +1,9 @@
-#include "compiler.hpp"
-#include "meta.hpp"
-#include "type_list.hpp"
-#include "../tuple.hpp"
-#include "../set.hpp"
-#include "exports.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/detail/type_list.hpp>
+#include <cib/tuple.hpp>
+#include <cib/set.hpp>
+#include <cib/detail/exports.hpp>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
@@ -54,8 +54,8 @@ namespace cib {
                 [](auto extensions){
                     constexpr auto initial_builder = extensions.get(index_<0>).builder;
                     using service = get_service_from_tuple::invoke<decltype(extensions)>;
-                    auto built_service = detail::fold_right(extensions, initial_builder, [](auto extension, auto outer_builder){
-                        return detail::fold_right(extension.args_tuple, outer_builder, [](auto arg, auto inner_builder) {
+                    auto built_service = extensions.fold_right(initial_builder, [](auto extension, auto outer_builder){
+                        return extension.args_tuple.fold_right(outer_builder, [](auto arg, auto inner_builder) {
                             return inner_builder.add(arg);
                         });
                     });

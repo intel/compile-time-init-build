@@ -1,8 +1,8 @@
-#include "compiler.hpp"
-#include "config_item.hpp"
-#include "meta.hpp"
-#include "../tuple.hpp"
-#include "type_list.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/config_item.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/tuple.hpp>
+#include <cib/detail/type_list.hpp>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP
@@ -33,11 +33,11 @@ namespace cib::detail {
 
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
-            return apply([&](auto const & ... config_args){
-                return apply([&](auto const & ... configs_pack){
-                    return tuple_cat(configs_pack.extends_tuple(args..., config_args...)...);
-                }, configs_tuple);
-            }, ConfigArgs::value);
+            return ConfigArgs::value.apply([&](auto const & ... config_args){
+                return configs_tuple.apply([&](auto const & ... configs_pack){
+                    return cib::tuple_cat(configs_pack.extends_tuple(args..., config_args...)...);
+                });
+            });
         }
     };
 }

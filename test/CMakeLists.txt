@@ -3,15 +3,27 @@ project(compile_time_init_build)
 
 
 add_executable(tests
-    detail/type_list.cpp
-    detail/type_pack_element.cpp
-    detail/type_to_string_view.cpp
-    builder_meta.cpp
-    callback.cpp
-    nexus.cpp
-    tuple.cpp
-    set.cpp
-    readme_hello_world.cpp
+    cib/detail/type_list.cpp
+    cib/detail/type_pack_element.cpp
+    cib/detail/type_to_string_view.cpp
+    cib/builder_meta.cpp
+    cib/callback.cpp
+    cib/nexus.cpp
+    cib/tuple.cpp
+    cib/set.cpp
+    cib/readme_hello_world.cpp
+    flow/flow.cpp
+    sc/format.cpp
+    sc/string_constant.cpp
+    container/Array.cpp
+    container/ConstexprMap.cpp
+    container/ConstexprMultiMap.cpp
+    container/ConstexprSet.cpp
+    container/DoubleLinkedList.cpp
+    container/LinkedList.cpp
+    container/Vector.cpp
+    container/PriorityQueue.cpp
+    container/Queue.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -96,6 +108,9 @@ target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
 
 # ensure the catch2 headers do not produce warnings
 target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)
+
+target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
+target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/lib/Catch2/extras)
 include(CTest)

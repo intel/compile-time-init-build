@@ -1,8 +1,8 @@
-#include "compiler.hpp"
-#include "config_item.hpp"
-#include "type_list.hpp"
-#include "builder_traits.hpp"
-#include "extend.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/config_item.hpp>
+#include <cib/detail/type_list.hpp>
+#include <cib/detail/builder_traits.hpp>
+#include <cib/detail/extend.hpp>
 
 #include <utility>
 

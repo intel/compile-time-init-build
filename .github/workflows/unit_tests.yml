@@ -107,10 +107,6 @@ jobs:
             install: sudo apt update && sudo apt-get install -y gcc-9
             cc: "/usr/bin/gcc-9"
             cxx: "/usr/bin/g++-9"
-          - name: gcc-8
-            install: sudo apt update && sudo apt-get install -y gcc-8 g++-8
-            cc: "/usr/bin/gcc-8"
-            cxx: "/usr/bin/g++-8"
           
     steps:
       - uses: actions/checkout@v3
