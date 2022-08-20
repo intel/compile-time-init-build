@@ -43,7 +43,7 @@ public:
 
         } else {
             auto dst_index = 0;
-            for (auto v : src) {
+            for (auto const & v : src) {
                 storage[dst_index] = v;
                 dst_index++;
             }
@@ -61,7 +61,7 @@ public:
 
         } else {
             auto dst_index = 0;
-            for (auto v : src) {
+            for (auto const & v : src) {
                 storage[dst_index] = v;
                 dst_index++;
             }
