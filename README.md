@@ -12,7 +12,9 @@ Firmware using *cib* is implemented as a collection of **components**. Each
 component provides **services** and **features** to the build. Component
 **features** extend and provide new functionality to **services**.
 
-*cib* is currently in a prerelease state and its API is subject to change.
+As of the v1.0.0 release *cib*'s API is considered stable and unlikely to change.
+
+[![emBO++ 2022 The constexpr init()/build() pattern: compose modular firmware with minimal runtime cost](https://img.youtube.com/vi/fk0ihqOXER8/0.jpg)](https://www.youtube.com/watch?v=fk0ihqOXER8)
 
 ## Installing / Getting started
 
