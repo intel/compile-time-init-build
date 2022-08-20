@@ -23,7 +23,7 @@ To get started quickly, download the cib.hpp header from the
 [release area](https://github.com/intel/compile-time-init-build/releases):
 
 ```shell
-wget https://github.com/intel/compile-time-init-build/releases/download/v0.1.0/cib.hpp
+wget https://github.com/intel/compile-time-init-build/releases/download/v1.0.0/cib.hpp
 ```
 
 Another option is to include cib as a 
