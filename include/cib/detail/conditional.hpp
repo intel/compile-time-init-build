@@ -56,7 +56,7 @@ namespace cib::detail {
 
         template<typename... Args>
         CIB_CONSTEVAL auto operator()(Args... args) const {
-            return detail::fold_right(cib::make_tuple(self_type_index, args...), detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state){
+            return cib::make_tuple(self_type_index, args...).fold_right(detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state){
                 using ElemType = typename std::remove_cv_t<std::remove_reference_t<decltype(elem)>>::value_type;
 
                 if constexpr (std::is_same_v<ElemType, MatchType>) {

@@ -264,7 +264,7 @@ namespace sc {
             }();
 
             if constexpr (has_runtime_args) {
-                return cib::detail::fold_right(cib::make_tuple(args...), cib::make_tuple(), [](auto arg, auto state) {
+                return cib::make_tuple(args...).fold_right(cib::make_tuple(), [](auto arg, auto state) {
                     if constexpr (std::is_integral_v<decltype(arg)>) {
                         return cib::tuple_cat(cib::make_tuple(arg), state);
 

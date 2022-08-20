@@ -54,8 +54,8 @@ namespace cib {
                 [](auto extensions){
                     constexpr auto initial_builder = extensions.get(index_<0>).builder;
                     using service = get_service_from_tuple::invoke<decltype(extensions)>;
-                    auto built_service = detail::fold_right(extensions, initial_builder, [](auto extension, auto outer_builder){
-                        return detail::fold_right(extension.args_tuple, outer_builder, [](auto arg, auto inner_builder) {
+                    auto built_service = extensions.fold_right(initial_builder, [](auto extension, auto outer_builder){
+                        return extension.args_tuple.fold_right(outer_builder, [](auto arg, auto inner_builder) {
                             return inner_builder.add(arg);
                         });
                     });

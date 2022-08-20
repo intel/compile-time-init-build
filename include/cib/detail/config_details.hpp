@@ -33,11 +33,11 @@ namespace cib::detail {
 
         template<typename... Args>
         [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const & ... args) const {
-            return apply([&](auto const & ... config_args){
-                return apply([&](auto const & ... configs_pack){
-                    return tuple_cat(configs_pack.extends_tuple(args..., config_args...)...);
-                }, configs_tuple);
-            }, ConfigArgs::value);
+            return ConfigArgs::value.apply([&](auto const & ... config_args){
+                return configs_tuple.apply([&](auto const & ... configs_pack){
+                    return cib::tuple_cat(configs_pack.extends_tuple(args..., config_args...)...);
+                });
+            });
         }
     };
 }
