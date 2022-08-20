@@ -1,8 +1,8 @@
-#include "compiler.hpp"
-#include "config_item.hpp"
-#include "meta.hpp"
-#include "../tuple.hpp"
-#include "type_list.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/config_item.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/tuple.hpp>
+#include <cib/detail/type_list.hpp>
 
 #include <type_traits>
 

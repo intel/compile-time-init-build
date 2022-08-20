@@ -1,8 +1,8 @@
-#include "compiler.hpp"
-#include "config_item.hpp"
-#include "config_details.hpp"
-#include "type_list.hpp"
-#include "../tuple.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/config_item.hpp>
+#include <cib/detail/config_details.hpp>
+#include <cib/detail/type_list.hpp>
+#include <cib/tuple.hpp>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_CONDITIONAL_HPP

@@ -1,5 +1,5 @@
-#include "compiler.hpp"
-#include "../tuple.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/tuple.hpp>
 
 #include <type_traits>
 

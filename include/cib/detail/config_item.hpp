@@ -1,6 +1,6 @@
-#include "compiler.hpp"
-#include "type_list.hpp"
-#include "../tuple.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/type_list.hpp>
+#include <cib/tuple.hpp>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP

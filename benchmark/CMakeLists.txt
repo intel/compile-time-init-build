@@ -30,3 +30,5 @@ target_compile_options(compilation_benchmark
 )
 
 target_link_libraries(compilation_benchmark PRIVATE cib)
+target_include_directories(compilation_benchmark SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
+target_include_directories(compilation_benchmark SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)

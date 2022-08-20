@@ -1,9 +1,9 @@
-#include "compiler.hpp"
-#include "meta.hpp"
-#include "type_list.hpp"
-#include "../tuple.hpp"
-#include "../set.hpp"
-#include "exports.hpp"
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/detail/type_list.hpp>
+#include <cib/tuple.hpp>
+#include <cib/set.hpp>
+#include <cib/detail/exports.hpp>
 
 
 #ifndef COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP

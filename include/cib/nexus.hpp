@@ -1,7 +1,7 @@
-#include "detail/nexus_details.hpp"
-#include "detail/compiler.hpp"
-#include "detail/meta.hpp"
-#include "built.hpp"
+#include <cib/detail/nexus_details.hpp>
+#include <cib/detail/compiler.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/built.hpp>
 
 #include <type_traits>
 
