@@ -4,7 +4,7 @@ A flow is a series of actions to be executed in order based on their dependencie
 designed to be used for power flows, moving from one power state to another. It can also be used as a generic extension
 point to register callbacks at compile-time. Flow implements the constexpr init()/build() pattern.
 
-## Usage 
+## Example 
 
 Flow extension points are declared by extending the `flow::service`.
 
@@ -251,6 +251,94 @@ int main() {
     top.main();
 }
 ```
+
+## API
+
+### `flow::service`
+
+Define a new `flow` service. If the `flow::service` template type is given a `sc::string_constant` name then it will
+automatically log the beginning and end of the `flow` as well as all actions.
+
+#### Example
+
+```c++
+// declare a flow without logging
+struct MyFlow : public flow::service<> {};
+
+// declare a flow with automatic logging enabled
+struct MyFlowWithLogging : public flow::service<decltype("MyFlowWithLogging"_sc)> {}; 
+```
+
+### `flow::action`
+
+Define a new `flow` action. All `flow` actions are created with a name and lambda. `flow` action and milestone names 
+must be unique within a `flow`. The same action can be used in multiple flows. Actions cannot be added to a flow more
+than once, but can be referenced by other actions when adding dependencies.
+
+#### Example
+
+```c++
+constexpr static auto MY_ACTION_NAME = flow::action("MY_ACTION_NAME"_sc, [] {
+    // do useful stuff
+}); 
+```
+
+### `flow::milestone`
+
+Define a new `flow` milestone. Milestones only have a name and perform no action. They are used as well-defined points
+within a `flow` in which other actions may base their dependencies on.
+
+#### Example
+
+```c++
+constexpr static auto MY_MILESTONE_NAME = flow::milestone("MY_MILESTONE_NAME"_sc); 
+```
+
+### `flow::run`
+
+#### Example
+
+```c++
+flow::run<MyFlow>();
+```
+
+### `>>`
+
+Create a dependency between two or more actions and/or milestones. Must be passed into the `cib::extend` configuration
+method for it to have an effect. Can be changed together to create a sequence of dependent actions.
+
+#### Example
+
+```c++
+namespace example_component {
+    constexpr auto config = cib::config(
+        cib::extend<MyFlow>(
+            // SOME_ACTION must execute before SOME_OTHER_ACTION
+            SOME_ACTION >> SOME_OTHER_ACTION
+        )
+    );
+}
+```
+
+### `&&`
+
+Allow two or more actions and/or milestones to be added in parallel without any ordering requirement between them. If
+there is no dependency between two or more actions, this is the preferred way of adding them to a `flow`. Other 
+components will then be able to insert actions in between if needed.
+
+#### Example
+
+```c++
+namespace example_component {
+    constexpr auto config = cib::config(
+        cib::extend<MyFlow>(
+            // no order requirement between these actions
+            SOME_ACTION && SOME_OTHER_ACTION
+        )
+    );
+}
+```
+
 
 ## Theory of Operation
 
