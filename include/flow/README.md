@@ -30,9 +30,8 @@ namespace food {
 Actions are added to the flow inside a component's `cib::config`.
 
 ```c++
-struct morning { 
+struct morning {
     constexpr auto config = cib::config(
-        cib::exports<MorningRoutine>,
         cib::extend<MorningRoutine>(
             WAKE_UP >>
             selfcare::SHOWER >>
@@ -206,13 +205,39 @@ MorningRoutine
 10. SEND_KIDS_TO_SCHOOL
 ```
 
-All of these components are brought together in a project component:
+All of these components are composed in a project component and brought to life with an instance of `cib::top`. We need
+to make sure our `flow`s get executed at the appropriate times, so we our example has a `day_cycle` component that 
+defines the various extension points and ensures they get executed over and over in `cib::top`'s `MainLoop`.
+
 
 ```c++
+// simple component for scheduling daily activities.
+struct day_cycle {
+    constexpr static auto DAY_CYCLE = flow::action("DAY_CYCLE"_sc, [] { 
+        flow::run<MorningRoutine>();
+        flow::run<DaytimeRoutine>();
+        flow::run<EveningRoutine>();
+        wait_for_morning_time();
+    }); 
+    
+    constexpr auto config = cib::config(
+        cib::exports<
+            MorningRoutine, 
+            DaytimeRoutine, 
+            EveningRoutine
+        >,
+        
+        cib::extend<MainLoop>(
+            DAY_CYCLE
+        )
+    );
+} 
+
 // bring together all the components for the project
 struct my_life {
     constexpr auto config = 
         cib::components<
+            day_cycle,
             morning,
             childcare,
             exercise
