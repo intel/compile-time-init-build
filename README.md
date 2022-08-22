@@ -16,6 +16,23 @@ As of the v1.0.0 release *cib*'s API is considered stable and unlikely to change
 
 [![emBO++ 2022 The constexpr init()/build() pattern: compose modular firmware with minimal runtime cost](https://img.youtube.com/vi/fk0ihqOXER8/0.jpg)](https://www.youtube.com/watch?v=fk0ihqOXER8)
 
+## Sub-projects
+
+There are multiple sub-projects contained within *cib*. Some of them are used
+to implement *cib* and others extend *cib*.
+
+* Services
+    * [Flow](include/flow) - *cib* service used to compose sequences of dependent
+      operations from multiple components.
+    * [Callback](include/cib/callback.hpp) - *cib* service used to implement
+      simple callback/listener pattern.
+* Support
+    * [string_constant](include/sc) - Compile-time string library with support for
+      formatting similar to fmt/python format specifiers.
+    * [log (wip)](include/log) - Logging library.
+    * [Container](include/container) - Simple containers optimized for constexpr
+      and/or free-standing applications.
+
 ## Installing / Getting started
 
 *cib* is released as a single header file as well as the zipped github repo. 
