@@ -24,6 +24,11 @@ add_executable(tests
     container/Vector.cpp
     container/PriorityQueue.cpp
     container/Queue.cpp
+    msg/match.cpp
+    msg/disjoint_field.cpp
+    msg/field.cpp
+    msg/handler.cpp
+    msg/message.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
