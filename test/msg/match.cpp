@@ -97,6 +97,9 @@ namespace {
             match::any(number<1>).describeMatch(1) ==
             format("number ({}) == 1"_sc, 1));
 
+        INFO("EXPECTED: {:c}:(number ({}) == 1) || {:c}:(number ({}) == 4)", 'F', 0, 'F', 0);
+        INFO("ACTUAL:   {}", match::any(number<1>, number<4>).describeMatch(0));
+
         REQUIRE(
             match::any(number<1>, number<4>).describeMatch(0) ==
             format("{:c}:(number ({}) == 1) || {:c}:(number ({}) == 4)"_sc, 'F', 0, 'F', 0));

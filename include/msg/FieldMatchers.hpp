@@ -4,13 +4,10 @@
 #include <type_traits>
 #include <sc/string_constant.hpp>
 
-#include <boost/hana.hpp>
 #include <cstdint>
 
 
 namespace msg {
-    namespace hana = boost::hana;
-
     template<typename FieldType, typename T, T expectedValue>
     struct EqualTo {
         template<typename MsgType>
@@ -50,21 +47,21 @@ namespace msg {
 
     template<typename FieldType, typename T, T... expectedValues>
     struct In {
-        static constexpr auto expectedValuesTuple = hana::tuple_c<T, expectedValues...>;
+        static constexpr auto expectedValuesTuple = cib::make_tuple(expectedValues...);
 
         static constexpr auto expectedValueStringsTuple =
-            hana::transform(expectedValuesTuple, [](auto v){
+            cib::transform(expectedValuesTuple, [](auto v){
                 if constexpr (std::is_integral_v<T>) {
                     return format("0x{:x}"_sc, v);
                 } else {
                     return format("{} (0x{:x})"_sc,
-                        sc::enum_<hana::value(v)>,
-                        sc::int_<static_cast<std::uint32_t>(hana::value(v))>);
+                        sc::enum_<v.value>,
+                        sc::int_<static_cast<std::uint32_t>(v.value)>);
                 }
             });
 
         static constexpr auto expectedValuesString =
-            hana::fold(expectedValueStringsTuple, [](auto lhs, auto rhs){
+            expectedValueStringsTuple.fold_right([](auto lhs, auto rhs){
                 return lhs + ", "_sc + rhs;
             });
 
@@ -72,7 +69,7 @@ namespace msg {
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
             auto const actualValue = msg.template get<FieldType>();
 
-            return hana::fold(expectedValuesTuple, false, [&](bool match, auto expectedValue){
+            return expectedValuesTuple.fold_right(false, [&](auto expectedValue, bool match){
                 return match || (actualValue == expectedValue);
             });
         }

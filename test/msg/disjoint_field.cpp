@@ -3,14 +3,13 @@
 #include <msg/Field.hpp>
 #include <msg/DisjointField.hpp>
 
-#include <boost/hana.hpp>
+#include <cib/tuple.hpp>
 
 #include <array>
 #include <cstdint>
 
 
-namespace {
-    namespace hana = boost::hana;
+namespace {;
 
     using SubField1 = Field<
         decltype("SubField1"_sc),
@@ -19,7 +18,7 @@ namespace {
 
     using SingularTestField = DisjointField<
         decltype("TestField"_sc),
-        hana::tuple<SubField1>>;
+        cib::tuple<SubField1>>;
 
     TEST_CASE("SingularDisjointFieldExtract", "[disjoint_field]") {
         std::array<std::uint32_t, 1> data{0xCAFEF00D};
@@ -46,7 +45,7 @@ namespace {
 
     using DualTestField = DisjointField<
         decltype("DualTestField"_sc),
-        hana::tuple<UpperSubField, LowerSubField>>;
+        cib::tuple<UpperSubField, LowerSubField>>;
 
     TEST_CASE("DualDisjointFieldExtract", "[disjoint_field]") {
         std::array<std::uint32_t, 2> data{0x00000012, 0x00000034};

@@ -6,6 +6,7 @@
 
 #include <container/Vector.hpp>
 #include <container/Array.hpp>
+#include <cib/tuple.hpp>
 
 #include <log/log.hpp>
 
@@ -47,25 +48,25 @@ namespace msg {
     template<typename DataIterableT, typename... ArgTs>
     struct func_args<void(DataIterableT, ArgTs...)> {
         using msg_type = remove_cvref_t<DataIterableT>;
-        using type = decltype(hana::tuple_t<ArgTs...>);
+        using type = cib::tuple<ArgTs...>;
     };
 
     template<typename DataIterableT, typename... ArgTs>
     struct func_args<void(DataIterableT, ArgTs...) const> {
         using msg_type = remove_cvref_t<DataIterableT>;
-        using type = decltype(hana::tuple_t<ArgTs...>);
+        using type = cib::tuple<ArgTs...>;
     };
 
     template<typename DataIterableT, typename T, typename... ArgTs>
     struct func_args<void(T::*)(DataIterableT, ArgTs...)> {
         using msg_type = remove_cvref_t<DataIterableT>;
-        using type = decltype(hana::tuple_t<ArgTs...>);
+        using type = cib::tuple<ArgTs...>;
     };
 
     template<typename DataIterableT, typename T, typename... ArgTs>
     struct func_args<void(T::*)(DataIterableT, ArgTs...) const> {
         using msg_type = remove_cvref_t<DataIterableT>;
-        using type = decltype(hana::tuple_t<ArgTs...>);
+        using type = cib::tuple<ArgTs...>;
     };
 
     template<typename CallableT>
@@ -90,14 +91,15 @@ namespace msg {
     ) {
         auto const providedArgsTuple = std::tuple(args...);
         auto const requiredArgsTuple =
-            hana::transform(
+            cib::transform(
                 func_args_v<CallableT>,
                 [&](auto requiredArg){
-                    using RequiredArgType = typename decltype(requiredArg)::type;
+                    using RequiredArgType = decltype(requiredArg);
                     return std::get<RequiredArgType>(providedArgsTuple);
                 }
             );
-        hana::unpack(requiredArgsTuple, [&](auto const & ... requiredArgs){
+
+        requiredArgsTuple.apply([&](auto const & ... requiredArgs){
             using MsgType = msg_type_t<decltype(callable)>;
             MsgType const msg{data};
 
@@ -130,22 +132,22 @@ namespace msg {
         constexpr static NameTypeT name{};
 
         MatchMsgTypeT matchMsg;
-        hana::tuple<CallableTypesT...> callbacks;
+        cib::tuple<CallableTypesT...> callbacks;
 
         template<typename DataIterableType>
         void dispatch(DataIterableType const & data, ExtraCallbackArgsT const & ... args) const {
-            hana::for_each(callbacks, [&](auto callback){
+            callbacks.for_each([&](auto callback){
                 dispatchSingleCallable(callback, data, args...);
             });
         }
 
         [[nodiscard]] constexpr auto matchAnyCallback() const {
-            auto const matchers = hana::transform(callbacks, [&](auto callback){
+            auto const matchers = cib::transform(callbacks, [&](auto callback){
                 using MsgType = msg_type_t<decltype(callback)>;
                 return isValidMsg<MsgType>(match::always<true>);
             });
 
-            return hana::unpack(matchers, [](auto... matchersPack){
+            return matchers.apply([](auto... matchersPack){
                 return match::any(matchersPack...);
             });
         }
@@ -156,9 +158,9 @@ namespace msg {
             CallableTypesT const & ... callbackArgs
         )
             : matchMsg(matchMsg)
-            , callbacks(hana::make_tuple(callbackArgs...))
+            , callbacks(cib::make_tuple(callbackArgs...))
         {
-            hana::for_each(callbacks, [](auto callback) {
+            callbacks.for_each([](auto callback) {
                 static_assert(
                     !std::is_same<decltype(callback), std::nullptr_t>::value,
                     "Function pointer specified for callback can't be null");

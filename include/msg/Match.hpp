@@ -2,13 +2,11 @@
 
 #include <log/log.hpp>
 #include <sc/string_constant.hpp>
+#include <cib/tuple.hpp>
 
-#include <boost/hana.hpp>
 #include <type_traits>
 
 namespace match {
-    namespace hana = boost::hana;
-
     template<
         typename NameTypeT,
         typename MatcherTypeT,
@@ -54,11 +52,11 @@ namespace match {
         HandlerTypes const & ... handlers
     ) {
         const auto handlersTuple =
-            hana::make_tuple(handlers...);
+            cib::make_tuple(handlers...);
 
         bool eventHandled = false;
 
-        hana::for_each(handlersTuple, [&](auto handler){
+        handlersTuple.for_each([&](auto handler){
             if constexpr (!decltype(handler)::isDefaultHandler) {
                 if (handler.matcher(event)) {
                     INFO("{} - Processing [{}] due to match [{}]",
@@ -74,7 +72,7 @@ namespace match {
 
         if (!eventHandled) {
             if constexpr (hasDefault) {
-                hana::for_each(handlersTuple, [&](auto handler){
+                handlersTuple.for_each([&](auto handler){
                     if constexpr (decltype(handler)::isDefaultHandler) {
                         INFO("{} - Processing [default]", name);
                         handler.action();
@@ -83,12 +81,12 @@ namespace match {
                 });
             } else {
                 const auto mismatchDescriptions =
-                    hana::transform(handlersTuple, [&](auto handler){
+                    cib::transform(handlersTuple, [&](auto handler){
                         return format("    {} - F:({})\n"_sc, handler.name, handler.matcher.describeMatch(event));
                     });
 
                 const auto mismatchDescription =
-                    hana::fold_left(mismatchDescriptions, [](auto lhs, auto rhs){
+                    mismatchDescriptions.fold_left([](auto lhs, auto rhs){
                         return lhs + rhs;
                     });
 
@@ -128,23 +126,27 @@ namespace match {
 
     template<typename... MatcherTypes>
     struct Any {
-        using MatchersType = hana::tuple<MatcherTypes...>;
+        using MatchersType = cib::tuple<MatcherTypes...>;
         MatchersType matchers;
+
+        constexpr Any(MatchersType new_matchers)
+            : matchers{new_matchers}
+        {}
 
         template<typename EventType>
         [[nodiscard]] constexpr bool operator()(EventType const & event) const {
-            return hana::fold_left(matchers, false, [&](bool state, auto matcher){
+            return matchers.fold_left(false, [&](bool state, auto matcher){
                 return state || matcher(event);
             });
         }
 
         [[nodiscard]] constexpr auto describe() const {
             const auto matcherDescriptions =
-                hana::transform(matchers, [&](auto m){
+                cib::transform(matchers, [&](auto m){
                     return "("_sc + m.describe() + ")"_sc;
                 });
 
-            return hana::fold_left(matcherDescriptions, [](auto lhs, auto rhs){
+            return matcherDescriptions.fold_left([](auto lhs, auto rhs){
                 return lhs + " || "_sc + rhs;
             });
         }
@@ -152,11 +154,11 @@ namespace match {
         template<typename EventType>
         [[nodiscard]] constexpr auto describeMatch(EventType const & event) const {
             const auto matcherDescriptions =
-                hana::transform(matchers, [&](auto m){
+                cib::transform(matchers, [&](auto m){
                     return format("{:c}:({})"_sc, m(event) ? 'T' : 'F', m.describeMatch(event));
                 });
 
-            return hana::fold_left(matcherDescriptions, [](auto lhs, auto rhs){
+            return matcherDescriptions.fold_left([](auto lhs, auto rhs){
                 return lhs + " || "_sc + rhs;
             });
         }
@@ -165,33 +167,33 @@ namespace match {
     template<typename... MatcherTypes>
     [[nodiscard]] constexpr auto any(MatcherTypes... matchers) {
         auto const matcherTuple =
-            hana::make_tuple(matchers...);
+            cib::make_tuple(matchers...);
 
         auto const remainingMatcherTuple =
-            hana::filter(matcherTuple, [](auto matcher){
+            cib::filter(matcherTuple, [](auto matcher){
                 using MatcherType = decltype(matcher);
-                return hana::bool_c<!std::is_same_v<MatcherType, Always<false>>>;
+                return sc::bool_<!std::is_same_v<MatcherType, Always<false>>>;
             });
 
         auto const isAlwaysTrue =
-            hana::fold(remainingMatcherTuple, hana::bool_c<false>, [](auto alreadyFoundAlwaysTrue, auto matcher){
+            remainingMatcherTuple.fold_right(sc::bool_<false>, [](auto matcher, auto alreadyFoundAlwaysTrue){
                 using MatcherType = decltype(matcher);
-                bool constexpr matcherIsAlwaysTrue = std::is_same_v<MatcherType, Always<true>>;
-                return alreadyFoundAlwaysTrue || hana::bool_c<matcherIsAlwaysTrue>;
+                auto constexpr matcherIsAlwaysTrue = std::is_same_v<MatcherType, Always<true>>;
+                return sc::bool_<alreadyFoundAlwaysTrue || sc::bool_<matcherIsAlwaysTrue>>;
             });
 
-        if constexpr (hana::value(isAlwaysTrue)) {
+        if constexpr (isAlwaysTrue.value) {
             return always<true>;
 
-        } else if constexpr (hana::size(remainingMatcherTuple) == hana::size_c<0>) {
+        } else if constexpr (remainingMatcherTuple.size() == 0) {
             // if there are no terms, then an OR-reduction should always be false
             return always<false>;
 
-        } else if constexpr (hana::size(remainingMatcherTuple) == hana::size_c<1>) {
-            return remainingMatcherTuple[sc::int_<0>];
+        } else if constexpr (remainingMatcherTuple.size() == 1) {
+            return remainingMatcherTuple.get(cib::index_<0>);
 
         } else {
-            return hana::unpack(remainingMatcherTuple, [&](auto... remainingMatchers){
+            return remainingMatcherTuple.apply([&](auto... remainingMatchers){
                 return Any<decltype(remainingMatchers)...>{remainingMatcherTuple};
             });
         }
@@ -199,23 +201,23 @@ namespace match {
 
     template<typename... MatcherTypes>
     struct All {
-        using MatchersType = hana::tuple<MatcherTypes...>;
+        using MatchersType = cib::tuple<MatcherTypes...>;
         MatchersType matchers;
 
         template<typename EventType>
         [[nodiscard]] constexpr bool operator()(EventType const & event) const {
-            return hana::fold_left(matchers, true, [&](bool state, auto matcher){
+            return matchers.fold_left(true, [&](bool state, auto matcher){
                 return state && matcher(event);
             });
         }
 
         [[nodiscard]] constexpr auto describe() const {
             const auto matcherDescriptions =
-                hana::transform(matchers, [&](auto m){
+                cib::transform(matchers, [&](auto m){
                     return "("_sc + m.describe() + ")"_sc;
                 });
 
-            return hana::fold_left(matcherDescriptions, [](auto lhs, auto rhs){
+            return matcherDescriptions.fold_left([](auto lhs, auto rhs){
                 return lhs + " && "_sc + rhs;
             });
         }
@@ -223,11 +225,11 @@ namespace match {
         template<typename EventType>
         [[nodiscard]] constexpr auto describeMatch(EventType const & event) const {
             const auto matcherDescriptions =
-                hana::transform(matchers, [&](auto m){
+                cib::transform(matchers, [&](auto m){
                     return format("{:c}:({})"_sc, m(event) ? 'T' : 'F', m.describeMatch(event));
                 });
 
-            return hana::fold_left(matcherDescriptions, [](auto lhs, auto rhs){
+            return matcherDescriptions.fold_left([](auto lhs, auto rhs){
                 return lhs + " && "_sc + rhs;
             });
         }
@@ -236,33 +238,33 @@ namespace match {
     template<typename... MatcherTypes>
     [[nodiscard]] constexpr auto all(MatcherTypes... matchers) {
         auto const matcherTuple =
-            hana::make_tuple(matchers...);
+            cib::make_tuple(matchers...);
 
         auto const remainingMatcherTuple =
-            hana::filter(matcherTuple, [](auto matcher){
+            cib::filter(matcherTuple, [](auto matcher){
                 using MatcherType = decltype(matcher);
-                return hana::bool_c<!std::is_same_v<MatcherType, Always<true>>>;
+                return sc::bool_<!std::is_same_v<MatcherType, Always<true>>>;
             });
 
         auto const isAlwaysFalse =
-            hana::fold(remainingMatcherTuple, hana::bool_c<false>, [](auto alreadyFoundAlwaysFalse, auto matcher){
+            remainingMatcherTuple.fold_right(sc::bool_<false>, [](auto matcher, auto alreadyFoundAlwaysFalse){
                 using MatcherType = decltype(matcher);
                 bool constexpr matcherIsAlwaysFalse = std::is_same_v<MatcherType, Always<false>>;
-                return alreadyFoundAlwaysFalse || hana::bool_c<matcherIsAlwaysFalse>;
+                return sc::bool_<alreadyFoundAlwaysFalse || sc::bool_<matcherIsAlwaysFalse>>;
             });
 
-        if constexpr (hana::value(isAlwaysFalse)) {
+        if constexpr (isAlwaysFalse.value) {
             return always<false>;
 
-        } else if constexpr (hana::size(remainingMatcherTuple) == hana::size_c<0>) {
+        } else if constexpr (remainingMatcherTuple.size() == 0) {
             // if there are no terms, then an AND-reduction should always be true
             return always<true>;
 
-        } else if constexpr (hana::size(remainingMatcherTuple) == hana::size_c<1>) {
-            return remainingMatcherTuple[sc::int_<0>];
+        } else if constexpr (remainingMatcherTuple.size() == 1) {
+            return remainingMatcherTuple.get(cib::index_<0>);
 
         } else {
-            return hana::unpack(remainingMatcherTuple, [&](auto... remainingMatchers){
+            return remainingMatcherTuple.apply([&](auto... remainingMatchers){
                 return All<decltype(remainingMatchers)...>{remainingMatcherTuple};
             });
         }

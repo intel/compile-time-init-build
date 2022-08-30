@@ -5,16 +5,28 @@
 #include <optional>
 #include <algorithm>
 
-#include <boost/hana.hpp>
-
 #include <container/Array.hpp>
 #include <sc/string_constant.hpp>
+#include <cib/tuple.hpp>
 
 #include <msg/Match.hpp>
 #include <msg/Field.hpp>
 
-namespace hana = boost::hana;
+namespace detail {
+    // https://en.cppreference.com/w/cpp/types/void_t
+    // https://en.cppreference.com/w/Cppreference:FAQ
+    template <typename, typename = void>
+    constexpr bool is_iterable{};
 
+    template <typename T>
+    constexpr bool is_iterable<
+        T,
+        std::void_t<
+            decltype(std::declval<T>().begin()),
+            decltype(std::declval<T>().end())
+        >
+    > = true;
+}
 
 template<std::uint32_t MaxNumDWordsT>
 struct MessageData {
@@ -105,7 +117,7 @@ struct MessageBase : public MessageData<MaxNumDWords> {
     using This = MessageBase<NameType, MaxNumDWords, NumDWordsT, FieldsT...>;
     static constexpr NameType name{};
     static constexpr auto NumDWords = NumDWordsT;
-    using FieldTupleType = hana::tuple<FieldsT...>;
+    using FieldTupleType = cib::tuple<FieldsT...>;
 
     template<typename AdditionalMatcherType>
     [[nodiscard]] static constexpr auto match(AdditionalMatcherType additionalMatcher) {
@@ -116,7 +128,7 @@ struct MessageBase : public MessageData<MaxNumDWords> {
 
     template<typename FieldType>
     [[nodiscard]] static constexpr bool isValidField() {
-        return hana::fold(FieldTupleType{}, false, [](bool isValid, auto field){
+        return FieldTupleType{}.fold_right(false, [](auto field, bool isValid){
             return
                 isValid ||
                 std::is_same_v<
@@ -127,15 +139,16 @@ struct MessageBase : public MessageData<MaxNumDWords> {
 
     static constexpr auto matchValidEncoding = [](){
         constexpr auto requiredFields =
-            hana::filter(FieldTupleType{}, [](auto field){
+            cib::filter(FieldTupleType{}, [](auto field){
                 using FieldType = decltype(field);
-                return hana::bool_c<!std::is_same_v<match::Always<true>, std::decay_t<decltype(FieldType::matchRequirements)>>>;
+                return sc::bool_<!std::is_same_v<match::Always<true>, std::decay_t<decltype(FieldType::matchRequirements)>>>;
             });
 
-        if constexpr (hana::is_empty(requiredFields)) {
+        if constexpr (requiredFields.size() == 0) {
             return match::always<true>;
+
         } else {
-            return hana::unpack(requiredFields, [](auto... requiredFieldsPack) {
+            return requiredFields.apply([](auto... requiredFieldsPack) {
                 return match::all(decltype(requiredFieldsPack)::matchRequirements ...);
             });
         }
@@ -154,7 +167,7 @@ struct MessageBase : public MessageData<MaxNumDWords> {
 
         if (src.size() == 0) {
             // default constructor, set default values
-            hana::for_each(FieldTupleType{}, [&](auto field) {
+            FieldTupleType{}.for_each([&](auto field) {
                 set(field);
             });
         }
@@ -168,17 +181,15 @@ struct MessageBase : public MessageData<MaxNumDWords> {
 
         if constexpr (sizeof...(argFields) == 0) {
             // default constructor, set default values
-            hana::for_each(FieldTupleType{}, [&](auto field) {
+            FieldTupleType{}.for_each([&](auto field) {
                 set(field);
             });
 
         } else {
-            auto const argFieldTuple = hana::make_tuple(argFields...);
-            auto const firstArg = argFieldTuple[sc::int_<0>];
+            auto const argFieldTuple = cib::make_tuple(argFields...);
+            auto const firstArg = argFieldTuple.get(cib::index_<0>);
 
-            auto isIterable = hana::is_valid([](auto t) -> decltype(std::begin(t)) {});
-
-            if constexpr (isIterable(firstArg)) {
+            if constexpr (detail::is_iterable<decltype(firstArg)>) {
                 std::copy(std::begin(firstArg), std::end(firstArg), std::begin(this->data));
 
             } else {
@@ -186,12 +197,12 @@ struct MessageBase : public MessageData<MaxNumDWords> {
                 // TODO: ensure fields aren't set more than once
 
                 // set default values
-                hana::for_each(FieldTupleType{}, [&](auto field) {
+                FieldTupleType{}.for_each([&](auto field) {
                     set(field);
                 });
 
                 // set specified field values
-                hana::for_each(argFieldTuple, [&](auto field) {
+                argFieldTuple.for_each([&](auto field) {
                     set(field);
                 });
             }
@@ -214,13 +225,13 @@ struct MessageBase : public MessageData<MaxNumDWords> {
 
     [[nodiscard]] constexpr auto describe() const {
         const auto fieldDescriptions =
-            hana::transform(FieldTupleType{}, [&](auto field){
+            cib::transform(FieldTupleType{}, [&](auto field){
                 using FieldType = decltype(field);
                 return FieldType{FieldType::extract(this->data)}.describe();
             });
 
         const auto middleString =
-            hana::fold_left(fieldDescriptions, [](auto lhs, auto rhs){
+            fieldDescriptions.fold_left([](auto lhs, auto rhs){
                 return lhs + ", "_sc + rhs;
             });
 

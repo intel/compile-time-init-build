@@ -3,15 +3,11 @@
 #include <type_traits>
 #include <cstdint>
 
-#include <boost/hana.hpp>
-
 #include <sc/string_constant.hpp>
 #include <msg/Match.hpp>
 
 #include <msg/FieldMatchers.hpp>
 
-
-namespace hana = boost::hana;
 
 /**
  * DisjointField is used when a field contains disjoint spans of bits.
@@ -29,7 +25,7 @@ private:
 
 public:
     static constexpr size_t size =
-        hana::fold(fields, 0, [](size_t totalSize, auto f){
+        fields.fold_right(0, [](auto f, size_t totalSize){
             return totalSize + f.size;
         });
 
@@ -41,7 +37,7 @@ public:
 
     template<typename MsgType>
     static constexpr void fitsInside(MsgType msg) {
-        hana::for_each(fields, [&](auto field){
+        fields.for_each([&](auto field){
             field.fitsInside(msg);
         });
     }
@@ -100,7 +96,7 @@ public:
     template<typename DataType>
     [[nodiscard]] static constexpr T extract(DataType const & data) {
         auto const raw =
-            hana::fold(fields, static_cast<std::uint64_t>(0), [&](std::uint64_t extracted, auto f){
+            fields.fold_left(static_cast<std::uint64_t>(0), [&](std::uint64_t extracted, auto f){
                 return (extracted << f.size) | f.extract(data);
             });
 
@@ -109,7 +105,7 @@ public:
 
     template<typename DataType>
     constexpr void insert(DataType & data) const {
-        hana::fold_right(fields, static_cast<uint64_t>(value), [&](auto fieldPrototype, uint64_t remaining){
+        fields.fold_right(static_cast<uint64_t>(value), [&](auto fieldPrototype, uint64_t remaining){
             using FieldType = decltype(fieldPrototype);
             using ValueType = typename FieldType::ValueType;
             decltype(fieldPrototype) const f{static_cast<ValueType>(remaining)};
