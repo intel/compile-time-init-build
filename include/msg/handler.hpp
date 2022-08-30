@@ -15,9 +15,9 @@ namespace msg {
         typename BaseMsgT,
         typename... ExtraCallbackArgsT>
     struct Callback {
-        [[nodiscard]] virtual bool isMatch(BaseMsgT const & msg) const = 0;
+        [[nodiscard]] virtual bool is_match(BaseMsgT const & msg) const = 0;
         [[nodiscard]] virtual bool handle(BaseMsgT const & msg, ExtraCallbackArgsT const & ... args) const = 0;
-        virtual void logMismatch(BaseMsgT const & msg) const = 0;
+        virtual void log_mismatch(BaseMsgT const & msg) const = 0;
     };
 
     template<typename T>
@@ -26,10 +26,10 @@ namespace msg {
 
 
     template<typename...>
-    struct CallbackTypes {};
+    struct callback_types {};
 
     template<typename...>
-    struct ExtraCallbackArgs {};
+    struct extra_callback_args {};
 
     template<
         typename BaseMsgT,
@@ -37,7 +37,7 @@ namespace msg {
         typename NameTypeT,
         typename MatchMsgTypeT,
         typename CallbackTypeListT>
-    struct CallbackImpl;
+    struct callback_impl;
 
     template<typename CallableT>
     struct func_args {
@@ -84,22 +84,22 @@ namespace msg {
         typename CallableT,
         typename DataIterableT,
         typename... ExtraCallbackArgsT>
-    void dispatchSingleCallable(
+    void dispatch_single_callable(
         CallableT const & callable,
         DataIterableT const & data,
         ExtraCallbackArgsT const & ... args
     ) {
-        auto const providedArgsTuple = std::tuple(args...);
-        auto const requiredArgsTuple =
+        auto const provided_args_tuple = std::tuple(args...);
+        auto const required_args_tuple =
             cib::transform(
                 func_args_v<CallableT>,
                 [&](auto requiredArg){
                     using RequiredArgType = decltype(requiredArg);
-                    return std::get<RequiredArgType>(providedArgsTuple);
+                    return std::get<RequiredArgType>(provided_args_tuple);
                 }
             );
 
-        requiredArgsTuple.apply([&](auto const & ... requiredArgs){
+        required_args_tuple.apply([&](auto const & ... requiredArgs){
             using MsgType = msg_type_t<decltype(callable)>;
             MsgType const msg{data};
 
@@ -119,32 +119,32 @@ namespace msg {
         typename NameTypeT,
         typename MatchMsgTypeT,
         typename... CallableTypesT>
-    class CallbackImpl<
+    class callback_impl<
         BaseMsgT,
-        ExtraCallbackArgs<ExtraCallbackArgsT...>,
+        extra_callback_args<ExtraCallbackArgsT...>,
         NameTypeT,
         MatchMsgTypeT,
-        CallbackTypes<CallableTypesT...>
+        callback_types<CallableTypesT...>
     >
         : public Callback<BaseMsgT, ExtraCallbackArgsT...>
     {
     private:
         constexpr static NameTypeT name{};
 
-        MatchMsgTypeT matchMsg;
+        MatchMsgTypeT match_msg;
         cib::tuple<CallableTypesT...> callbacks;
 
         template<typename DataIterableType>
         void dispatch(DataIterableType const & data, ExtraCallbackArgsT const & ... args) const {
             callbacks.for_each([&](auto callback){
-                dispatchSingleCallable(callback, data, args...);
+                dispatch_single_callable(callback, data, args...);
             });
         }
 
-        [[nodiscard]] constexpr auto matchAnyCallback() const {
+        [[nodiscard]] constexpr auto match_any_callback() const {
             auto const matchers = cib::transform(callbacks, [&](auto callback){
                 using MsgType = msg_type_t<decltype(callback)>;
-                return isValidMsg<MsgType>(match::always<true>);
+                return is_valid_msg<MsgType>(match::always<true>);
             });
 
             return matchers.apply([](auto... matchersPack){
@@ -153,12 +153,12 @@ namespace msg {
         }
 
     public:
-        constexpr CallbackImpl(
-            MatchMsgTypeT const & matchMsg,
-            CallableTypesT const & ... callbackArgs
+        constexpr callback_impl(
+            MatchMsgTypeT const & match_msg,
+            CallableTypesT const & ... callback_args
         )
-            : matchMsg(matchMsg)
-            , callbacks(cib::make_tuple(callbackArgs...))
+            : match_msg(match_msg)
+            , callbacks(cib::make_tuple(callback_args...))
         {
             callbacks.for_each([](auto callback) {
                 static_assert(
@@ -167,18 +167,18 @@ namespace msg {
             });
         }
 
-        [[nodiscard]] bool isMatch(BaseMsgT const & msg) const final override {
-            return match::all(matchMsg, matchAnyCallback())(msg);
+        [[nodiscard]] bool is_match(BaseMsgT const & msg) const final override {
+            return match::all(match_msg, match_any_callback())(msg);
         }
 
         [[nodiscard]] bool handle(BaseMsgT const & msg, ExtraCallbackArgsT const & ... args) const final override {
-            auto matchHandler =
-                match::all(matchMsg, matchAnyCallback());
+            auto match_handler =
+                match::all(match_msg, match_any_callback());
 
-            if (matchHandler(msg)) {
+            if (match_handler(msg)) {
                 INFO(
                     "Incoming message matched [{}], because [{}], executing callback",
-                    name, matchHandler.describe());
+                    name, match_handler.describe());
 
                 dispatch(msg.data, args...);
 
@@ -188,9 +188,9 @@ namespace msg {
             return false;
         }
 
-        void logMismatch(BaseMsgT const & msg) const final override {
+        void log_mismatch(BaseMsgT const & msg) const final override {
             INFO("    {} - F:({})", name,
-                 match::all(matchMsg, matchAnyCallback()).describeMatch(msg));
+                 match::all(match_msg, match_any_callback()).describe_match(msg));
         }
     };
 
@@ -201,28 +201,28 @@ namespace msg {
         typename BaseMsgT,
         size_t NumMsgCallbacksT,
         typename... ExtraCallbackArgsT>
-    class Handler {
+    class handler {
     private:
         using CallbackType = Callback<BaseMsgT, ExtraCallbackArgsT...>;
         using CallbacksType = Array<CallbackType const *, NumMsgCallbacksT>;
         CallbacksType callbacks{};
 
     public:
-        constexpr Handler(
-            CallbacksType callbacksArg
+        constexpr handler(
+            CallbacksType callbacks_arg
         )
-            : callbacks{callbacksArg}
+            : callbacks{callbacks_arg}
         {
             // pass
         }
 
-        constexpr Handler(Handler const & rhs) = default;
-        constexpr Handler &operator=(Handler const & rhs) = default;
+        constexpr handler(handler const & rhs) = default;
+        constexpr handler &operator=(handler const & rhs) = default;
 
-        bool isMatch(BaseMsgT const & msg) const {
+        bool is_match(BaseMsgT const & msg) const {
             for (auto callback : callbacks) {
                 if (
-                    callback->isMatch(msg)
+                    callback->is_match(msg)
                 ) {
                     return true;
                 }
@@ -232,18 +232,18 @@ namespace msg {
         }
 
         void handle(BaseMsgT const & msg, ExtraCallbackArgsT const & ... args) const {
-            bool foundValidCallback = false;
+            bool found_valid_callback = false;
             for (auto callback : callbacks) {
                 if (callback->handle(msg, args...)) {
-                    foundValidCallback = true;
+                    found_valid_callback = true;
                 }
             }
 
-            if (!foundValidCallback) {
+            if (!found_valid_callback) {
                 ERROR("None of the registered callbacks claimed this message:");
 
                 for (auto callback : callbacks) {
-                    callback->logMismatch(msg);
+                    callback->log_mismatch(msg);
                 }
             }
         }
@@ -255,7 +255,7 @@ namespace msg {
         typename Derived,
         typename BaseMsgT,
         typename... ExtraCallbackArgsT>
-    class HandlerBuilder {
+    class handler_builder {
     public:
         static constexpr auto MAX_SIZE = 256;
         using CallbacksType = Vector<Callback<BaseMsgT, ExtraCallbackArgsT...> const *, MAX_SIZE>;
@@ -264,18 +264,18 @@ namespace msg {
         CallbacksType callbacks;
 
         template<size_t NumMsgCallbacksT>
-        [[nodiscard]] constexpr Handler<BaseMsgT, NumMsgCallbacksT, ExtraCallbackArgsT...> buildBackend() const {
-            Array<Callback<BaseMsgT, ExtraCallbackArgsT...> const *, NumMsgCallbacksT> newMsgCallbacks;
+        [[nodiscard]] constexpr handler<BaseMsgT, NumMsgCallbacksT, ExtraCallbackArgsT...> build_backend() const {
+            Array<Callback<BaseMsgT, ExtraCallbackArgsT...> const *, NumMsgCallbacksT> new_msg_callbacks;
 
             for (std::size_t i = 0; i < callbacks.size(); i++) {
-                newMsgCallbacks[i] = callbacks[i];
+                new_msg_callbacks[i] = callbacks[i];
             }
 
-            return {newMsgCallbacks};
+            return {new_msg_callbacks};
         }
 
     public:
-        constexpr HandlerBuilder()
+        constexpr handler_builder()
             : callbacks{}
         {
             // pass
@@ -285,14 +285,14 @@ namespace msg {
             callbacks.push(&callback);
         }
 
-        [[nodiscard]] constexpr size_t getNumCallbacks() const {
+        [[nodiscard]] constexpr size_t get_num_callbacks() const {
             return callbacks.size();
         }
 
         template<size_t NumMsgCallbacksT>
-        [[nodiscard]] constexpr auto internalBuild() const {
-            auto const backend = buildBackend<NumMsgCallbacksT>();
-            auto const frontend = Derived::buildFrontend(backend);
+        [[nodiscard]] constexpr auto internal_build() const {
+            auto const backend = build_backend<NumMsgCallbacksT>();
+            auto const frontend = Derived::build_frontend(backend);
 
             return frontend;
         }
@@ -312,9 +312,9 @@ namespace msg {
 
         template<typename BuilderValue>
         static constexpr auto build() {
-            auto constexpr handlerBuilder = BuilderValue::value;
-            auto constexpr config = handlerBuilder.getNumCallbacks();
-            return handlerBuilder.template internalBuild<config>();
+            auto constexpr handler_builder = BuilderValue::value;
+            auto constexpr config = handler_builder.get_num_callbacks();
+            return handler_builder.template internal_build<config>();
         }
     };
 
@@ -322,15 +322,15 @@ namespace msg {
         typename BaseMsgT,
         typename... ExtraCallbackArgsT>
     auto callback =
-        [](auto name, auto matchMsg, auto... callbacks) ->
-            CallbackImpl<
+        [](auto name, auto match_msg, auto... callbacks) ->
+            callback_impl<
                 BaseMsgT,
-                ExtraCallbackArgs<ExtraCallbackArgsT...>,
+                extra_callback_args<ExtraCallbackArgsT...>,
                 decltype(name),
-                decltype(matchMsg),
-                CallbackTypes<decltype(callbacks)...>
+                decltype(match_msg),
+                callback_types<decltype(callbacks)...>
             >
         {
-            return {matchMsg, callbacks...};
+            return {match_msg, callbacks...};
         };
 }

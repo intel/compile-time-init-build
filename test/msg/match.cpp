@@ -6,7 +6,7 @@
 
 namespace {
     template<bool Value>
-    struct Always {
+    struct always_t {
         template<typename T>
         [[nodiscard]] constexpr bool operator()(T const & event) const {
             return Value;
@@ -21,7 +21,7 @@ namespace {
         }
 
         template<typename T>
-        [[nodiscard]] constexpr auto describeMatch(T const & event) const {
+        [[nodiscard]] constexpr auto describe_match(T const & event) const {
             if constexpr (Value) {
                 return "true"_sc;
             } else {
@@ -31,7 +31,7 @@ namespace {
     };
 
     template<bool Value>
-    static constexpr Always<Value> always{};
+    static constexpr always_t<Value> always{};
 
 
     template<int Value>
@@ -44,7 +44,7 @@ namespace {
             return format("number == {}"_sc, sc::int_<Value>);
         }
 
-        [[nodiscard]] constexpr auto describeMatch(int const & event) const {
+        [[nodiscard]] constexpr auto describe_match(int const & event) const {
             return format("number ({}) == {}"_sc, event, sc::int_<Value>);
         }
     };
@@ -94,18 +94,18 @@ namespace {
 
     TEST_CASE("MatchAnyDescriptionWithEvent", "[match]") {
         REQUIRE(
-            match::any(number<1>).describeMatch(1) ==
+            match::any(number<1>).describe_match(1) ==
             format("number ({}) == 1"_sc, 1));
 
         INFO("EXPECTED: {:c}:(number ({}) == 1) || {:c}:(number ({}) == 4)", 'F', 0, 'F', 0);
-        INFO("ACTUAL:   {}", match::any(number<1>, number<4>).describeMatch(0));
+        INFO("ACTUAL:   {}", match::any(number<1>, number<4>).describe_match(0));
 
         REQUIRE(
-            match::any(number<1>, number<4>).describeMatch(0) ==
+            match::any(number<1>, number<4>).describe_match(0) ==
             format("{:c}:(number ({}) == 1) || {:c}:(number ({}) == 4)"_sc, 'F', 0, 'F', 0));
 
         REQUIRE(
-            match::any(number<1>, number<2>, number<3>).describeMatch(2) ==
+            match::any(number<1>, number<2>, number<3>).describe_match(2) ==
             format("{:c}:(number ({}) == 1) || {:c}:(number ({}) == 2) || {:c}:(number ({}) == 3)"_sc, 'F', 2, 'T', 2, 'F', 2));
     }
 
@@ -156,15 +156,15 @@ namespace {
 
     TEST_CASE("MatchAllDescriptionWithEvent", "[match]") {
         REQUIRE(
-            match::all(number<1>).describeMatch(1) ==
+            match::all(number<1>).describe_match(1) ==
             format("number ({}) == 1"_sc, 1));
 
         REQUIRE(
-            match::all(number<1>, number<4>).describeMatch(0) ==
+            match::all(number<1>, number<4>).describe_match(0) ==
             format("{:c}:(number ({}) == 1) && {:c}:(number ({}) == 4)"_sc, 'F', 0, 'F', 0));
 
         REQUIRE(
-            match::all(number<1>, number<2>, number<3>).describeMatch(2) ==
+            match::all(number<1>, number<2>, number<3>).describe_match(2) ==
             format("{:c}:(number ({}) == 1) && {:c}:(number ({}) == 2) && {:c}:(number ({}) == 3)"_sc, 'F', 2, 'T', 2, 'F', 2));
     }
 }

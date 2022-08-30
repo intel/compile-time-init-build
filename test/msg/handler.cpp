@@ -4,7 +4,7 @@
 
 
 
-namespace {
+namespace msg {
     bool correctDispatch = false;
 
     using TestIdField = field<
@@ -27,10 +27,10 @@ namespace {
         1, 15, 0,
         std::uint32_t>;
 
-    using TestBaseMsg = MessageData<4>;
+    using TestBaseMsg = message_data<4>;
 
     using TestMsg =
-        MessageBase<
+        message_base<
             decltype("TestMsg"_sc),
             4, 2,
             TestIdField::WithRequired<0x80>,
@@ -39,7 +39,7 @@ namespace {
             TestField3>;
 
     using TestMsgFieldRequired =
-        MessageBase<
+        message_base<
             decltype("TestMsgFieldRequired"_sc),
             4, 2,
             TestIdField::WithRequired<0x44>,
@@ -62,7 +62,7 @@ namespace {
             );
 
         static auto handler =
-            msg::Handler<TestBaseMsg, 1>{{&callback}};
+            msg::handler<TestBaseMsg, 1>{{&callback}};
 
         handler.handle({0x8000ba11, 0x0042d00d});
 
@@ -70,7 +70,7 @@ namespace {
     }
 
     // TODO: test no match in handle
-    // TODO: test isMatch
+    // TODO: test is_match
 
     TEST_CASE("TestMsgDispatch2", "[handler]") {
         static auto callback1 =
@@ -98,7 +98,7 @@ namespace {
             );
 
         static auto handler =
-            msg::Handler<TestBaseMsg, 2>{{&callback1, &callback2}};
+            msg::handler<TestBaseMsg, 2>{{&callback1, &callback2}};
 
         handler.handle({0x4400ba11, 0x0042d00d});
 
@@ -118,7 +118,7 @@ namespace {
             );
 
         static auto handler =
-            msg::Handler<TestBaseMsg, 1, int>{{&callback}};
+            msg::handler<TestBaseMsg, 1, int>{{&callback}};
 
         handler.handle({0x8000ba11, 0x0042d00d}, 0xcafe);
 

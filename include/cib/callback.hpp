@@ -125,7 +125,7 @@ namespace cib {
      *
      * @tparam ArgTypes
      *      The function arguments that must be passed into the callback
-     *      services implementation. Any function registered with this
+     *      services implementation. any_t function registered with this
      *      callback service must also have a compatible signature.
      *
      * @see cib::exports

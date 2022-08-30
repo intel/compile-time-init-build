@@ -2,7 +2,7 @@
 
 #include <msg/field.hpp>
 
-namespace {
+namespace msg {
     using TestField1 = field<
         decltype("TestField1"_sc),
         0, 15, 0,

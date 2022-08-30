@@ -3,7 +3,7 @@
 #include <msg/message.hpp>
 
 
-namespace {
+namespace msg {
     using TestIdField = field<
         decltype("TestIdField"_sc),
         0, 31, 24,
@@ -25,7 +25,7 @@ namespace {
         std::uint32_t>;
 
     using TestMsg =
-        MessageBase<
+        message_base<
             decltype("TestMsg"_sc),
             4, 2,
             TestIdField::WithRequired<0x80>,
@@ -97,15 +97,15 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE(TestIdField::equalTo<0x80>(msg));
-        REQUIRE(TestField1::equalTo<0xba11>(msg));
-        REQUIRE(TestField2::equalTo<0x42>(msg));
-        REQUIRE(TestField3::equalTo<0xd00d>(msg));
+        REQUIRE(TestIdField::equal_to<0x80>(msg));
+        REQUIRE(TestField1::equal_to<0xba11>(msg));
+        REQUIRE(TestField2::equal_to<0x42>(msg));
+        REQUIRE(TestField3::equal_to<0xd00d>(msg));
 
-        REQUIRE_FALSE(TestIdField::equalTo<0x0>(msg));
-        REQUIRE_FALSE(TestField1::equalTo<0x0>(msg));
-        REQUIRE_FALSE(TestField2::equalTo<0x0>(msg));
-        REQUIRE_FALSE(TestField3::equalTo<0x0>(msg));
+        REQUIRE_FALSE(TestIdField::equal_to<0x0>(msg));
+        REQUIRE_FALSE(TestField1::equal_to<0x0>(msg));
+        REQUIRE_FALSE(TestField2::equal_to<0x0>(msg));
+        REQUIRE_FALSE(TestField3::equal_to<0x0>(msg));
     }
 
     TEST_CASE("DefaultMatcher", "[message]") {
@@ -113,10 +113,10 @@ namespace {
             0x0,
             0x00}};
 
-        REQUIRE(true == TestIdField::matchDefault(msg));
-        REQUIRE(true == TestField1::matchDefault(msg));
-        REQUIRE(true == TestField2::matchDefault(msg));
-        REQUIRE(true == TestField3::matchDefault(msg));
+        REQUIRE(true == TestIdField::match_default(msg));
+        REQUIRE(true == TestField1::match_default(msg));
+        REQUIRE(true == TestField2::match_default(msg));
+        REQUIRE(true == TestField3::match_default(msg));
     }
 
     TEST_CASE("DefaultMatcherNoMatch", "[message]") {
@@ -124,10 +124,10 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE(false == TestIdField::matchDefault(msg));
-        REQUIRE(false == TestField1::matchDefault(msg));
-        REQUIRE(false == TestField2::matchDefault(msg));
-        REQUIRE(false == TestField3::matchDefault(msg));
+        REQUIRE(false == TestIdField::match_default(msg));
+        REQUIRE(false == TestField1::match_default(msg));
+        REQUIRE(false == TestField2::match_default(msg));
+        REQUIRE(false == TestField3::match_default(msg));
     }
 
     TEST_CASE("InMatcher", "[message]") {
@@ -172,15 +172,15 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE_FALSE(TestIdField::greaterThan<0x80>(msg));
-        REQUIRE_FALSE(TestField1::greaterThan<0xba11>(msg));
-        REQUIRE_FALSE(TestField2::greaterThan<0x42>(msg));
-        REQUIRE_FALSE(TestField3::greaterThan<0xd00d>(msg));
+        REQUIRE_FALSE(TestIdField::greater_than<0x80>(msg));
+        REQUIRE_FALSE(TestField1::greater_than<0xba11>(msg));
+        REQUIRE_FALSE(TestField2::greater_than<0x42>(msg));
+        REQUIRE_FALSE(TestField3::greater_than<0xd00d>(msg));
 
-        REQUIRE(TestIdField::greaterThan<0x11>(msg));
-        REQUIRE(TestField1::greaterThan<0x1111>(msg));
-        REQUIRE(TestField2::greaterThan<0x11>(msg));
-        REQUIRE(TestField3::greaterThan<0x1111>(msg));
+        REQUIRE(TestIdField::greater_than<0x11>(msg));
+        REQUIRE(TestField1::greater_than<0x1111>(msg));
+        REQUIRE(TestField2::greater_than<0x11>(msg));
+        REQUIRE(TestField3::greater_than<0x1111>(msg));
     }
 
     TEST_CASE("GreaterThanOrEqualToMatcher", "[message]") {
@@ -188,20 +188,20 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE_FALSE(TestIdField::greaterThanOrEqualTo<0xEE>(msg));
-        REQUIRE_FALSE(TestField1::greaterThanOrEqualTo<0xEEEE>(msg));
-        REQUIRE_FALSE(TestField2::greaterThanOrEqualTo<0xEE>(msg));
-        REQUIRE_FALSE(TestField3::greaterThanOrEqualTo<0xEEEE>(msg));
+        REQUIRE_FALSE(TestIdField::greater_than_or_equal_to<0xEE>(msg));
+        REQUIRE_FALSE(TestField1::greater_than_or_equal_to<0xEEEE>(msg));
+        REQUIRE_FALSE(TestField2::greater_than_or_equal_to<0xEE>(msg));
+        REQUIRE_FALSE(TestField3::greater_than_or_equal_to<0xEEEE>(msg));
 
-        REQUIRE(TestIdField::greaterThanOrEqualTo<0x80>(msg));
-        REQUIRE(TestField1::greaterThanOrEqualTo<0xba11>(msg));
-        REQUIRE(TestField2::greaterThanOrEqualTo<0x42>(msg));
-        REQUIRE(TestField3::greaterThanOrEqualTo<0xd00d>(msg));
+        REQUIRE(TestIdField::greater_than_or_equal_to<0x80>(msg));
+        REQUIRE(TestField1::greater_than_or_equal_to<0xba11>(msg));
+        REQUIRE(TestField2::greater_than_or_equal_to<0x42>(msg));
+        REQUIRE(TestField3::greater_than_or_equal_to<0xd00d>(msg));
 
-        REQUIRE(TestIdField::greaterThanOrEqualTo<0x11>(msg));
-        REQUIRE(TestField1::greaterThanOrEqualTo<0x1111>(msg));
-        REQUIRE(TestField2::greaterThanOrEqualTo<0x11>(msg));
-        REQUIRE(TestField3::greaterThanOrEqualTo<0x1111>(msg));
+        REQUIRE(TestIdField::greater_than_or_equal_to<0x11>(msg));
+        REQUIRE(TestField1::greater_than_or_equal_to<0x1111>(msg));
+        REQUIRE(TestField2::greater_than_or_equal_to<0x11>(msg));
+        REQUIRE(TestField3::greater_than_or_equal_to<0x1111>(msg));
     }
 
     TEST_CASE("LessThanMatcher", "[message]") {
@@ -209,15 +209,15 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE_FALSE(TestIdField::lessThan<0x80>(msg));
-        REQUIRE_FALSE(TestField1::lessThan<0xba11>(msg));
-        REQUIRE_FALSE(TestField2::lessThan<0x42>(msg));
-        REQUIRE_FALSE(TestField3::lessThan<0xd00d>(msg));
+        REQUIRE_FALSE(TestIdField::less_than<0x80>(msg));
+        REQUIRE_FALSE(TestField1::less_than<0xba11>(msg));
+        REQUIRE_FALSE(TestField2::less_than<0x42>(msg));
+        REQUIRE_FALSE(TestField3::less_than<0xd00d>(msg));
 
-        REQUIRE(TestIdField::lessThan<0xEE>(msg));
-        REQUIRE(TestField1::lessThan<0xEEEE>(msg));
-        REQUIRE(TestField2::lessThan<0xEE>(msg));
-        REQUIRE(TestField3::lessThan<0xEEEE>(msg));
+        REQUIRE(TestIdField::less_than<0xEE>(msg));
+        REQUIRE(TestField1::less_than<0xEEEE>(msg));
+        REQUIRE(TestField2::less_than<0xEE>(msg));
+        REQUIRE(TestField3::less_than<0xEEEE>(msg));
     }
 
     TEST_CASE("LessThanOrEqualToMatcher", "[message]") {
@@ -225,20 +225,20 @@ namespace {
             0x8000ba11,
             0x0042d00d}};
 
-        REQUIRE(TestIdField::lessThanOrEqualTo<0xEE>(msg));
-        REQUIRE(TestField1::lessThanOrEqualTo<0xEEEE>(msg));
-        REQUIRE(TestField2::lessThanOrEqualTo<0xEE>(msg));
-        REQUIRE(TestField3::lessThanOrEqualTo<0xEEEE>(msg));
+        REQUIRE(TestIdField::less_than_or_equal_to<0xEE>(msg));
+        REQUIRE(TestField1::less_than_or_equal_to<0xEEEE>(msg));
+        REQUIRE(TestField2::less_than_or_equal_to<0xEE>(msg));
+        REQUIRE(TestField3::less_than_or_equal_to<0xEEEE>(msg));
 
-        REQUIRE(TestIdField::lessThanOrEqualTo<0x80>(msg));
-        REQUIRE(TestField1::lessThanOrEqualTo<0xba11>(msg));
-        REQUIRE(TestField2::lessThanOrEqualTo<0x42>(msg));
-        REQUIRE(TestField3::lessThanOrEqualTo<0xd00d>(msg));
+        REQUIRE(TestIdField::less_than_or_equal_to<0x80>(msg));
+        REQUIRE(TestField1::less_than_or_equal_to<0xba11>(msg));
+        REQUIRE(TestField2::less_than_or_equal_to<0x42>(msg));
+        REQUIRE(TestField3::less_than_or_equal_to<0xd00d>(msg));
 
-        REQUIRE_FALSE(TestIdField::lessThanOrEqualTo<0x11>(msg));
-        REQUIRE_FALSE(TestField1::lessThanOrEqualTo<0x1111>(msg));
-        REQUIRE_FALSE(TestField2::lessThanOrEqualTo<0x11>(msg));
-        REQUIRE_FALSE(TestField3::lessThanOrEqualTo<0x1111>(msg));
+        REQUIRE_FALSE(TestIdField::less_than_or_equal_to<0x11>(msg));
+        REQUIRE_FALSE(TestField1::less_than_or_equal_to<0x1111>(msg));
+        REQUIRE_FALSE(TestField2::less_than_or_equal_to<0x11>(msg));
+        REQUIRE_FALSE(TestField3::less_than_or_equal_to<0x1111>(msg));
     }
 
 }

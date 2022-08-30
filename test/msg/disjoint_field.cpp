@@ -9,8 +9,7 @@
 #include <cstdint>
 
 
-namespace {;
-
+namespace msg {
     using SubField1 = field<
         decltype("SubField1"_sc),
         0, 15, 0,

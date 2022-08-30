@@ -8,49 +8,49 @@
 
 
 namespace msg {
-    template<typename FieldType, typename T, T expectedValue>
-    struct EqualTo {
+    template<typename FieldType, typename T, T expected_value>
+    struct equal_to_t {
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            return expectedValue == msg.template get<FieldType>();
+            return expected_value == msg.template get<FieldType>();
         }
 
         [[nodiscard]] constexpr auto describe() const {
             if constexpr (std::is_integral_v<T>) {
                 return format("{} == 0x{:x}"_sc,
                     FieldType::name,
-                    sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                    sc::int_<static_cast<std::uint32_t>(expected_value)>);
             } else {
                 return format("{} == {} (0x{:x})"_sc,
                     FieldType::name,
-                    sc::enum_<expectedValue>,
-                    sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                    sc::enum_<expected_value>,
+                    sc::int_<static_cast<std::uint32_t>(expected_value)>);
             }
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             if constexpr (std::is_integral_v<T>) {
                 return format("{} (0x{:x}) == 0x{:x}"_sc,
                     FieldType::name,
                     static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                    sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                    sc::int_<static_cast<std::uint32_t>(expected_value)>);
             } else {
                 return format("{} (0x{:x}) == {} (0x{:x})"_sc,
                     FieldType::name,
                     static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                    sc::enum_<expectedValue>,
-                    sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                    sc::enum_<expected_value>,
+                    sc::int_<static_cast<std::uint32_t>(expected_value)>);
             }
         }
     };
 
-    template<typename FieldType, typename T, T... expectedValues>
-    struct In {
-        static constexpr auto expectedValuesTuple = cib::make_tuple(expectedValues...);
+    template<typename FieldType, typename T, T... expected_values>
+    struct in_t {
+        static constexpr auto expected_values_tuple = cib::make_tuple(expected_values...);
 
-        static constexpr auto expectedValueStringsTuple =
-            cib::transform(expectedValuesTuple, [](auto v){
+        static constexpr auto expected_value_strings_tuple =
+            cib::transform(expected_values_tuple, [](auto v){
                 if constexpr (std::is_integral_v<T>) {
                     return format("0x{:x}"_sc, v);
                 } else {
@@ -60,118 +60,118 @@ namespace msg {
                 }
             });
 
-        static constexpr auto expectedValuesString =
-            expectedValueStringsTuple.fold_right([](auto lhs, auto rhs){
+        static constexpr auto expected_values_string =
+            expected_value_strings_tuple.fold_right([](auto lhs, auto rhs){
                 return lhs + ", "_sc + rhs;
             });
 
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            auto const actualValue = msg.template get<FieldType>();
+            auto const actual_value = msg.template get<FieldType>();
 
-            return expectedValuesTuple.fold_right(false, [&](auto expectedValue, bool match){
-                return match || (actualValue == expectedValue);
+            return expected_values_tuple.fold_right(false, [&](auto expected_value, bool match){
+                return match || (actual_value == expected_value);
             });
         }
 
         [[nodiscard]] constexpr auto describe() const {
-            return format("{} in [{}]"_sc, FieldType::name, expectedValuesString);
+            return format("{} in [{}]"_sc, FieldType::name, expected_values_string);
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             return format("{} (0x{:x}) in [{}]"_sc,
                 FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                expectedValuesString);
+                expected_values_string);
         }
     };
 
-    template<typename FieldType, typename T, T expectedValue>
-    struct GreaterThan {
+    template<typename FieldType, typename T, T expected_value>
+    struct greater_than_t {
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            return msg.template get<FieldType>() > expectedValue;
+            return msg.template get<FieldType>() > expected_value;
         }
 
         [[nodiscard]] constexpr auto describe() const {
             return format("{} > 0x{:x}"_sc,
                 FieldType::name,
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             return format("{} (0x{:x}) > 0x{:x}"_sc,
                 FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
     };
 
-    template<typename FieldType, typename T, T expectedValue>
-    struct GreaterThanOrEqualTo {
+    template<typename FieldType, typename T, T expected_value>
+    struct greater_than_or_equal_to_t {
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            return msg.template get<FieldType>() >= expectedValue;
+            return msg.template get<FieldType>() >= expected_value;
         }
 
         [[nodiscard]] constexpr auto describe() const {
             return format("{} >= 0x{:x}"_sc,
                 FieldType::name,
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             return format("{} (0x{:x}) >= 0x{:x}"_sc,
                 FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
     };
 
-    template<typename FieldType, typename T, T expectedValue>
-    struct LessThan {
+    template<typename FieldType, typename T, T expected_value>
+    struct less_than_t {
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            return msg.template get<FieldType>() < expectedValue;
+            return msg.template get<FieldType>() < expected_value;
         }
 
         [[nodiscard]] constexpr auto describe() const {
             return format("{} < 0x{:x}"_sc,
                 FieldType::name,
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             return format("{} (0x{:x}) < 0x{:x}"_sc,
                 FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
     };
 
-    template<typename FieldType, typename T, T expectedValue>
-    struct LessThanOrEqualTo {
+    template<typename FieldType, typename T, T expected_value>
+    struct less_than_or_equal_to_t {
         template<typename MsgType>
         [[nodiscard]] constexpr bool operator()(MsgType const & msg) const {
-            return msg.template get<FieldType>() <= expectedValue;
+            return msg.template get<FieldType>() <= expected_value;
         }
 
         [[nodiscard]] constexpr auto describe() const {
             return format("{} <= 0x{:x}"_sc,
                 FieldType::name,
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
 
         template<typename MsgType>
-        [[nodiscard]] constexpr auto describeMatch(MsgType const & msg) const {
+        [[nodiscard]] constexpr auto describe_match(MsgType const & msg) const {
             return format("{} (0x{:x}) <= 0x{:x}"_sc,
                 FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(expectedValue)>);
+                sc::int_<static_cast<std::uint32_t>(expected_value)>);
         }
     };
 }
