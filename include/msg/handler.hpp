@@ -1,6 +1,6 @@
 #pragma once
 
-#include <msg/Message.hpp>
+#include <msg/message.hpp>
 #include <type_traits>
 #include <tuple>
 

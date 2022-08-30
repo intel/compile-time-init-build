@@ -2,7 +2,7 @@
 
 #include <sc/string_constant.hpp>
 
-#include <msg/Match.hpp>
+#include <msg/match.hpp>
 
 namespace {
     template<bool Value>

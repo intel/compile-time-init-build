@@ -1,54 +1,54 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <msg/Field.hpp>
+#include <msg/field.hpp>
 
 namespace {
-    using TestField1 = Field<
+    using TestField1 = field<
         decltype("TestField1"_sc),
         0, 15, 0,
         std::uint32_t>;
 
-    using TestField2 = Field<
+    using TestField2 = field<
         decltype("TestField2"_sc),
         1, 23, 16,
         std::uint32_t>;
 
-    using TestField32BitUnaligned8 = Field<
+    using TestField32BitUnaligned8 = field<
         decltype("TestField32BitUnaligned8"_sc),
         0, 39, 8,
         std::uint32_t>;
 
-    using TestField32BitUnaligned16 = Field<
+    using TestField32BitUnaligned16 = field<
         decltype("TestField32BitUnaligned16"_sc),
         0, 47, 16,
         std::uint32_t>;
 
-    using TestField32BitUnaligned24 = Field<
+    using TestField32BitUnaligned24 = field<
         decltype("TestField32BitUnaligned24"_sc),
         0, 55, 24,
         std::uint32_t>;
 
-    using TestField48BitUnaligned16 = Field<
+    using TestField48BitUnaligned16 = field<
         decltype("TestField48BitUnaligned16"_sc),
         0, 63, 16,
         std::uint64_t>;
 
-    using TestField64BitAligned = Field<
+    using TestField64BitAligned = field<
         decltype("TestField64BitAligned"_sc),
         0, 63, 0,
         std::uint64_t>;
 
-    using TestField64BitUnaligned8 = Field<
+    using TestField64BitUnaligned8 = field<
         decltype("TestField64BitUnaligned8"_sc),
         0, 71, 8,
         std::uint64_t>;
 
-    using TestField64BitUnaligned16 = Field<
+    using TestField64BitUnaligned16 = field<
         decltype("TestField64BitUnaligned16"_sc),
         0, 79, 16,
         std::uint64_t>;
 
-    using TestField64BitUnaligned24 = Field<
+    using TestField64BitUnaligned24 = field<
         decltype("TestField64BitUnaligned24"_sc),
         0, 87, 24,
         std::uint64_t>;

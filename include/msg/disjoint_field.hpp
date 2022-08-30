@@ -4,13 +4,13 @@
 #include <cstdint>
 
 #include <sc/string_constant.hpp>
-#include <msg/Match.hpp>
+#include <msg/match.hpp>
 
-#include <msg/FieldMatchers.hpp>
+#include <msg/field_matchers.hpp>
 
 
 /**
- * DisjointField is used when a field contains disjoint spans of bits.
+ * disjoint_field is used when a field contains disjoint spans of bits.
  */
 template<
     typename NameTypeT,
@@ -18,7 +18,7 @@ template<
     typename T = std::uint32_t,
     T DefaultValue = T{},
     typename MatchRequirementsType = match::Always<true>>
-class DisjointField {
+class disjoint_field {
 private:
     static constexpr FieldsT fields{};
     T value;
@@ -29,8 +29,8 @@ public:
             return totalSize + f.size;
         });
 
-    using FieldId = DisjointField<NameTypeT, FieldsT, T>;
-    using This = DisjointField<NameTypeT, FieldsT, T, DefaultValue, MatchRequirementsType>;
+    using FieldId = disjoint_field<NameTypeT, FieldsT, T>;
+    using This = disjoint_field<NameTypeT, FieldsT, T, DefaultValue, MatchRequirementsType>;
 
     using NameType = NameTypeT;
 
@@ -69,25 +69,25 @@ public:
 
 
     template<T NewDefaultValue>
-    using WithDefault = DisjointField<NameTypeT, FieldsT, T, NewDefaultValue>;
+    using WithDefault = disjoint_field<NameTypeT, FieldsT, T, NewDefaultValue>;
 
     template<T NewRequiredValue>
-    using WithRequired = DisjointField<NameTypeT, FieldsT, T, NewRequiredValue, msg::EqualTo<This, T, NewRequiredValue>>;
+    using WithRequired = disjoint_field<NameTypeT, FieldsT, T, NewRequiredValue, msg::EqualTo<This, T, NewRequiredValue>>;
 
     template<T... PotentialValues>
-    using WithIn = DisjointField<NameTypeT, FieldsT, T, T{}, msg::In<This, T, PotentialValues...>>;
+    using WithIn = disjoint_field<NameTypeT, FieldsT, T, T{}, msg::In<This, T, PotentialValues...>>;
 
     template<typename NewRequiredMatcher>
-    using WithMatch = DisjointField<NameTypeT, FieldsT, T, DefaultValue, NewRequiredMatcher>;
+    using WithMatch = disjoint_field<NameTypeT, FieldsT, T, DefaultValue, NewRequiredMatcher>;
 
 
-    constexpr DisjointField(T const & newValue)
+    constexpr disjoint_field(T const & newValue)
         : value{newValue}
     {
         // pass
     }
 
-    constexpr DisjointField()
+    constexpr disjoint_field()
         : value{DefaultValue}
     {
         // pass

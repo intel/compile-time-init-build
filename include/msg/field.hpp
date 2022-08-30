@@ -5,15 +5,15 @@
 #include <cstdint>
 
 #include <sc/string_constant.hpp>
-#include <msg/Match.hpp>
+#include <msg/match.hpp>
 
-#include <msg/FieldMatchers.hpp>
+#include <msg/field_matchers.hpp>
 
 
 // TODO: handle field types that are not integral types (like QosScaledValue)
 // TODO: add support for fields with non-contiguous bits
 /**
- * Field class used to specify field lengths and manipulate desired field from provided data
+ * field class used to specify field lengths and manipulate desired field from provided data
  * @tparam MsbT  most significant bit position for the field
  * @tparam LsbT  least significant bit position for the field
  */
@@ -25,7 +25,7 @@ template<
     typename T = std::uint32_t,
     T DefaultValue = T{},
     typename MatchRequirementsType = match::Always<true>>
-class Field {
+class field {
 private:
     T value;
 
@@ -34,10 +34,10 @@ public:
     static_assert(LsbT <= 31, "lsb needs to be lower than or equal to 31");
 
     static constexpr size_t size = (MsbT - LsbT) + 1;
-    static_assert(size <= 64, "Field must be 64 bits or smaller");
+    static_assert(size <= 64, "field must be 64 bits or smaller");
 
-    using FieldId = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T>;
-    using This = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue, MatchRequirementsType>;
+    using FieldId = field<NameTypeT, DWordIndexT, MsbT, LsbT, T>;
+    using This = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue, MatchRequirementsType>;
     using ValueType = T;
 
     template<typename MsgType>
@@ -82,33 +82,33 @@ public:
     static constexpr msg::LessThanOrEqualTo<This, T, expectedValue> lessThanOrEqualTo{};
 
     template<T NewGreaterValue>
-    using WithGreaterThan = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue, msg::GreaterThan<This, T, NewGreaterValue>>;
+    using WithGreaterThan = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue, msg::GreaterThan<This, T, NewGreaterValue>>;
 
     template<T NewDefaultValue>
-    using WithDefault = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewDefaultValue>;
+    using WithDefault = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewDefaultValue>;
 
     template<T NewRequiredValue>
-    using WithRequired = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewRequiredValue, msg::EqualTo<This, T, NewRequiredValue>>;
+    using WithRequired = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewRequiredValue, msg::EqualTo<This, T, NewRequiredValue>>;
 
     template<T... PotentialValues>
-    using WithIn = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, T{}, msg::In<This, T, PotentialValues...>>;
+    using WithIn = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, T{}, msg::In<This, T, PotentialValues...>>;
 
     template<typename NewRequiredMatcher>
-    using WithMatch = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue, NewRequiredMatcher>;
+    using WithMatch = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue, NewRequiredMatcher>;
 
     template<T NewGreaterValue>
-    using WithGreaterThanOrEqualTo = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue, msg::GreaterThanOrEqualTo<This, T, NewGreaterValue>>;
+    using WithGreaterThanOrEqualTo = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue, msg::GreaterThanOrEqualTo<This, T, NewGreaterValue>>;
 
     template<T NewLesserValue>
-    using WithLessThanOrEqualTo = Field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewLesserValue, msg::LessThanOrEqualTo<This, T, NewLesserValue>>;
+    using WithLessThanOrEqualTo = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewLesserValue, msg::LessThanOrEqualTo<This, T, NewLesserValue>>;
 
-    constexpr Field(T const & newValue)
+    constexpr field(T const & newValue)
         : value{newValue}
     {
         // pass
     }
 
-    constexpr Field()
+    constexpr field()
         : value{DefaultValue}
     {
         // pass

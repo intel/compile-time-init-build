@@ -9,8 +9,8 @@
 #include <sc/string_constant.hpp>
 #include <cib/tuple.hpp>
 
-#include <msg/Match.hpp>
-#include <msg/Field.hpp>
+#include <msg/match.hpp>
+#include <msg/field.hpp>
 
 namespace detail {
     // https://en.cppreference.com/w/cpp/types/void_t

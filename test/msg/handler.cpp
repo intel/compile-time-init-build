@@ -1,28 +1,28 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <msg/Handler.hpp>
+#include <msg/handler.hpp>
 
 
 
 namespace {
     bool correctDispatch = false;
 
-    using TestIdField = Field<
+    using TestIdField = field<
         decltype("TestIdField"_sc),
         0, 31, 24,
         std::uint32_t>;
 
-    using TestField1 = Field<
+    using TestField1 = field<
         decltype("TestField1"_sc),
         0, 15, 0,
         std::uint32_t>;
 
-    using TestField2 = Field<
+    using TestField2 = field<
         decltype("TestField2"_sc),
         1, 23, 16,
         std::uint32_t>;
 
-    using TestField3 = Field<
+    using TestField3 = field<
         decltype("TestField3"_sc),
         1, 15, 0,
         std::uint32_t>;
