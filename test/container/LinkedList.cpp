@@ -8,9 +8,9 @@ namespace {
         IntNode * next;
         
         explicit constexpr IntNode(
-            int newValue
+            int new_value
         ) 
-            : value{newValue}
+            : value{new_value}
             , next{nullptr}
         {}
     };

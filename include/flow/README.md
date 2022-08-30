@@ -13,7 +13,7 @@ struct MorningRoutine : public flow::service<decltype("MorningRoutine"_sc)> {};
 ```
 
 The builder is used during the constexpr init() phase to define and extend the flow. Actions to be added to the flow are
-declared and defined as constexpr constants. All actions added to a flow will be executed.
+declared and defined as constexpr constants. all_t actions added to a flow will be executed.
 
 ```c++
 namespace food { 
@@ -205,7 +205,7 @@ MorningRoutine
 10. SEND_KIDS_TO_SCHOOL
 ```
 
-All of these components are composed in a project component and brought to life with an instance of `cib::top`. We need
+all_t of these components are composed in a project component and brought to life with an instance of `cib::top`. We need
 to make sure our `flow`s get executed at the appropriate times, so we our example has a `day_cycle` component that 
 defines the various extension points and ensures they get executed over and over in `cib::top`'s `MainLoop`.
 
@@ -271,7 +271,7 @@ struct MyFlowWithLogging : public flow::service<decltype("MyFlowWithLogging"_sc)
 
 ### `flow::action`
 
-Define a new `flow` action. All `flow` actions are created with a name and lambda. `flow` action and milestone names 
+Define a new `flow` action. all_t `flow` actions are created with a name and lambda. `flow` action and milestone names 
 must be unique within a `flow`. The same action can be used in multiple flows. Actions cannot be added to a flow more
 than once, but can be referenced by other actions when adding dependencies.
 
@@ -344,7 +344,7 @@ namespace example_component {
 
 While a flow is being defined during the constexpr init() phase, the flow::builder represents the actions and dependencies
 as a directed acyclic graph. Each action is a node while a dependency between actions is a directed edge from one node
-to another. During the build() phase, the graph is ordered into a sequence of steps using Kahn's Algorithm. Any circular
+to another. During the build() phase, the graph is ordered into a sequence of steps using Kahn's Algorithm. any_t circular
 dependency results in a compilation error.
 
 Because the flow library implements the constexpr init()/build() pattern, all the heavy lifting of registering actions

@@ -104,7 +104,29 @@ namespace cib {
     };
 
     namespace detail {
-                /**
+        template<
+            typename ValueType,
+            typename CallableType>
+        struct fold_helper;
+
+        template<typename T>
+        struct is_fold_helper : public std::integral_constant<bool, false> {};
+
+        template<typename ValueType, typename CallableType>
+        struct is_fold_helper<fold_helper<ValueType, CallableType>> : public std::integral_constant<bool, true> {};
+
+        template<typename T>
+        using is_fold_helper_t = typename is_fold_helper<T>::type;
+
+        template<typename T>
+        constexpr is_fold_helper_t<T> is_fold_helper_v{};
+
+        template<typename T>
+        constexpr T const & as_ref(T const & value) {
+            return value;
+        }
+
+        /**
          * Used by fold_right to leverage c++17 fold expressions with arbitrary
          * callables.
          *
@@ -119,22 +141,24 @@ namespace cib {
             typename ValueType,
             typename CallableType>
         struct fold_helper {
-            ValueType const & element_;
-            CallableType const & operation_;
+            ValueType element_;
+            CallableType operation_;
 
             CIB_CONSTEXPR fold_helper(
-                ValueType const & element,
-                CallableType const & operation
+                ValueType element,
+                CallableType operation
             )
                 : element_{element}
                 , operation_{operation}
             {}
 
-            template<typename StateType>
+            template<typename RhsValueType>
             [[nodiscard]] CIB_CONSTEXPR inline auto operator+(
-                StateType const & state
+                fold_helper<RhsValueType, CallableType> const & rhs
             ) const {
-                return operation_(element_, state);
+                auto const result = operation_(element_, rhs.element_);
+                using ResultType = decltype(result);
+                return fold_helper<ResultType, CallableType>{result, operation_};
             }
         };
     }
@@ -196,7 +220,82 @@ namespace cib {
             InitType const & initial_state,
             CallableType const & operation
         ) const {
-            return (detail::fold_helper{TupleElementTs::value, operation} + ... + initial_state);
+            return (detail::fold_helper{detail::as_ref(TupleElementTs::value), operation} + ... + detail::fold_helper{detail::as_ref(initial_state), operation}).element_;
+        }
+
+        /**
+         * fold_right a tuple of elements.
+         *
+         * Fold operations are sometimes called accumulate or reduce in other
+         * languages or libraries.
+         *
+         * https://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+         *
+         * @param operation
+         *      A callable that takes the current element being processed
+         *      and the current state, and returns the state to be used
+         *      to process the next element. Called for each element in
+         *      the tuple.
+         *
+         * @return
+         *      The final state of all of the operations.
+         */
+        template<typename CallableType>
+        [[nodiscard]] CIB_CONSTEXPR inline auto fold_right(
+            CallableType operation
+        ) const {
+            return (detail::fold_helper{detail::as_ref(TupleElementTs::value), operation} + ...).element_;
+        }
+
+        /**
+         * fold_left a tuple of elements.
+         *
+         * Fold operations are sometimes called accumulate or reduce in other
+         * languages or libraries.
+         *
+         * https://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+         *
+         * @param operation
+         *      A callable that takes the current element being processed
+         *      and the current state, and returns the state to be used
+         *      to process the next element. Called for each element in
+         *      the tuple.
+         *
+         * @return
+         *      The final state of all of the operations.
+         */
+        template<typename CallableType>
+        [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(
+            CallableType operation
+        ) const {
+            return (... + detail::fold_helper{detail::as_ref(TupleElementTs::value), operation}).element_;
+        }
+
+        /**
+         * fold_left a tuple of elements.
+         *
+         * Fold operations are sometimes called accumulate or reduce in other
+         * languages or libraries.
+         *
+         * https://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+         *
+         * @param operation
+         *      A callable that takes the current element being processed
+         *      and the current state, and returns the state to be used
+         *      to process the next element. Called for each element in
+         *      the tuple.
+         *
+         * @return
+         *      The final state of all of the operations.
+         */
+        template<
+            typename InitType,
+            typename CallableType>
+        [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(
+            InitType const & initial_state,
+            CallableType const & operation
+        ) const {
+            return (detail::fold_helper{detail::as_ref(initial_state), operation} + ... + detail::fold_helper{detail::as_ref(TupleElementTs::value), operation}).element_;
         }
 
         [[nodiscard]] CIB_CONSTEXPR bool operator==(tuple_impl<TupleElementTs...> const & rhs) const {
@@ -310,6 +409,86 @@ namespace cib {
         return tuple.apply([&](auto... elements){
             return cib::make_tuple(meta_func, op(elements)...);
         });
+    }
+
+    template<
+        typename Tuple,
+        typename Operation>
+    [[nodiscard]] CIB_CONSTEXPR auto transform(
+        Tuple tuple,
+        Operation op
+    ) {
+        return tuple.apply([&](auto... elements){
+            return cib::make_tuple(op(elements)...);
+        });
+    }
+
+    template<
+        typename IntegralType,
+        IntegralType... Indices,
+        typename CallableType>
+    [[nodiscard]] CIB_CONSTEXPR auto transform(
+        [[maybe_unused]] std::integer_sequence<IntegralType, Indices...> const & sequence,
+        CallableType const & op
+    ) {
+        return cib::make_tuple(op(std::integral_constant<IntegralType, Indices>{})...);
+    }
+
+
+
+    template<
+        typename Tuple,
+        typename Operation>
+    [[nodiscard]] CIB_CONSTEXPR auto filter(
+        Tuple tuple,
+        Operation op
+    ) {
+        return tuple.apply([&](auto... elements){
+            std::array<bool, tuple.size()> constexpr op_results{op(decltype(elements){})...};
+
+            // std::count
+            auto constexpr num_matches =
+                [&](){
+                    int count = 0;
+
+                    for (bool v : op_results) {
+                        if (v) {
+                            count += 1;
+                        }
+                    }
+
+                    return count;
+                }();
+
+            std::array<int, num_matches> constexpr indices =
+                [&](){
+                    std::array<int, num_matches> result{};
+                    auto dst = 0;
+
+                    for (int i = 0; i < op_results.size(); i++) {
+                        if (op_results[i]) {
+                            result[dst] = i;
+                            dst += 1;
+                        }
+                    }
+
+                    return result;
+                }();
+
+            return transform(std::make_integer_sequence<int, indices.size()>{}, [&](auto i){
+                return tuple.get(index_<indices[i.value]>);
+            });
+        });
+    }
+
+
+    template<
+        typename Operation>
+    [[nodiscard]] CIB_CONSTEXPR auto filter(
+        cib::tuple_impl<> t,
+        Operation op
+    ) {
+        return t;
     }
 
     struct tuple_pair {

@@ -101,7 +101,7 @@ namespace flow {
          *      builder.add(a >> b >> c);
          * </pre>
          *
-         * In this sequence milestones a, b, and c would be executed in that order
+         * in_t this sequence milestones a, b, and c would be executed in that order
          * if the flow were directed to go to milestone c.
          *
          * detail::Milestones can be referenced in multiple calls to "add". For example,

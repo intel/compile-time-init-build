@@ -12,7 +12,7 @@
  *
  * ConstexprMultiMap is perfect for compile-time initialization and
  * configuration, but its performance may not be suitable for run-time
- * operations. In particular, the current implementation has linear run-time
+ * operations. in_t particular, the current implementation has linear run-time
  * O(n) for any key lookup operation.
  *
  * ConstexprMultiMap owns the storage for the keys and values it stores.
