@@ -83,7 +83,7 @@ struct dont_panic {
 };
 ```
 #### [hello_world.cpp](hello_world.cpp)
-All the components are brought together in the project configuration, `my_project`.
+All the components are brought together in the project configuration, `hello_world`.
 ```c++
 #include "core.hpp"
 #include "say_hello_world.hpp"
