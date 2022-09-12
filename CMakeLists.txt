@@ -25,21 +25,9 @@ if(NOT_SUBPROJECT)
         set(CMAKE_CXX_STANDARD 17)
     endif()
 
-    find_package(Git QUIET)
-    if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-        message("Updating git submodules...")
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            RESULT_VARIABLE GIT_RETVAL)
-        if(NOT GIT_RETVAL EQUAL "0")
-            message(FATAL_ERROR "git submodule update failed!")
-        endif()
-    endif()
-
     # Enable functional and performance test suites.
     enable_testing()
-    add_subdirectory(lib/Catch2)
+    add_subdirectory(lib)
     add_subdirectory(test)
     add_subdirectory(benchmark)
 

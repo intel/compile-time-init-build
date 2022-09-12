@@ -116,9 +116,14 @@ ls build/include/cib/ | grep cib.hpp
 This combines all the *cib* header files in the `include` tree by recursively
 including the `#include` directives and ignoring all other macros.
 
-**NOTE:** *cib* uses git submodules to include its testing dependencies. The 
-CMake configuration *should* fetch the submodules for you, but only if the
-repository was cloned as a git repo and not downloaded as an archive.
+**NOTE:** When *cib* is cloned as standalone project, users are required to manually
+fetch ```Catch2``` and ```fmt``` submodules into ```lib/Catch2``` and ```lib/fmt```
+as per command below. These two libraries are needed due to *cib* testing dependencies.
+
+```shell
+git submodule add https://github.com/catchorg/Catch2.git lib/Catch2
+git submodule add https://github.com/fmtlib/fmt.git lib/fmt
+```
 
 Unit tests are registered with CTest:
 
