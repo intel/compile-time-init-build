@@ -107,6 +107,5 @@ target_compile_options(tests
 
 target_link_libraries(tests PRIVATE external_lib)
 
-include(CTest)
-include(Catch)
+# Automatically add tests with CTest
 catch_discover_tests(tests)
