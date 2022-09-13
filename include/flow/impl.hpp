@@ -8,6 +8,10 @@
 
 
 namespace flow {
+    struct interface {
+        virtual void operator()() const {};
+    };
+
     /**
      * flow::impl is a constant representation of a series of Milestones and actions to
      * be executed in a specific order.
@@ -26,7 +30,7 @@ namespace flow {
      * @see flow::builder
      */
     template<typename Name, int NumSteps>
-    class impl {
+    class impl : public interface {
     private:
         constexpr static bool loggingEnabled = !std::is_same<Name, void>::value;
         
@@ -81,7 +85,7 @@ namespace flow {
         /**
          * Execute the entire flow in order.
          */
-        constexpr void operator()() const {
+        void operator()() const final override {
             if constexpr (loggingEnabled) {
                 TRACE("flow.start({})", Name{});
             }

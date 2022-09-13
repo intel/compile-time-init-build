@@ -29,6 +29,7 @@ add_executable(tests
     msg/field.cpp
     msg/handler.cpp
     msg/message.cpp
+    seq/sequencer.cpp
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

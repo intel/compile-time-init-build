@@ -6,6 +6,7 @@
 
 namespace flow::detail {
     template<
+        typename NodeType,
         typename LhsType,
         typename RhsType>
     struct dependency {
@@ -19,22 +20,22 @@ namespace flow::detail {
 
         template<typename Callable>
         constexpr void walk(Callable c) const {
-            detail::node_walk(c, lhs);
-            detail::node_walk(c, rhs);
+            detail::node_walk<NodeType, Callable, LhsType>(c, lhs);
+            detail::node_walk<NodeType, Callable, RhsType>(c, rhs);
 
-            for (auto tail : detail::get_tails(lhs)) {
-                for (auto head : detail::get_heads(rhs)) {
+            for (auto tail : detail::get_tails<NodeType>(lhs)) {
+                for (auto head : detail::get_heads<NodeType>(rhs)) {
                     c(tail, head);
                 }
             }
         }
 
         constexpr auto get_heads() const {
-            return detail::get_heads(lhs);
+            return detail::get_heads<NodeType>(lhs);
         }
 
         constexpr auto get_tails() const {
-            return detail::get_tails(rhs);
+            return detail::get_tails<NodeType>(rhs);
         }
     };
 }

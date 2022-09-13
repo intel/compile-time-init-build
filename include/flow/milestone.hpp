@@ -71,7 +71,7 @@ namespace flow {
         LhsT const & lhs,
         RhsT const & rhs
     ) {
-        return detail::dependency{lhs, rhs};
+        return detail::dependency<milestone_base, LhsT, RhsT>{lhs, rhs};
     }
 
     template<
@@ -81,7 +81,7 @@ namespace flow {
         LhsT const & lhs,
         RhsT const & rhs
     ) {
-        return detail::parallel{lhs, rhs};
+        return detail::parallel<milestone_base, LhsT, RhsT>{lhs, rhs};
     }
 
     /**

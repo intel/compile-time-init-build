@@ -18,7 +18,7 @@ template<
     std::size_t Size>
 class Array {
 private:
-    ValueType storage[Size];
+    ValueType storage[(Size == 0) ? 1 : Size];
 
 public:
     using value_type = ValueType;

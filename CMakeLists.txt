@@ -13,7 +13,7 @@ project(
     DESCRIPTION "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
-add_library(cib INTERFACE)
+add_library(cib INTERFACE include/seq/impl.hpp)
 target_compile_features(cib INTERFACE cxx_std_17)
 
 
