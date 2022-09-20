@@ -7,10 +7,10 @@ add_subdirectory(Catch2)
 add_subdirectory(fmt)
 
 target_link_libraries(external_lib INTERFACE Catch2::Catch2WithMain cib)
+target_link_libraries(external_lib INTERFACE fmt::fmt)
 
-# ensure catch2 and fmt headers do not produce warnings
+# ensure catch2 headers do not produce warnings
 target_include_directories(external_lib SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Catch2/src/)
-target_include_directories(external_lib SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/fmt/include/)
 target_include_directories(external_lib SYSTEM INTERFACE ${CMAKE_SOURCE_DIR}/include/)
 
 # To provide function `catch_discover_tests` to get tests from a target 
