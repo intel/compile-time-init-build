@@ -117,12 +117,12 @@ namespace flow {
          * "c".
          */
         template<typename T>
-        constexpr auto add(T const & flowDescription) {
+        constexpr auto add(T const & flow_description) {
             if constexpr(std::is_base_of_v<milestone_base, T>) {
-                dependencyGraph.put(flowDescription);
+                dependencyGraph.put(flow_description);
 
             } else {
-                flowDescription.walk(
+                flow_description.walk(
                     [&](milestone_base lhs, milestone_base rhs) {
                         if (rhs == milestone_base{}) {
                             dependencyGraph.put(lhs);

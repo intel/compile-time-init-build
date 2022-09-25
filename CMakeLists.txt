@@ -39,6 +39,7 @@ if(NOT_SUBPROJECT)
 
     # Enable functional and performance test suites.
     enable_testing()
+    add_subdirectory(lib/googletest)
     add_subdirectory(lib/Catch2)
     add_subdirectory(test)
     add_subdirectory(benchmark)
