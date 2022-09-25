@@ -125,7 +125,7 @@ catch_discover_tests(tests)
 
 # add all unit test suites here
 add_executable(gtests
-    interrupt/InterruptManagerTest.cpp
+    interrupt/manager.cpp
 )
 
 target_include_directories(gtests SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
@@ -143,3 +143,6 @@ target_link_libraries(gtests
     gmock_main
     cib
 )
+
+include(GoogleTest)
+gtest_discover_tests(gtests)

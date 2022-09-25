@@ -412,7 +412,9 @@ namespace interrupt {
 
 
     TEST_F(InterruptManagerTest, DynamicInterruptEnable) {
-        EXPECT_WRITE(int_en_reg_t, 3);
+        BasicBuilder::Dynamic::disable<msg_handler_irq, rsp_handler_irq>();
+
+        EXPECT_WRITE(int_en_reg_t, 2);
 
         BasicBuilder::Dynamic::enable<msg_handler_irq>();
     }
@@ -426,15 +428,17 @@ namespace interrupt {
 
 
     TEST_F(InterruptManagerTest, ResourceDisableEnable) {
+        BasicBuilder::Dynamic::disable<msg_handler_irq, rsp_handler_irq>();
+
         InSequence s;
 
-        EXPECT_WRITE(int_en_reg_t, 3);
+        EXPECT_WRITE(int_en_reg_t, 1);
         BasicBuilder::Dynamic::enable<rsp_handler_irq>();
 
-        EXPECT_WRITE(int_en_reg_t, 2);
+        EXPECT_WRITE(int_en_reg_t, 0);
         BasicBuilder::Dynamic::turn_off_resource<test_resource_beta>();
 
-        EXPECT_WRITE(int_en_reg_t, 3);
+        EXPECT_WRITE(int_en_reg_t, 1);
         BasicBuilder::Dynamic::turn_on_resource<test_resource_beta>();
     }
 
