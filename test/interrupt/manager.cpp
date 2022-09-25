@@ -76,17 +76,16 @@ namespace interrupt {
         // do nothing
     });
 
-    class msg_handler_irq : public flow::builder<decltype("msg_handler_irq"_sc)> {};
-    class rsp_handler_irq : public flow::builder<decltype("rsp_handler_irq"_sc)> {};
-    class timer_irq : public flow::builder<decltype("timer_irq"_sc)> {};
+    class msg_handler_irq : public irq_flow<decltype("msg_handler_irq"_sc)> {};
+    class rsp_handler_irq : public irq_flow<decltype("rsp_handler_irq"_sc)> {};
+    class timer_irq : public irq_flow<decltype("timer_irq"_sc)> {};
 
-    class i2c_handler_irq : public flow::builder<decltype("i2c_handler_irq"_sc)> {};
-    class spi_handler_irq : public flow::builder<decltype("spi_handler_irq"_sc)> {};
-    class can_handler_irq : public flow::builder<decltype("can_handler_irq"_sc)> {};
+    class i2c_handler_irq : public irq_flow<decltype("i2c_handler_irq"_sc)> {};
+    class spi_handler_irq : public irq_flow<decltype("spi_handler_irq"_sc)> {};
+    class can_handler_irq : public irq_flow<decltype("can_handler_irq"_sc)> {};
 
     struct test_resource_alpha {};
     struct test_resource_beta {};
-    struct TestResourceGamma {};
 
     template<typename FieldType>
     struct field_value_t {
