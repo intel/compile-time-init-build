@@ -137,7 +137,7 @@ target_compile_options(gtests INTERFACE
     -Wno-undefined-internal
 )
 
-target_link_libraries(gtests
+target_link_libraries(gtests PUBLIC
     gmock
     gtest
     gmock_main

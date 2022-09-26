@@ -41,6 +41,7 @@ if(NOT_SUBPROJECT)
     enable_testing()
     add_subdirectory(lib/googletest)
     add_subdirectory(lib/Catch2)
+    add_subdirectory(lib/hana)
     add_subdirectory(test)
     add_subdirectory(benchmark)
 
@@ -78,3 +79,5 @@ else()
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
     )
 endif()
+
+target_link_libraries(cib INTERFACE hana)
