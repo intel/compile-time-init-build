@@ -15,11 +15,13 @@ def process(base_filepath):
         visited_includes.add(base_filepath)
         with open(base_filepath) as core:
             for line in core.readlines():
-                m = re.match(r"\s*#include\s*\"([a-zA-Z0-9_/. ]+)\"", line)
+                m = re.match(r"\s*#include\s*<([a-zA-Z0-9_/. ]+)>", line)
 
                 if m:
                     sub_filepath = Path(m.group(1))
-                    process(base_filepath.parent / sub_filepath)
+                    full_path = base_filepath.parent.parent / sub_filepath
+                    if full_path.exists():
+                        process(full_path)
                 else:
                     line = re.sub("\.\.~~VERSION~~\.\.", version, line)
                     print(line, end="")
