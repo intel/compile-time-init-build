@@ -1,6 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <flow/flow.hpp>
 #include <cib/cib.hpp>
 
 #include <string>
