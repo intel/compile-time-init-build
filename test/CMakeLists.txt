@@ -105,16 +105,7 @@ target_compile_options(tests
         -ftemplate-backtrace-limit=0
 )
 
-# target_link_libraries(tests PRIVATE external_lib)
-
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
-
-# ensure the catch2 headers do not produce warnings
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)
-
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/test/)
+target_link_libraries(tests PRIVATE external_lib)
 
 # Automatically add tests with CTest
 catch_discover_tests(tests)
