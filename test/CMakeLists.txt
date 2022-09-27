@@ -116,8 +116,33 @@ target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/sr
 
 target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
 target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)
+target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/test/)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/lib/Catch2/extras)
 include(CTest)
 include(Catch)
 catch_discover_tests(tests)
+
+# add all unit test suites here
+add_executable(gtests
+    interrupt/manager.cpp
+)
+
+target_include_directories(gtests SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
+
+
+target_compile_options(gtests INTERFACE
+    -fconstexpr-depth=2048
+    -Wno-unknown-attributes
+    -Wno-undefined-internal
+)
+
+target_link_libraries(gtests PUBLIC
+    gmock
+    gtest
+    gmock_main
+    cib
+)
+
+include(GoogleTest)
+gtest_discover_tests(gtests)

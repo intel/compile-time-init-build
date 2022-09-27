@@ -47,5 +47,8 @@
 #include <cib/tuple.hpp>
 #include <cib/top.hpp>
 
+#include <log/log.hpp>
+#include <interrupt/manager.hpp>
+
 
 #endif //COMPILE_TIME_INIT_BUILD_CIB_HPP

@@ -39,6 +39,7 @@ if(NOT_SUBPROJECT)
 
     # Enable functional and performance test suites.
     enable_testing()
+    add_subdirectory(lib/googletest)
     add_subdirectory(lib/Catch2)
     add_subdirectory(test)
     add_subdirectory(benchmark)
@@ -76,4 +77,10 @@ else()
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
     )
+endif()
+
+if (TARGET hana)
+    target_link_libraries(cib INTERFACE hana)
+else()
+    target_include_directories(cib INTERFACE lib/hana/include)
 endif()
