@@ -22,6 +22,8 @@ def process(base_filepath):
                     full_path = base_filepath.parent.parent / sub_filepath
                     if full_path.exists():
                         process(full_path)
+                    else:
+                        print(line, end="")
                 else:
                     line = re.sub("\.\.~~VERSION~~\.\.", version, line)
                     print(line, end="")
