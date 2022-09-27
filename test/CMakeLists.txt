@@ -114,9 +114,7 @@ catch_discover_tests(tests)
 add_executable(gtests
     interrupt/manager.cpp
 )
-
-target_include_directories(gtests SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
-
+ 
 
 target_compile_options(gtests INTERFACE
     -fconstexpr-depth=2048
@@ -130,6 +128,8 @@ target_link_libraries(gtests PUBLIC
     gmock_main
     cib
 )
+
+target_link_libraries(gtests PRIVATE external_lib)
 
 include(GoogleTest)
 gtest_discover_tests(gtests)
