@@ -4,10 +4,6 @@
 #include <cib/cib.hpp>
 
 
-#include <log/log.hpp>
-
-#include <interrupt/manager.hpp>
-
 
 using ::testing::_;
 using ::testing::Return;
