@@ -116,9 +116,14 @@ ls build/include/cib/ | grep cib.hpp
 This combines all the *cib* header files in the `include` tree by recursively
 including the `#include` directives and ignoring all other macros.
 
-**NOTE:** *cib* uses git submodules to include its testing dependencies. The 
-CMake configuration *should* fetch the submodules for you, but only if the
-repository was cloned as a git repo and not downloaded as an archive.
+**NOTE:** *cib* uses git submodules to include its testing dependencies. Users are
+required to pull submodules by manually run git command below. This is only required
+if repository was cloned as a standalone project through git repo and not downloaded
+as an archive.
+
+```shell
+git submodule update --recursive
+```
 
 Unit tests are registered with CTest:
 
