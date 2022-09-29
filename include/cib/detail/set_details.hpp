@@ -87,7 +87,7 @@ namespace cib::detail {
             constexpr auto lhs = 59;
             constexpr auto rhs = function_name.size() - 51;
 
-        #elif #elif defined(_MSC_VER)
+        #elif defined(_MSC_VER)
             constexpr std::string_view function_name = __FUNCSIG__;
             constexpr auto lhs = 0;
             constexpr auto rhs = function_name.size();

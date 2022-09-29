@@ -52,7 +52,7 @@ namespace flow {
         [[nodiscard]] constexpr bool operator==(milestone_base const & rhs) const {
             #if defined(__GNUC__) && __GNUC__ < 12
                 return this->hash == rhs.hash;
-            #elif
+            #else
                 return
                     (this->run) == (rhs.run) &&
                     (this->log_name) == (rhs.log_name);
