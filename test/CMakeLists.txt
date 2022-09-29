@@ -101,36 +101,21 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 endif()
 
-
-
-
-
 target_compile_options(tests
     PRIVATE
         -ftemplate-backtrace-limit=0
 )
 
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain cib)
+target_link_libraries(tests PRIVATE external_lib)
 
-# ensure the catch2 headers do not produce warnings
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/Catch2/src/)
-
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)
-target_include_directories(tests SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/test/)
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/lib/Catch2/extras)
-include(CTest)
-include(Catch)
+# Automatically add tests with CTest
 catch_discover_tests(tests)
 
 # add all unit test suites here
 add_executable(gtests
     interrupt/manager.cpp
 )
-
-target_include_directories(gtests SYSTEM PRIVATE ${CMAKE_SOURCE_DIR}/test ${CMAKE_SOURCE_DIR}/lib/fmt/include/)
-
+ 
 
 target_compile_options(gtests INTERFACE
     -fconstexpr-depth=2048
@@ -144,6 +129,8 @@ target_link_libraries(gtests PUBLIC
     gmock_main
     cib
 )
+
+target_link_libraries(gtests PRIVATE external_lib)
 
 include(GoogleTest)
 gtest_discover_tests(gtests)
