@@ -1,12 +1,12 @@
 [submodule "lib/Catch2"]
-	path = lib/Catch2
+	path = extern/Catch2
 	url = https://github.com/catchorg/Catch2.git
 [submodule "lib/fmt"]
-	path = lib/fmt
+	path = extern/fmt
 	url = https://github.com/fmtlib/fmt.git
 [submodule "lib/googletest"]
-	path = lib/googletest
+	path = extern/googletest
 	url = https://github.com/google/googletest.git
 [submodule "lib/hana"]
-	path = lib/hana
+	path = extern/hana
 	url = https://github.com/boostorg/hana.git
