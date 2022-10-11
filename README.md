@@ -48,7 +48,7 @@ Another option is to include cib as a
 in your repo and add the cib directory in your CMakeLists.txt file:
 
 ```cmake
-add_subdirectory(lib/compile-time-init-build)
+add_subdirectory(extern/compile-time-init-build)
 target_link_libraries(your_target PRIVATE cib)
 ```
 

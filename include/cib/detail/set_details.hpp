@@ -76,7 +76,7 @@ namespace cib::detail {
     };
 
     template<typename Tag>
-    constexpr static std::string_view name() {
+    CIB_CONSTEVAL static std::string_view name() {
         #if defined(__clang__)
             constexpr std::string_view function_name = __PRETTY_FUNCTION__;
             constexpr auto lhs = 44;
@@ -87,7 +87,7 @@ namespace cib::detail {
             constexpr auto lhs = 59;
             constexpr auto rhs = function_name.size() - 51;
 
-        #elif #elif defined(_MSC_VER)
+        #elif defined(_MSC_VER)
             constexpr std::string_view function_name = __FUNCSIG__;
             constexpr auto lhs = 0;
             constexpr auto rhs = function_name.size();
@@ -99,7 +99,7 @@ namespace cib::detail {
     }
 
     template<typename MetaFunc, typename... Types>
-    constexpr static auto create_type_names(std::size_t src) {
+    CIB_CONSTEVAL static auto create_type_names(std::size_t src) {
         if constexpr (sizeof...(Types) == 0) {
             return std::array<typename_map_entry, 0>{};
 

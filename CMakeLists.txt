@@ -27,7 +27,7 @@ if(NOT_SUBPROJECT)
 
     # Enable functional and performance test suites.
     enable_testing()
-    add_subdirectory(lib)
+    add_subdirectory(extern)
     add_subdirectory(test)
     add_subdirectory(benchmark)
 
@@ -69,7 +69,7 @@ endif()
 if (TARGET hana)
     target_link_libraries(cib INTERFACE hana)
 else()
-    target_include_directories(cib INTERFACE lib/hana/include)
+    target_include_directories(cib INTERFACE extern/hana/include)
 endif()
 
 
