@@ -35,72 +35,27 @@ namespace cib {
 
     constexpr static index_metafunc_t<self_type> self_type_index{};
 
+    template<typename ElementT, typename IndexT>
+    struct type_indexed_element {
+        [[nodiscard]] CIB_CONSTEXPR decltype(auto) get(tag_t<IndexT>) const {
+            return static_cast<ElementT const&>(*this).get(index_<ElementT::index>);
+        }
+    };
 
     template<typename T, int Index, typename... IndexTs>
-    struct tuple_element;
-
-    template<typename T, int Index>
-    struct tuple_element<T, Index> {
+    struct tuple_element : type_indexed_element<tuple_element<T, Index, IndexTs...>, IndexTs>... {
+        CIB_CONSTEXPR static int index = Index;
         using value_type = T;
-        T value;
+        T value{};
 
-        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
-            return value;
-        }
-    };
+        CIB_CONSTEXPR tuple_element() = default;
+        CIB_CONSTEXPR explicit tuple_element(T t) : value{t} {}
 
-    template<typename T, int Index, typename IndexT0>
-    struct tuple_element<T, Index, IndexT0> {
-        using value_type = T;
-        T value;
-
-        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
+        [[nodiscard]] CIB_CONSTEXPR T const & get(index_t<Index>) const {
             return value;
         }
 
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT0>) const {
-            return value;
-        }
-    };
-
-    template<typename T, int Index, typename IndexT0, typename IndexT1>
-    struct tuple_element<T, Index, IndexT0, IndexT1> {
-        using value_type = T;
-        T value;
-
-        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
-            return value;
-        }
-
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT0>) const {
-            return value;
-        }
-
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT1>) const {
-            return value;
-        }
-    };
-
-    template<typename T, int Index, typename IndexT0, typename IndexT1, typename IndexT2>
-    struct tuple_element<T, Index, IndexT0, IndexT1, IndexT2> {
-        using value_type = T;
-        T value;
-
-        [[nodiscard]] constexpr T const & get(index_t<Index>) const {
-            return value;
-        }
-
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT0>) const {
-            return value;
-        }
-
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT1>) const {
-            return value;
-        }
-
-        [[nodiscard]] constexpr T const & get(tag_t<IndexT2>) const {
-            return value;
-        }
+        using type_indexed_element<tuple_element, IndexTs>::get...;
     };
 
     namespace detail {
