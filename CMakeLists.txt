@@ -71,3 +71,49 @@ if (TARGET hana)
 else()
     target_include_directories(cib INTERFACE lib/hana/include)
 endif()
+
+
+
+function(gen_str_catalog)
+    set(options "")
+
+    set(oneValueArgs
+        OUTPUT_CPP
+        OUTPUT_XML
+        OUTPUT_JSON
+        GEN_STR_CATALOG
+    )
+
+    set(multiValueArgs
+        INPUT_LIBS
+    )
+
+    cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    foreach(X IN LISTS SC_INPUT_LIBS)
+        add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
+            DEPENDS ${X}
+            COMMAND nm -uC ${X} >> ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
+        )
+    endforeach()
+
+    add_custom_command(
+        OUTPUT
+            ${SC_OUTPUT_CPP}
+            ${SC_OUTPUT_JSON}
+            ${SC_OUTPUT_XML}
+        COMMAND
+            python3 ${SC_GEN_STR_CATALOG}
+            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
+            ${SC_OUTPUT_CPP}
+            ${SC_OUTPUT_JSON}
+            ${SC_OUTPUT_XML}
+        DEPENDS
+            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
+            ${SC_GEN_STR_CATALOG}
+    )
+
+    add_library(log_strings STATIC strings.cpp)
+    target_link_libraries(log_strings PUBLIC cib)
+endfunction()
