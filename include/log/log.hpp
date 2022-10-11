@@ -2,6 +2,8 @@
 // Created by lvalenty on 8/18/2022.
 //
 
+#include <log/log_level.hpp>
+
 #ifndef CIB_LOG_HPP
 #define CIB_LOG_HPP
 
