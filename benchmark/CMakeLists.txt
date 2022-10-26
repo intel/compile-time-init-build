@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.16)
-project(compile_time_init_build)
-
 
 add_executable(compilation_benchmark
     big_nexus.cpp
@@ -29,7 +27,6 @@ target_compile_options(compilation_benchmark
         -ftemplate-backtrace-limit=0
 )
 
+target_link_libraries_system(compilation_benchmark PRIVATE fmt::fmt)
 target_link_libraries(compilation_benchmark PRIVATE cib)
-target_include_directories(compilation_benchmark SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/extern/fmt/include/)
-target_include_directories(compilation_benchmark SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/include/)
-target_include_directories(compilation_benchmark SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/test/)
+target_include_directories(compilation_benchmark PRIVATE ${CMAKE_SOURCE_DIR}/test/)

@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
-project(compile_time_init_build)
 
-
-add_executable(tests
+# Catch tests
+add_executable(cib-catch-tests
     cib/detail/type_list.cpp
     cib/detail/type_pack_element.cpp
     cib/detail/type_to_string_view.cpp
@@ -32,7 +31,7 @@ add_executable(tests
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(tests
+    target_compile_options(cib-catch-tests
         PRIVATE
             -ferror-limit=8
     )
@@ -41,7 +40,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     string (REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
 
     if (${CLANG_VERSION_STRING} VERSION_EQUAL 12)
-        target_compile_options(tests
+        target_compile_options(cib-catch-tests
             PRIVATE
                 -Wmisleading-indentation
                 -Wno-c++20-compat
@@ -93,43 +92,43 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     endif()
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(tests
+    target_compile_options(cib-catch-tests
         PRIVATE
             -fmax-errors=8
     )
 
 endif()
 
-target_compile_options(tests
+target_compile_options(cib-catch-tests
     PRIVATE
         -ftemplate-backtrace-limit=0
 )
 
-target_link_libraries(tests PRIVATE external_lib)
+target_link_libraries_system(cib-catch-tests PRIVATE fmt::fmt Catch2::Catch2WithMain)
+target_link_libraries(cib-catch-tests PRIVATE cib)
+target_include_directories(cib-catch-tests PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 
-# Automatically add tests with CTest
-catch_discover_tests(tests)
+list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+include(Catch)
+catch_discover_tests(cib-catch-tests)
 
-# add all unit test suites here
-add_executable(gtests
+# Google tests
+add_executable(cib-gtests
     interrupt/manager.cpp
 )
- 
 
-target_compile_options(gtests INTERFACE
+target_compile_options(cib-gtests PRIVATE
     -fconstexpr-depth=2048
     -Wno-unknown-attributes
     -Wno-undefined-internal
 )
 
-target_link_libraries(gtests PUBLIC
-    gmock
-    gtest
-    gmock_main
-    cib
-)
-
-target_link_libraries(gtests PRIVATE external_lib)
+target_link_libraries_system(cib-gtests PRIVATE fmt::fmt gmock gtest gmock_main)
+target_link_libraries(cib-gtests PRIVATE cib)
+target_include_directories(cib-gtests PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 
 include(GoogleTest)
-gtest_discover_tests(gtests)
+gtest_discover_tests(cib-gtests)
+
+# Top-level test target
+add_custom_target(all-cib-tests DEPENDS cib-gtests cib-catch-tests)
