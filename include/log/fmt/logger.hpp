@@ -41,7 +41,7 @@ struct fmt::formatter<log_level> {
 };
 
 namespace {
-    const auto loggingStartTime = std::chrono::high_resolution_clock::now();
+    inline const auto loggingStartTime = std::chrono::high_resolution_clock::now();
 
     template<typename StringType>
     inline char const * trimSourceFilename(StringType src) {
@@ -61,7 +61,7 @@ namespace {
     };
 
 
-    auto outputLine = [](auto filename, auto lineNumber, auto level, auto msg){
+    inline auto outputLine = [](auto filename, auto lineNumber, auto level, auto msg){
         auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::high_resolution_clock::now() - loggingStartTime).count();
 
