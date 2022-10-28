@@ -6,6 +6,8 @@ else()
     set(NOT_SUBPROJECT OFF)
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(
     cib
     VERSION 0.1.0
@@ -13,10 +15,15 @@ project(
     DESCRIPTION "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
+include(cmake/CPM.cmake)
+include(cmake/libraries.cmake)
+
+CPMAddPackage("gh:boostorg/hana#b804937")
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_17)
-
-
+target_include_directories(cib INTERFACE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cib SYSTEM INTERFACE ${hana_SOURCE_DIR}/include)
 
 if(NOT_SUBPROJECT)
     if (DEFINED ENV{CXX_STANDARD} AND NOT $ENV{CXX_STANDARD} EQUAL "")
@@ -25,9 +32,12 @@ if(NOT_SUBPROJECT)
         set(CMAKE_CXX_STANDARD 17)
     endif()
 
+    CPMAddPackage("gh:fmtlib/fmt#9.1.0")
+    CPMAddPackage("gh:catchorg/Catch2@3.1.1")
+    CPMAddPackage("gh:google/googletest#release-1.12.1")
+
     # Enable functional and performance test suites.
     enable_testing()
-    add_subdirectory(extern)
     add_subdirectory(test)
     add_subdirectory(benchmark)
 
@@ -65,55 +75,3 @@ else()
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
     )
 endif()
-
-if (TARGET hana)
-    target_link_libraries(cib INTERFACE hana)
-else()
-    target_include_directories(cib INTERFACE extern/hana/include)
-endif()
-
-
-
-function(gen_str_catalog)
-    set(options "")
-
-    set(oneValueArgs
-        OUTPUT_CPP
-        OUTPUT_XML
-        OUTPUT_JSON
-        GEN_STR_CATALOG
-    )
-
-    set(multiValueArgs
-        INPUT_LIBS
-    )
-
-    cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    foreach(X IN LISTS SC_INPUT_LIBS)
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-            DEPENDS ${X}
-            COMMAND nm -uC ${X} >> ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-        )
-    endforeach()
-
-    add_custom_command(
-        OUTPUT
-            ${SC_OUTPUT_CPP}
-            ${SC_OUTPUT_JSON}
-            ${SC_OUTPUT_XML}
-        COMMAND
-            python3 ${SC_GEN_STR_CATALOG}
-            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-            ${SC_OUTPUT_CPP}
-            ${SC_OUTPUT_JSON}
-            ${SC_OUTPUT_XML}
-        DEPENDS
-            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-            ${SC_GEN_STR_CATALOG}
-    )
-
-    add_library(log_strings STATIC strings.cpp)
-    target_link_libraries(log_strings PUBLIC cib)
-endfunction()
