@@ -20,6 +20,11 @@ target_include_directories(cib INTERFACE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cib SYSTEM INTERFACE ${hana_SOURCE_DIR}/include)
 target_link_libraries_system(cib INTERFACE fmt::fmt)
 
+target_compile_options(
+    cib
+    INTERFACE
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>)
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -61,12 +66,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_dependencies(quality check-clang-format check-cmake-format)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(
-            cib
-            INTERFACE
-                $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
-                $<$<CXX_COMPILER_ID:Clang>:-Wno-c++20-extensions>)
-
         find_program(CLANG_TIDY_PROGRAM "clang-tidy" REQUIRED)
         add_custom_target(clang-tidy)
         include(cmake/clang-tidy.cmake)

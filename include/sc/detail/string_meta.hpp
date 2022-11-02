@@ -57,4 +57,11 @@ struct Replace {
 
     constexpr static StringView value{storage.data(), size};
 };
+
+template <typename StringViewConstant>
+[[nodiscard]] constexpr static auto create() noexcept {
+    return detail::unpack_into_string_constant<StringViewConstant>(
+        std::make_integer_sequence<size_type,
+                                   StringViewConstant::value.size()>{});
+}
 } // namespace sc::detail
