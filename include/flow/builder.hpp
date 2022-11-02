@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/builder_meta.hpp>
 #include <container/ConstexprMultiMap.hpp>
 #include <flow/impl.hpp>
 #include <flow/milestone.hpp>

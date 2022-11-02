@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sc/detail/conversions.hpp>
 #include <sc/string_constant.hpp>
 
 #include <type_traits>

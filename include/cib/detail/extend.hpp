@@ -1,3 +1,4 @@
+#include <cib/detail/builder_traits.hpp>
 #include <cib/detail/config_item.hpp>
 #include <cib/tuple.hpp>
 

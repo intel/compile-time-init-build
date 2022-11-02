@@ -61,11 +61,17 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_dependencies(quality check-clang-format check-cmake-format)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(
+            cib
+            INTERFACE
+                $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
+                $<$<CXX_COMPILER_ID:Clang>:-Wno-c++20-extensions>)
+
         find_program(CLANG_TIDY_PROGRAM "clang-tidy" REQUIRED)
         add_custom_target(clang-tidy)
         include(cmake/clang-tidy.cmake)
         clang_tidy_interface(cib)
-        add_dependencies(quality clang-tidy)
+        # add_dependencies(quality clang-tidy)
     endif()
 endif()
 

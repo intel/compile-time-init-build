@@ -1,6 +1,8 @@
 #pragma once
 
-// FIXME: includes
+#include <boost/hana.hpp>
+
+#include <type_traits>
 
 namespace interrupt {
 namespace hana = boost::hana;
