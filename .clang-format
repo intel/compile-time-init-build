@@ -1,0 +1,11 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<stdx/.*'
+    Priority: 1
+  - Regex: '^<catch2/.*'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
