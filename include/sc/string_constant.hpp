@@ -10,13 +10,6 @@
 #include <utility>
 
 namespace sc {
-template <typename StringViewConstant>
-[[nodiscard]] constexpr static auto create() noexcept {
-    return detail::unpack_into_string_constant<StringViewConstant>(
-        std::make_integer_sequence<size_type,
-                                   StringViewConstant::value.size()>{});
-}
-
 template <typename CharT, CharT... chars> struct string_constant {
   private:
     using This = string_constant<CharT, chars...>;
@@ -81,14 +74,14 @@ template <typename CharT, CharT... chars> struct string_constant {
     [[nodiscard]] constexpr static auto
     substr(std::integral_constant<size_type, pos>,
            std::integral_constant<size_type, count>) {
-        return create<detail::SubStr<This, pos, count>>();
+        return detail::create<detail::SubStr<This, pos, count>>();
     }
 
     template <size_type pos, size_type count, typename StrT>
     [[nodiscard]] constexpr static auto
     replace(std::integral_constant<size_type, pos>,
             std::integral_constant<size_type, count>, StrT) noexcept {
-        return create<detail::Replace<This, pos, count, StrT>>();
+        return detail::create<detail::Replace<This, pos, count, StrT>>();
     }
 
     [[nodiscard]] constexpr static uint64_t hash() {

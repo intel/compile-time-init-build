@@ -245,7 +245,7 @@ template <typename CharT, CharT... chars, typename... ArgTs>
     }();
 
     return lazy_string_format{
-        create<format_t<string_constant<CharT, chars...>, ArgTs...>>(),
+        detail::create<format_t<string_constant<CharT, chars...>, ArgTs...>>(),
         runtime_args};
 }
 

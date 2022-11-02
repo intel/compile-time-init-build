@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sc/detail/string_meta.hpp>
+
 #include <array>
 #include <string_view>
 #include <type_traits>
