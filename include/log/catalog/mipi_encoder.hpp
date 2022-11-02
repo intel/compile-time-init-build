@@ -5,6 +5,7 @@
 #include <sc/format.hpp>
 #include <sc/string_constant.hpp>
 
+#include <cstdint>
 #include <tuple>
 
 #define LOG(LEVEL, MSG, ...)                                                   \

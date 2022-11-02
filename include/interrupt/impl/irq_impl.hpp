@@ -1,7 +1,8 @@
-#include <interrupt/fwd.hpp>
-
 #ifndef CIB_INTERRUPT_IMPL_IRQ_IMPL_HPP
 #define CIB_INTERRUPT_IMPL_IRQ_IMPL_HPP
+
+#include <interrupt/config/fwd.hpp>
+#include <interrupt/fwd.hpp>
 
 namespace interrupt {
 /**

@@ -1,3 +1,4 @@
+#include <cib/config.hpp>
 #include <cib/nexus.hpp>
 #include <flow/flow.hpp>
 

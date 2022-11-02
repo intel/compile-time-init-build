@@ -110,8 +110,6 @@ jobs:
           
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
       - name: install compiler
         run: ${{ matrix.compiler.install }}
@@ -133,10 +131,26 @@ jobs:
 
   quality_checks_pass:
     runs-on: ubuntu-latest
-    needs: build_and_test
     steps:
-      - name: Say Hello
-        run: echo "Hello!"
+      - uses: actions/checkout@v3
+
+      - name: Install compiler
+        run: sudo apt update && sudo apt-get install -y clang-11
+
+      - name: Install cmake-format
+        run: |
+          pip3 install --upgrade pip
+          pip3 install pyyaml cmake-format
+
+      - name: Configure CMake
+        env:
+          CC: "/usr/lib/llvm-11/bin/clang"
+          CXX: "/usr/lib/llvm-11/bin/clang++"
+          CXX_STANDARD: 20
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+      - name: Run quality checks
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t quality
 
   build_single_header:
     runs-on: ubuntu-latest

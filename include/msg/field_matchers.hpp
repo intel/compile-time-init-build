@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <sc/string_constant.hpp>
 
 #include <cstdint>

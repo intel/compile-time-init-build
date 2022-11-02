@@ -1,3 +1,4 @@
+#include <cib/detail/meta.hpp>
 #include <cib/detail/set_details.hpp>
 
 #ifndef CIB_SET_HPP
