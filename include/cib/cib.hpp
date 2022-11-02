@@ -1,7 +1,6 @@
 #ifndef COMPILE_TIME_INIT_BUILD_CIB_HPP
 #define COMPILE_TIME_INIT_BUILD_CIB_HPP
 
-
 /*
  * Boost Software License - Version 1.0 - August 17th, 2003
  *
@@ -28,7 +27,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
 /*
  * cib - Compile-time Initialization and Build
  * ..~~VERSION~~..
@@ -37,18 +35,15 @@
  * https://github.com/intel/compile-time-init-build
  */
 
-
-#include <cib/callback.hpp>
-#include <cib/nexus.hpp>
-#include <cib/built.hpp>
-#include <cib/config.hpp>
 #include <cib/builder_meta.hpp>
+#include <cib/built.hpp>
+#include <cib/callback.hpp>
+#include <cib/config.hpp>
+#include <cib/nexus.hpp>
 #include <cib/set.hpp>
-#include <cib/tuple.hpp>
 #include <cib/top.hpp>
-
-#include <log/log.hpp>
+#include <cib/tuple.hpp>
 #include <interrupt/manager.hpp>
+#include <log/log.hpp>
 
-
-#endif //COMPILE_TIME_INIT_BUILD_CIB_HPP
+#endif // COMPILE_TIME_INIT_BUILD_CIB_HPP

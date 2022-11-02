@@ -21,26 +21,20 @@
  * @tparam KeyType
  * @tparam Capacity
  */
-template<
-    typename KeyType,
-    std::size_t Capacity>
-class ConstexprSet {
-private:
+template <typename KeyType, std::size_t Capacity> class ConstexprSet {
+  private:
     using StorageType = ConstexprMap<KeyType, bool, Capacity>;
     StorageType storage;
 
-public:
-    constexpr ConstexprSet()
-        : storage()
-    {}
+  public:
+    constexpr ConstexprSet() : storage() {}
 
-    constexpr ConstexprSet(std::initializer_list<KeyType> src)
-            : storage()
-    {
+    constexpr ConstexprSet(std::initializer_list<KeyType> src) : storage() {
         if (src.size() > Capacity) {
-            FATAL("Initializer list size {} is bigger than allocated set capacity {}", src.size(), Capacity);
-        }
-        else {
+            FATAL("Initializer list size {} is bigger than allocated set "
+                  "capacity {}",
+                  src.size(), Capacity);
+        } else {
             for (auto k : src) {
                 storage.put(k, true);
             }
@@ -60,28 +54,28 @@ public:
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry* begin() {
+    [[nodiscard]] constexpr typename StorageType::Entry *begin() {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry* end() {
+    [[nodiscard]] constexpr typename StorageType::Entry *end() {
         return storage.end();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const * begin() const {
+    [[nodiscard]] constexpr typename StorageType::Entry const *begin() const {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const * end() const {
+    [[nodiscard]] constexpr typename StorageType::Entry const *end() const {
         return storage.end();
     }
 
@@ -109,9 +103,7 @@ public:
      * @param k
      *      New key 'k' to add to the set.
      */
-    constexpr void add(KeyType k) {
-        storage.put(k, true);
-    }
+    constexpr void add(KeyType k) { storage.put(k, true); }
 
     /**
      * Remove targetKey from the map. If targetKey is not found, do nothing.
@@ -121,9 +113,7 @@ public:
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr void remove(KeyType targetKey) {
-        storage.remove(targetKey);
-    }
+    constexpr void remove(KeyType targetKey) { storage.remove(targetKey); }
 
     /**
      * Add all keys from 'addSet' into this set.
@@ -132,8 +122,7 @@ public:
      *
      * @param addSet
      */
-    template<typename RhsSetType>
-    constexpr void addAll(RhsSetType addSet) {
+    template <typename RhsSetType> constexpr void addAll(RhsSetType addSet) {
         for (auto entry : addSet) {
             add(entry.key);
         }
@@ -146,7 +135,7 @@ public:
      *
      * @param removeSet
      */
-    template<typename RhsSetType>
+    template <typename RhsSetType>
     constexpr void removeAll(RhsSetType removeSet) {
         for (auto entry : removeSet) {
             remove(entry.key);
@@ -159,9 +148,7 @@ public:
      * @return
      *      True if the set is empty.
      */
-    [[nodiscard]] constexpr bool isEmpty() const {
-        return storage.isEmpty();
-    }
+    [[nodiscard]] constexpr bool isEmpty() const { return storage.isEmpty(); }
 
     /**
      * Remove an unspecified key from the set.
@@ -171,9 +158,5 @@ public:
      * @return
      *      A key from the set.
      */
-    [[nodiscard]] constexpr KeyType pop() {
-        return storage.pop().key;
-    }
+    [[nodiscard]] constexpr KeyType pop() { return storage.pop().key; }
 };
-
-

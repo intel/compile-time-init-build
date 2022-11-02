@@ -30,22 +30,18 @@
  * @tparam ValueType
  * @tparam KeyCapacity
  */
-template<
-    typename KeyType,
-    typename ValueType,
-    std::size_t KeyCapacity,
-    std::size_t ValueCapacity = KeyCapacity>
+template <typename KeyType, typename ValueType, std::size_t KeyCapacity,
+          std::size_t ValueCapacity = KeyCapacity>
 class ConstexprMultiMap {
-private:
+  private:
     using StorageType =
-        ConstexprMap<KeyType, ConstexprSet<ValueType, ValueCapacity>, KeyCapacity>;
+        ConstexprMap<KeyType, ConstexprSet<ValueType, ValueCapacity>,
+                     KeyCapacity>;
 
     StorageType storage;
 
-public:
-    constexpr ConstexprMultiMap()
-        : storage()
-    {}
+  public:
+    constexpr ConstexprMultiMap() : storage() {}
 
     /**
      * <b>Runtime complexity:</b> O(1)
@@ -60,28 +56,28 @@ public:
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry* begin() {
+    [[nodiscard]] constexpr typename StorageType::Entry *begin() {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry* end() {
+    [[nodiscard]] constexpr typename StorageType::Entry *end() {
         return storage.end();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const * cbegin() const {
+    [[nodiscard]] constexpr typename StorageType::Entry const *cbegin() const {
         return storage.cbegin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const * cend() const {
+    [[nodiscard]] constexpr typename StorageType::Entry const *cend() const {
         return storage.cend();
     }
 
@@ -138,9 +134,7 @@ public:
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr void remove(KeyType targetKey) {
-        storage.remove(targetKey);
-    }
+    constexpr void remove(KeyType targetKey) { storage.remove(targetKey); }
 
     /**
      * Remove corresponding targetKey and targetValue from the multi-map.
@@ -176,7 +170,8 @@ public:
      *      Reference to the ConstexprSet if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> & get(KeyType k) {
+    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> &
+    get(KeyType k) {
         return storage.get(k);
     }
 
@@ -192,7 +187,8 @@ public:
      *      Reference to the ConstexprSet if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> const & get(KeyType k) const {
+    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> const &
+    get(KeyType k) const {
         return storage.get(k);
     }
 
@@ -202,9 +198,7 @@ public:
      * @return
      *      True if the multi-map is empty.
      */
-    [[nodiscard]] constexpr bool isEmpty() const {
-        return storage.isEmpty();
-    }
+    [[nodiscard]] constexpr bool isEmpty() const { return storage.isEmpty(); }
 
     /**
      * Check if the multi-map contains targetKey.
@@ -243,4 +237,3 @@ public:
         }
     }
 };
-

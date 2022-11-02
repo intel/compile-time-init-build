@@ -5,17 +5,11 @@
 #include <type_traits>
 
 namespace flow {
-    class milestone_base;
+class milestone_base;
 }
 
 namespace flow::detail {
-    template<typename NameType>
-    void log_flow_milestone() {
-        TRACE("flow.milestone({})", NameType{});
-    }
+template <typename NameType> void log_flow_milestone() {
+    TRACE("flow.milestone({})", NameType{});
 }
-
-
-
-
-
+} // namespace flow::detail

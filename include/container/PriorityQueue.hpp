@@ -1,12 +1,11 @@
 #pragma once
 
-#include <log/log.hpp>
 #include <container/Array.hpp>
+#include <log/log.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
-#include <algorithm>
-
 
 /**
  * A PriorityQueue is a container that maintains the highest priority element
@@ -23,28 +22,22 @@
  * @tparam Compare
  *      The comparison function to use.
  */
-template<
-    typename ValueType,
-    std::size_t MaxSize,
-    typename Compare = std::greater<ValueType>>
+template <typename ValueType, std::size_t MaxSize,
+          typename Compare = std::greater<ValueType>>
 class PriorityQueue {
     static_assert(MaxSize > 0, "PriorityQueue MaxSize must be at least 1");
 
-private:
+  private:
     using StorageType = ValueType[MaxSize];
 
     StorageType heap;
     decltype(std::begin(heap)) end;
 
-
-public:
+  public:
     /**
      * Create an empty PriorityQueue.
      */
-    constexpr PriorityQueue() :
-        heap{},
-        end{std::begin(heap)}
-    {
+    constexpr PriorityQueue() : heap{}, end{std::begin(heap)} {
         // pass
     }
 
@@ -54,7 +47,6 @@ public:
     [[nodiscard]] constexpr std::size_t size() const {
         return end - std::cbegin(heap);
     }
-
 
     /**
      * @return Value of the top or "highest priority" element.
@@ -80,9 +72,7 @@ public:
     /**
      * @return True if the PriorityQueue can contain no more elements.
      */
-    [[nodiscard]] constexpr bool full() const {
-        return std::cend(heap) == end;
-    }
+    [[nodiscard]] constexpr bool full() const { return std::cend(heap) == end; }
 
     /**
      * Push a new value onto the PriorityQueue.
@@ -126,4 +116,3 @@ public:
         }
     }
 };
-

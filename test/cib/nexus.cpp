@@ -8,27 +8,20 @@ struct EmptyConfig {
     constexpr static auto config = cib::config<>();
 };
 
-//TEST_CASE("an empty configuration should compile and initialize") {
+// TEST_CASE("an empty configuration should compile and initialize") {
 //    cib::nexus<EmptyConfig> nexus{};
 //    nexus.init();
 //}
 
+template <int Id> static bool is_callback_invoked = false;
 
-
-template<int Id>
-static bool is_callback_invoked = false;
-
-template<int Id, typename... Args>
+template <int Id, typename... Args>
 struct TestCallback : public cib::callback_meta<Args...> {};
 
 struct SimpleConfig {
-    constexpr static auto config =
-        cib::config(
-            cib::exports<TestCallback<0>>,
-            cib::extend<TestCallback<0> >([](){
-                is_callback_invoked<0> = true;
-            })
-        );
+    constexpr static auto config = cib::config(
+        cib::exports<TestCallback<0>>,
+        cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; }));
 };
 
 TEST_CASE("simple configuration with a single extension point and feature") {
@@ -40,54 +33,34 @@ TEST_CASE("simple configuration with a single extension point and feature") {
         REQUIRE(is_callback_invoked<0>);
     }
 
-    SECTION("nexus can be initialized services can be invoked from cib::service") {
+    SECTION(
+        "nexus can be initialized services can be invoked from cib::service") {
         nexus.init();
         cib::service<TestCallback<0>>();
         REQUIRE(is_callback_invoked<0>);
     }
 }
 
-
 struct Foo {
-    constexpr static auto config =
-        cib::config(
-            cib::exports<
-                TestCallback<0>
-            >,
+    constexpr static auto config = cib::config(
+        cib::exports<TestCallback<0>>,
 
-            cib::extend<TestCallback<2>>([](){
-                is_callback_invoked<2> = true;
-            })
-        );
+        cib::extend<TestCallback<2>>([]() { is_callback_invoked<2> = true; }));
 };
 
 struct Bar {
-    constexpr static auto config =
-        cib::config(
-            cib::extend<TestCallback<0>>([](){
-                is_callback_invoked<0> = true;
-            }),
-            cib::extend<TestCallback<1>>([](){
-                is_callback_invoked<1> = true;
-            })
-        );
+    constexpr static auto config = cib::config(
+        cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; }),
+        cib::extend<TestCallback<1>>([]() { is_callback_invoked<1> = true; }));
 };
 
 struct Gorp {
     constexpr static auto config =
-        cib::config(
-            cib::exports<
-                TestCallback<1>,
-                TestCallback<2>
-            >
-        );
+        cib::config(cib::exports<TestCallback<1>, TestCallback<2>>);
 };
 
 struct MediumConfig {
-    constexpr static auto config =
-        cib::config(
-            cib::components<Foo, Bar, Gorp>
-        );
+    constexpr static auto config = cib::config(cib::components<Foo, Bar, Gorp>);
 };
 
 TEST_CASE("configuration with multiple components, services, and features") {
@@ -110,7 +83,8 @@ TEST_CASE("configuration with multiple components, services, and features") {
         REQUIRE(is_callback_invoked<2>);
     }
 
-    SECTION("nexus can be initialized services can be invoked from cib::service") {
+    SECTION(
+        "nexus can be initialized services can be invoked from cib::service") {
         nexus.init();
 
         REQUIRE_FALSE(is_callback_invoked<0>);
@@ -147,24 +121,15 @@ TEST_CASE("test conditional expressions") {
 }
 
 struct SimpleConditionalComponent {
-    constexpr static auto config =
-        cib::config(
-            cib::conditional(cib::arg<int> == int_<42>,
-                cib::extend<TestCallback<0>>([](){
-                    is_callback_invoked<0> = true;
-                })
-            )
-        );
+    constexpr static auto config = cib::config(cib::conditional(
+        cib::arg<int> == int_<42>,
+        cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; })));
 };
 
-template<int ConditionalValue>
-struct ConditionalTestProject {
+template <int ConditionalValue> struct ConditionalTestProject {
     constexpr static auto config =
-        cib::config(
-            cib::args<ConditionalValue>,
-            cib::exports<TestCallback<0>>,
-            cib::components<SimpleConditionalComponent>
-        );
+        cib::config(cib::args<ConditionalValue>, cib::exports<TestCallback<0>>,
+                    cib::components<SimpleConditionalComponent>);
 };
 
 TEST_CASE("configuration with one conditional component") {
@@ -187,36 +152,21 @@ TEST_CASE("configuration with one conditional component") {
     }
 }
 
-template<int Id>
-struct ConditionalComponent {
-    constexpr static auto config =
-        cib::config(
-            cib::conditional(cib::arg<int> == int_<Id>,
-                cib::extend<TestCallback<Id>>([](){
-                    is_callback_invoked<Id> = true;
-                })
-            )
-        );
+template <int Id> struct ConditionalComponent {
+    constexpr static auto config = cib::config(cib::conditional(
+        cib::arg<int> == int_<Id>, cib::extend<TestCallback<Id>>([]() {
+            is_callback_invoked<Id> = true;
+        })));
 };
 
-template<int EnabledId>
-struct ConditionalConfig {
-    constexpr static auto config =
-        cib::config(
-            cib::args<EnabledId>,
+template <int EnabledId> struct ConditionalConfig {
+    constexpr static auto config = cib::config(
+        cib::args<EnabledId>,
 
-            cib::exports<
-                TestCallback<0>,
-                TestCallback<1>,
-                TestCallback<2>
-            >,
+        cib::exports<TestCallback<0>, TestCallback<1>, TestCallback<2>>,
 
-            cib::components<
-                ConditionalComponent<0>,
-                ConditionalComponent<1>,
-                ConditionalComponent<2>
-            >
-        );
+        cib::components<ConditionalComponent<0>, ConditionalComponent<1>,
+                        ConditionalComponent<2>>);
 };
 
 TEST_CASE("configuration with conditional features") {
