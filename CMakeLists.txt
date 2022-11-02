@@ -42,15 +42,14 @@ if(NOT_SUBPROJECT)
     add_subdirectory(benchmark)
 
     # Build single-header release.
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/cib/)
-
     find_package(PythonInterp 3 REQUIRED)
 
+    file(GLOB_RECURSE include_files "${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*.hpp")
     add_custom_command(
         DEPENDS
             ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/detail/*
+            ${include_files}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/cib
         COMMAND
             python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp > ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp
         OUTPUT
@@ -75,7 +74,6 @@ else()
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>
     )
 endif()
-
 
 function(gen_str_catalog)
     set(options "")
