@@ -4,10 +4,10 @@
 
 #include <string_view>
 
-
 struct ABCDEFG;
 
-TEST_CASE("ensure types are converted to full string", "[type_to_string_view]") {
-    //using std::string_view_literals::sv;
+TEST_CASE("ensure types are converted to full string",
+          "[type_to_string_view]") {
+    // using std::string_view_literals::sv;
     REQUIRE(cib::detail::name<ABCDEFG>() == "ABCDEFG");
 }

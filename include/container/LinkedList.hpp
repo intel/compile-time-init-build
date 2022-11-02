@@ -1,19 +1,14 @@
 #pragma once
 
+template <typename NodeType> class LinkedList {
+  private:
+    NodeType *head;
+    NodeType *tail;
 
-template<typename NodeType>
-class LinkedList {
-private:
-    NodeType * head;
-    NodeType * tail;
+  public:
+    constexpr LinkedList() : head{nullptr}, tail{nullptr} {}
 
-public:
-    constexpr LinkedList()
-        : head{nullptr}
-        , tail{nullptr}
-    {}
-
-    void pushBack(NodeType * n) {
+    void pushBack(NodeType *n) {
         if (head == nullptr) {
             head = n;
         } else {
@@ -24,18 +19,16 @@ public:
         tail = n;
     }
 
-    NodeType * popFront() {
-        NodeType * poppedNode = head;
+    NodeType *popFront() {
+        NodeType *poppedNode = head;
         head = head->next;
         return poppedNode;
     }
 
-    [[nodiscard]] bool isEmpty() const {
-        return head == nullptr;
-    }
+    [[nodiscard]] bool isEmpty() const { return head == nullptr; }
 
-    NodeType * removeNext(NodeType * n) {
-        NodeType * poppedNode = n->next;
+    NodeType *removeNext(NodeType *n) {
+        NodeType *poppedNode = n->next;
         n->next = poppedNode->next;
         return poppedNode;
     }

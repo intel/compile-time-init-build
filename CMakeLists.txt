@@ -46,6 +46,27 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
     add_custom_target(release_header
                       DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
+
+    add_versioned_package(
+        NAME
+        Format.cmake
+        VERSION
+        1.7.3
+        GITHUB_REPOSITORY
+        TheLartians/Format.cmake
+        OPTIONS
+        "CMAKE_FORMAT_EXCLUDE cmake/CPM.cmake")
+
+    add_custom_target(quality)
+    add_dependencies(quality check-clang-format check-cmake-format)
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        find_program(CLANG_TIDY_PROGRAM "clang-tidy" REQUIRED)
+        add_custom_target(clang-tidy)
+        include(cmake/clang-tidy.cmake)
+        clang_tidy_interface(cib)
+        add_dependencies(quality clang-tidy)
+    endif()
 endif()
 
 if($ENV{SINGLE_HEADER})

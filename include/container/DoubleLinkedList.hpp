@@ -2,9 +2,8 @@
 
 #include <iterator>
 
-template<typename NodeType>
-class DoubleLinkedList {
-public:
+template <typename NodeType> class DoubleLinkedList {
+  public:
     struct iterator {
         using difference_type = void;
         using value_type = NodeType;
@@ -12,27 +11,19 @@ public:
         using reference = NodeType &;
         using iterator_category = std::forward_iterator_tag;
 
-    private:
-        NodeType * node;
+      private:
+        NodeType *node;
 
-    public:
-        constexpr iterator(
-            NodeType * node
-        )
-            : node(node)
-        {
+      public:
+        constexpr iterator(NodeType *node) : node(node) {
             // pass
         }
 
-        constexpr NodeType & operator*() {
-            return *node;
-        }
+        constexpr NodeType &operator*() { return *node; }
 
-        constexpr NodeType * operator->() {
-            return node;
-        }
+        constexpr NodeType *operator->() { return node; }
 
-        constexpr iterator & operator++() {
+        constexpr iterator &operator++() {
             node = node->next;
             return *this;
         }
@@ -43,11 +34,11 @@ public:
             return oldIterator;
         }
 
-        constexpr bool operator==(iterator const & rhs) const {
+        constexpr bool operator==(iterator const &rhs) const {
             return node == rhs.node;
         }
 
-        constexpr bool operator!=(iterator const & rhs) const {
+        constexpr bool operator!=(iterator const &rhs) const {
             return !((*this) == rhs);
         }
     };
@@ -58,26 +49,19 @@ public:
     using pointer = NodeType *;
     using const_pointer = const NodeType *;
     using const_iterator = const iterator;
-    
-private:
-    NodeType * head;
-    NodeType * tail;
 
-public:
-    constexpr DoubleLinkedList()
-        : head{nullptr}
-        , tail{nullptr}
-    {}
+  private:
+    NodeType *head;
+    NodeType *tail;
 
-    constexpr iterator begin() {
-        return iterator(head);
-    }
+  public:
+    constexpr DoubleLinkedList() : head{nullptr}, tail{nullptr} {}
 
-    constexpr iterator end() {
-        return iterator(nullptr);
-    }
+    constexpr iterator begin() { return iterator(head); }
 
-    void pushBack(NodeType * const n) {
+    constexpr iterator end() { return iterator(nullptr); }
+
+    void pushBack(NodeType *const n) {
         if (head == nullptr) {
             head = n;
             n->prev = nullptr;
@@ -90,8 +74,8 @@ public:
         tail = n;
     }
 
-    NodeType * popFront() {
-        NodeType * const poppedNode = head;
+    NodeType *popFront() {
+        NodeType *const poppedNode = head;
         head = head->next;
 
         if (head == nullptr) {
@@ -103,13 +87,11 @@ public:
         return poppedNode;
     }
 
-    [[nodiscard]] bool isEmpty() const {
-        return head == nullptr;
-    }
+    [[nodiscard]] bool isEmpty() const { return head == nullptr; }
 
-    void remove(NodeType * const removedNode) {
-        NodeType * const nextNode = removedNode->next;
-        NodeType * const prevNode = removedNode->prev;
+    void remove(NodeType *const removedNode) {
+        NodeType *const nextNode = removedNode->next;
+        NodeType *const prevNode = removedNode->prev;
 
         if (prevNode == nullptr) {
             head = nextNode;

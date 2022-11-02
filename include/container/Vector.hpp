@@ -14,33 +14,29 @@ using size_t = std::size_t;
  * @tparam ValueType The type of elements the Vector contains.
  * @tparam Capacity  Maximum amount of elements the Vector can hold.
  */
-template<typename ValueType, size_t Capacity>
-class Vector {
-private:
+template <typename ValueType, size_t Capacity> class Vector {
+  private:
     ValueType storage[Capacity];
-    size_t    currentSize;
+    size_t currentSize;
 
-public:
+  public:
     using value_type = ValueType;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
-    using reference = ValueType&;
-    using const_reference = const ValueType&;
-    using pointer = ValueType*;
-    using const_pointer = const ValueType*;
+    using reference = ValueType &;
+    using const_reference = const ValueType &;
+    using pointer = ValueType *;
+    using const_pointer = const ValueType *;
     using iterator = pointer;
     using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_terator = std::reverse_iterator<const_iterator>;
 
     constexpr Vector(std::initializer_list<ValueType> src)
-        : storage{}
-        , currentSize(0)
-    {
+        : storage{}, currentSize(0) {
         if (src.size() > Capacity) {
-            FATAL(
-                "Initializer list size {} is bigger than vector capacity {}",
-                src.size(), sc::int_<Capacity>);
+            FATAL("Initializer list size {} is bigger than vector capacity {}",
+                  src.size(), sc::int_<Capacity>);
 
         } else {
             auto i = 0;
@@ -53,53 +49,42 @@ public:
         }
     }
 
-    constexpr Vector()
-        : storage{}
-        , currentSize(0)
-    {
-    }
+    constexpr Vector() : storage{}, currentSize(0) {}
 
     constexpr Vector(Vector const &rhs) = default;
     constexpr Vector &operator=(Vector const &rhs) = default;
     constexpr Vector(Vector &&rhs) = default;
     constexpr Vector &operator=(Vector &&rhs) = default;
 
-    [[nodiscard]] constexpr iterator begin() {
-        return storage;
-    }
+    [[nodiscard]] constexpr iterator begin() { return storage; }
 
-    [[nodiscard]] constexpr const_iterator begin() const {
-        return storage;
-    }
+    [[nodiscard]] constexpr const_iterator begin() const { return storage; }
 
-    [[nodiscard]] constexpr iterator end() {
-        return &(storage[currentSize]);
-    }
+    [[nodiscard]] constexpr iterator end() { return &(storage[currentSize]); }
 
     [[nodiscard]] constexpr const_iterator end() const {
         return &(storage[currentSize]);
     }
 
-    [[nodiscard]] constexpr std::uint32_t size() const {
-        return currentSize;
-    }
+    [[nodiscard]] constexpr std::uint32_t size() const { return currentSize; }
 
-    [[nodiscard]] constexpr std::size_t getCapacity() const {
-        return Capacity;
-    }
+    [[nodiscard]] constexpr std::size_t getCapacity() const { return Capacity; }
 
-    [[nodiscard]] constexpr const ValueType& operator[](std::size_t index) const {
+    [[nodiscard]] constexpr const ValueType &
+    operator[](std::size_t index) const {
         if (index >= currentSize) {
-            FATAL("Vector index {} is outside vector size {}", index, currentSize);
+            FATAL("Vector index {} is outside vector size {}", index,
+                  currentSize);
             return storage[0];
         } else {
             return storage[index];
         }
     }
 
-    [[nodiscard]] constexpr ValueType& operator[](std::size_t index) {
+    [[nodiscard]] constexpr ValueType &operator[](std::size_t index) {
         if (index >= currentSize) {
-            FATAL("Vector index {} is outside array size {}", index, currentSize);
+            FATAL("Vector index {} is outside array size {}", index,
+                  currentSize);
             return storage[0];
         } else {
             return storage[index];
@@ -110,12 +95,10 @@ public:
         return (currentSize == Capacity);
     }
 
-    [[nodiscard]] constexpr bool isEmpty() const {
-        return (currentSize == 0);
-    }
+    [[nodiscard]] constexpr bool isEmpty() const { return (currentSize == 0); }
 
     constexpr void push(ValueType value) {
-        if(isFull()) {
+        if (isFull()) {
             FATAL("Vector:push() attempted when full");
         } else {
             storage[currentSize] = value;
@@ -133,7 +116,7 @@ public:
         }
     }
 
-    [[nodiscard]] constexpr bool operator==(Vector const & rhs) const {
+    [[nodiscard]] constexpr bool operator==(Vector const &rhs) const {
         if (size() != rhs.size()) {
             return false;
 
@@ -148,11 +131,11 @@ public:
         return true;
     }
 
-    [[nodiscard]] constexpr bool operator!=(Vector const & rhs) const {
+    [[nodiscard]] constexpr bool operator!=(Vector const &rhs) const {
         return !((*this) == rhs);
     }
 
-    [[nodiscard]] constexpr Vector operator+(Vector const & rhs) const {
+    [[nodiscard]] constexpr Vector operator+(Vector const &rhs) const {
         Vector result = *this;
 
         for (auto i = rhs.begin(); i != rhs.end(); i++) {

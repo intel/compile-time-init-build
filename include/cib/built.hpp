@@ -4,19 +4,16 @@
 #ifndef COMPILE_TIME_INIT_BUILD_BUILT_HPP
 #define COMPILE_TIME_INIT_BUILD_BUILT_HPP
 
-
 namespace cib {
-    /**
-     * Pointer to a built service implementation.
-     *
-     * @tparam ServiceMeta
-     *      Tag name of the service.
-     *
-     * @see cib::builder_meta
-     */
-    template<typename ServiceMeta>
-    traits::interface_t<ServiceMeta> service;
-}
+/**
+ * Pointer to a built service implementation.
+ *
+ * @tparam ServiceMeta
+ *      Tag name of the service.
+ *
+ * @see cib::builder_meta
+ */
+template <typename ServiceMeta> traits::interface_t<ServiceMeta> service;
+} // namespace cib
 
-
-#endif //COMPILE_TIME_INIT_BUILD_BUILT_HPP
+#endif // COMPILE_TIME_INIT_BUILD_BUILT_HPP
