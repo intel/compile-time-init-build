@@ -5,7 +5,7 @@
 namespace conc {
 template <typename Callable> inline void critical_section(Callable callable) {
     callable();
-};
+}
 
 /**
  * Safely poll on condition before entering a critical section.
@@ -19,8 +19,6 @@ template <typename Callable> inline void critical_section(Callable callable) {
  */
 template <typename ConditionType, typename CallableType>
 inline void critical_section(ConditionType condition, CallableType callable) {
-    uint32_t ieValue;
-
     while (true) {
         if (condition()) {
             // execute the main body of the critical section
@@ -32,12 +30,9 @@ inline void critical_section(ConditionType condition, CallableType callable) {
             // before checking condition() again
         }
     }
-};
+}
 
 class CriticalSection {
-  private:
-    uint32_t ieValue;
-
   public:
     CriticalSection() {}
 

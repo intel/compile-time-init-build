@@ -55,7 +55,8 @@ template <typename T> struct FormatHelper {
     }
 };
 
-inline auto outputLine = [](auto filename, auto lineNumber, auto level,
+inline auto outputLine = []([[maybe_unused]] auto filename,
+                            [[maybe_unused]] auto lineNumber, auto level,
                             auto msg) {
     auto currentTime =
         std::chrono::duration_cast<std::chrono::microseconds>(

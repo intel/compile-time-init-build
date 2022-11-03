@@ -17,7 +17,7 @@ function(clang_tidy_header HEADER TARGET)
         ${CT_NAME}
         PROPERTIES
             CXX_CLANG_TIDY
-            "${CLANG_TIDY_PROGRAM};-p;${CMAKE_BINARY_DIR};-header-filter=${BASE_NAME}"
+            "${CLANG_TIDY_PROGRAM};-p;${CMAKE_BINARY_DIR};-header-filter=${HEADER}"
     )
 
     add_dependencies(clang-tidy "${CT_NAME}")

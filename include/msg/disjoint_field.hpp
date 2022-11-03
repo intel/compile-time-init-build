@@ -95,15 +95,16 @@ class disjoint_field {
     }
 
     template <typename DataType> constexpr void insert(DataType &data) const {
-        fields.fold_right(static_cast<uint64_t>(value),
-                          [&](auto fieldPrototype, uint64_t remaining) {
-                              using FieldType = decltype(fieldPrototype);
-                              using ValueType = typename FieldType::ValueType;
-                              decltype(fieldPrototype)
-                                  const f{static_cast<ValueType>(remaining)};
-                              f.insert(data);
-                              return remaining >> f.size;
-                          });
+        (void)fields.fold_right(static_cast<uint64_t>(value),
+                                [&](auto fieldPrototype, uint64_t remaining) {
+                                    using FieldType = decltype(fieldPrototype);
+                                    using ValueType =
+                                        typename FieldType::ValueType;
+                                    decltype(fieldPrototype) const f{
+                                        static_cast<ValueType>(remaining)};
+                                    f.insert(data);
+                                    return remaining >> f.size;
+                                });
     }
 
     [[nodiscard]] constexpr auto describe() const {

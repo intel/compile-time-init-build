@@ -103,7 +103,7 @@ template <typename Tag> CIB_CONSTEVAL static std::string_view name() {
 }
 
 template <typename MetaFunc, typename... Types>
-CIB_CONSTEVAL static auto create_type_names(std::size_t src) {
+CIB_CONSTEVAL static auto create_type_names([[maybe_unused]] std::size_t src) {
     if constexpr (sizeof...(Types) == 0) {
         return std::array<typename_map_entry, 0>{};
 
@@ -161,7 +161,7 @@ template <int... Indices, typename IndexList, typename LhsTuple,
 [[nodiscard]] constexpr auto
 merge_tuple_impl(std::integer_sequence<int, Indices...>, IndexList,
                  LhsTuple lhs, RhsTuple rhs) {
-    auto const tuples = cib::make_tuple(lhs, rhs);
+    [[maybe_unused]] auto const tuples = cib::make_tuple(lhs, rhs);
 
     return cib::make_tuple(
         tuples.get(index_<IndexList::result().data[Indices].src>)

@@ -37,68 +37,8 @@ add_executable(
     msg/handler.cpp
     msg/message.cpp)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(cib-catch-tests PRIVATE -ferror-limit=8)
-
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
-                    OUTPUT_VARIABLE clang_full_version_string)
-    string(REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1"
-                         CLANG_VERSION_STRING ${clang_full_version_string})
-
-    if(${CLANG_VERSION_STRING} VERSION_EQUAL 12)
-        target_compile_options(
-            cib-catch-tests
-            PRIVATE -Wmisleading-indentation
-                    -Wno-c++20-compat
-                    -Weverything
-                    -Wshadow-all
-                    -Warray-bounds-pointer-arithmetic
-                    -Wfor-loop-analysis
-                    -Wgcc-compat
-                    -Wglobal-constructors
-                    -Wgnu
-                    -Wheader-hygiene
-                    -Widiomatic-parentheses
-                    -Wnewline-eof
-                    -Wimplicit
-                    -Wextra-semi
-                    -Wextra-semi-stmt
-                    -Wno-missing-prototypes
-                    # this complains about many cases in which ctad is supported
-                    # and intended
-                    -Wno-ctad-maybe-unsupported
-                    -Wpedantic
-                    -Wall
-                    -Wextra
-                    -Wformat-security
-                    -Wfloat-conversion
-                    -Wignored-qualifiers
-                    -Wold-style-cast
-                    -Wunused
-                    -Weffc++
-                    # not feasible to change tuple padding for now
-                    -Wno-padded
-                    # clang complains about @example, which seems to be a valid
-                    # tag
-                    -Wno-documentation-unknown-command
-                    # clang complains about @tparam on a template type alias
-                    -Wno-documentation
-                    # compatibility with anything less than C++17 is not a goal
-                    -Wno-c++98-compat-pedantic
-                    -Wno-c++98-compat
-                    -Wno-c++11-compat
-                    -Wno-c++14-compat)
-    endif()
-
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(cib-catch-tests PRIVATE -fmax-errors=8)
-
-endif()
-
-target_compile_options(cib-catch-tests PRIVATE -ftemplate-backtrace-limit=0)
-
 target_link_libraries_system(cib-catch-tests PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(cib-catch-tests PRIVATE cib)
+target_link_libraries(cib-catch-tests PRIVATE cib warnings)
 target_include_directories(cib-catch-tests PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
@@ -108,12 +48,8 @@ catch_discover_tests(cib-catch-tests)
 # Google tests
 add_executable(cib-gtests interrupt/manager.cpp)
 
-target_compile_options(
-    cib-gtests PRIVATE -fconstexpr-depth=2048 -Wno-unknown-attributes
-                       -Wno-undefined-internal)
-
 target_link_libraries_system(cib-gtests PRIVATE gmock gtest gmock_main)
-target_link_libraries(cib-gtests PRIVATE cib)
+target_link_libraries(cib-gtests PRIVATE cib warnings)
 target_include_directories(cib-gtests PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 
 include(GoogleTest)

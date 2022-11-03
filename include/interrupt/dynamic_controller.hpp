@@ -46,7 +46,6 @@ template <typename RootT> struct dynamic_controller {
     constexpr static typename RegType::DataType irqs_allowed = []() {
         // get all interrupt enable fields that don't require the given resource
         auto const matching_irqs = hana::filter(RootT::all_irqs, [](auto irq) {
-            using IrqType = decltype(irq);
             constexpr auto doesnt_require_resource =
                 hana::unpack(irq.resources, [](auto... resources_pack) {
                     return (!std::is_same_v<decltype(resources_pack),

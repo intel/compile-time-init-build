@@ -48,7 +48,7 @@ template <std::uint32_t MaxNumDWordsT> struct message_data {
     }
 
     template <std::size_t Index>
-    [[nodiscard]] constexpr const std::uint32_t get() const {
+    [[nodiscard]] constexpr const std::uint32_t &get() const {
         return data.template get<Index>();
     }
 
@@ -97,8 +97,7 @@ struct message_base : public message_data<MaxNumDWords> {
     using FieldTupleType = cib::tuple<FieldsT...>;
 
     template <typename additional_matcherType>
-    [[nodiscard]] static constexpr auto
-    match(additional_matcherType additional_matcher) {
+    [[nodiscard]] static constexpr auto match(additional_matcherType) {
         return is_valid_msg_t<This, additional_matcherType>{};
     }
 

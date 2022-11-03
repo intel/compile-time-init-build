@@ -98,7 +98,7 @@ TEST_CASE("repl_fields_for_each", "[sc::format]") {
     repl_fields fields{"Hi {name1}, {name2}, and {}!"};
 
     auto count = 0;
-    for (auto f : fields) {
+    for ([[maybe_unused]] auto f : fields) {
         count++;
     }
 

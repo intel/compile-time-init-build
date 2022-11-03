@@ -129,7 +129,7 @@ template <typename... ValueTypes> constexpr auto write(ValueTypes... values) {
     return write_op_t<ValueTypes...>{cib::make_tuple(values...)};
 }
 
-template <typename... FieldTypes> constexpr auto clear(FieldTypes... fields) {
+template <typename... FieldTypes> constexpr auto clear(FieldTypes...) {
     return write_op_t<field_value_t<FieldTypes>...>{
         cib::make_tuple(field_value_t<FieldTypes>{0}...)};
 }
@@ -193,7 +193,8 @@ struct BasicBuilder {
 };
 
 TEST_F(InterruptManagerTest, BuildManager) {
-    constexpr auto manager = BasicBuilder::value.build<BasicBuilder>();
+    [[maybe_unused]] constexpr auto manager =
+        BasicBuilder::value.build<BasicBuilder>();
 }
 
 TEST_F(InterruptManagerTest, BasicManagerInit) {

@@ -28,7 +28,7 @@ TEST_CASE("OutOfBoundsAccess", "[array]") {
 TEST_CASE("OutOfBoundsConstGet", "[array]") {
     Array<std::uint32_t, 4> const array;
 
-    std::uint32_t const &x = array[10];
+    [[maybe_unused]] std::uint32_t const &x = array[10];
 }
 
 TEST_CASE("InBoundsConstGet", "[array]") {
@@ -71,7 +71,7 @@ TEST_CASE("StaticInBounds", "[array]") {
 TEST_CASE("ForEach", "[array]") {
     Array<std::uint32_t, 5> array({1u, 1u, 2u, 3u, 5u});
 
-    for (auto item : array) {
+    for ([[maybe_unused]] auto item : array) {
         // ensure that foreach can compile
     }
 

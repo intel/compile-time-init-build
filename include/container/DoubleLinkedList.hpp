@@ -15,7 +15,7 @@ template <typename NodeType> class DoubleLinkedList {
         NodeType *node;
 
       public:
-        constexpr iterator(NodeType *node) : node(node) {
+        constexpr iterator(NodeType *n) : node(n) {
             // pass
         }
 

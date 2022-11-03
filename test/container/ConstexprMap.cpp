@@ -29,10 +29,10 @@ TEST_CASE("ContainsAndGet", "[constexpr_map]") {
 
 TEST_CASE("ConstGet", "[constexpr_map]") {
     const ConstexprMap<int, int, 64> t = [] {
-        ConstexprMap<int, int, 64> t;
-        t.put(10, 50);
-        t.put(11, 100);
-        return t;
+        ConstexprMap<int, int, 64> m;
+        m.put(10, 50);
+        m.put(11, 100);
+        return m;
     }();
 
     REQUIRE(t.contains(10) == true);

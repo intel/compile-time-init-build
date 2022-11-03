@@ -8,6 +8,13 @@ project(
         "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+    message(
+        FATAL_ERROR
+            "In-source builds are a bad idea. Please make a build directory instead."
+    )
+endif()
+
 include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
 
@@ -27,6 +34,7 @@ target_compile_options(
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    include(cmake/warnings.cmake)
 
     # Enable functional and performance test suites.
     enable_testing()

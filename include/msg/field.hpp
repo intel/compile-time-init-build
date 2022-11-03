@@ -144,28 +144,28 @@ class field {
     }
 
     template <typename DataType> constexpr void insert(DataType &data) const {
-        data[DWordIndex] =
-            ((static_cast<uint32_t>(value) << LsbT) & field_mask) |
-            (data[DWordIndex] & ~field_mask);
+        data[DWordIndex] = static_cast<std::uint32_t>(
+            ((static_cast<std::uint32_t>(value) << LsbT) & field_mask) |
+            (data[DWordIndex] & ~field_mask));
 
         if constexpr (MsbT >= 32) {
-            constexpr uint32_t field_mask_dword_1 =
+            constexpr std::uint32_t field_mask_dword_1 =
                 static_cast<std::uint32_t>(bit_mask >> (32 - LsbT));
 
-            data[DWordIndex + 1] =
-                ((static_cast<uint64_t>(value) >> (32 - LsbT)) &
+            data[DWordIndex + 1] = static_cast<std::uint32_t>(
+                ((static_cast<std::uint64_t>(value) >> (32 - LsbT)) &
                  field_mask_dword_1) |
-                (data[DWordIndex + 1] & ~field_mask_dword_1);
+                (data[DWordIndex + 1] & ~field_mask_dword_1));
         }
 
         if constexpr (MsbT >= 64) {
-            constexpr uint32_t field_mask_dword_2 =
+            constexpr std::uint32_t field_mask_dword_2 =
                 static_cast<std::uint32_t>(bit_mask >> (64 - LsbT));
 
-            data[DWordIndex + 2] =
-                ((static_cast<uint64_t>(value) >> (64 - LsbT)) &
+            data[DWordIndex + 2] = static_cast<std::uint32_t>(
+                ((static_cast<std::uint64_t>(value) >> (64 - LsbT)) &
                  field_mask_dword_2) |
-                (data[DWordIndex + 2] & ~field_mask_dword_2);
+                (data[DWordIndex + 2] & ~field_mask_dword_2));
         }
     }
 

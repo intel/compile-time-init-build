@@ -27,8 +27,8 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     hana::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
-    explicit constexpr shared_irq_impl(SubIrqImpls const &...sub_irq_impls)
-        : sub_irq_impls(sub_irq_impls...) {}
+    explicit constexpr shared_irq_impl(SubIrqImpls const &...impls)
+        : sub_irq_impls(impls...) {}
 
     /**
      * Initialize and enable the hardware interrupt along with

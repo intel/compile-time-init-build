@@ -12,8 +12,10 @@ template <typename IntegralTypeT, IntegralTypeT ValueT,
           std::enable_if_t<std::is_integral<IntegralTypeT>::value, bool> = true>
 [[nodiscard]] constexpr auto to_string_constant(
     std::integral_constant<IntegralTypeT, ValueT> const &,
-    std::integral_constant<BaseTypeT, BaseT> const &base = int_<10>,
-    std::integral_constant<bool, UppercaseT> const &uppercase = bool_<false>) {
+    [[maybe_unused]] std::integral_constant<BaseTypeT, BaseT> const &base =
+        int_<10>,
+    [[maybe_unused]] std::integral_constant<bool, UppercaseT> const &uppercase =
+        bool_<false>) {
     return detail::create<detail::IntegralToString<
         IntegralTypeT, ValueT, BaseTypeT, BaseT, UppercaseT>>();
 }
