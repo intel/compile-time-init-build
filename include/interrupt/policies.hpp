@@ -36,8 +36,7 @@ struct dont_clear_status {
     using PolicyType = status_clear_policy;
 
     template <typename ClearStatusCallable, typename RunCallable>
-    static void run(ClearStatusCallable const &clear_status,
-                    RunCallable const &run) {
+    static void run(ClearStatusCallable const &, RunCallable const &run) {
         run();
     }
 };
@@ -55,8 +54,8 @@ template <typename... PoliciesT> struct policies {
 
     template <typename PolicyType, typename DefaultPolicy>
     constexpr static auto get() {
-        auto const policy = hana::find_if(values, [](auto policy) {
-            using CurrentPolicyType = typename decltype(policy)::PolicyType;
+        auto const policy = hana::find_if(values, [](auto p) {
+            using CurrentPolicyType = typename decltype(p)::PolicyType;
             return hana::bool_c<std::is_same_v<PolicyType, CurrentPolicyType>>;
         });
 

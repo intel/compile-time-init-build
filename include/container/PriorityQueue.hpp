@@ -45,7 +45,7 @@ class PriorityQueue {
      * @return Current number of elements.
      */
     [[nodiscard]] constexpr std::size_t size() const {
-        return end - std::cbegin(heap);
+        return static_cast<std::size_t>(end - std::cbegin(heap));
     }
 
     /**

@@ -30,8 +30,8 @@ class manager_impl : public manager_interface {
     hana::tuple<IrqImplTypes...> irq_impls;
 
   public:
-    explicit constexpr manager_impl(IrqImplTypes... irq_impls)
-        : irq_impls{irq_impls...} {}
+    explicit constexpr manager_impl(IrqImplTypes... impls)
+        : irq_impls{impls...} {}
 
     /**
      * Initialize the interrupt hardware and each of the active irqs.
@@ -80,7 +80,7 @@ class manager_impl : public manager_interface {
      */
     template <std::size_t IrqNumber> inline void run() const {
         // find the IRQ with the matching number
-        auto const irq = hana::find_if(irq_impls, [](auto i) {
+        auto const matching_irq = hana::find_if(irq_impls, [](auto i) {
             return hana::bool_c<IrqNumber == decltype(i)::irq_number>;
         });
 
@@ -90,7 +90,7 @@ class manager_impl : public manager_interface {
         };
 
         // if the IRQ was found, then run it, otherwise do nothing
-        hana::maybe(false, run_irq, irq);
+        hana::maybe(false, run_irq, matching_irq);
     }
 
     /**

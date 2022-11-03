@@ -45,10 +45,6 @@ template <typename ConfigT> struct sub_irq_builder {
      */
     template <typename BuilderValue>
     [[nodiscard]] auto constexpr build() const {
-        auto constexpr flow_builder =
-            BuilderValue::value.interrupt_service_routine;
-        auto constexpr flow_size = flow_builder.size();
-
         auto constexpr run_flow = [] {
             auto constexpr flow_builder =
                 BuilderValue::value.interrupt_service_routine;
@@ -58,6 +54,9 @@ template <typename ConfigT> struct sub_irq_builder {
             flow();
         };
 
+        auto constexpr flow_builder =
+            BuilderValue::value.interrupt_service_routine;
+        auto constexpr flow_size = flow_builder.size();
         auto const optimized_irq_impl =
             sub_irq_impl<ConfigT,
                          flow::impl<typename IrqCallbackType::Name, flow_size>>(

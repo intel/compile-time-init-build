@@ -6,7 +6,7 @@
 namespace {
 template <bool Value> struct always_t {
     template <typename T>
-    [[nodiscard]] constexpr bool operator()(T const &event) const {
+    [[nodiscard]] constexpr bool operator()(T const &) const {
         return Value;
     }
 
@@ -19,7 +19,7 @@ template <bool Value> struct always_t {
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto describe_match(T const &event) const {
+    [[nodiscard]] constexpr auto describe_match(T const &) const {
         if constexpr (Value) {
             return "true"_sc;
         } else {

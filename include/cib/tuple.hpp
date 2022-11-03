@@ -12,9 +12,9 @@ template <typename T> struct tag_t {};
 
 template <typename T> constexpr static tag_t<T> tag_{};
 
-template <int Index> struct index_t {};
+template <std::size_t Index> struct index_t {};
 
-template <int Index> constexpr static index_t<Index> index_{};
+template <std::size_t Index> constexpr static index_t<Index> index_{};
 
 template <typename T> struct index_metafunc_t {};
 
@@ -33,10 +33,10 @@ template <typename ElementT, typename IndexT> struct type_indexed_element {
     }
 };
 
-template <typename T, int Index, typename... IndexTs>
+template <typename T, std::size_t Index, typename... IndexTs>
 struct tuple_element
     : type_indexed_element<tuple_element<T, Index, IndexTs...>, IndexTs>... {
-    CIB_CONSTEXPR static int index = Index;
+    CIB_CONSTEXPR static auto index = Index;
     using value_type = T;
     T value{};
 
@@ -247,38 +247,38 @@ struct tuple_impl : public TupleElementTs... {
     }
 };
 
-template <int... Indices, typename... Ts>
-[[nodiscard]] constexpr auto
-make_tuple_impl(std::integer_sequence<int, Indices...>, Ts const &...values) {
+template <std::size_t... Indices, typename... Ts>
+[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
+                                             Ts const &...values) {
     return tuple_impl{tuple_element<Ts, Indices>{values}...};
 }
 
-template <int... Indices, typename IndexMetafuncT0, typename... Ts>
-[[nodiscard]] constexpr auto
-make_tuple_impl(std::integer_sequence<int, Indices...>,
-                index_metafunc_t<IndexMetafuncT0>, Ts const &...values) {
+template <std::size_t... Indices, typename IndexMetafuncT0, typename... Ts>
+[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
+                                             index_metafunc_t<IndexMetafuncT0>,
+                                             Ts const &...values) {
     return tuple_impl{tuple_element<
         Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>>{values}...};
 }
 
-template <int... Indices, typename IndexMetafuncT0, typename IndexMetafuncT1,
-          typename... Ts>
-[[nodiscard]] constexpr auto
-make_tuple_impl(std::integer_sequence<int, Indices...>,
-                index_metafunc_t<IndexMetafuncT0>,
-                index_metafunc_t<IndexMetafuncT1>, Ts const &...values) {
+template <std::size_t... Indices, typename IndexMetafuncT0,
+          typename IndexMetafuncT1, typename... Ts>
+[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
+                                             index_metafunc_t<IndexMetafuncT0>,
+                                             index_metafunc_t<IndexMetafuncT1>,
+                                             Ts const &...values) {
     return tuple_impl{tuple_element<
         Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>,
         typename IndexMetafuncT1::template invoke<Ts>>{values}...};
 }
 
-template <int... Indices, typename IndexMetafuncT0, typename IndexMetafuncT1,
-          typename IndexMetafuncT2, typename... Ts>
-[[nodiscard]] constexpr auto
-make_tuple_impl(std::integer_sequence<int, Indices...>,
-                index_metafunc_t<IndexMetafuncT0>,
-                index_metafunc_t<IndexMetafuncT1>,
-                index_metafunc_t<IndexMetafuncT2>, Ts const &...values) {
+template <std::size_t... Indices, typename IndexMetafuncT0,
+          typename IndexMetafuncT1, typename IndexMetafuncT2, typename... Ts>
+[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
+                                             index_metafunc_t<IndexMetafuncT0>,
+                                             index_metafunc_t<IndexMetafuncT1>,
+                                             index_metafunc_t<IndexMetafuncT2>,
+                                             Ts const &...values) {
     return tuple_impl{tuple_element<
         Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>,
         typename IndexMetafuncT1::template invoke<Ts>,
@@ -287,14 +287,14 @@ make_tuple_impl(std::integer_sequence<int, Indices...>,
 
 template <typename... Ts>
 [[nodiscard]] constexpr auto make_tuple(Ts const &...values) {
-    return make_tuple_impl(std::make_integer_sequence<int, sizeof...(values)>{},
+    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
                            values...);
 }
 
 template <typename IndexMetafuncT0, typename... Ts>
 [[nodiscard]] constexpr auto make_tuple(index_metafunc_t<IndexMetafuncT0>,
                                         Ts const &...values) {
-    return make_tuple_impl(std::make_integer_sequence<int, sizeof...(values)>{},
+    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
                            index_metafunc_<IndexMetafuncT0>, values...);
 }
 
@@ -302,7 +302,7 @@ template <typename IndexMetafuncT0, typename IndexMetafuncT1, typename... Ts>
 [[nodiscard]] constexpr auto make_tuple(index_metafunc_t<IndexMetafuncT0>,
                                         index_metafunc_t<IndexMetafuncT1>,
                                         Ts const &...values) {
-    return make_tuple_impl(std::make_integer_sequence<int, sizeof...(values)>{},
+    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
                            index_metafunc_<IndexMetafuncT0>,
                            index_metafunc_<IndexMetafuncT1>, values...);
 }
@@ -312,7 +312,7 @@ template <typename IndexMetafuncT0, typename IndexMetafuncT1,
 [[nodiscard]] constexpr auto
 make_tuple(index_metafunc_t<IndexMetafuncT0>, index_metafunc_t<IndexMetafuncT1>,
            index_metafunc_t<IndexMetafuncT2>, Ts const &...values) {
-    return make_tuple_impl(std::make_integer_sequence<int, sizeof...(values)>{},
+    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
                            index_metafunc_<IndexMetafuncT0>,
                            index_metafunc_<IndexMetafuncT1>,
                            index_metafunc_<IndexMetafuncT2>, values...);
@@ -342,8 +342,7 @@ template <typename Tuple, typename Operation>
 
 template <typename IntegralType, IntegralType... Indices, typename CallableType>
 [[nodiscard]] CIB_CONSTEXPR auto
-transform([[maybe_unused]] std::integer_sequence<IntegralType, Indices...> const
-              &sequence,
+transform(std::integer_sequence<IntegralType, Indices...>,
           CallableType const &op) {
     return cib::make_tuple(
         op(std::integral_constant<IntegralType, Indices>{})...);
@@ -368,11 +367,11 @@ template <typename Tuple, typename Operation>
             return count;
         }();
 
-        std::array<int, num_matches> constexpr indices = [&]() {
-            std::array<int, num_matches> result{};
-            auto dst = 0;
+        auto constexpr indices = [&]() {
+            std::array<std::size_t, num_matches> result{};
+            auto dst = std::size_t{};
 
-            for (int i = 0; i < op_results.size(); i++) {
+            for (auto i = std::size_t{}; i < op_results.size(); i++) {
                 if (op_results[i]) {
                     result[dst] = i;
                     dst += 1;
@@ -383,34 +382,33 @@ template <typename Tuple, typename Operation>
         }();
 
         return transform(
-            std::make_integer_sequence<int, indices.size()>{},
+            std::make_index_sequence<indices.size()>{},
             [&](auto i) { return tuple.get(index_<indices[i.value]>); });
     });
 }
 
 template <typename Operation>
-[[nodiscard]] CIB_CONSTEXPR auto filter(cib::tuple_impl<> t, Operation op) {
+[[nodiscard]] CIB_CONSTEXPR auto filter(cib::tuple_impl<> t, Operation) {
     return t;
 }
 
-struct tuple_pair {
-    unsigned int outer;
-    unsigned int inner;
-};
-
-template <int... Indices, typename... Tuples>
-constexpr auto tuple_cat_impl(std::integer_sequence<int, Indices...>,
+template <std::size_t... Indices, typename... Tuples>
+constexpr auto tuple_cat_impl(std::index_sequence<Indices...>,
                               Tuples... tuples) {
+    struct tuple_pair {
+        std::size_t outer;
+        std::size_t inner;
+    };
+
     constexpr auto num_tuples = sizeof...(tuples);
-    constexpr std::array<unsigned int, num_tuples> tuple_sizes{
-        tuples.size()...};
-    constexpr auto element_indices = [&]() {
+    constexpr std::array<std::size_t, num_tuples> tuple_sizes{tuples.size()...};
+    [[maybe_unused]] constexpr auto element_indices = [&]() {
         constexpr auto total_num_elements = (tuples.size() + ...);
         std::array<tuple_pair, total_num_elements> indices{};
-        unsigned int flat_index = 0;
-        for (unsigned int outer_index = 0; outer_index < num_tuples;
+        std::size_t flat_index = 0;
+        for (std::size_t outer_index = 0; outer_index < num_tuples;
              outer_index++) {
-            for (unsigned int inner_index = 0;
+            for (std::size_t inner_index = 0;
                  inner_index < tuple_sizes[outer_index]; inner_index++) {
                 indices[flat_index] = {outer_index, inner_index};
                 flat_index += 1;
@@ -419,7 +417,7 @@ constexpr auto tuple_cat_impl(std::integer_sequence<int, Indices...>,
         return indices;
     }();
 
-    auto const outer_tuple = cib::make_tuple(tuples...);
+    [[maybe_unused]] auto const outer_tuple = cib::make_tuple(tuples...);
 
     return cib::make_tuple(
         outer_tuple.get(index_<element_indices[Indices].outer>)
@@ -428,7 +426,7 @@ constexpr auto tuple_cat_impl(std::integer_sequence<int, Indices...>,
 
 template <typename... Tuples> constexpr auto tuple_cat(Tuples... tuples) {
     constexpr auto total_num_elements = (tuples.size() + ...);
-    return tuple_cat_impl(std::make_integer_sequence<int, total_num_elements>{},
+    return tuple_cat_impl(std::make_index_sequence<total_num_elements>{},
                           tuples...);
 }
 } // namespace cib

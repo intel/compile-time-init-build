@@ -24,9 +24,9 @@ using TestMsgFieldRequired = message_base<decltype("TestMsgFieldRequired"_sc),
                                           TestField1, TestField2, TestField3>;
 
 TEST_CASE("TestMsgDispatch1", "[handler]") {
-    static auto callback =
-        msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
-                                   [](TestMsg msg) { correctDispatch = true; });
+    static auto callback = msg::callback<TestBaseMsg>(
+        "TestCallback"_sc, match::always<true>,
+        [](const TestMsg &) { correctDispatch = true; });
 
     static auto handler = msg::handler<TestBaseMsg, 1>{{&callback}};
 
@@ -43,14 +43,14 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
         "TestCallback1"_sc, match::always<true>,
 
         // if the raw data matches requirements of TestMsg, execute this
-        [&](TestMsg const &msg) { REQUIRE(false); });
+        [&](TestMsg const &) { REQUIRE(false); });
 
     static auto callback2 = msg::callback<TestBaseMsg>(
         "TestCallback2"_sc, match::always<true>,
 
         // if the raw data matches requirements of
         // TestMsgFieldRequired, execute this
-        [](TestMsgFieldRequired const &msg) { correctDispatch = true; });
+        [](TestMsgFieldRequired const &) { correctDispatch = true; });
 
     static auto handler =
         msg::handler<TestBaseMsg, 2>{{&callback1, &callback2}};

@@ -7,7 +7,7 @@ template <typename LhsType, typename RhsType> struct dependency {
     LhsType lhs;
     RhsType rhs;
 
-    constexpr dependency(LhsType lhs, RhsType rhs) : lhs(lhs), rhs(rhs) {}
+    constexpr dependency(LhsType l, RhsType r) : lhs(l), rhs(r) {}
 
     template <typename Callable> constexpr void walk(Callable c) const {
         detail::node_walk(c, lhs);

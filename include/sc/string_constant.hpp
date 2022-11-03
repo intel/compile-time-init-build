@@ -87,10 +87,10 @@ template <typename CharT, CharT... chars> struct string_constant {
     [[nodiscard]] constexpr static uint64_t hash() {
         // http://www.cse.yorku.ca/~oz/hash.html @ Aug. 19, 2022
         // this is a very slightly cleaned up version of djb2
-        uint64_t hash = 5381;
+        std::uint64_t hash = 5381;
 
-        for (uint64_t const c : value) {
-            hash = hash * 33 + c;
+        for (auto const c : value) {
+            hash = hash * 33 + static_cast<std::uint64_t>(c);
         }
 
         return hash;
@@ -99,29 +99,29 @@ template <typename CharT, CharT... chars> struct string_constant {
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
-operator==(string_constant<CharT, charsLhs...> lhs,
-           string_constant<CharT, charsRhs...> rhs) noexcept {
+operator==(string_constant<CharT, charsLhs...>,
+           string_constant<CharT, charsRhs...>) noexcept {
     return false;
 }
 
 template <class CharT, CharT... chars>
 [[nodiscard]] constexpr auto
-operator==(string_constant<CharT, chars...> lhs,
-           string_constant<CharT, chars...> rhs) noexcept {
+operator==(string_constant<CharT, chars...>,
+           string_constant<CharT, chars...>) noexcept {
     return true;
 }
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
-operator!=(string_constant<CharT, charsLhs...> lhs,
-           string_constant<CharT, charsRhs...> rhs) noexcept {
+operator!=(string_constant<CharT, charsLhs...>,
+           string_constant<CharT, charsRhs...>) noexcept {
     return true;
 }
 
 template <class CharT, CharT... chars>
 [[nodiscard]] constexpr auto
-operator!=(string_constant<CharT, chars...> lhs,
-           string_constant<CharT, chars...> rhs) noexcept {
+operator!=(string_constant<CharT, chars...>,
+           string_constant<CharT, chars...>) noexcept {
     return false;
 }
 
@@ -155,8 +155,8 @@ operator>=(string_constant<CharT, charsLhs...> lhs,
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
-operator+(string_constant<CharT, charsLhs...> lhs,
-          string_constant<CharT, charsRhs...> rhs) noexcept {
+operator+(string_constant<CharT, charsLhs...>,
+          string_constant<CharT, charsRhs...>) noexcept {
     return string_constant<CharT, charsLhs..., charsRhs...>{};
 }
 

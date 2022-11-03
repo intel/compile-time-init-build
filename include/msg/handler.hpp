@@ -97,8 +97,9 @@ void dispatch_single_callable(CallableT const &callable,
  */
 template <typename BaseMsgT, typename... ExtraCallbackArgsT, typename NameTypeT,
           typename MatchMsgTypeT, typename... CallableTypesT>
-class callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
-                    NameTypeT, MatchMsgTypeT, callback_types<CallableTypesT...>>
+struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
+                     NameTypeT, MatchMsgTypeT,
+                     callback_types<CallableTypesT...>>
     : public Callback<BaseMsgT, ExtraCallbackArgsT...> {
   private:
     constexpr static NameTypeT name{};
@@ -125,9 +126,9 @@ class callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
   public:
-    constexpr callback_impl(MatchMsgTypeT const &match_msg,
+    constexpr callback_impl(MatchMsgTypeT const &msg,
                             CallableTypesT const &...callback_args)
-        : match_msg(match_msg), callbacks(cib::make_tuple(callback_args...)) {
+        : match_msg(msg), callbacks(cib::make_tuple(callback_args...)) {
         callbacks.for_each([](auto callback) {
             static_assert(
                 !std::is_same<decltype(callback), std::nullptr_t>::value,

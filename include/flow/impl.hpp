@@ -104,7 +104,7 @@ template <typename Name> class impl<Name, 0> {
   public:
     constexpr static bool active = false;
 
-    constexpr impl(milestone_base newMilestones[], build_status newBuildStatus)
+    constexpr impl(milestone_base *, build_status newBuildStatus)
         : buildStatus(newBuildStatus) {}
 
     constexpr void operator()() const {

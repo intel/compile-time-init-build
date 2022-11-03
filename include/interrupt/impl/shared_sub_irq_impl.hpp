@@ -29,8 +29,8 @@ struct shared_sub_irq_impl {
     hana::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
-    explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...sub_irq_impls)
-        : sub_irq_impls(sub_irq_impls...) {}
+    explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...impls)
+        : sub_irq_impls(impls...) {}
 
     auto get_interrupt_enables() const {
         if constexpr (active) {

@@ -35,7 +35,8 @@ struct repl_field_iter {
             end++;
         }
 
-        return std::string_view(i, std::distance(i, end));
+        return std::string_view(
+            i, static_cast<std::string_view::size_type>(std::distance(i, end)));
     }
 
     [[nodiscard]] constexpr bool operator==(repl_field_iter other) const {
@@ -69,9 +70,9 @@ constexpr OutputIter copy(InputIter in_iter, InputIter in_end,
 }
 
 template <typename CharT, CharT... chars>
-[[nodiscard]] constexpr char *format_field(std::string_view field,
-                                           string_constant<CharT, chars...> arg,
-                                           char *out) {
+[[nodiscard]] constexpr char *
+format_field([[maybe_unused]] std::string_view field,
+             string_constant<CharT, chars...> arg, char *out) {
     return copy(arg.begin(), arg.end(), out);
 }
 
@@ -83,7 +84,7 @@ template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 
 template <typename CharT, CharT... chars, typename ArgsTupleT>
 [[nodiscard]] constexpr char *format_field(
-    std::string_view field,
+    [[maybe_unused]] std::string_view field,
     lazy_string_format<string_constant<CharT, chars...>, ArgsTupleT> lazy,
     char *out) {
     return copy(lazy.str.begin(), lazy.str.end(), out);
@@ -92,15 +93,15 @@ template <typename CharT, CharT... chars, typename ArgsTupleT>
 template <typename EnumTypeT, EnumTypeT ValueT,
           std::enable_if_t<std::is_enum<EnumTypeT>::value, bool> = true>
 [[nodiscard]] constexpr char *
-format_field(std::string_view field, std::integral_constant<EnumTypeT, ValueT>,
-             char *out) {
+format_field([[maybe_unused]] std::string_view field,
+             std::integral_constant<EnumTypeT, ValueT>, char *out) {
     auto const &enum_sv = detail::EnumToString<EnumTypeT, ValueT>::value;
     return copy(enum_sv.begin(), enum_sv.end(), out);
 }
 
 template <typename T>
-[[nodiscard]] constexpr char *format_field(std::string_view field, type_name<T>,
-                                           char *out) {
+[[nodiscard]] constexpr char *
+format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out) {
     auto const &type_name_sv = detail::TypeNameToString<T>::value;
     return copy(type_name_sv.begin(), type_name_sv.end(), out);
 }
@@ -130,8 +131,8 @@ format_field(std::string_view field,
         detail::integral_to_string(ValueT, base, uppercase);
 
     if (spec.padding_width > 0) {
-        auto const padding_width =
-            std::max<int>(spec.padding_width - int_static_string.count, 0);
+        auto const padding_width = std::max(
+            spec.padding_width - static_cast<int>(int_static_string.count), 0);
 
         auto const pad_char = spec.zero_pad ? '0' : ' ';
 
@@ -159,7 +160,7 @@ template <typename FmtStringConstant, typename... ArgTs> struct format_t {
 
         auto out = tmp_buf.data.begin();
         auto in = fmt.begin();
-        auto field_iter = fields.begin();
+        [[maybe_unused]] auto field_iter = fields.begin();
 
         (([&](auto arg) {
              auto const f = *field_iter;
@@ -173,7 +174,8 @@ template <typename FmtStringConstant, typename... ArgTs> struct format_t {
 
         out = copy(in, fmt.end(), out);
 
-        tmp_buf.size = std::distance(tmp_buf.data.begin(), out);
+        tmp_buf.size =
+            static_cast<std::size_t>(std::distance(tmp_buf.data.begin(), out));
 
         return tmp_buf;
     }();
@@ -199,10 +201,10 @@ constexpr bool is_lazy_format_string_with_args_v = []() {
     } else {
         return false;
     }
-};
+}();
 
 template <typename CharT, CharT... chars, typename... ArgTs>
-[[nodiscard]] constexpr auto format(string_constant<CharT, chars...> fmtStr,
+[[nodiscard]] constexpr auto format(string_constant<CharT, chars...>,
                                     ArgTs... args) {
     auto const runtime_args = [&]() {
         constexpr bool has_runtime_args = []() {

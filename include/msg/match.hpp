@@ -275,7 +275,7 @@ struct simple_matcher_t {
 
     [[nodiscard]] constexpr auto describe() const { return description; }
 
-    [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
+    [[nodiscard]] constexpr auto describe_match(EventType const &) const {
         return description;
     }
 
@@ -307,6 +307,6 @@ struct simple_matcher_t<void, DescType, PredType> {
 };
 
 template <typename EventType, typename DescType, typename PredType>
-[[nodiscard]] constexpr static auto matcher(DescType name, PredType predicate) {
+[[nodiscard]] constexpr static auto matcher(DescType, PredType predicate) {
     return simple_matcher_t<EventType, DescType, PredType>{predicate};
 }

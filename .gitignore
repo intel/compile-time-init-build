@@ -1,6 +1,4 @@
-/generated-includes/
-/build/
-/Testing/
-/cmake-build*
-/venv/
-/examples/hello_world/build/
+/build
+/.cache
+/venv
+/examples/hello_world/build

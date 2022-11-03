@@ -20,7 +20,7 @@ class milestone_base {
 
   public:
     template <typename Name>
-    constexpr milestone_base(Name name, FunctionPtr run_ptr)
+    constexpr milestone_base([[maybe_unused]] Name name, FunctionPtr run_ptr)
         : run{run_ptr}, log_name {
         []() { TRACE("flow.milestone({})", Name{}); }
     }

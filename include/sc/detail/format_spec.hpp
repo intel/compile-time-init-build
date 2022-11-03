@@ -72,7 +72,9 @@ struct fast_format_spec {
                 i++;
             }
 
-            name = std::string_view(name_begin, std::distance(name_begin, i));
+            name = std::string_view(name_begin,
+                                    static_cast<std::string_view::size_type>(
+                                        std::distance(name_begin, i)));
 
         } else if (is_digit(*i)) {
             has_id = true;

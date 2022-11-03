@@ -66,7 +66,7 @@ template <typename ValueType, size_t Capacity> class Vector {
         return &(storage[currentSize]);
     }
 
-    [[nodiscard]] constexpr std::uint32_t size() const { return currentSize; }
+    [[nodiscard]] constexpr std::size_t size() const { return currentSize; }
 
     [[nodiscard]] constexpr std::size_t getCapacity() const { return Capacity; }
 
@@ -121,7 +121,7 @@ template <typename ValueType, size_t Capacity> class Vector {
             return false;
 
         } else {
-            for (auto i = 0; i < size(); i++) {
+            for (auto i = std::size_t{}; i < size(); i++) {
                 if ((*this)[i] != rhs[i]) {
                     return false;
                 }

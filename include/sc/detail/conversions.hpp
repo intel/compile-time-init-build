@@ -3,16 +3,17 @@
 #include <sc/detail/string_meta.hpp>
 
 #include <array>
+#include <cstddef>
 #include <string_view>
 #include <type_traits>
 
 namespace sc::detail {
 template <typename CharT, int SizeT> struct static_string {
     std::array<CharT, SizeT> data;
-    int pos;
-    unsigned int count;
+    std::size_t pos;
+    std::size_t count;
 
-    constexpr static_string() : data{}, pos{}, count{} {};
+    constexpr static_string() : data{}, pos{}, count{} {}
 
     constexpr operator std::basic_string_view<CharT>() const {
         return std::string_view{data.data() + pos, count};
@@ -22,13 +23,13 @@ template <typename CharT, int SizeT> struct static_string {
 template <typename IntegralTypeT, typename BaseTypeT>
 [[nodiscard]] constexpr static_string<char, 65>
 integral_to_string(IntegralTypeT value, BaseTypeT base, bool uppercase) {
-    constexpr int MAX_LENGTH = 65;
+    constexpr std::size_t MAX_LENGTH = 65;
 
     bool const negative = std::is_signed_v<IntegralTypeT> && (value < 0);
     char const ext_char_start = uppercase ? 'A' : 'a';
 
     value = negative ? -value : value;
-    int digit = MAX_LENGTH;
+    auto digit = MAX_LENGTH;
 
     static_string<char, MAX_LENGTH> ret{};
 
@@ -47,7 +48,7 @@ integral_to_string(IntegralTypeT value, BaseTypeT base, bool uppercase) {
             }();
 
             digit -= 1;
-            ret.data[digit] = digit_char;
+            ret.data[digit] = static_cast<char>(digit_char);
             value /= base;
         }
     }
@@ -88,12 +89,11 @@ template <typename Tag> constexpr static std::string_view type_as_string() {
 #endif
 
     constexpr auto lhs = [&]() -> std::string_view::size_type {
-        for (auto i = 0; i < function_name.size(); i++) {
+        for (auto i = std::size_t{}; i < function_name.size(); i++) {
             if (function_name[i] == '=') {
                 return i + 2;
             }
         }
-
         return 0;
     }();
 
@@ -115,12 +115,10 @@ constexpr static std::basic_string_view<char> enum_as_string() {
 #endif
 
     constexpr auto lhs = [&]() -> std::string_view::size_type {
-        for (auto i = value_string.size() - 1; i >= 0; i--) {
-            if (value_string[i] == ':') {
-                return i + 1;
-            }
+        if (const auto colon_pos = value_string.find_last_of(':');
+            colon_pos != std::string_view::npos) {
+            return colon_pos + 1;
         }
-
         return 0;
     }();
 

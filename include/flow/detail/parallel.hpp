@@ -7,7 +7,7 @@ template <typename LhsType, typename RhsType> struct parallel {
     LhsType lhs;
     RhsType rhs;
 
-    constexpr parallel(LhsType lhs, RhsType rhs) : lhs(lhs), rhs(rhs) {}
+    constexpr parallel(LhsType l, RhsType r) : lhs(l), rhs(r) {}
 
     template <typename Callable> constexpr void walk(Callable c) const {
         detail::node_walk(c, lhs);

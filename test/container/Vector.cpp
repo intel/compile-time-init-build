@@ -48,7 +48,7 @@ TEST_CASE("OutOfBounds", "[vector]") {
 TEST_CASE("OutOfBoundsConst", "[vector]") {
     const Vector<uint32_t, 9> vector;
 
-    const uint32_t &x = vector[8];
+    [[maybe_unused]] const uint32_t &x = vector[8];
 }
 
 TEST_CASE("OutOfBoundsEdge", "[vector]") {
