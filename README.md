@@ -116,24 +116,21 @@ ls build/include/cib/ | grep cib.hpp
 This combines all the *cib* header files in the `include` tree by recursively
 including the `#include` directives and ignoring all other macros.
 
-**NOTE:** *cib* uses git submodules to include its testing dependencies. Users are
-required to pull submodules by manually run git command below. This is only required
-if repository was cloned as a standalone project through git repo and not downloaded
-as an archive.
-
-```shell
-git submodule update --recursive
-```
+**NOTE:** *cib* uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to
+fetch its dependencies. When first running `cmake`, the dependencies will be
+downloaded. To avoid re-downloading dependencies when reconfiguring cmake, it's
+recommended to designate a cache directory and set the `CPM_SOURCE_CACHE`
+environment variable.
 
 Unit tests are registered with CTest:
 
 ```shell
 cmake -B build
-cmake --build build -t tests
-ctest
+cmake --build build -t all-cib-tests
+ctest --test-dir build
 ```
 
-This will build and run all the unit tests with CMake and Catch2.
+This will build and run all the unit tests with CMake, Catch2 and GTest.
 
 ## Features
 
