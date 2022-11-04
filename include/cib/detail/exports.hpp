@@ -17,7 +17,7 @@ template <typename ServiceT, typename BuilderT> struct service_entry {
 
 template <typename... Services> struct exports : public detail::config_item {
     template <typename... InitArgs>
-    [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(InitArgs const &...) const {
+    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(InitArgs const &...) const {
         return cib::make_tuple(extend<Services>{}...);
     }
 };

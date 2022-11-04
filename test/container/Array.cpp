@@ -43,10 +43,8 @@ TEST_CASE("OutOfBoundsAccessClose", "[array]") {
     array[4] = 0u;
 }
 
-TEST_CASE("OutOfBoundsAccessEmpty", "[array]") {
-    Array<std::uint32_t, 0> array;
-
-    array[0] = 0u;
+TEST_CASE("DeclareEmpty", "[array]") {
+    [[maybe_unused]] Array<std::uint32_t, 0> array;
 }
 
 TEST_CASE("InitializationWithBuiltInArray", "[array]") {

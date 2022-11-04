@@ -27,7 +27,7 @@ struct config : public detail::config_item {
     }
 
     template <typename... Args>
-    [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const &...args) const {
+    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(Args const &...args) const {
         return ConfigArgs::value.apply([&](auto const &...config_args) {
             return configs_tuple.apply([&](auto const &...configs_pack) {
                 return cib::tuple_cat(
