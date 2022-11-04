@@ -29,7 +29,7 @@ namespace interrupt {
  *
  * @tparam IRQs
  */
-template <typename RootT> class manager {
+template <typename RootT, typename ConcurrencyPolicyT> class manager {
   public:
     using InterruptHal = typename RootT::InterruptHal;
 
@@ -44,7 +44,7 @@ template <typename RootT> class manager {
 
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
-    using Dynamic = dynamic_controller<RootT>;
+    using Dynamic = dynamic_controller<RootT, ConcurrencyPolicyT>;
 
   public:
     /**

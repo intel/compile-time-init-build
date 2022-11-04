@@ -4,7 +4,6 @@
 
 #include <boost/hana.hpp>
 
-#include <conc/concurrency.hpp>
 #include <type_traits>
 
 namespace interrupt {
@@ -13,7 +12,8 @@ using namespace hana::literals;
 
 enum class resource_status { OFF = 0, ON = 1 };
 
-template <typename RootT> struct dynamic_controller {
+template <typename RootT, typename ConcurrencyPolicyT>
+struct dynamic_controller {
   private:
     /**
      * Store the interrupt enable values that are allowed given the current set
@@ -194,8 +194,7 @@ template <typename RootT> struct dynamic_controller {
     template <bool en, typename... CallbacksToFind>
     static inline void enable_by_name() {
         // NOTE: critical section is not needed here because shared state is
-        // only
-        //       updated by the final call to enable_by_field
+        // only updated by the final call to enable_by_field
 
         // TODO: add support to enable/disable top-level IRQs by name.
         //       this will require another way to manage them vs. mmio
@@ -221,7 +220,7 @@ template <typename RootT> struct dynamic_controller {
   public:
     template <typename ResourceType>
     static inline void update_resource(resource_status status) {
-        conc::critical_section([&] {
+        ConcurrencyPolicyT::call_in_critical_section([&] {
             is_resource_on<ResourceType> = (status == resource_status::ON);
             recalculate_allowed_enables();
             reprogram_interrupt_enables(all_resource_affected_regs);
@@ -240,7 +239,7 @@ template <typename RootT> struct dynamic_controller {
     static inline void enable_by_field() {
         auto const interrupt_enables_tuple = hana::tuple<FieldsToSet...>{};
 
-        conc::critical_section([&] {
+        ConcurrencyPolicyT::call_in_critical_section([&] {
             // update the dynamic enables
             if constexpr (en) {
                 hana::for_each(interrupt_enables_tuple, [](auto f) {

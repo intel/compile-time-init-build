@@ -3,6 +3,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <conc/concurrency.hpp>
+
 using ::testing::_;
 using ::testing::InSequence;
 using ::testing::Return;
@@ -161,6 +163,9 @@ struct rsp_avail_en_field_t
     EXPECT_CALL(callback, write(FIELD_TYPE::id, VALUE))
 #define EXPECT_READ(FIELD_TYPE) EXPECT_CALL(callback, read(FIELD_TYPE::id))
 
+template <typename Config>
+using test_manager = manager<Config, test::ConcurrencyPolicy>;
+
 struct BasicBuilder {
     using Config = root<
         MockIrqImpl,
@@ -175,12 +180,12 @@ struct BasicBuilder {
                                                        test_resource_beta>>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config>;
+    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
 
     static auto constexpr value = [] {
         // Configure Interrupts
 
-        manager<Config> builder;
+        test_manager<Config> builder;
 
         // Connect interrupts to isrs
         builder.add<msg_handler_irq>(msg_handler);
@@ -275,7 +280,7 @@ struct NoIsrBuilder {
                              rsp_handler_irq, policies<>>>,
                  irq<38, 0, timer_irq, policies<>>>;
 
-        manager<Config> builder;
+        test_manager<Config> builder;
 
         // done
         return builder;
@@ -307,7 +312,7 @@ struct ClearStatusFirstBuilder {
             root<MockIrqImpl,
                  irq<38, 0, timer_irq, policies<clear_status_first>>>;
 
-        manager<Config> builder;
+        test_manager<Config> builder;
 
         builder.add<timer_irq>(timer_action);
 
@@ -337,7 +342,7 @@ struct DontClearStatusBuilder {
         using Config = root<MockIrqImpl,
                             irq<38, 0, timer_irq, policies<dont_clear_status>>>;
 
-        manager<Config> builder;
+        test_manager<Config> builder;
 
         builder.add<timer_irq>(timer_action);
 
@@ -483,7 +488,7 @@ struct SharedSubIrqTest {
                             can_handler_irq, policies<dont_clear_status>>>>,
             irq<38, 0, timer_irq, policies<>>>;
 
-        manager<Config> builder;
+        test_manager<Config> builder;
 
         builder.add<i2c_handler_irq>(bscan);
 
