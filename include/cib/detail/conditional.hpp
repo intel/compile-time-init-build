@@ -17,7 +17,7 @@ struct conditional : public config_item {
         : body{{}, configs...} {}
 
     template <typename... Args>
-    [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(Args const &...) const {
+    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(Args const &...) const {
         if constexpr (condition(Args{}...)) {
             return body.extends_tuple(Args{}...);
         } else {
@@ -31,7 +31,7 @@ template <typename Lhs, typename Rhs> struct equality {
     CIB_CONSTEXPR static Rhs rhs{};
 
     template <typename... Args>
-    CIB_CONSTEVAL bool operator()(Args const &...args) const {
+    CIB_CONSTEXPR bool operator()(Args const &...args) const {
         return lhs(args...) ==
                rhs; // FIXME: this assumes the RHS is a literal value
     }
@@ -45,7 +45,7 @@ template <typename MatchType> struct arg {
     }
 
     template <typename... Args>
-    CIB_CONSTEVAL auto operator()(Args... args) const {
+    CIB_CONSTEXPR auto operator()(Args... args) const {
         return cib::make_tuple(self_type_index, args...)
             .fold_right(
                 detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state) {

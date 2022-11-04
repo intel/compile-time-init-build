@@ -20,7 +20,7 @@ struct extend : public config_item {
     }
 
     template <typename... InitArgs>
-    [[nodiscard]] CIB_CONSTEVAL auto extends_tuple(InitArgs const &...) const {
+    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(InitArgs const &...) const {
         return cib::make_tuple(*this);
     }
 };
