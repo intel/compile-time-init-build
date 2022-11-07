@@ -4,6 +4,7 @@
 
 #include <boost/hana.hpp>
 
+#include <limits>
 #include <type_traits>
 
 namespace interrupt {
@@ -168,7 +169,7 @@ struct dynamic_controller {
         // for each resource, if it is not on, mask out unavailable interrupts
         hana::for_each(all_resources, [=](auto resource) {
             using ResourceType = decltype(resource);
-            if (is_resource_on<ResourceType> == false) {
+            if (not is_resource_on<ResourceType>) {
                 hana::for_each(all_resource_affected_regs, [](auto reg) {
                     using RegType = decltype(reg);
                     allowed_enables<RegType> &=

@@ -35,6 +35,7 @@ template <typename CharT, CharT... chars> struct string_constant {
     constexpr static StringView value{storage, sizeof...(chars)};
     constexpr static size_type npos = std::numeric_limits<size_type>::max();
 
+    // NOLINTNEXTLINE(google-explicit-constructor)
     [[nodiscard]] constexpr operator StringView() const noexcept {
         return value;
     }

@@ -2,12 +2,10 @@
 
 template <typename NodeType> class LinkedList {
   private:
-    NodeType *head;
-    NodeType *tail;
+    NodeType *head{};
+    NodeType *tail{};
 
   public:
-    constexpr LinkedList() : head{nullptr}, tail{nullptr} {}
-
     void pushBack(NodeType *n) {
         if (head == nullptr) {
             head = n;

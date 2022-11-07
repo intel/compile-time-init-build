@@ -32,7 +32,7 @@ namespace log {
 template <typename T> struct format_helper {
     constexpr static T str{};
 
-    constexpr format_helper(T) {}
+    constexpr explicit format_helper(T) {}
 
     template <typename... Ts>
     CIB_LOG_ALWAYS_INLINE constexpr static auto f(Ts... args) {
@@ -137,6 +137,14 @@ struct mipi_encoder {
         dispatch_message<log_level::TRACE>(msg_tuple);
     }
 };
+
+#ifndef CIB_LOG_CRITICAL_SECTION_RAII_TYPE
+struct CIB_LOG_CRITICAL_SECTION_RAII_TYPE {};
+struct CIB_LOG_DESTINATIONS {
+    template <typename... Args> constexpr static auto log_by_args(Args &&...) {}
+    template <typename... Args> constexpr static auto log_by_buf(Args &&...) {}
+};
+#endif
 
 using logger_impl =
     mipi_encoder<CIB_LOG_CRITICAL_SECTION_RAII_TYPE, CIB_LOG_DESTINATIONS>;

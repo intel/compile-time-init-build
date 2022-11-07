@@ -36,7 +36,7 @@ class manager_impl : public manager_interface {
     /**
      * Initialize the interrupt hardware and each of the active irqs.
      */
-    virtual void init() const override final {
+    void init() const final {
         // TODO: log exact interrupt manager configuration
         //       (should be a single compile-time string with no arguments)
         init_mcu_interrupts();
@@ -46,7 +46,7 @@ class manager_impl : public manager_interface {
     /**
      * Initialize the interrupt hardware and each of the active irqs.
      */
-    virtual void init_mcu_interrupts() const override final {
+    void init_mcu_interrupts() const final {
         InterruptHal::init();
         hana::for_each(irq_impls, [](auto irq) {
             irq.template init_mcu_interrupts<InterruptHal>();
@@ -56,7 +56,7 @@ class manager_impl : public manager_interface {
     /**
      * Initialize the interrupt hardware and each of the active irqs.
      */
-    virtual void init_sub_interrupts() const override final {
+    void init_sub_interrupts() const final {
         auto const interrupt_enables_tuple =
             hana::unpack(irq_impls, [](auto... irqs_pack) {
                 return hana::flatten(

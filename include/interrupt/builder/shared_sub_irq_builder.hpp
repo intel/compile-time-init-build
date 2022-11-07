@@ -12,12 +12,10 @@
 
 namespace interrupt {
 template <typename ConfigT> struct shared_sub_irq_builder {
-  public:
     constexpr static auto resources = ConfigT::resources;
     using IrqCallbackType = typename ConfigT::IrqCallbackType;
     constexpr static auto children = ConfigT::children;
 
-  public:
     constexpr static auto irqs_type =
         hana::transform(ConfigT::children, [](auto child) {
             if constexpr (hana::size(child.children) > hana::size_c<0>) {

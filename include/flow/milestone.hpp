@@ -9,11 +9,11 @@ using FunctionPtr = void (*)();
 
 class milestone_base {
   private:
-    FunctionPtr run;
-    FunctionPtr log_name;
+    FunctionPtr run{};
+    FunctionPtr log_name{};
 
 #if defined(__GNUC__) && __GNUC__ < 12
-    uint64_t hash;
+    uint64_t hash{};
 #endif
 
     template <typename Name, int NumSteps> friend class impl;
@@ -30,12 +30,7 @@ class milestone_base {
 #endif
     {}
 
-    constexpr milestone_base() : run{nullptr}, log_name { nullptr }
-
-#if defined(__GNUC__) && __GNUC__ < 12
-    , hash { 0u }
-#endif
-    {}
+    constexpr milestone_base() = default;
 
     constexpr milestone_base(milestone_base const &rhs) = default;
     constexpr milestone_base &operator=(milestone_base const &rhs) = default;

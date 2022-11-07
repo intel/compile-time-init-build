@@ -98,7 +98,7 @@ template <typename ValueType, typename CallableType> struct fold_helper {
 
 template <typename... TupleElementTs>
 struct tuple_impl : public TupleElementTs... {
-    CIB_CONSTEXPR tuple_impl(TupleElementTs... values)
+    CIB_CONSTEXPR explicit tuple_impl(TupleElementTs... values)
         : TupleElementTs{values}... {}
 
     template <std::enable_if_t<(sizeof...(TupleElementTs) >= 0), bool> = true>

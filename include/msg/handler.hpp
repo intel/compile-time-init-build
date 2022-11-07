@@ -126,8 +126,8 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
   public:
-    constexpr callback_impl(MatchMsgTypeT const &msg,
-                            CallableTypesT const &...callback_args)
+    constexpr explicit callback_impl(MatchMsgTypeT const &msg,
+                                     CallableTypesT const &...callback_args)
         : match_msg(msg), callbacks(cib::make_tuple(callback_args...)) {
         callbacks.for_each([](auto callback) {
             static_assert(
@@ -136,13 +136,12 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         });
     }
 
-    [[nodiscard]] bool is_match(BaseMsgT const &msg) const final override {
+    [[nodiscard]] bool is_match(BaseMsgT const &msg) const final {
         return match::all(match_msg, match_any_callback())(msg);
     }
 
-    [[nodiscard]] bool
-    handle(BaseMsgT const &msg,
-           ExtraCallbackArgsT const &...args) const final override {
+    [[nodiscard]] bool handle(BaseMsgT const &msg,
+                              ExtraCallbackArgsT const &...args) const final {
         auto match_handler = match::all(match_msg, match_any_callback());
 
         if (match_handler(msg)) {
@@ -158,7 +157,7 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         return false;
     }
 
-    void log_mismatch(BaseMsgT const &msg) const final override {
+    void log_mismatch(BaseMsgT const &msg) const final {
         INFO("    {} - F:({})", name,
              match::all(match_msg, match_any_callback()).describe_match(msg));
     }
@@ -173,7 +172,8 @@ class handler {
     CallbacksType callbacks{};
 
   public:
-    constexpr handler(CallbacksType callbacks_arg) : callbacks{callbacks_arg} {
+    constexpr explicit handler(CallbacksType callbacks_arg)
+        : callbacks{callbacks_arg} {
         // pass
     }
 
@@ -217,7 +217,7 @@ class handler_builder {
         Vector<Callback<BaseMsgT, ExtraCallbackArgsT...> const *, MAX_SIZE>;
 
   private:
-    CallbacksType callbacks;
+    CallbacksType callbacks{};
 
     template <size_t NumMsgCallbacksT>
     [[nodiscard]] constexpr handler<BaseMsgT, NumMsgCallbacksT,
@@ -235,10 +235,6 @@ class handler_builder {
     }
 
   public:
-    constexpr handler_builder() : callbacks{} {
-        // pass
-    }
-
     constexpr void
     add(Callback<BaseMsgT, ExtraCallbackArgsT...> const &callback) {
         callbacks.push(&callback);
@@ -276,10 +272,10 @@ class handler_builder {
 };
 
 template <typename BaseMsgT, typename... ExtraCallbackArgsT>
-auto callback = [](auto name, auto match_msg, auto... callbacks)
-    -> callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
-                     decltype(name), decltype(match_msg),
-                     callback_types<decltype(callbacks)...>> {
-    return {match_msg, callbacks...};
+auto callback = [](auto name, auto match_msg, auto... callbacks) {
+    return callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
+                         decltype(name), decltype(match_msg),
+                         callback_types<decltype(callbacks)...>>{match_msg,
+                                                                 callbacks...};
 };
 } // namespace msg

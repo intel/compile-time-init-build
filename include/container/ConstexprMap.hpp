@@ -14,12 +14,12 @@
  * @tparam ValueType
  */
 template <typename KeyType, typename ValueType> struct MapEntry {
-    KeyType key;
-    ValueType value;
+    KeyType key{};
+    ValueType value{};
 
     constexpr MapEntry(KeyType k, ValueType v) : key(k), value(v) {}
 
-    constexpr MapEntry() : key(), value() {}
+    constexpr MapEntry() = default;
 };
 
 /**
@@ -46,8 +46,8 @@ class ConstexprMap {
     using Entry = MapEntry<KeyType, ValueType>;
 
   private:
-    Entry storage[Capacity];
-    std::size_t size;
+    Entry storage[Capacity]{};
+    std::size_t size{};
 
     /**
      * Find the storage index of the given key.
@@ -73,10 +73,9 @@ class ConstexprMap {
     }
 
   public:
-    constexpr ConstexprMap() : storage(), size(0) {}
+    constexpr ConstexprMap() = default;
 
-    template <typename T>
-    constexpr ConstexprMap(T const &rhs) : storage(), size(0) {
+    template <typename T> constexpr explicit ConstexprMap(T const &rhs) {
         for (auto const &entry : std::as_const(rhs)) {
             put(entry.key, entry.value);
         }

@@ -46,7 +46,6 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
 
     using Dynamic = dynamic_controller<RootT, ConcurrencyPolicyT>;
 
-  public:
     /**
      * Add interrupt service routine(s) to be executed when this IRQ is
      * triggered.
@@ -74,7 +73,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      * Never called, but the return type is used by cib to determine what the
      * abstract interface is.
      */
-    manager_interface *base() const;
+    [[nodiscard]] manager_interface *base() const;
 
     template <typename BuilderValue, typename Index> struct sub_value {
         constexpr static auto const &value = BuilderValue::value.irqs[Index{}];

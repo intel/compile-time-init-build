@@ -15,7 +15,7 @@
  */
 template <typename ValueType, std::size_t Size> class Array {
   private:
-    ValueType storage[Size];
+    ValueType storage[Size]{};
 
   public:
     using value_type = ValueType;
@@ -30,7 +30,7 @@ template <typename ValueType, std::size_t Size> class Array {
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_terator = std::reverse_iterator<const_iterator>;
 
-    constexpr Array(std::initializer_list<ValueType> src) : storage{} {
+    constexpr Array(std::initializer_list<ValueType> src) {
         if (src.size() > Size) {
             FATAL("Initializer list size {} is bigger than allocated array "
                   "size {}",
@@ -45,7 +45,7 @@ template <typename ValueType, std::size_t Size> class Array {
         }
     }
 
-    template <typename SrcT> constexpr Array(SrcT const &src) : storage{} {
+    template <typename SrcT> constexpr explicit Array(SrcT const &src) {
         if (src.size() > Size) {
             FATAL("Source size {} is bigger than allocated array size {}",
                   src.size(), sc::int_<Size>);
@@ -59,14 +59,12 @@ template <typename ValueType, std::size_t Size> class Array {
         }
     }
 
-    constexpr Array() : storage{} {
-        // pass
-    }
+    constexpr Array() = default;
 
     constexpr Array(Array const &rhs) = default;
     constexpr Array &operator=(Array const &rhs) = default;
-    constexpr Array(Array &&rhs) = default;
-    constexpr Array &operator=(Array &&rhs) = default;
+    constexpr Array(Array &&rhs) noexcept = default;
+    constexpr Array &operator=(Array &&rhs) noexcept = default;
 
     [[nodiscard]] constexpr iterator begin() { return storage; }
 

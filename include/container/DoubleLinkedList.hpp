@@ -15,9 +15,7 @@ template <typename NodeType> class DoubleLinkedList {
         NodeType *node;
 
       public:
-        constexpr iterator(NodeType *n) : node(n) {
-            // pass
-        }
+        constexpr explicit iterator(NodeType *n) : node(n) {}
 
         constexpr NodeType &operator*() { return *node; }
 
@@ -51,12 +49,10 @@ template <typename NodeType> class DoubleLinkedList {
     using const_iterator = const iterator;
 
   private:
-    NodeType *head;
-    NodeType *tail;
+    NodeType *head{};
+    NodeType *tail{};
 
   public:
-    constexpr DoubleLinkedList() : head{nullptr}, tail{nullptr} {}
-
     constexpr iterator begin() { return iterator(head); }
 
     constexpr iterator end() { return iterator(nullptr); }

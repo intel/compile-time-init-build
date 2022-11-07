@@ -30,14 +30,14 @@ class PriorityQueue {
   private:
     using StorageType = ValueType[MaxSize];
 
-    StorageType heap;
+    StorageType heap{};
     decltype(std::begin(heap)) end;
 
   public:
     /**
      * Create an empty PriorityQueue.
      */
-    constexpr PriorityQueue() : heap{}, end{std::begin(heap)} {
+    constexpr PriorityQueue() : end{std::begin(heap)} {
         // pass
     }
 

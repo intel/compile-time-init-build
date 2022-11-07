@@ -24,7 +24,6 @@ namespace interrupt {
  *      Hardware IRQ priority.
  */
 template <typename ConfigT> struct irq_builder {
-  public:
     using IrqCallbackType = typename ConfigT::IrqCallbackType;
     constexpr static auto irq_number = ConfigT::irq_number;
 

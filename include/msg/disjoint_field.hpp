@@ -75,7 +75,7 @@ class disjoint_field {
     using WithMatch =
         disjoint_field<NameTypeT, FieldsT, T, DefaultValue, NewRequiredMatcher>;
 
-    constexpr disjoint_field(T const &new_value) : value{new_value} {
+    constexpr explicit disjoint_field(T const &new_value) : value{new_value} {
         // pass
     }
 
