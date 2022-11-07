@@ -78,7 +78,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
         add_custom_target(clang-tidy)
         include(cmake/clang-tidy.cmake)
         clang_tidy_interface(cib)
-        # add_dependencies(quality clang-tidy)
+        add_dependencies(quality clang-tidy)
     endif()
 endif()
 

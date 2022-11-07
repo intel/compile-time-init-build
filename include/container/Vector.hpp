@@ -16,8 +16,8 @@ using size_t = std::size_t;
  */
 template <typename ValueType, size_t Capacity> class Vector {
   private:
-    ValueType storage[Capacity];
-    size_t currentSize;
+    ValueType storage[Capacity]{};
+    size_t currentSize{};
 
   public:
     using value_type = ValueType;
@@ -32,8 +32,7 @@ template <typename ValueType, size_t Capacity> class Vector {
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_terator = std::reverse_iterator<const_iterator>;
 
-    constexpr Vector(std::initializer_list<ValueType> src)
-        : storage{}, currentSize(0) {
+    constexpr Vector(std::initializer_list<ValueType> src) {
         if (src.size() > Capacity) {
             FATAL("Initializer list size {} is bigger than vector capacity {}",
                   src.size(), sc::int_<Capacity>);
@@ -49,12 +48,12 @@ template <typename ValueType, size_t Capacity> class Vector {
         }
     }
 
-    constexpr Vector() : storage{}, currentSize(0) {}
+    constexpr Vector() = default;
 
     constexpr Vector(Vector const &rhs) = default;
     constexpr Vector &operator=(Vector const &rhs) = default;
-    constexpr Vector(Vector &&rhs) = default;
-    constexpr Vector &operator=(Vector &&rhs) = default;
+    constexpr Vector(Vector &&rhs) noexcept = default;
+    constexpr Vector &operator=(Vector &&rhs) noexcept = default;
 
     [[nodiscard]] constexpr iterator begin() { return storage; }
 

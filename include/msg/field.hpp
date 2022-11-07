@@ -20,7 +20,7 @@ template <typename NameTypeT, std::uint32_t DWordIndexT, std::uint32_t MsbT,
           typename MatchRequirementsType = match::always_t<true>>
 class field {
   private:
-    T value;
+    T value{DefaultValue};
 
   public:
     static_assert(LsbT <= MsbT, "msb needs to be lower than or equal to lsb");
@@ -110,13 +110,9 @@ class field {
         field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewLesserValue,
               msg::less_than_or_equal_to_t<This, T, NewLesserValue>>;
 
-    constexpr field(T const &new_value) : value{new_value} {
-        // pass
-    }
+    constexpr explicit field(T const &new_value) : value{new_value} {}
 
-    constexpr field() : value{DefaultValue} {
-        // pass
-    }
+    constexpr field() = default;
 
     template <typename DataType>
     [[nodiscard]] static constexpr T extract(DataType const &data) {
@@ -149,7 +145,7 @@ class field {
             (data[DWordIndex] & ~field_mask));
 
         if constexpr (MsbT >= 32) {
-            constexpr std::uint32_t field_mask_dword_1 =
+            constexpr auto field_mask_dword_1 =
                 static_cast<std::uint32_t>(bit_mask >> (32 - LsbT));
 
             data[DWordIndex + 1] = static_cast<std::uint32_t>(
@@ -159,7 +155,7 @@ class field {
         }
 
         if constexpr (MsbT >= 64) {
-            constexpr std::uint32_t field_mask_dword_2 =
+            constexpr auto field_mask_dword_2 =
                 static_cast<std::uint32_t>(bit_mask >> (64 - LsbT));
 
             data[DWordIndex + 2] = static_cast<std::uint32_t>(

@@ -21,8 +21,8 @@ template <auto enumValue>
 constexpr static std::integral_constant<decltype(enumValue), enumValue> enum_{};
 
 template <typename T> struct type_name {
-    constexpr type_name(T) {}
-    constexpr type_name() {}
+    constexpr explicit type_name(T) {}
+    constexpr type_name() = default;
 };
 
 template <typename T> constexpr static type_name<T> type_{T{}};

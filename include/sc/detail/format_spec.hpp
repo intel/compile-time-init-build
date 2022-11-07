@@ -7,21 +7,21 @@
 
 namespace sc::detail {
 struct fast_format_spec {
-    std::string_view::size_type size;
+    std::string_view::size_type size{};
 
-    std::string_view::size_type lhs_;
-    std::string_view::size_type rhs_;
+    std::string_view::size_type lhs_{};
+    std::string_view::size_type rhs_{};
 
-    bool has_name;
-    std::string_view name;
+    bool has_name{};
+    std::string_view name{};
 
-    bool has_id;
-    int id;
+    bool has_id{};
+    int id{};
 
-    bool zero_pad;
-    int padding_width;
+    bool zero_pad{};
+    int padding_width{};
 
-    char type;
+    char type{};
 
     template <typename T>
     static constexpr bool is_in_range(T value, T lower, T upper) {
@@ -46,22 +46,7 @@ struct fast_format_spec {
 
     constexpr fast_format_spec(std::string_view spec,
                                std::string_view::size_type lhs)
-        : size{spec.size() + 2}
-
-          ,
-          lhs_{lhs}, rhs_{lhs + size}
-
-          ,
-          has_name{}, name{}
-
-          ,
-          has_id{}, id{}
-
-          ,
-          zero_pad{}, padding_width{}
-
-          ,
-          type{} {
+        : size{spec.size() + 2}, lhs_{lhs}, rhs_{lhs + size} {
         auto i = spec.begin();
 
         // check for an id

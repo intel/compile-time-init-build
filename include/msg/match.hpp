@@ -106,7 +106,8 @@ template <typename... MatcherTypes> struct any_t {
     using MatchersType = cib::tuple<MatcherTypes...>;
     MatchersType matchers;
 
-    constexpr any_t(MatchersType new_matchers) : matchers{new_matchers} {}
+    constexpr explicit any_t(MatchersType new_matchers)
+        : matchers{new_matchers} {}
 
     template <typename EventType>
     [[nodiscard]] constexpr bool operator()(EventType const &event) const {

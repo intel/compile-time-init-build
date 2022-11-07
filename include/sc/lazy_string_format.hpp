@@ -9,9 +9,9 @@ template <typename StringConstantT, typename ArgTupleT>
 struct lazy_string_format {
     constexpr static StringConstantT str{};
     constexpr static bool has_args = ArgTupleT::size() > 0;
-    ArgTupleT args;
+    ArgTupleT args{};
 
-    constexpr lazy_string_format() : args{} {}
+    constexpr lazy_string_format() = default;
 
     constexpr lazy_string_format(StringConstantT, ArgTupleT newArgs)
         : args{newArgs} {}

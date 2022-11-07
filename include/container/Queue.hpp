@@ -4,14 +4,12 @@
 
 template <typename EntryType, std::size_t Capacity> class Queue {
   private:
-    EntryType storage[Capacity];
-    std::size_t size;
-    std::size_t putIndex;
-    std::size_t getIndex;
+    EntryType storage[Capacity]{};
+    std::size_t size{};
+    std::size_t putIndex{};
+    std::size_t getIndex{};
 
   public:
-    constexpr Queue() : storage{}, size{0}, putIndex{0}, getIndex{0} {}
-
     [[nodiscard]] constexpr std::size_t getSize() const { return size; }
 
     [[nodiscard]] constexpr bool isFull() const { return size == Capacity; }

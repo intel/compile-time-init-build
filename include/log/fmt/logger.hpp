@@ -11,7 +11,9 @@
 #include <fmt/format.h>
 
 template <> struct fmt::formatter<log_level> {
-    constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+    constexpr static auto parse(format_parse_context &ctx) {
+        return ctx.begin();
+    }
 
     template <typename FormatContext>
     auto format(const log_level &level, FormatContext &ctx) {
@@ -48,7 +50,7 @@ inline char const *trimSourceFilename(StringType src) {
 template <typename T> struct FormatHelper {
     constexpr static T str{};
 
-    constexpr FormatHelper(T) {}
+    constexpr explicit FormatHelper(T) {}
 
     template <typename... Ts> constexpr static auto f(Ts... args) {
         return format(str, args...);
@@ -86,4 +88,4 @@ void log(FilenameStringType filename, LineNumberType lineNumber,
 #define ERROR(...) LOG(log_level::ERROR, __VA_ARGS__)
 #define FATAL(...) LOG(log_level::FATAL, __VA_ARGS__)
 
-#define ASSERT(expr) (expr ? void(0) : FATAL("Assertion failure:  #expr"))
+#define ASSERT(expr) ((expr) ? void(0) : FATAL("Assertion failure:  #expr"))

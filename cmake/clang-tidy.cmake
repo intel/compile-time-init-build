@@ -3,13 +3,16 @@ function(clang_tidy_header HEADER TARGET)
     string(REPLACE "/" "_" CT_NAME ${CT_NAME})
     get_filename_component(CT_NAME ${CT_NAME} NAME_WLE)
     set(CT_NAME "clang_tidy_${CT_NAME}")
-    set(CPP_NAME "generated-sources/${TARGET}/${CT_NAME}.cpp")
+    set(CPP_NAME
+        "${CMAKE_BINARY_DIR}/generated-sources/${TARGET}/${CT_NAME}.cpp")
 
     add_custom_command(
         OUTPUT "${CPP_NAME}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${CMAKE_BINARY_DIR}/generated-sources/${TARGET}"
         COMMAND ${CMAKE_SOURCE_DIR}/cmake/create-clang-tidiable.sh ${CPP_NAME}
                 ${HEADER}
-        DEPENDS ${HEADER})
+        DEPENDS ${HEADER} ${CMAKE_SOURCE_DIR}/.clang-tidy)
 
     add_library(${CT_NAME} ${CPP_NAME})
     target_link_libraries(${CT_NAME} PRIVATE ${TARGET})

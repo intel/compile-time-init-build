@@ -9,12 +9,11 @@
 
 namespace sc::detail {
 template <typename CharT, int SizeT> struct static_string {
-    std::array<CharT, SizeT> data;
-    std::size_t pos;
-    std::size_t count;
+    std::array<CharT, SizeT> data{};
+    std::size_t pos{};
+    std::size_t count{};
 
-    constexpr static_string() : data{}, pos{}, count{} {}
-
+    // NOLINTNEXTLINE(google-explicit-constructor)
     constexpr operator std::basic_string_view<CharT>() const {
         return std::string_view{data.data() + pos, count};
     }
