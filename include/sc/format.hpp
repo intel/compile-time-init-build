@@ -16,7 +16,7 @@ struct repl_field_iter {
     std::string_view fmt_;
     std::string_view::const_iterator i;
 
-    constexpr repl_field_iter operator++() {
+    constexpr auto operator++() -> repl_field_iter {
         while (i != fmt_.cend() && *i != '{') {
             i++;
         }
@@ -29,7 +29,7 @@ struct repl_field_iter {
         return *this;
     }
 
-    [[nodiscard]] constexpr std::string_view operator*() const {
+    [[nodiscard]] constexpr auto operator*() const -> std::string_view {
         auto end = i;
         while (*end != '}' && end != fmt_.cend()) {
             end++;
@@ -39,11 +39,13 @@ struct repl_field_iter {
             i, static_cast<std::string_view::size_type>(std::distance(i, end)));
     }
 
-    [[nodiscard]] constexpr bool operator==(repl_field_iter other) const {
+    [[nodiscard]] constexpr auto operator==(repl_field_iter other) const
+        -> bool {
         return i == other.i;
     }
 
-    [[nodiscard]] constexpr bool operator!=(repl_field_iter other) const {
+    [[nodiscard]] constexpr auto operator!=(repl_field_iter other) const
+        -> bool {
         return i != other.i;
     }
 };
@@ -51,17 +53,17 @@ struct repl_field_iter {
 struct repl_fields {
     std::string_view fmt;
 
-    [[nodiscard]] constexpr repl_field_iter begin() const {
+    [[nodiscard]] constexpr auto begin() const -> repl_field_iter {
         return ++repl_field_iter{fmt, fmt.begin()};
     }
-    [[nodiscard]] constexpr repl_field_iter end() const {
+    [[nodiscard]] constexpr auto end() const -> repl_field_iter {
         return repl_field_iter{fmt, fmt.end()};
     }
 };
 
 template <typename InputIter, typename OutputIter>
-constexpr OutputIter copy(InputIter in_iter, InputIter in_end,
-                          OutputIter out_iter) {
+constexpr auto copy(InputIter in_iter, InputIter in_end, OutputIter out_iter)
+    -> OutputIter {
     while (in_iter != in_end) {
         *out_iter++ = *in_iter++;
     }
@@ -70,57 +72,62 @@ constexpr OutputIter copy(InputIter in_iter, InputIter in_end,
 }
 
 template <typename CharT, CharT... chars>
-[[nodiscard]] constexpr char *
+[[nodiscard]] constexpr auto
 format_field([[maybe_unused]] std::string_view field,
-             string_constant<CharT, chars...> arg, char *out) {
+             string_constant<CharT, chars...> arg, char *out) -> char * {
     return copy(arg.begin(), arg.end(), out);
 }
 
 template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-[[nodiscard]] constexpr char *format_field(std::string_view field, T,
-                                           char *out) {
+[[nodiscard]] constexpr auto format_field(std::string_view field, T, char *out)
+    -> char * {
     return copy(field.begin() - 1, field.end() + 1, out);
 }
 
 template <typename CharT, CharT... chars, typename ArgsTupleT>
-[[nodiscard]] constexpr char *format_field(
+[[nodiscard]] constexpr auto format_field(
     [[maybe_unused]] std::string_view field,
     lazy_string_format<string_constant<CharT, chars...>, ArgsTupleT> lazy,
-    char *out) {
+    char *out) -> char * {
     return copy(lazy.str.begin(), lazy.str.end(), out);
 }
 
 template <typename EnumTypeT, EnumTypeT ValueT,
           std::enable_if_t<std::is_enum<EnumTypeT>::value, bool> = true>
-[[nodiscard]] constexpr char *
+[[nodiscard]] constexpr auto
 format_field([[maybe_unused]] std::string_view field,
-             std::integral_constant<EnumTypeT, ValueT>, char *out) {
+             std::integral_constant<EnumTypeT, ValueT>, char *out) -> char * {
     auto const &enum_sv = detail::EnumToString<EnumTypeT, ValueT>::value;
     return copy(enum_sv.begin(), enum_sv.end(), out);
 }
 
 template <typename T>
-[[nodiscard]] constexpr char *
-format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out) {
+[[nodiscard]] constexpr auto
+format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out)
+    -> char * {
     auto const &type_name_sv = detail::TypeNameToString<T>::value;
     return copy(type_name_sv.begin(), type_name_sv.end(), out);
 }
 
 template <typename IntegralTypeT, IntegralTypeT ValueT,
           std::enable_if_t<!std::is_enum<IntegralTypeT>::value, bool> = true>
-[[nodiscard]] constexpr char *
+[[nodiscard]] constexpr auto
 format_field(std::string_view field,
-             std::integral_constant<IntegralTypeT, ValueT> const &, char *out) {
+             std::integral_constant<IntegralTypeT, ValueT> const &, char *out)
+    -> char * {
     detail::fast_format_spec spec{field, 0};
 
     auto const base = [&]() {
-        if (spec.type == 'b') {
+        switch (spec.type) {
+        case 'b':
             return 2;
-        } else if (spec.type == 'o') {
+        case 'o':
             return 8;
-        } else if (spec.type == 'x' || spec.type == 'X') {
+        case 'x':
+            [[fallthrough]];
+        case 'X':
             return 16;
-        } else {
+        default:
             return 10;
         }
     }();
@@ -158,6 +165,7 @@ template <typename FmtStringConstant, typename... ArgTs> struct format_t {
         auto const fmt = FmtStringConstant::value;
         repl_fields fields{fmt};
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         auto out = tmp_buf.data.begin();
         auto in = fmt.begin();
         [[maybe_unused]] auto field_iter = fields.begin();

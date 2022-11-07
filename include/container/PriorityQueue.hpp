@@ -31,48 +31,40 @@ class PriorityQueue {
     using StorageType = ValueType[MaxSize];
 
     StorageType heap{};
-    decltype(std::begin(heap)) end;
+    decltype(std::begin(heap)) end{std::begin(heap)};
 
   public:
     /**
-     * Create an empty PriorityQueue.
-     */
-    constexpr PriorityQueue() : end{std::begin(heap)} {
-        // pass
-    }
-
-    /**
      * @return Current number of elements.
      */
-    [[nodiscard]] constexpr std::size_t size() const {
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
         return static_cast<std::size_t>(end - std::cbegin(heap));
     }
 
     /**
      * @return Value of the top or "highest priority" element.
      */
-    [[nodiscard]] constexpr ValueType top() const {
+    [[nodiscard]] constexpr auto top() const -> ValueType {
         if (empty()) {
             FATAL("PriorityQueue::top() called on empty PriorityQueue");
-
             return {};
-
-        } else {
-            return heap[0];
         }
+        return heap[0];
     }
 
     /**
      * @return True if the PriorityQueue is empty.
      */
-    [[nodiscard]] constexpr bool empty() const {
+    [[nodiscard]] constexpr auto empty() const -> bool {
         return std::cbegin(heap) == end;
     }
 
     /**
      * @return True if the PriorityQueue can contain no more elements.
      */
-    [[nodiscard]] constexpr bool full() const { return std::cend(heap) == end; }
+    [[nodiscard]] constexpr auto full() const -> bool {
+        return std::cend(heap) == end;
+    }
 
     /**
      * Push a new value onto the PriorityQueue.
@@ -82,15 +74,14 @@ class PriorityQueue {
      *
      * @param value New value to push into the PriorityQueue.
      */
-    constexpr void push(const ValueType value) {
+    constexpr auto push(const ValueType value) -> void {
         if (full()) {
             FATAL("PriorityQueue::push() attempted when full");
-
-        } else {
-            *end = value;
-            end++;
-            std::push_heap(std::begin(heap), end, Compare());
+            return;
         }
+        *end = value;
+        end++;
+        std::push_heap(std::begin(heap), end, Compare());
     }
 
     /**
@@ -103,16 +94,14 @@ class PriorityQueue {
      *
      * @return The highest priority element in the queue.
      */
-    constexpr ValueType pop() {
+    constexpr auto pop() -> ValueType {
         if (empty()) {
             FATAL("PriorityQueue::pop() attempted when empty");
             return {};
-
-        } else {
-            ValueType topValue = top();
-            std::pop_heap(std::begin(heap), end, Compare());
-            end--;
-            return topValue;
         }
+        ValueType topValue = top();
+        std::pop_heap(std::begin(heap), end, Compare());
+        end--;
+        return topValue;
     }
 };

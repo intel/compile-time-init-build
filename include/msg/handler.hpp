@@ -11,10 +11,11 @@
 
 namespace msg {
 template <typename BaseMsgT, typename... ExtraCallbackArgsT> struct Callback {
-    [[nodiscard]] virtual bool is_match(BaseMsgT const &msg) const = 0;
-    [[nodiscard]] virtual bool
-    handle(BaseMsgT const &msg, ExtraCallbackArgsT const &...args) const = 0;
-    virtual void log_mismatch(BaseMsgT const &msg) const = 0;
+    [[nodiscard]] virtual auto is_match(BaseMsgT const &msg) const -> bool = 0;
+    [[nodiscard]] virtual auto handle(BaseMsgT const &msg,
+                                      ExtraCallbackArgsT const &...args) const
+        -> bool = 0;
+    virtual auto log_mismatch(BaseMsgT const &msg) const -> void = 0;
 };
 
 template <typename T>
@@ -136,12 +137,13 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         });
     }
 
-    [[nodiscard]] bool is_match(BaseMsgT const &msg) const final {
+    [[nodiscard]] auto is_match(BaseMsgT const &msg) const -> bool final {
         return match::all(match_msg, match_any_callback())(msg);
     }
 
-    [[nodiscard]] bool handle(BaseMsgT const &msg,
-                              ExtraCallbackArgsT const &...args) const final {
+    [[nodiscard]] auto handle(BaseMsgT const &msg,
+                              ExtraCallbackArgsT const &...args) const
+        -> bool final {
         auto match_handler = match::all(match_msg, match_any_callback());
 
         if (match_handler(msg)) {
@@ -157,7 +159,7 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         return false;
     }
 
-    void log_mismatch(BaseMsgT const &msg) const final {
+    auto log_mismatch(BaseMsgT const &msg) const -> void final {
         INFO("    {} - F:({})", name,
              match::all(match_msg, match_any_callback()).describe_match(msg));
     }
@@ -177,10 +179,7 @@ class handler {
         // pass
     }
 
-    constexpr handler(handler const &rhs) = default;
-    constexpr handler &operator=(handler const &rhs) = default;
-
-    bool is_match(BaseMsgT const &msg) const {
+    auto is_match(BaseMsgT const &msg) const -> bool {
         for (auto callback : callbacks) {
             if (callback->is_match(msg)) {
                 return true;
@@ -220,9 +219,8 @@ class handler_builder {
     CallbacksType callbacks{};
 
     template <size_t NumMsgCallbacksT>
-    [[nodiscard]] constexpr handler<BaseMsgT, NumMsgCallbacksT,
-                                    ExtraCallbackArgsT...>
-    build_backend() const {
+    [[nodiscard]] constexpr auto build_backend() const
+        -> handler<BaseMsgT, NumMsgCallbacksT, ExtraCallbackArgsT...> {
         Array<Callback<BaseMsgT, ExtraCallbackArgsT...> const *,
               NumMsgCallbacksT>
             new_msg_callbacks;
@@ -240,7 +238,7 @@ class handler_builder {
         callbacks.push(&callback);
     }
 
-    [[nodiscard]] constexpr size_t get_num_callbacks() const {
+    [[nodiscard]] constexpr auto get_num_callbacks() const -> size_t {
         return callbacks.size();
     }
 
@@ -262,7 +260,7 @@ class handler_builder {
      * Never called, but the return type is used by cib to determine what the
      * abstract interface is.
      */
-    AbstractInterface *base() const;
+    auto base() const -> AbstractInterface *;
 
     template <typename BuilderValue> static constexpr auto build() {
         auto constexpr handler_builder = BuilderValue::value;

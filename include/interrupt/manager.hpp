@@ -73,7 +73,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      * Never called, but the return type is used by cib to determine what the
      * abstract interface is.
      */
-    [[nodiscard]] manager_interface *base() const;
+    [[nodiscard]] auto base() const -> manager_interface *;
 
     template <typename BuilderValue, typename Index> struct sub_value {
         constexpr static auto const &value = BuilderValue::value.irqs[Index{}];

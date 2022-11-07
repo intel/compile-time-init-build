@@ -17,26 +17,26 @@ template <typename NodeType> class DoubleLinkedList {
       public:
         constexpr explicit iterator(NodeType *n) : node(n) {}
 
-        constexpr NodeType &operator*() { return *node; }
+        constexpr auto operator*() -> NodeType & { return *node; }
 
-        constexpr NodeType *operator->() { return node; }
+        constexpr auto operator->() -> NodeType * { return node; }
 
-        constexpr iterator &operator++() {
+        constexpr auto operator++() -> iterator & {
             node = node->next;
             return *this;
         }
 
-        constexpr iterator operator++(int) {
+        constexpr auto operator++(int) -> iterator {
             iterator const oldIterator(node);
             node = node->next;
             return oldIterator;
         }
 
-        constexpr bool operator==(iterator const &rhs) const {
+        constexpr auto operator==(iterator const &rhs) const -> bool {
             return node == rhs.node;
         }
 
-        constexpr bool operator!=(iterator const &rhs) const {
+        constexpr auto operator!=(iterator const &rhs) const -> bool {
             return !((*this) == rhs);
         }
     };
@@ -53,11 +53,11 @@ template <typename NodeType> class DoubleLinkedList {
     NodeType *tail{};
 
   public:
-    constexpr iterator begin() { return iterator(head); }
+    constexpr auto begin() -> iterator { return iterator(head); }
 
-    constexpr iterator end() { return iterator(nullptr); }
+    constexpr auto end() -> iterator { return iterator(nullptr); }
 
-    void pushBack(NodeType *const n) {
+    auto pushBack(NodeType *const n) -> void {
         if (head == nullptr) {
             head = n;
             n->prev = nullptr;
@@ -70,7 +70,7 @@ template <typename NodeType> class DoubleLinkedList {
         tail = n;
     }
 
-    NodeType *popFront() {
+    auto popFront() -> NodeType * {
         NodeType *const poppedNode = head;
         head = head->next;
 
@@ -83,9 +83,9 @@ template <typename NodeType> class DoubleLinkedList {
         return poppedNode;
     }
 
-    [[nodiscard]] bool isEmpty() const { return head == nullptr; }
+    [[nodiscard]] auto isEmpty() const -> bool { return head == nullptr; }
 
-    void remove(NodeType *const removedNode) {
+    auto remove(NodeType *const removedNode) -> void {
         NodeType *const nextNode = removedNode->next;
         NodeType *const prevNode = removedNode->prev;
 

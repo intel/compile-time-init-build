@@ -115,7 +115,7 @@ class field {
     constexpr field() = default;
 
     template <typename DataType>
-    [[nodiscard]] static constexpr T extract(DataType const &data) {
+    [[nodiscard]] static constexpr auto extract(DataType const &data) -> T {
         std::uint32_t const lower = data[DWordIndex] >> LsbT;
 
         std::uint64_t const mid = [&] {

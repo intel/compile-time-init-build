@@ -16,9 +16,9 @@ struct event_handler {
 };
 
 template <typename NameType, typename MatcherType, typename ActionType>
-constexpr static event_handler<NameType, MatcherType, ActionType>
-handle(NameType const &name, MatcherType const &matcher,
-       ActionType const &action) {
+constexpr static auto handle(NameType const &name, MatcherType const &matcher,
+                             ActionType const &action)
+    -> event_handler<NameType, MatcherType, ActionType> {
     return {name, matcher, action};
 }
 
@@ -28,8 +28,8 @@ template <typename ActionTypeT> struct default_event_handler {
 };
 
 template <typename ActionType>
-constexpr static default_event_handler<ActionType>
-otherwise(ActionType const &action) {
+constexpr static auto otherwise(ActionType const &action)
+    -> default_event_handler<ActionType> {
     return {action};
 }
 
@@ -82,7 +82,7 @@ constexpr static void process(NameType const &name, EventType const &event,
 
 template <bool value> struct always_t {
     template <typename EventType>
-    [[nodiscard]] constexpr bool operator()(EventType const &) const {
+    [[nodiscard]] constexpr auto operator()(EventType const &) const -> bool {
         return value;
     }
 
@@ -110,7 +110,8 @@ template <typename... MatcherTypes> struct any_t {
         : matchers{new_matchers} {}
 
     template <typename EventType>
-    [[nodiscard]] constexpr bool operator()(EventType const &event) const {
+    [[nodiscard]] constexpr auto operator()(EventType const &event) const
+        -> bool {
         return matchers.fold_left(false, [&](bool state, auto matcher) {
             return state || matcher(event);
         });
@@ -178,7 +179,8 @@ template <typename... MatcherTypes> struct all_t {
     MatchersType matchers;
 
     template <typename EventType>
-    [[nodiscard]] constexpr bool operator()(EventType const &event) const {
+    [[nodiscard]] constexpr auto operator()(EventType const &event) const
+        -> bool {
         return matchers.fold_left(true, [&](bool state, auto matcher) {
             return state && matcher(event);
         });
@@ -245,7 +247,8 @@ template <typename MatcherType> struct not_t {
     MatcherType matcher;
 
     template <typename EventType>
-    [[nodiscard]] constexpr bool operator()(EventType const &event) const {
+    [[nodiscard]] constexpr auto operator()(EventType const &event) const
+        -> bool {
         return !matcher(event);
     }
 
@@ -270,7 +273,8 @@ struct simple_matcher_t {
     static constexpr DescType description{};
     PredType predicate;
 
-    [[nodiscard]] constexpr bool operator()(EventType const &event) const {
+    [[nodiscard]] constexpr auto operator()(EventType const &event) const
+        -> bool {
         return predicate(event);
     }
 
@@ -291,7 +295,7 @@ struct simple_matcher_t<void, DescType, PredType> {
     PredType predicate;
 
     template <typename... Ts>
-    [[nodiscard]] constexpr bool operator()(Ts...) const {
+    [[nodiscard]] constexpr auto operator()(Ts...) const -> bool {
         return predicate();
     }
 

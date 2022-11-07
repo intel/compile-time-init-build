@@ -96,7 +96,7 @@ class manager_impl : public manager_interface {
     /**
      * @return The highest active IRQ number.
      */
-    [[nodiscard]] std::size_t constexpr max_irq() const {
+    [[nodiscard]] constexpr auto max_irq() const -> std::size_t {
         auto const irq_numbers = hana::transform(
             irq_impls, [](auto irq) { return decltype(irq)::irq_number; });
 

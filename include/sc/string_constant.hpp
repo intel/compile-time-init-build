@@ -40,16 +40,20 @@ template <typename CharT, CharT... chars> struct string_constant {
         return value;
     }
 
-    [[nodiscard]] constexpr StringView operator()() const noexcept {
+    [[nodiscard]] constexpr auto operator()() const noexcept -> StringView {
         return value;
     }
 
-    constexpr static const_iterator begin() noexcept { return value.begin(); }
+    constexpr static auto begin() noexcept -> const_iterator {
+        return value.begin();
+    }
 
-    constexpr static const_iterator end() noexcept { return value.end(); }
+    constexpr static auto end() noexcept -> const_iterator {
+        return value.end();
+    }
 
-    [[nodiscard]] constexpr const_reference
-    operator[](size_type pos) const noexcept {
+    [[nodiscard]] constexpr auto operator[](size_type pos) const noexcept
+        -> const_reference {
         static_assert(sizeof...(chars) > 0);
         return value[pos];
     }
@@ -85,7 +89,7 @@ template <typename CharT, CharT... chars> struct string_constant {
         return detail::create<detail::Replace<This, pos, count, StrT>>();
     }
 
-    [[nodiscard]] constexpr static uint64_t hash() {
+    [[nodiscard]] constexpr static auto hash() -> uint64_t {
         // http://www.cse.yorku.ca/~oz/hash.html @ Aug. 19, 2022
         // this is a very slightly cleaned up version of djb2
         std::uint64_t hash = 5381;
@@ -162,8 +166,8 @@ operator+(string_constant<CharT, charsLhs...>,
 }
 
 template <typename CharT, CharT... chars>
-[[nodiscard]] constexpr int
-to_int(string_constant<CharT, chars...> strc) noexcept {
+[[nodiscard]] constexpr auto
+to_int(string_constant<CharT, chars...> strc) noexcept -> int {
     int value = 0;
     bool negative = false;
     std::basic_string_view<CharT> str = strc.value;

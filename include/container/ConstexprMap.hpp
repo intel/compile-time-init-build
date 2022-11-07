@@ -61,8 +61,8 @@ class ConstexprMap {
      *      Index into storage where the corresponding entry is stored. If
      *      the targetKey cannot be found, then -1 is returned.
      */
-    [[nodiscard]] constexpr std::optional<std::size_t>
-    find(KeyType targetKey) const {
+    [[nodiscard]] constexpr auto find(KeyType targetKey) const
+        -> std::optional<std::size_t> {
         for (std::size_t i = 0; i < size; i++) {
             if (storage[i].key == targetKey) {
                 return i;
@@ -87,7 +87,7 @@ class ConstexprMap {
      * @return
      *      Current number of entries stored in this map.
      */
-    [[nodiscard]] constexpr std::size_t getSize() const { return size; }
+    [[nodiscard]] constexpr auto getSize() const -> std::size_t { return size; }
 
     /**
      * Remove an unspecified entry from the map.
@@ -97,7 +97,7 @@ class ConstexprMap {
      * @return
      *      An Entry from the map.
      */
-    [[nodiscard]] constexpr Entry pop() {
+    [[nodiscard]] constexpr auto pop() -> Entry {
         ASSERT(size > 0);
         size--;
         return storage[size];
@@ -109,29 +109,31 @@ class ConstexprMap {
      * @return
      *      True if the map is empty.
      */
-    [[nodiscard]] constexpr bool isEmpty() const { return size == 0; }
+    [[nodiscard]] constexpr auto isEmpty() const -> bool { return size == 0; }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr Entry *begin() { return std::begin(storage); }
+    [[nodiscard]] constexpr auto begin() -> Entry * {
+        return std::begin(storage);
+    }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr Entry *end() { return &(storage[size]); }
+    [[nodiscard]] constexpr auto end() -> Entry * { return &(storage[size]); }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr Entry const *begin() const {
+    [[nodiscard]] constexpr auto begin() const -> Entry const * {
         return std::cbegin(storage);
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr Entry const *end() const {
+    [[nodiscard]] constexpr auto end() const -> Entry const * {
         return &(storage[size]);
     }
 
@@ -146,7 +148,7 @@ class ConstexprMap {
      * @return
      *      Reference to the value if the targetKey is found.
      */
-    [[nodiscard]] constexpr ValueType &get(KeyType targetKey) {
+    [[nodiscard]] constexpr auto get(KeyType targetKey) -> ValueType & {
         auto entryIndex = find(targetKey);
         ASSERT(entryIndex);
         return storage[*entryIndex].value;
@@ -163,7 +165,8 @@ class ConstexprMap {
      * @return
      *      Reference to the value if the targetKey is found.
      */
-    [[nodiscard]] constexpr ValueType const &get(KeyType targetKey) const {
+    [[nodiscard]] constexpr auto get(KeyType targetKey) const
+        -> ValueType const & {
         auto entryIndex = find(targetKey);
         ASSERT(entryIndex);
         return storage[*entryIndex].value;
@@ -181,7 +184,7 @@ class ConstexprMap {
      * @param v
      *      New value 'v' for key 'k'.
      */
-    constexpr void put(KeyType k, ValueType v) {
+    constexpr auto put(KeyType k, ValueType v) -> void {
         auto entryIndex = find(k);
 
         if (entryIndex) {
@@ -204,7 +207,7 @@ class ConstexprMap {
      * @return
      *      True if targetKey is found in the map.
      */
-    [[nodiscard]] constexpr bool contains(KeyType targetKey) const {
+    [[nodiscard]] constexpr auto contains(KeyType targetKey) const -> bool {
         return static_cast<bool>(find(targetKey));
     }
 
@@ -217,7 +220,7 @@ class ConstexprMap {
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr void remove(KeyType targetKey) {
+    constexpr auto remove(KeyType targetKey) -> void {
         auto entryIndex = find(targetKey);
 
         if (entryIndex) {

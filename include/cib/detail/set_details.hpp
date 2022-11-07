@@ -10,8 +10,8 @@ namespace cib::detail {
 // https://en.wikipedia.org/wiki/Quicksort#Hoare_partition_scheme
 
 template <typename T>
-CIB_CONSTEVAL static std::size_t partition(T *elems, std::size_t lo,
-                                           std::size_t hi) {
+CIB_CONSTEVAL static auto partition(T *elems, std::size_t lo, std::size_t hi)
+    -> std::size_t {
     auto const pivot = elems[(hi + lo) / 2];
 
     auto i = lo - 1;
@@ -80,7 +80,7 @@ struct typename_map_entry {
     }
 };
 
-template <typename Tag> CIB_CONSTEVAL static std::string_view name() {
+template <typename Tag> CIB_CONSTEVAL static auto name() -> std::string_view {
 #if defined(__clang__)
     constexpr std::string_view function_name = __PRETTY_FUNCTION__;
     constexpr auto lhs = 44;
@@ -185,9 +185,9 @@ template <bool keep_left_difference, bool keep_intersection,
           bool keep_right_difference>
 struct set_operation_algorithm {
     template <typename InputIt1, typename InputIt2, typename OutputIt>
-    constexpr static OutputIt invoke(InputIt1 first1, InputIt1 last1,
-                                     InputIt2 first2, InputIt2 last2,
-                                     OutputIt d_first) {
+    constexpr static auto invoke(InputIt1 first1, InputIt1 last1,
+                                 InputIt2 first2, InputIt2 last2,
+                                 OutputIt d_first) -> OutputIt {
         while (first1 != last1 && first2 != last2) {
             if (*first1 < *first2) {
                 if constexpr (keep_left_difference) {

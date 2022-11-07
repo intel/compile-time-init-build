@@ -92,7 +92,7 @@ template <typename Name, int NumSteps> class impl {
      * @return
      *      Error status of the flow::impl building process.
      */
-    [[nodiscard]] constexpr build_status getBuildStatus() const {
+    [[nodiscard]] constexpr auto getBuildStatus() const -> build_status {
         return buildStatus;
     }
 };
@@ -111,7 +111,7 @@ template <typename Name> class impl<Name, 0> {
         // pass
     }
 
-    [[nodiscard]] constexpr build_status getBuildStatus() const {
+    [[nodiscard]] constexpr auto getBuildStatus() const -> build_status {
         return buildStatus;
     }
 };

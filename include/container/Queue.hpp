@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <cstddef>
 
 template <typename EntryType, std::size_t Capacity> class Queue {
   private:
@@ -10,13 +10,15 @@ template <typename EntryType, std::size_t Capacity> class Queue {
     std::size_t getIndex{};
 
   public:
-    [[nodiscard]] constexpr std::size_t getSize() const { return size; }
+    [[nodiscard]] constexpr auto getSize() const -> std::size_t { return size; }
 
-    [[nodiscard]] constexpr bool isFull() const { return size == Capacity; }
+    [[nodiscard]] constexpr auto isFull() const -> bool {
+        return size == Capacity;
+    }
 
-    [[nodiscard]] constexpr bool isEmpty() const { return size == 0; }
+    [[nodiscard]] constexpr auto isEmpty() const -> bool { return size == 0; }
 
-    constexpr void put(EntryType const &entry) {
+    constexpr auto put(EntryType const &entry) -> void {
         storage[putIndex] = entry;
 
         putIndex += 1;
@@ -27,7 +29,7 @@ template <typename EntryType, std::size_t Capacity> class Queue {
         size += 1;
     }
 
-    [[nodiscard]] constexpr EntryType get() {
+    [[nodiscard]] constexpr auto get() -> EntryType {
         auto const entry = storage[getIndex];
 
         getIndex += 1;

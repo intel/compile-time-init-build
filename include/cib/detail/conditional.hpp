@@ -31,7 +31,7 @@ template <typename Lhs, typename Rhs> struct equality {
     CIB_CONSTEXPR static Rhs rhs{};
 
     template <typename... Args>
-    CIB_CONSTEXPR bool operator()(Args const &...args) const {
+    CIB_CONSTEXPR auto operator()(Args const &...args) const -> bool {
         return lhs(args...) ==
                rhs; // FIXME: this assumes the RHS is a literal value
     }
@@ -39,8 +39,8 @@ template <typename Lhs, typename Rhs> struct equality {
 
 template <typename MatchType> struct arg {
     template <typename Rhs>
-    [[nodiscard]] CIB_CONSTEVAL equality<arg<MatchType>, Rhs>
-    operator==(Rhs const &) const {
+    [[nodiscard]] CIB_CONSTEVAL auto operator==(Rhs const &) const
+        -> equality<arg<MatchType>, Rhs> {
         return {};
     }
 

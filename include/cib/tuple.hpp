@@ -43,7 +43,7 @@ struct tuple_element
     CIB_CONSTEXPR tuple_element() = default;
     CIB_CONSTEXPR explicit tuple_element(T t) : value{t} {}
 
-    [[nodiscard]] CIB_CONSTEXPR T const &get(index_t<Index>) const {
+    [[nodiscard]] CIB_CONSTEXPR auto get(index_t<Index>) const -> T const & {
         return value;
     }
 
@@ -64,7 +64,7 @@ template <typename T> using is_fold_helper_t = typename is_fold_helper<T>::type;
 
 template <typename T> constexpr is_fold_helper_t<T> is_fold_helper_v{};
 
-template <typename T> constexpr T const &as_ref(T const &value) {
+template <typename T> constexpr auto as_ref(T const &value) -> T const & {
     return value;
 }
 
@@ -106,7 +106,7 @@ struct tuple_impl : public TupleElementTs... {
 
     using TupleElementTs::get...;
 
-    [[nodiscard]] CIB_CONSTEXPR static int size() {
+    [[nodiscard]] CIB_CONSTEXPR static auto size() -> int {
         return sizeof...(TupleElementTs);
     }
 
@@ -234,14 +234,14 @@ struct tuple_impl : public TupleElementTs... {
             .element_;
     }
 
-    [[nodiscard]] CIB_CONSTEXPR bool
-    operator==(tuple_impl<TupleElementTs...> const &rhs) const {
+    [[nodiscard]] CIB_CONSTEXPR auto
+    operator==(tuple_impl<TupleElementTs...> const &rhs) const -> bool {
         return ((this->TupleElementTs::value == rhs.TupleElementTs::value) &&
                 ... && true);
     }
 
-    [[nodiscard]] CIB_CONSTEXPR bool
-    operator!=(tuple_impl<TupleElementTs...> const &rhs) const {
+    [[nodiscard]] CIB_CONSTEXPR auto
+    operator!=(tuple_impl<TupleElementTs...> const &rhs) const -> bool {
         return ((this->TupleElementTs::value != rhs.TupleElementTs::value) ||
                 ... || false);
     }

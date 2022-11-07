@@ -6,7 +6,7 @@ template <typename NodeType> class LinkedList {
     NodeType *tail{};
 
   public:
-    void pushBack(NodeType *n) {
+    auto pushBack(NodeType *n) -> void {
         if (head == nullptr) {
             head = n;
         } else {
@@ -17,15 +17,15 @@ template <typename NodeType> class LinkedList {
         tail = n;
     }
 
-    NodeType *popFront() {
+    auto popFront() -> NodeType * {
         NodeType *poppedNode = head;
         head = head->next;
         return poppedNode;
     }
 
-    [[nodiscard]] bool isEmpty() const { return head == nullptr; }
+    [[nodiscard]] auto isEmpty() const -> bool { return head == nullptr; }
 
-    NodeType *removeNext(NodeType *n) {
+    auto removeNext(NodeType *n) -> NodeType * {
         NodeType *poppedNode = n->next;
         n->next = poppedNode->next;
         return poppedNode;

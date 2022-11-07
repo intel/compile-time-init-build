@@ -36,7 +36,6 @@ template <typename ValueType, size_t Capacity> class Vector {
         if (src.size() > Capacity) {
             FATAL("Initializer list size {} is bigger than vector capacity {}",
                   src.size(), sc::int_<Capacity>);
-
         } else {
             auto i = 0;
             for (auto element : src) {
@@ -50,91 +49,90 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr Vector() = default;
 
-    constexpr Vector(Vector const &rhs) = default;
-    constexpr Vector &operator=(Vector const &rhs) = default;
-    constexpr Vector(Vector &&rhs) noexcept = default;
-    constexpr Vector &operator=(Vector &&rhs) noexcept = default;
+    [[nodiscard]] constexpr auto begin() -> iterator { return storage; }
 
-    [[nodiscard]] constexpr iterator begin() { return storage; }
+    [[nodiscard]] constexpr auto begin() const -> const_iterator {
+        return storage;
+    }
 
-    [[nodiscard]] constexpr const_iterator begin() const { return storage; }
-
-    [[nodiscard]] constexpr iterator end() { return &(storage[currentSize]); }
-
-    [[nodiscard]] constexpr const_iterator end() const {
+    [[nodiscard]] constexpr auto end() -> iterator {
         return &(storage[currentSize]);
     }
 
-    [[nodiscard]] constexpr std::size_t size() const { return currentSize; }
+    [[nodiscard]] constexpr auto end() const -> const_iterator {
+        return &(storage[currentSize]);
+    }
 
-    [[nodiscard]] constexpr std::size_t getCapacity() const { return Capacity; }
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
+        return currentSize;
+    }
 
-    [[nodiscard]] constexpr const ValueType &
-    operator[](std::size_t index) const {
+    [[nodiscard]] constexpr auto getCapacity() const -> std::size_t {
+        return Capacity;
+    }
+
+    [[nodiscard]] constexpr auto operator[](std::size_t index) const
+        -> ValueType const & {
         if (index >= currentSize) {
             FATAL("Vector index {} is outside vector size {}", index,
                   currentSize);
             return storage[0];
-        } else {
-            return storage[index];
         }
+        return storage[index];
     }
 
-    [[nodiscard]] constexpr ValueType &operator[](std::size_t index) {
+    [[nodiscard]] constexpr auto operator[](std::size_t index) -> ValueType & {
         if (index >= currentSize) {
             FATAL("Vector index {} is outside array size {}", index,
                   currentSize);
             return storage[0];
-        } else {
-            return storage[index];
         }
+        return storage[index];
     }
 
-    [[nodiscard]] constexpr bool isFull() const {
+    [[nodiscard]] constexpr auto isFull() const -> bool {
         return (currentSize == Capacity);
     }
 
-    [[nodiscard]] constexpr bool isEmpty() const { return (currentSize == 0); }
-
-    constexpr void push(ValueType value) {
-        if (isFull()) {
-            FATAL("Vector:push() attempted when full");
-        } else {
-            storage[currentSize] = value;
-            currentSize++;
-        }
+    [[nodiscard]] constexpr auto isEmpty() const -> bool {
+        return (currentSize == 0);
     }
 
-    [[nodiscard]] constexpr ValueType pop() {
+    constexpr auto push(ValueType value) -> void {
+        if (isFull()) {
+            FATAL("Vector:push() attempted when full");
+            return;
+        }
+        storage[currentSize] = value;
+        currentSize++;
+    }
+
+    [[nodiscard]] constexpr auto pop() -> ValueType {
         if (isEmpty()) {
             FATAL("Vector::pop() attempted when empty");
             return {};
-        } else {
-            currentSize--;
-            return storage[currentSize];
         }
+        currentSize--;
+        return storage[currentSize];
     }
 
-    [[nodiscard]] constexpr bool operator==(Vector const &rhs) const {
+    [[nodiscard]] constexpr auto operator==(Vector const &rhs) const -> bool {
         if (size() != rhs.size()) {
             return false;
-
-        } else {
-            for (auto i = std::size_t{}; i < size(); i++) {
-                if ((*this)[i] != rhs[i]) {
-                    return false;
-                }
+        }
+        for (auto i = std::size_t{}; i < size(); i++) {
+            if ((*this)[i] != rhs[i]) {
+                return false;
             }
         }
-
         return true;
     }
 
-    [[nodiscard]] constexpr bool operator!=(Vector const &rhs) const {
+    [[nodiscard]] constexpr auto operator!=(Vector const &rhs) const -> bool {
         return !((*this) == rhs);
     }
 
-    [[nodiscard]] constexpr Vector operator+(Vector const &rhs) const {
+    [[nodiscard]] constexpr auto operator+(Vector const &rhs) const -> Vector {
         Vector result = *this;
 
         for (auto i = rhs.begin(); i != rhs.end(); i++) {

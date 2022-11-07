@@ -11,10 +11,11 @@ template <log_level levelT, typename MessageStringT> struct message {
 
 using string_id = std::string_view;
 
-template <typename StringType> [[nodiscard]] string_id catalog() {
+template <typename StringType> [[nodiscard]] auto catalog() -> string_id {
     return StringType::value;
 }
 
-template <typename StringType> [[nodiscard]] string_id catalog(StringType) {
+template <typename StringType>
+[[nodiscard]] auto catalog(StringType) -> string_id {
     return catalog<StringType>();
 }
