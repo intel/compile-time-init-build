@@ -52,7 +52,7 @@ function(check_dependency_version dep version)
             OUTPUT_VARIABLE head_hash
             OUTPUT_STRIP_TRAILING_WHITESPACE)
         execute_process(
-            COMMAND git tag --points-at ${head_hash}
+            COMMAND git tag -l --points-at ${head_hash}
             WORKING_DIRECTORY ${${dep}_SOURCE_DIR}
             OUTPUT_VARIABLE head_version
             OUTPUT_STRIP_TRAILING_WHITESPACE)
