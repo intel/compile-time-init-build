@@ -32,12 +32,8 @@ class milestone_base {
 
     constexpr milestone_base() = default;
 
-    constexpr milestone_base(milestone_base const &rhs) = default;
-    constexpr milestone_base &operator=(milestone_base const &rhs) = default;
-    constexpr milestone_base(milestone_base &&rhs) = default;
-    constexpr milestone_base &operator=(milestone_base &&rhs) = default;
-
-    [[nodiscard]] constexpr bool operator==(milestone_base const &rhs) const {
+    [[nodiscard]] constexpr auto operator==(milestone_base const &rhs) const
+        -> bool {
 #if defined(__GNUC__) && __GNUC__ < 12
         return this->hash == rhs.hash;
 #else

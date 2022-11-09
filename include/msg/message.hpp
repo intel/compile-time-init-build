@@ -33,34 +33,34 @@ template <std::uint32_t MaxNumDWordsT> struct message_data {
     constexpr message_data(std::initializer_list<std::uint32_t> src)
         : num_dwords{static_cast<std::uint32_t>(src.size())}, data{src} {}
 
-    constexpr message_data(message_data const &rhs) = default;
-    constexpr message_data &operator=(message_data const &rhs) = default;
-    constexpr message_data(message_data &&rhs) noexcept = default;
-    constexpr message_data &operator=(message_data &&rhs) noexcept = default;
-
-    [[nodiscard]] constexpr const std::uint32_t &
-    operator[](std::size_t index) const {
+    [[nodiscard]] constexpr auto operator[](std::size_t index) const
+        -> const std::uint32_t & {
         return data[index];
     }
 
-    [[nodiscard]] constexpr std::uint32_t &operator[](std::size_t index) {
+    [[nodiscard]] constexpr auto operator[](std::size_t index)
+        -> std::uint32_t & {
         return data[index];
     }
 
     template <std::size_t Index>
-    [[nodiscard]] constexpr const std::uint32_t &get() const {
+    [[nodiscard]] constexpr auto get() const -> std::uint32_t const & {
         return data.template get<Index>();
     }
 
-    [[nodiscard]] constexpr bool operator==(message_data const &rhs) const {
+    [[nodiscard]] constexpr auto operator==(message_data const &rhs) const
+        -> bool {
         return this->num_dwords == rhs.num_dwords && this->data == rhs.data;
     }
 
-    [[nodiscard]] constexpr bool operator!=(message_data const &rhs) const {
+    [[nodiscard]] constexpr auto operator!=(message_data const &rhs) const
+        -> bool {
         return !(*this == rhs);
     }
 
-    [[nodiscard]] constexpr std::size_t size() const { return num_dwords; }
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
+        return num_dwords;
+    }
 };
 
 template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
@@ -68,7 +68,8 @@ template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
         match::all(MsgType::match_valid_encoding, additional_matcher{});
 
     template <typename BaseMsgType>
-    [[nodiscard]] constexpr bool operator()(BaseMsgType const &base_msg) const {
+    [[nodiscard]] constexpr auto operator()(BaseMsgType const &base_msg) const
+        -> bool {
         MsgType const msg{base_msg.data};
         return matcher(msg);
     }
@@ -104,7 +105,7 @@ struct message_base : public message_data<MaxNumDWords> {
     // TODO: need a static_assert to check that fields are not overlapping
 
     template <typename FieldType>
-    [[nodiscard]] static constexpr bool is_valid_field() {
+    [[nodiscard]] static constexpr auto is_valid_field() -> bool {
         return FieldTupleType{}.fold_right(false, [](auto field, bool isValid) {
             return isValid || std::is_same_v<typename FieldType::FieldId,
                                              typename decltype(field)::FieldId>;
@@ -131,7 +132,7 @@ struct message_base : public message_data<MaxNumDWords> {
         }
     }();
 
-    [[nodiscard]] constexpr bool isValid() const {
+    [[nodiscard]] constexpr auto isValid() const -> bool {
         return match_valid_encoding(*this);
     }
 

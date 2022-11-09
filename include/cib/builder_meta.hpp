@@ -21,8 +21,8 @@ namespace cib {
  * @example cib::callback_meta
  */
 template <typename BuilderType, typename InterfaceType> struct builder_meta {
-    BuilderType builder();
-    InterfaceType interface();
+    auto builder() -> BuilderType;
+    auto interface() -> InterfaceType;
 };
 } // namespace cib
 

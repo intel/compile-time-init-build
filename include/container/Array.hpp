@@ -17,6 +17,22 @@ template <typename ValueType, std::size_t Size> class Array {
   private:
     ValueType storage[Size]{};
 
+    [[nodiscard]] constexpr friend auto operator==(Array const &lhs,
+                                                   Array const &rhs) -> bool {
+        for (int i = 0; i < Size; i++) {
+            if (lhs.storage[i] != rhs.storage[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    [[nodiscard]] constexpr friend auto operator!=(Array const &lhs,
+                                                   Array const &rhs) -> bool {
+        return not(lhs == rhs);
+    }
+
   public:
     using value_type = ValueType;
     using size_type = std::size_t;
@@ -35,7 +51,6 @@ template <typename ValueType, std::size_t Size> class Array {
             FATAL("Initializer list size {} is bigger than allocated array "
                   "size {}",
                   src.size(), sc::int_<Size>);
-
         } else {
             auto dst_index = 0;
             for (auto const &v : src) {
@@ -49,7 +64,6 @@ template <typename ValueType, std::size_t Size> class Array {
         if (src.size() > Size) {
             FATAL("Source size {} is bigger than allocated array size {}",
                   src.size(), sc::int_<Size>);
-
         } else {
             auto dst_index = 0;
             for (auto const &v : src) {
@@ -61,65 +75,42 @@ template <typename ValueType, std::size_t Size> class Array {
 
     constexpr Array() = default;
 
-    constexpr Array(Array const &rhs) = default;
-    constexpr Array &operator=(Array const &rhs) = default;
-    constexpr Array(Array &&rhs) noexcept = default;
-    constexpr Array &operator=(Array &&rhs) noexcept = default;
+    [[nodiscard]] constexpr auto begin() -> iterator { return storage; }
 
-    [[nodiscard]] constexpr iterator begin() { return storage; }
+    [[nodiscard]] constexpr auto begin() const -> const_iterator {
+        return storage;
+    }
 
-    [[nodiscard]] constexpr const_iterator begin() const { return storage; }
+    [[nodiscard]] constexpr auto end() -> iterator { return &(storage[Size]); }
 
-    [[nodiscard]] constexpr iterator end() { return &(storage[Size]); }
-
-    [[nodiscard]] constexpr const_iterator end() const {
+    [[nodiscard]] constexpr auto end() const -> const_iterator {
         return &(storage[Size]);
     }
 
-    [[nodiscard]] constexpr std::size_t size() const { return Size; }
+    [[nodiscard]] constexpr auto size() const -> std::size_t { return Size; }
 
     template <std::size_t Index>
-    [[nodiscard]] constexpr const ValueType &get() const {
+    [[nodiscard]] constexpr auto get() const -> ValueType const & {
         static_assert(Index < Size, "Array index is outside array size");
         return storage[Index];
     }
 
-    [[nodiscard]] constexpr const ValueType &
-    operator[](std::size_t index) const {
+    [[nodiscard]] constexpr auto operator[](std::size_t index) const
+        -> ValueType const & {
         if (index >= Size) {
             FATAL("Array index {} is outside array size {}", index,
                   sc::int_<Size>);
-
             return storage[0];
-
-        } else {
-            return storage[index];
         }
+        return storage[index];
     }
 
-    [[nodiscard]] constexpr ValueType &operator[](std::size_t index) {
+    [[nodiscard]] constexpr auto operator[](std::size_t index) -> ValueType & {
         if (index >= Size) {
             FATAL("Array index {} is outside array size {}", index,
                   sc::int_<Size>);
-
             return storage[0];
-
-        } else {
-            return storage[index];
         }
-    }
-
-    [[nodiscard]] constexpr bool operator==(Array const &rhs) const {
-        for (int i = 0; i < Size; i++) {
-            if (storage[i] != rhs.storage[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    [[nodiscard]] constexpr bool operator!=(Array const &rhs) const {
-        return !(this->operator==(rhs));
+        return storage[index];
     }
 };

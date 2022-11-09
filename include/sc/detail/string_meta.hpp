@@ -32,7 +32,7 @@ struct Replace {
         // NOTE: use algorithms when moving to c++20
 
         std::array<char_type, size> buffer{};
-        char *dst = buffer.begin();
+        auto dst = buffer.begin();
 
         auto const first = thisStr.begin() + pos;
         auto const last = first + count;

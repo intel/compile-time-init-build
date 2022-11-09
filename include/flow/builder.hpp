@@ -48,8 +48,8 @@ class builder {
      * @return
      *      True if the milestone has no incoming edges.
      */
-    static constexpr bool hasNoIncomingEdges(GraphType &graph,
-                                             milestone_base node) {
+    static constexpr auto hasNoIncomingEdges(GraphType &graph,
+                                             milestone_base node) -> bool {
         // std::find_if is not constexpr in c++17 :(
         for (auto s : graph) {
             if (s.value.contains(node)) {
@@ -60,8 +60,8 @@ class builder {
         return true;
     }
 
-    [[nodiscard]] constexpr ConstexprSet<milestone_base, NodeCapacity>
-    getNodesWithNoIncomingEdge() const {
+    [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const
+        -> ConstexprSet<milestone_base, NodeCapacity> {
         GraphType graph = dependencyGraph;
         ConstexprSet<milestone_base, NodeCapacity> nodesWithNoIncomingEdge;
 
@@ -140,8 +140,8 @@ class builder {
      *      A flow::impl with all dependencies and requirements resolved.
      */
     template <int OptimizedFlowCapacity>
-    [[nodiscard]] constexpr flow::impl<Name, OptimizedFlowCapacity>
-    internal_build() const {
+    [[nodiscard]] constexpr auto internal_build() const
+        -> flow::impl<Name, OptimizedFlowCapacity> {
         // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
         GraphType graph = dependencyGraph;
         milestone_base orderedList[NodeCapacity] = {};
@@ -197,7 +197,7 @@ class builder {
      * @return
      *      The flow::impl Capacity necessary to fit the built flow::impl.
      */
-    [[nodiscard]] constexpr std::size_t size() const {
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
         GraphType graph = dependencyGraph;
         ConstexprSet<milestone_base, NodeCapacity> allNodes;
 
@@ -228,7 +228,7 @@ class builder {
     }
 
     template <typename BuilderValue>
-    [[nodiscard]] static constexpr FunctionPtr build() {
+    [[nodiscard]] static constexpr auto build() -> FunctionPtr {
         return runImpl<BuilderValue>;
     }
 };

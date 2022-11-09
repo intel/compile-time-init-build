@@ -38,46 +38,46 @@ class ConstexprMultiMap {
         ConstexprMap<KeyType, ConstexprSet<ValueType, ValueCapacity>,
                      KeyCapacity>;
 
-    StorageType storage;
+    StorageType storage{};
 
   public:
-    constexpr ConstexprMultiMap() : storage() {}
-
     /**
      * <b>Runtime complexity:</b> O(1)
      *
      * @return
      *      Current number of keys stored in this multi-map.
      */
-    [[nodiscard]] constexpr std::size_t getSize() const {
+    [[nodiscard]] constexpr auto getSize() const -> std::size_t {
         return storage.getSize();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry *begin() {
+    [[nodiscard]] constexpr auto begin() -> typename StorageType::Entry * {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry *end() {
+    [[nodiscard]] constexpr auto end() -> typename StorageType::Entry * {
         return storage.end();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const *cbegin() const {
+    [[nodiscard]] constexpr auto cbegin() const ->
+        typename StorageType::Entry const * {
         return storage.cbegin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr typename StorageType::Entry const *cend() const {
+    [[nodiscard]] constexpr auto cend() const ->
+        typename StorageType::Entry const * {
         return storage.cend();
     }
 
@@ -96,7 +96,7 @@ class ConstexprMultiMap {
      * @param v
      *      New value 'v' for key 'k'.
      */
-    constexpr void put(KeyType k, ValueType v) {
+    constexpr auto put(KeyType k, ValueType v) -> void {
         if (storage.contains(k)) {
             storage.get(k).add(v);
 
@@ -118,7 +118,7 @@ class ConstexprMultiMap {
      * @param k
      *      New key 'k'.
      */
-    constexpr void put(KeyType k) {
+    constexpr auto put(KeyType k) -> void {
         if (!storage.contains(k)) {
             ConstexprSet<ValueType, ValueCapacity> set;
             storage.put(k, set);
@@ -134,7 +134,9 @@ class ConstexprMultiMap {
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr void remove(KeyType targetKey) { storage.remove(targetKey); }
+    constexpr auto remove(KeyType targetKey) -> void {
+        storage.remove(targetKey);
+    }
 
     /**
      * Remove corresponding targetKey and targetValue from the multi-map.
@@ -148,7 +150,7 @@ class ConstexprMultiMap {
      * @param targetValue
      *      The value to search for and remove.
      */
-    constexpr void remove(KeyType targetKey, ValueType targetValue) {
+    constexpr auto remove(KeyType targetKey, ValueType targetValue) -> void {
         if (storage.contains(targetKey)) {
             storage.get(targetKey).remove(targetValue);
 
@@ -170,8 +172,8 @@ class ConstexprMultiMap {
      *      Reference to the ConstexprSet if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> &
-    get(KeyType k) {
+    [[nodiscard]] constexpr auto get(KeyType k)
+        -> ConstexprSet<ValueType, ValueCapacity> & {
         return storage.get(k);
     }
 
@@ -187,8 +189,8 @@ class ConstexprMultiMap {
      *      Reference to the ConstexprSet if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr ConstexprSet<ValueType, ValueCapacity> const &
-    get(KeyType k) const {
+    [[nodiscard]] constexpr auto get(KeyType k) const
+        -> ConstexprSet<ValueType, ValueCapacity> const & {
         return storage.get(k);
     }
 
@@ -198,7 +200,9 @@ class ConstexprMultiMap {
      * @return
      *      True if the multi-map is empty.
      */
-    [[nodiscard]] constexpr bool isEmpty() const { return storage.isEmpty(); }
+    [[nodiscard]] constexpr auto isEmpty() const -> bool {
+        return storage.isEmpty();
+    }
 
     /**
      * Check if the multi-map contains targetKey.
@@ -211,7 +215,7 @@ class ConstexprMultiMap {
      * @return
      *      True if targetKey is found in the multi-map.
      */
-    [[nodiscard]] constexpr bool contains(KeyType targetKey) const {
+    [[nodiscard]] constexpr auto contains(KeyType targetKey) const -> bool {
         return storage.contains(targetKey);
     }
 
@@ -229,11 +233,8 @@ class ConstexprMultiMap {
      * @return
      *      True if key 'k' and value 'v' is found in the multi-map.
      */
-    [[nodiscard]] constexpr bool contains(KeyType k, ValueType v) const {
-        if (contains(k)) {
-            return get(k).contains(v);
-        } else {
-            return false;
-        }
+    [[nodiscard]] constexpr auto contains(KeyType k, ValueType v) const
+        -> bool {
+        return contains(k) and get(k).contains(v);
     }
 };

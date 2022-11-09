@@ -58,9 +58,10 @@ struct mipi_encoder {
         if constexpr (sizeof...(msg_data) == 0) {
             dispatch_pass_by_args((id << 4) | 1);
         } else {
-            uint32_t constexpr normal_header_dw =
-                (0x1 << 24) |       // mipi sys-t subtype: id32_p32
-                (level << 4) | 0x3; // mipi sys-t type: catalog
+            std::uint32_t constexpr normal_header_dw =
+                (0x1u << 24u) | // mipi sys-t subtype: id32_p32
+                (static_cast<std::uint32_t>(level) << 4u) |
+                0x3u; // mipi sys-t type: catalog
 
             dispatch_pass_by_args(normal_header_dw, id, msg_data...);
         }
@@ -75,8 +76,9 @@ struct mipi_encoder {
     template <log_level level>
     CIB_LOG_NEVER_INLINE static void
     log_pass_by_buffer(std::uint32_t *msg, std::uint32_t msg_size) {
-        msg[0] = (0x1 << 24) |       // mipi sys-t subtype: id32_p32
-                 (level << 4) | 0x3; // mipi sys-t type: catalog
+        msg[0] = (0x1u << 24u) | // mipi sys-t subtype: id32_p32
+                 (static_cast<std::uint32_t>(level) << 4u) |
+                 0x3u; // mipi sys-t type: catalog
 
         dispatch_pass_by_buffer(msg, msg_size);
     }

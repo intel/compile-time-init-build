@@ -43,7 +43,7 @@ namespace {
 inline const auto loggingStartTime = std::chrono::high_resolution_clock::now();
 
 template <typename StringType>
-inline char const *trimSourceFilename(StringType src) {
+inline auto trimSourceFilename(StringType src) -> char const * {
     return std::strstr(src, "src");
 }
 

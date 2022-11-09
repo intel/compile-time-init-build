@@ -84,7 +84,7 @@ class disjoint_field {
     }
 
     template <typename DataType>
-    [[nodiscard]] static constexpr T extract(DataType const &data) {
+    [[nodiscard]] static constexpr auto extract(DataType const &data) -> T {
         auto const raw =
             fields.fold_left(static_cast<std::uint64_t>(0),
                              [&](std::uint64_t extracted, auto f) {

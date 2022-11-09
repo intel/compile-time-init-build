@@ -9,7 +9,7 @@
 namespace msg {
 template <typename FieldType, typename T, T expected_value> struct equal_to_t {
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return expected_value == msg.template get<FieldType>();
     }
 
@@ -60,7 +60,7 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
             [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         auto const actual_value = msg.template get<FieldType>();
 
         return expected_values_tuple.fold_right(
@@ -84,7 +84,7 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
 template <typename FieldType, typename T, T expected_value>
 struct greater_than_t {
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() > expected_value;
     }
 
@@ -104,7 +104,7 @@ struct greater_than_t {
 template <typename FieldType, typename T, T expected_value>
 struct greater_than_or_equal_to_t {
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() >= expected_value;
     }
 
@@ -123,7 +123,7 @@ struct greater_than_or_equal_to_t {
 
 template <typename FieldType, typename T, T expected_value> struct less_than_t {
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() < expected_value;
     }
 
@@ -143,7 +143,7 @@ template <typename FieldType, typename T, T expected_value> struct less_than_t {
 template <typename FieldType, typename T, T expected_value>
 struct less_than_or_equal_to_t {
     template <typename MsgType>
-    [[nodiscard]] constexpr bool operator()(MsgType const &msg) const {
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() <= expected_value;
     }
 

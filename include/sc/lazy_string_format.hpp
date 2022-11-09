@@ -63,19 +63,19 @@ template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
 
 template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
           CharT... charsRhs, typename ArgsTupleRhsT>
-[[nodiscard]] constexpr bool operator==(
+[[nodiscard]] constexpr auto operator==(
     lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT> lhs,
     lazy_string_format<string_constant<CharT, charsRhs...>, ArgsTupleRhsT>
-        rhs) noexcept {
+        rhs) noexcept -> bool {
     return (lhs.str == rhs.str) && (lhs.args == rhs.args);
 }
 
 template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
           CharT... charsRhs, typename ArgsTupleRhsT>
-[[nodiscard]] constexpr bool operator!=(
+[[nodiscard]] constexpr auto operator!=(
     lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT> lhs,
     lazy_string_format<string_constant<CharT, charsRhs...>, ArgsTupleRhsT>
-        rhs) noexcept {
+        rhs) noexcept -> bool {
     return !(lhs == rhs);
 }
 

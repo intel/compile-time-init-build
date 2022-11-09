@@ -20,8 +20,9 @@ template <typename CharT, int SizeT> struct static_string {
 };
 
 template <typename IntegralTypeT, typename BaseTypeT>
-[[nodiscard]] constexpr static_string<char, 65>
-integral_to_string(IntegralTypeT value, BaseTypeT base, bool uppercase) {
+[[nodiscard]] constexpr auto integral_to_string(IntegralTypeT value,
+                                                BaseTypeT base, bool uppercase)
+    -> static_string<char, 65> {
     constexpr std::size_t MAX_LENGTH = 65;
 
     bool const negative = std::is_signed_v<IntegralTypeT> && (value < 0);
@@ -41,9 +42,8 @@ integral_to_string(IntegralTypeT value, BaseTypeT base, bool uppercase) {
             auto const digit_char = [=]() {
                 if (digit_value > 9) {
                     return (digit_value - 10) + ext_char_start;
-                } else {
-                    return digit_value + '0';
                 }
+                return digit_value + '0';
             }();
 
             digit -= 1;
@@ -74,7 +74,8 @@ struct IntegralToString {
     constexpr static std::basic_string_view<char> value = intermediate;
 };
 
-template <typename Tag> constexpr static std::string_view type_as_string() {
+template <typename Tag>
+constexpr static auto type_as_string() -> std::string_view {
 #if defined(__clang__)
     constexpr std::string_view function_name = __PRETTY_FUNCTION__;
     constexpr auto rhs = function_name.size() - 2;
@@ -100,7 +101,7 @@ template <typename Tag> constexpr static std::string_view type_as_string() {
 }
 
 template <auto Value>
-constexpr static std::basic_string_view<char> enum_as_string() {
+constexpr static auto enum_as_string() -> std::basic_string_view<char> {
 #if defined(__clang__)
     constexpr std::string_view value_string = __PRETTY_FUNCTION__;
     constexpr auto rhs = value_string.size() - 2;
