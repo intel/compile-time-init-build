@@ -43,8 +43,8 @@ constexpr static void process(NameType const &name, EventType const &event,
     handlers_tuple.for_each([&](auto handler) {
         if constexpr (!decltype(handler)::is_default_handler) {
             if (handler.matcher(event)) {
-                INFO("{} - Processing [{}] due to match [{}]", name,
-                     handler.name, handler.matcher.describe());
+                CIB_INFO("{} - Processing [{}] due to match [{}]", name,
+                         handler.name, handler.matcher.describe());
                 handler.action();
                 event_handled = true;
             }
@@ -58,7 +58,7 @@ constexpr static void process(NameType const &name, EventType const &event,
         if constexpr (hasDefault) {
             handlers_tuple.for_each([&](auto handler) {
                 if constexpr (decltype(handler)::is_default_handler) {
-                    INFO("{} - Processing [default]", name);
+                    CIB_INFO("{} - Processing [default]", name);
                     handler.action();
                     event_handled = true;
                 }
@@ -73,9 +73,9 @@ constexpr static void process(NameType const &name, EventType const &event,
             const auto mismatch_description = mismatch_descriptions.fold_left(
                 [](auto lhs, auto rhs) { return lhs + rhs; });
 
-            ERROR("{} - Received event that does not match any known "
-                  "handler:\n{}",
-                  name, mismatch_description);
+            CIB_ERROR("{} - Received event that does not match any known "
+                      "handler:\n{}",
+                      name, mismatch_description);
         }
     }
 }

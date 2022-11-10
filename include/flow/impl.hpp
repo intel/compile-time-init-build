@@ -76,7 +76,7 @@ template <typename Name, int NumSteps> class impl {
      */
     constexpr void operator()() const {
         if constexpr (loggingEnabled) {
-            TRACE("flow.start({})", Name{});
+            CIB_TRACE("flow.start({})", Name{});
         }
 
         for (auto const func : functionPtrs) {
@@ -84,7 +84,7 @@ template <typename Name, int NumSteps> class impl {
         }
 
         if constexpr (loggingEnabled) {
-            TRACE("flow.end({})", Name{});
+            CIB_TRACE("flow.end({})", Name{});
         }
     }
 

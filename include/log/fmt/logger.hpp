@@ -79,13 +79,14 @@ void log(FilenameStringType filename, LineNumberType lineNumber,
 }
 } // namespace
 
-#define LOG(LEVEL, MSG, ...)                                                   \
+#define CIB_LOG(LEVEL, MSG, ...)                                               \
     log(__FILE__, __LINE__, LEVEL, FormatHelper{MSG##_sc}.f(__VA_ARGS__))
 
-#define TRACE(...) LOG(log_level::TRACE, __VA_ARGS__)
-#define INFO(...) LOG(log_level::INFO, __VA_ARGS__)
-#define WARN(...) LOG(log_level::WARN, __VA_ARGS__)
-#define ERROR(...) LOG(log_level::ERROR, __VA_ARGS__)
-#define FATAL(...) LOG(log_level::FATAL, __VA_ARGS__)
+#define CIB_TRACE(...) CIB_LOG(log_level::TRACE, __VA_ARGS__)
+#define CIB_INFO(...) CIB_LOG(log_level::INFO, __VA_ARGS__)
+#define CIB_WARN(...) CIB_LOG(log_level::WARN, __VA_ARGS__)
+#define CIB_ERROR(...) CIB_LOG(log_level::ERROR, __VA_ARGS__)
+#define CIB_FATAL(...) CIB_LOG(log_level::FATAL, __VA_ARGS__)
 
-#define ASSERT(expr) ((expr) ? void(0) : FATAL("Assertion failure:  #expr"))
+#define CIB_ASSERT(expr)                                                       \
+    ((expr) ? void(0) : CIB_FATAL("Assertion failure:  #expr"))

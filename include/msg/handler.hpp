@@ -147,9 +147,9 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         auto match_handler = match::all(match_msg, match_any_callback());
 
         if (match_handler(msg)) {
-            INFO("Incoming message matched [{}], because [{}], executing "
-                 "callback",
-                 name, match_handler.describe());
+            CIB_INFO("Incoming message matched [{}], because [{}], executing "
+                     "callback",
+                     name, match_handler.describe());
 
             dispatch(msg.data, args...);
 
@@ -160,8 +160,9 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
     auto log_mismatch(BaseMsgT const &msg) const -> void final {
-        INFO("    {} - F:({})", name,
-             match::all(match_msg, match_any_callback()).describe_match(msg));
+        CIB_INFO(
+            "    {} - F:({})", name,
+            match::all(match_msg, match_any_callback()).describe_match(msg));
     }
 };
 
@@ -198,7 +199,7 @@ class handler {
         }
 
         if (!found_valid_callback) {
-            ERROR("None of the registered callbacks claimed this message:");
+            CIB_ERROR("None of the registered callbacks claimed this message:");
 
             for (auto callback : callbacks) {
                 callback->log_mismatch(msg);

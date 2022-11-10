@@ -34,8 +34,9 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr Vector(std::initializer_list<ValueType> src) {
         if (src.size() > Capacity) {
-            FATAL("Initializer list size {} is bigger than vector capacity {}",
-                  src.size(), sc::int_<Capacity>);
+            CIB_FATAL(
+                "Initializer list size {} is bigger than vector capacity {}",
+                src.size(), sc::int_<Capacity>);
         } else {
             auto i = 0;
             for (auto element : src) {
@@ -74,8 +75,8 @@ template <typename ValueType, size_t Capacity> class Vector {
     [[nodiscard]] constexpr auto operator[](std::size_t index) const
         -> ValueType const & {
         if (index >= currentSize) {
-            FATAL("Vector index {} is outside vector size {}", index,
-                  currentSize);
+            CIB_FATAL("Vector index {} is outside vector size {}", index,
+                      currentSize);
             return storage[0];
         }
         return storage[index];
@@ -83,8 +84,8 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     [[nodiscard]] constexpr auto operator[](std::size_t index) -> ValueType & {
         if (index >= currentSize) {
-            FATAL("Vector index {} is outside array size {}", index,
-                  currentSize);
+            CIB_FATAL("Vector index {} is outside array size {}", index,
+                      currentSize);
             return storage[0];
         }
         return storage[index];
@@ -100,7 +101,7 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr auto push(ValueType value) -> void {
         if (isFull()) {
-            FATAL("Vector:push() attempted when full");
+            CIB_FATAL("Vector:push() attempted when full");
             return;
         }
         storage[currentSize] = value;
@@ -109,7 +110,7 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     [[nodiscard]] constexpr auto pop() -> ValueType {
         if (isEmpty()) {
-            FATAL("Vector::pop() attempted when empty");
+            CIB_FATAL("Vector::pop() attempted when empty");
             return {};
         }
         currentSize--;

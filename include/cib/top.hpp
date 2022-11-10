@@ -53,10 +53,10 @@ template <typename ProjectConfig> class top {
         my_nexus.init();
         flow::run<EarlyRuntimeInit>();
 
-        INFO("cib::top::init() - RuntimeInit");
+        CIB_INFO("cib::top::init() - RuntimeInit");
         flow::run<RuntimeInit>();
 
-        INFO("cib::top::init() - RuntimeStart");
+        CIB_INFO("cib::top::init() - RuntimeStart");
         flow::run<RuntimeStart>();
 
         while (true) {

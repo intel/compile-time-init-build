@@ -48,9 +48,9 @@ template <typename ValueType, std::size_t Size> class Array {
 
     constexpr Array(std::initializer_list<ValueType> src) {
         if (src.size() > Size) {
-            FATAL("Initializer list size {} is bigger than allocated array "
-                  "size {}",
-                  src.size(), sc::int_<Size>);
+            CIB_FATAL("Initializer list size {} is bigger than allocated array "
+                      "size {}",
+                      src.size(), sc::int_<Size>);
         } else {
             auto dst_index = 0;
             for (auto const &v : src) {
@@ -62,8 +62,8 @@ template <typename ValueType, std::size_t Size> class Array {
 
     template <typename SrcT> constexpr explicit Array(SrcT const &src) {
         if (src.size() > Size) {
-            FATAL("Source size {} is bigger than allocated array size {}",
-                  src.size(), sc::int_<Size>);
+            CIB_FATAL("Source size {} is bigger than allocated array size {}",
+                      src.size(), sc::int_<Size>);
         } else {
             auto dst_index = 0;
             for (auto const &v : src) {
@@ -98,8 +98,8 @@ template <typename ValueType, std::size_t Size> class Array {
     [[nodiscard]] constexpr auto operator[](std::size_t index) const
         -> ValueType const & {
         if (index >= Size) {
-            FATAL("Array index {} is outside array size {}", index,
-                  sc::int_<Size>);
+            CIB_FATAL("Array index {} is outside array size {}", index,
+                      sc::int_<Size>);
             return storage[0];
         }
         return storage[index];
@@ -107,8 +107,8 @@ template <typename ValueType, std::size_t Size> class Array {
 
     [[nodiscard]] constexpr auto operator[](std::size_t index) -> ValueType & {
         if (index >= Size) {
-            FATAL("Array index {} is outside array size {}", index,
-                  sc::int_<Size>);
+            CIB_FATAL("Array index {} is outside array size {}", index,
+                      sc::int_<Size>);
             return storage[0];
         }
         return storage[index];
