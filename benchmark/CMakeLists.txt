@@ -4,6 +4,7 @@ target_compile_options(
     compilation_benchmark
     PRIVATE -ftemplate-backtrace-limit=0
             -ftime-report
+            $<$<CXX_COMPILER_ID:Clang>:-fconstexpr-steps=2000000>
             $<$<CXX_COMPILER_ID:Clang>:-ferror-limit=8>
             $<$<CXX_COMPILER_ID:Clang>:-ftime-trace>
             $<$<CXX_COMPILER_ID:Clang>:-ftime-trace-granularity=10>

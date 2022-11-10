@@ -1,6 +1,10 @@
 #include <cib/detail/compiler.hpp>
 
 #include <array>
+#if __has_include(<compare>)
+#include <compare>
+#endif
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
@@ -9,27 +13,33 @@
 
 namespace cib {
 template <typename T> struct tag_t {};
-
 template <typename T> constexpr static tag_t<T> tag_{};
 
 template <std::size_t Index> struct index_t {};
-
 template <std::size_t Index> constexpr static index_t<Index> index_{};
 
 template <typename T> struct index_metafunc_t {};
-
 template <typename T> constexpr static index_metafunc_t<T> index_metafunc_{};
 
 struct self_type {
     template <typename T> using invoke = T;
 };
-
 constexpr static index_metafunc_t<self_type> self_type_index{};
 
+namespace detail {
 template <typename ElementT, typename IndexT> struct type_indexed_element {
-    [[nodiscard]] CIB_CONSTEXPR decltype(auto) get(tag_t<IndexT>) const {
+    [[nodiscard]] CIB_CONSTEXPR auto get(tag_t<IndexT>) const &noexcept
+        -> decltype(auto) {
         return static_cast<ElementT const &>(*this).get(
             index_<ElementT::index>);
+    }
+    [[nodiscard]] CIB_CONSTEXPR auto get(tag_t<IndexT>) &noexcept
+        -> decltype(auto) {
+        return static_cast<ElementT &>(*this).get(index_<ElementT::index>);
+    }
+    [[nodiscard]] CIB_CONSTEXPR auto get(tag_t<IndexT>) &&noexcept
+        -> decltype(auto) {
+        return static_cast<ElementT &&>(*this).get(index_<ElementT::index>);
     }
 };
 
@@ -38,35 +48,27 @@ struct tuple_element
     : type_indexed_element<tuple_element<T, Index, IndexTs...>, IndexTs>... {
     CIB_CONSTEXPR static auto index = Index;
     using value_type = T;
-    T value{};
+    value_type value{};
 
     CIB_CONSTEXPR tuple_element() = default;
-    CIB_CONSTEXPR explicit tuple_element(T t) : value{t} {}
+    CIB_CONSTEXPR explicit tuple_element(T const &t) : value{t} {}
+    CIB_CONSTEXPR explicit tuple_element(T &&t) : value{std::move(t)} {}
 
-    [[nodiscard]] CIB_CONSTEXPR auto get(index_t<Index>) const -> T const & {
+    [[nodiscard]] CIB_CONSTEXPR auto get(index_t<Index>) const &noexcept
+        -> value_type const & {
         return value;
+    }
+    [[nodiscard]] CIB_CONSTEXPR auto get(index_t<Index>) &noexcept
+        -> value_type & {
+        return value;
+    }
+    [[nodiscard]] CIB_CONSTEXPR auto get(index_t<Index>) &&noexcept
+        -> value_type && {
+        return std::move(value);
     }
 
     using type_indexed_element<tuple_element, IndexTs>::get...;
 };
-
-namespace detail {
-template <typename ValueType, typename CallableType> struct fold_helper;
-
-template <typename T>
-struct is_fold_helper : public std::integral_constant<bool, false> {};
-
-template <typename ValueType, typename CallableType>
-struct is_fold_helper<fold_helper<ValueType, CallableType>>
-    : public std::integral_constant<bool, true> {};
-
-template <typename T> using is_fold_helper_t = typename is_fold_helper<T>::type;
-
-template <typename T> constexpr is_fold_helper_t<T> is_fold_helper_v{};
-
-template <typename T> constexpr auto as_ref(T const &value) -> T const & {
-    return value;
-}
 
 /**
  * Used by fold_right to leverage c++17 fold expressions with arbitrary
@@ -79,40 +81,84 @@ template <typename T> constexpr auto as_ref(T const &value) -> T const & {
  *      A callable that takes two arguments, current element to be
  *      processed and the fold state.
  */
-template <typename ValueType, typename CallableType> struct fold_helper {
-    ValueType element_;
-    CallableType operation_;
+template <typename TValue, typename TOp> struct fold_right_helper {
+    TValue value;
+    TOp op;
 
-    CIB_CONSTEXPR fold_helper(ValueType element, CallableType operation)
-        : element_{element}, operation_{operation} {}
+  private:
+    template <typename T>
+    [[nodiscard]] CIB_CONSTEXPR friend inline auto
+    operator+(T &&lhs, fold_right_helper &&rhs) {
+        using R = decltype(rhs.op(std::forward<T>(lhs), std::move(rhs).value));
+        return fold_right_helper<R, TOp>{
+            rhs.op(std::forward<T>(lhs), std::move(rhs).value),
+            std::move(rhs).op};
+    }
 
-    template <typename RhsValueType>
-    [[nodiscard]] CIB_CONSTEXPR inline auto
-    operator+(fold_helper<RhsValueType, CallableType> const &rhs) const {
-        auto const result = operation_(element_, rhs.element_);
-        using ResultType = decltype(result);
-        return fold_helper<ResultType, CallableType>{result, operation_};
+    template <typename T>
+    [[nodiscard]] CIB_CONSTEXPR friend inline auto
+    operator+(fold_right_helper<T, TOp> &&lhs, fold_right_helper &&rhs) {
+        using R =
+            decltype(rhs.op(std::forward<fold_right_helper<T, TOp>>(lhs).value,
+                            std::move(rhs).value));
+        return fold_right_helper<R, TOp>{
+            rhs.op(std::forward<fold_right_helper<T, TOp>>(lhs).value,
+                   std::move(rhs).value),
+            std::move(rhs).op};
     }
 };
+
+template <typename TValue, typename TOp>
+fold_right_helper(TValue, TOp) -> fold_right_helper<std::decay_t<TValue>, TOp>;
+
+template <typename TValue, typename TOp> struct fold_left_helper {
+    TValue value;
+    TOp op;
+
+  private:
+    template <typename T>
+    [[nodiscard]] CIB_CONSTEXPR friend inline auto
+    operator+(fold_left_helper &&lhs, T &&rhs) {
+        using R = decltype(lhs.op(std::move(lhs).value, std::forward<T>(rhs)));
+        return fold_left_helper<R, TOp>{
+            lhs.op(std::move(lhs).value, std::forward<T>(rhs)),
+            std::move(lhs).op};
+    }
+
+    template <typename T>
+    [[nodiscard]] CIB_CONSTEXPR friend inline auto
+    operator+(fold_left_helper &&lhs, fold_left_helper<T, TOp> &&rhs) {
+        using R =
+            decltype(lhs.op(std::move(lhs).value,
+                            std::forward<fold_left_helper<T, TOp>>(rhs).value));
+        return fold_left_helper<R, TOp>{
+            lhs.op(std::move(lhs).value,
+                   std::forward<fold_left_helper<T, TOp>>(rhs).value),
+            std::move(lhs).op};
+    }
+};
+
+template <typename TValue, typename TOp>
+fold_left_helper(TValue, TOp) -> fold_left_helper<std::decay_t<TValue>, TOp>;
+
 } // namespace detail
 
-template <typename... TupleElementTs>
-struct tuple_impl : public TupleElementTs... {
-    CIB_CONSTEXPR explicit tuple_impl(TupleElementTs... values)
-        : TupleElementTs{values}... {}
-
-    template <std::enable_if_t<(sizeof...(TupleElementTs) >= 0), bool> = true>
-    CIB_CONSTEXPR tuple_impl() : TupleElementTs{}... {}
-
+template <typename... TupleElementTs> struct tuple_impl : TupleElementTs... {
     using TupleElementTs::get...;
 
-    [[nodiscard]] CIB_CONSTEXPR static auto size() -> int {
+    [[nodiscard]] CIB_CONSTEXPR static auto size() -> std::size_t {
         return sizeof...(TupleElementTs);
     }
 
     template <typename Callable>
-    CIB_CONSTEXPR auto apply(Callable operation) const {
-        return operation(TupleElementTs::value...);
+    CIB_CONSTEXPR auto apply(Callable &&operation) const & -> decltype(auto) {
+        return std::forward<Callable>(operation)(TupleElementTs::value...);
+    }
+
+    template <typename Callable>
+    CIB_CONSTEXPR auto apply(Callable &&operation) && -> decltype(auto) {
+        return std::forward<Callable>(operation)(
+            std::move(TupleElementTs::value)...);
     }
 
     /**
@@ -144,15 +190,20 @@ struct tuple_impl : public TupleElementTs... {
      * @return
      *      The final state of all of the operations.
      */
-    template <typename InitType, typename CallableType>
+    template <typename TOp>
     [[nodiscard]] CIB_CONSTEXPR inline auto
-    fold_right(InitType const &initial_state,
-               CallableType const &operation) const {
-        return (detail::fold_helper{detail::as_ref(TupleElementTs::value),
-                                    operation} +
-                ... +
-                detail::fold_helper{detail::as_ref(initial_state), operation})
-            .element_;
+    fold_right(TOp &&operation) const & {
+        return (detail::fold_right_helper{TupleElementTs::value,
+                                          std::forward<TOp>(operation)} +
+                ...)
+            .value;
+    }
+    template <typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_right(TOp &&operation) && {
+        return (detail::fold_right_helper{std::move(TupleElementTs::value),
+                                          std::forward<TOp>(operation)} +
+                ...)
+            .value;
     }
 
     /**
@@ -172,13 +223,21 @@ struct tuple_impl : public TupleElementTs... {
      * @return
      *      The final state of all of the operations.
      */
-    template <typename CallableType>
+    template <typename TInit, typename TOp>
     [[nodiscard]] CIB_CONSTEXPR inline auto
-    fold_right(CallableType operation) const {
-        return (detail::fold_helper{detail::as_ref(TupleElementTs::value),
-                                    operation} +
-                ...)
-            .element_;
+    fold_right(TInit &&initial_state, TOp &&operation) const & {
+        return (TupleElementTs::value + ... +
+                detail::fold_right_helper{std::forward<TInit>(initial_state),
+                                          std::forward<TOp>(operation)})
+            .value;
+    }
+    template <typename TInit, typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_right(TInit &&initial_state,
+                                                       TOp &&operation) && {
+        return (std::move(TupleElementTs::value) + ... +
+                detail::fold_right_helper{std::forward<TInit>(initial_state),
+                                          std::forward<TOp>(operation)})
+            .value;
     }
 
     /**
@@ -198,12 +257,17 @@ struct tuple_impl : public TupleElementTs... {
      * @return
      *      The final state of all of the operations.
      */
-    template <typename CallableType>
-    [[nodiscard]] CIB_CONSTEXPR inline auto
-    fold_left(CallableType operation) const {
-        return (... + detail::fold_helper{detail::as_ref(TupleElementTs::value),
-                                          operation})
-            .element_;
+    template <typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(TOp &&operation) const & {
+        return (... + detail::fold_left_helper{TupleElementTs::value,
+                                               std::forward<TOp>(operation)})
+            .value;
+    }
+    template <typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(TOp &&operation) && {
+        return (... + detail::fold_left_helper{std::move(TupleElementTs::value),
+                                               std::forward<TOp>(operation)})
+            .value;
     }
 
     /**
@@ -223,107 +287,148 @@ struct tuple_impl : public TupleElementTs... {
      * @return
      *      The final state of all of the operations.
      */
-    template <typename InitType, typename CallableType>
-    [[nodiscard]] CIB_CONSTEXPR inline auto
-    fold_left(InitType const &initial_state,
-              CallableType const &operation) const {
-        return (detail::fold_helper{detail::as_ref(initial_state), operation} +
-                ... +
-                detail::fold_helper{detail::as_ref(TupleElementTs::value),
-                                    operation})
-            .element_;
+    template <typename TInit, typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(TInit &&initial_state,
+                                                      TOp &&operation) const & {
+        return (detail::fold_left_helper{std::forward<TInit>(initial_state),
+                                         std::forward<TOp>(operation)} +
+                ... + TupleElementTs::value)
+            .value;
+    }
+    template <typename TInit, typename TOp>
+    [[nodiscard]] CIB_CONSTEXPR inline auto fold_left(TInit &&initial_state,
+                                                      TOp &&operation) && {
+        return (detail::fold_left_helper{std::forward<TInit>(initial_state),
+                                         std::forward<TOp>(operation)} +
+                ... + std::move(TupleElementTs::value))
+            .value;
     }
 
-    [[nodiscard]] CIB_CONSTEXPR auto
-    operator==(tuple_impl<TupleElementTs...> const &rhs) const -> bool {
-        return ((this->TupleElementTs::value == rhs.TupleElementTs::value) &&
-                ... && true);
+  private:
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator==(tuple_impl const &lhs,
+                                                       tuple_impl const &rhs)
+        -> bool {
+        return ((lhs.TupleElementTs::value == rhs.TupleElementTs::value) and
+                ...);
     }
 
-    [[nodiscard]] CIB_CONSTEXPR auto
-    operator!=(tuple_impl<TupleElementTs...> const &rhs) const -> bool {
-        return ((this->TupleElementTs::value != rhs.TupleElementTs::value) ||
-                ... || false);
+#if __cpp_lib_three_way_comparison < 201907L
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator!=(tuple_impl const &lhs,
+                                                       tuple_impl const &rhs)
+        -> bool {
+        return not(lhs == rhs);
     }
+
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator<(tuple_impl const &lhs,
+                                                      tuple_impl const &rhs)
+        -> bool {
+        bool result{};
+        const auto cmp = [&](auto const &x, auto const &y) {
+            result = x < y;
+            return result or x != y;
+        };
+        (void)(cmp(lhs.TupleElementTs::value, rhs.TupleElementTs::value) or
+               ...);
+        return result;
+    }
+
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator>(tuple_impl const &lhs,
+                                                      tuple_impl const &rhs)
+        -> bool {
+        return rhs < lhs;
+    }
+
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator<=(tuple_impl const &lhs,
+                                                       tuple_impl const &rhs)
+        -> bool {
+        return not(rhs < lhs);
+    }
+
+    [[nodiscard]] CIB_CONSTEXPR friend auto operator>=(tuple_impl const &lhs,
+                                                       tuple_impl const &rhs)
+        -> bool {
+        return not(lhs < rhs);
+    }
+#else
+    [[nodiscard]] CIB_CONSTEXPR friend auto
+    operator<=>(tuple_impl const &lhs, tuple_impl const &rhs) requires(
+        std::three_way_comparable<typename TupleElementTs::value_type> and...) {
+        std::common_comparison_category_t<std::compare_three_way_result_t<
+            typename TupleElementTs::value_type>...>
+            result{std::strong_ordering::equivalent};
+        const auto cmp = [&](auto const &x, auto const &y) {
+            result = x <=> y;
+            return result != 0;
+        };
+        (void)(cmp(lhs.TupleElementTs::value, rhs.TupleElementTs::value) or
+               ...);
+        return result;
+    }
+#endif
 };
 
-template <std::size_t... Indices, typename... Ts>
+template <typename... Ts> tuple_impl(Ts...) -> tuple_impl<Ts...>;
+
+namespace detail {
+template <typename... TIndexMetafuncs> struct indexed_element_helper {
+    template <typename T, std::size_t Index>
+    using element_t =
+        tuple_element<T, Index,
+                      typename TIndexMetafuncs::template invoke<T>...>;
+};
+
+template <typename... TIndexMetafuncs, std::size_t... Indices, typename... Ts>
 [[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
-                                             Ts const &...values) {
-    return tuple_impl{tuple_element<Ts, Indices>{values}...};
+                                             Ts &&...values) {
+    using helper_t = indexed_element_helper<TIndexMetafuncs...>;
+    return tuple_impl{
+        typename helper_t::template element_t<std::decay_t<Ts>, Indices>{
+            std::forward<Ts>(values)}...};
 }
 
-template <std::size_t... Indices, typename IndexMetafuncT0, typename... Ts>
-[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
-                                             index_metafunc_t<IndexMetafuncT0>,
-                                             Ts const &...values) {
-    return tuple_impl{tuple_element<
-        Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>>{values}...};
-}
-
-template <std::size_t... Indices, typename IndexMetafuncT0,
-          typename IndexMetafuncT1, typename... Ts>
-[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
-                                             index_metafunc_t<IndexMetafuncT0>,
-                                             index_metafunc_t<IndexMetafuncT1>,
-                                             Ts const &...values) {
-    return tuple_impl{tuple_element<
-        Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>,
-        typename IndexMetafuncT1::template invoke<Ts>>{values}...};
-}
-
-template <std::size_t... Indices, typename IndexMetafuncT0,
-          typename IndexMetafuncT1, typename IndexMetafuncT2, typename... Ts>
-[[nodiscard]] constexpr auto make_tuple_impl(std::index_sequence<Indices...>,
-                                             index_metafunc_t<IndexMetafuncT0>,
-                                             index_metafunc_t<IndexMetafuncT1>,
-                                             index_metafunc_t<IndexMetafuncT2>,
-                                             Ts const &...values) {
-    return tuple_impl{tuple_element<
-        Ts, Indices, typename IndexMetafuncT0::template invoke<Ts>,
-        typename IndexMetafuncT1::template invoke<Ts>,
-        typename IndexMetafuncT2::template invoke<Ts>>{values}...};
-}
+} // namespace detail
 
 template <typename... Ts>
-[[nodiscard]] constexpr auto make_tuple(Ts const &...values) {
-    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
-                           values...);
+[[nodiscard]] constexpr auto make_tuple(Ts &&...values) {
+    return detail::make_tuple_impl(
+        std::make_index_sequence<sizeof...(values)>{},
+        std::forward<Ts>(values)...);
 }
 
 template <typename IndexMetafuncT0, typename... Ts>
 [[nodiscard]] constexpr auto make_tuple(index_metafunc_t<IndexMetafuncT0>,
-                                        Ts const &...values) {
-    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
-                           index_metafunc_<IndexMetafuncT0>, values...);
+                                        Ts &&...values) {
+    return detail::make_tuple_impl<IndexMetafuncT0>(
+        std::make_index_sequence<sizeof...(values)>{},
+        std::forward<Ts>(values)...);
 }
 
 template <typename IndexMetafuncT0, typename IndexMetafuncT1, typename... Ts>
 [[nodiscard]] constexpr auto make_tuple(index_metafunc_t<IndexMetafuncT0>,
                                         index_metafunc_t<IndexMetafuncT1>,
-                                        Ts const &...values) {
-    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
-                           index_metafunc_<IndexMetafuncT0>,
-                           index_metafunc_<IndexMetafuncT1>, values...);
+                                        Ts &&...values) {
+    return detail::make_tuple_impl<IndexMetafuncT0, IndexMetafuncT1>(
+        std::make_index_sequence<sizeof...(values)>{},
+        std::forward<Ts>(values)...);
 }
 
 template <typename IndexMetafuncT0, typename IndexMetafuncT1,
           typename IndexMetafuncT2, typename... Ts>
 [[nodiscard]] constexpr auto
 make_tuple(index_metafunc_t<IndexMetafuncT0>, index_metafunc_t<IndexMetafuncT1>,
-           index_metafunc_t<IndexMetafuncT2>, Ts const &...values) {
-    return make_tuple_impl(std::make_index_sequence<sizeof...(values)>{},
-                           index_metafunc_<IndexMetafuncT0>,
-                           index_metafunc_<IndexMetafuncT1>,
-                           index_metafunc_<IndexMetafuncT2>, values...);
+           index_metafunc_t<IndexMetafuncT2>, Ts &&...values) {
+    return detail::make_tuple_impl<IndexMetafuncT0, IndexMetafuncT1,
+                                   IndexMetafuncT2>(
+        std::make_index_sequence<sizeof...(values)>{},
+        std::forward<Ts>(values)...);
 }
 
 template <typename... Ts>
 using tuple = decltype(cib::make_tuple(std::declval<Ts>()...));
 
-template <typename Callable, typename... Elements>
-CIB_CONSTEXPR auto apply(Callable operation, tuple_impl<Elements...> const &t) {
-    return t.apply(operation);
+template <typename Callable, typename Tuple>
+CIB_CONSTEXPR auto apply(Callable &&operation, Tuple &&t) {
+    return std::forward<Tuple>(t).apply(std::forward<Callable>(operation));
 }
 
 template <typename MetaFunc, typename Tuple, typename Operation>
@@ -392,18 +497,21 @@ template <typename Operation>
     return t;
 }
 
+namespace detail {
 template <std::size_t... Indices, typename... Tuples>
 constexpr auto tuple_cat_impl(std::index_sequence<Indices...>,
-                              Tuples... tuples) {
+                              Tuples &&...tuples) {
     struct tuple_pair {
         std::size_t outer;
         std::size_t inner;
     };
 
     constexpr auto num_tuples = sizeof...(tuples);
-    constexpr std::array<std::size_t, num_tuples> tuple_sizes{tuples.size()...};
+    constexpr std::array<std::size_t, num_tuples> tuple_sizes{
+        std::decay_t<Tuples>::size()...};
     [[maybe_unused]] constexpr auto element_indices = [&]() {
-        constexpr auto total_num_elements = (tuples.size() + ...);
+        constexpr auto total_num_elements =
+            (std::decay_t<Tuples>::size() + ...);
         std::array<tuple_pair, total_num_elements> indices{};
         std::size_t flat_index = 0;
         for (std::size_t outer_index = 0; outer_index < num_tuples;
@@ -417,24 +525,25 @@ constexpr auto tuple_cat_impl(std::index_sequence<Indices...>,
         return indices;
     }();
 
-    [[maybe_unused]] auto const outer_tuple = cib::make_tuple(tuples...);
+    [[maybe_unused]] auto outer_tuple =
+        cib::make_tuple(std::forward<Tuples>(tuples)...);
 
-    return cib::make_tuple(
-        outer_tuple.get(index_<element_indices[Indices].outer>)
-            .get(index_<element_indices[Indices].inner>)...);
+    return cib::make_tuple(std::move(outer_tuple)
+                               .get(index_<element_indices[Indices].outer>)
+                               .get(index_<element_indices[Indices].inner>)...);
 }
+} // namespace detail
 
-template <typename... Tuples> constexpr auto tuple_cat(Tuples... tuples) {
-    constexpr auto total_num_elements = (tuples.size() + ...);
-    return tuple_cat_impl(std::make_index_sequence<total_num_elements>{},
-                          tuples...);
+template <typename... Tuples> constexpr auto tuple_cat(Tuples &&...tuples) {
+    constexpr auto total_num_elements = (std::decay_t<Tuples>::size() + ...);
+    return detail::tuple_cat_impl(
+        std::make_index_sequence<total_num_elements>{},
+        std::forward<Tuples>(tuples)...);
 }
 } // namespace cib
 
-namespace std {
 template <typename... Elements>
-struct tuple_size<cib::tuple_impl<Elements...>>
+struct std::tuple_size<cib::tuple_impl<Elements...>>
     : std::integral_constant<std::size_t, sizeof...(Elements)> {};
-} // namespace std
 
 #endif // COMPILE_TIME_INIT_BUILD_TUPLE_HPP
