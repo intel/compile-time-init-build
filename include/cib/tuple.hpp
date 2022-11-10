@@ -167,9 +167,14 @@ template <typename... TupleElementTs> struct tuple_impl : TupleElementTs... {
      *      The operation to perform. Must be a callable that accepts a single
      * parameter.
      */
-    template <typename Callable>
-    CIB_CONSTEXPR void for_each(Callable operation) const {
-        (operation(TupleElementTs::value), ...);
+    template <typename TOp>
+    CIB_CONSTEXPR auto for_each(TOp &&op) const & -> TOp {
+        (op(TupleElementTs::value), ...);
+        return op;
+    }
+    template <typename TOp> CIB_CONSTEXPR auto for_each(TOp &&op) & -> TOp {
+        (op(TupleElementTs::value), ...);
+        return op;
     }
 
     /**
@@ -428,6 +433,28 @@ using tuple = decltype(cib::make_tuple(std::declval<Ts>()...));
 template <typename Callable, typename Tuple>
 CIB_CONSTEXPR auto apply(Callable &&operation, Tuple &&t) {
     return std::forward<Tuple>(t).apply(std::forward<Callable>(operation));
+}
+
+namespace detail {
+template <std::size_t Index, typename TOp, typename... Tuples>
+CIB_CONSTEXPR auto invoke_at(TOp &&op, Tuples &&...ts) -> void {
+    std::forward<TOp>(op)(std::forward<Tuples>(ts).get(index_<Index>)...);
+}
+
+template <typename TOp, std::size_t... Indices, typename... Tuples>
+CIB_CONSTEXPR auto for_each_impl(TOp &&op, std::index_sequence<Indices...>,
+                                 Tuples &&...ts) -> TOp {
+    (invoke_at<Indices>(op, std::forward<Tuples>(ts)...), ...);
+    return op;
+}
+} // namespace detail
+
+template <typename TOp, typename Tuple, typename... Tuples>
+CIB_CONSTEXPR auto for_each(TOp &&op, Tuple &&t, Tuples &&...ts) -> TOp {
+    return detail::for_each_impl(
+        std::forward<TOp>(op),
+        std::make_index_sequence<std::decay_t<Tuple>::size()>{},
+        std::forward<Tuple>(t), std::forward<Tuples>(ts)...);
 }
 
 template <typename MetaFunc, typename Tuple, typename Operation>
