@@ -1,9 +1,8 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
 
 #include <utility>
-
-#ifndef COMPILE_TIME_INIT_BUILD_BUILDER_TRAITS_HPP
-#define COMPILE_TIME_INIT_BUILD_BUILDER_TRAITS_HPP
 
 namespace cib::traits {
 template <typename BuilderMeta> struct builder {
@@ -23,5 +22,3 @@ template <typename BuilderMeta> struct interface {
 template <typename BuilderMeta>
 using interface_t = typename interface<BuilderMeta>::type;
 } // namespace cib::traits
-
-#endif // COMPILE_TIME_INIT_BUILD_BUILDER_TRAITS_HPP

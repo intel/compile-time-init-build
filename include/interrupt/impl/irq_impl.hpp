@@ -1,8 +1,9 @@
-#ifndef CIB_INTERRUPT_IMPL_IRQ_IMPL_HPP
-#define CIB_INTERRUPT_IMPL_IRQ_IMPL_HPP
+#pragma once
 
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/fwd.hpp>
+
+#include <boost/hana.hpp>
 
 namespace interrupt {
 /**
@@ -52,7 +53,9 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
         enable_action<InterruptHal, active>();
     }
 
-    inline auto get_interrupt_enables() const { return hana::make_tuple(); }
+    inline auto get_interrupt_enables() const {
+        return boost::hana::make_tuple();
+    }
 
     /**
      * Run the interrupt service routine and clear any pending interrupt status.
@@ -71,5 +74,3 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_IMPL_IRQ_IMPL_HPP

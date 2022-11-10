@@ -7,14 +7,12 @@
 #include <interrupt/builder/sub_irq_builder.hpp>
 #include <interrupt/config.hpp>
 #include <interrupt/dynamic_controller.hpp>
-#include <interrupt/fwd.hpp>
 #include <interrupt/impl/manager_impl.hpp>
 #include <interrupt/manager_interface.hpp>
 #include <interrupt/policies.hpp>
 
 #include <boost/hana.hpp>
 
-#include <tuple>
 #include <type_traits>
 
 namespace interrupt {

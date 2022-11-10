@@ -1,8 +1,8 @@
-#include <interrupt/config/fwd.hpp>
-#include <interrupt/fwd.hpp>
+#pragma once
 
-#ifndef CIB_INTERRUPT_IMPL_SHARED_SUB_IRQ_IMPL_HPP
-#define CIB_INTERRUPT_IMPL_SHARED_SUB_IRQ_IMPL_HPP
+#include <interrupt/config/fwd.hpp>
+
+#include <boost/hana.hpp>
 
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls>
@@ -26,13 +26,14 @@ struct shared_sub_irq_impl {
     constexpr static auto status_field = ConfigT::status_field;
     using StatusPolicy = typename ConfigT::StatusPolicy;
 
-    hana::tuple<SubIrqImpls...> sub_irq_impls;
+    boost::hana::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
     explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...impls)
         : sub_irq_impls(impls...) {}
 
     auto get_interrupt_enables() const {
+        using namespace boost;
         if constexpr (active) {
             auto const active_sub_irq_impls =
                 hana::filter(sub_irq_impls, [](auto irq) {
@@ -63,7 +64,7 @@ struct shared_sub_irq_impl {
                 apply(read((*status_field)(1)))) {
                 StatusPolicy::run([&] { apply(clear(*status_field)); },
                                   [&] {
-                                      hana::for_each(
+                                      boost::hana::for_each(
                                           sub_irq_impls,
                                           [](auto irq) { irq.run(); });
                                   });
@@ -72,5 +73,3 @@ struct shared_sub_irq_impl {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_IMPL_SHARED_SUB_IRQ_IMPL_HPP

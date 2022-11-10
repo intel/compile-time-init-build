@@ -1,11 +1,9 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/config_details.hpp>
 #include <cib/detail/config_item.hpp>
-#include <cib/detail/type_list.hpp>
 #include <cib/tuple.hpp>
-
-#ifndef COMPILE_TIME_INIT_BUILD_CONDITIONAL_HPP
-#define COMPILE_TIME_INIT_BUILD_CONDITIONAL_HPP
 
 namespace cib::detail {
 template <typename Condition, typename... Configs>
@@ -61,5 +59,3 @@ template <typename MatchType> struct arg {
     }
 };
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_CONDITIONAL_HPP

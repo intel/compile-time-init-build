@@ -1,8 +1,8 @@
-#include <interrupt/config/fwd.hpp>
-#include <interrupt/fwd.hpp>
+#pragma once
 
-#ifndef CIB_INTERRUPT_IMPL_SHARED_IRQ_IMPL_HPP
-#define CIB_INTERRUPT_IMPL_SHARED_IRQ_IMPL_HPP
+#include <interrupt/config/fwd.hpp>
+
+#include <boost/hana.hpp>
 
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
@@ -24,7 +24,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     static bool constexpr active = (SubIrqImpls::active || ... || false);
 
   private:
-    hana::tuple<SubIrqImpls...> sub_irq_impls;
+    boost::hana::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
     explicit constexpr shared_irq_impl(SubIrqImpls const &...impls)
@@ -47,6 +47,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     }
 
     auto get_interrupt_enables() const {
+        using namespace boost;
         if constexpr (active) {
             auto const active_sub_irq_impls =
                 hana::filter(sub_irq_impls, [](auto irq) {
@@ -77,11 +78,10 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     template <typename InterruptHal> inline void run() const {
         if constexpr (active) {
             InterruptHal::template run<StatusPolicy>(irq_number, [&] {
-                hana::for_each(sub_irq_impls, [](auto irq) { irq.run(); });
+                boost::hana::for_each(sub_irq_impls,
+                                      [](auto irq) { irq.run(); });
             });
         }
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_IMPL_SHARED_IRQ_IMPL_HPP

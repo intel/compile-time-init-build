@@ -1,7 +1,8 @@
+#pragma once
+
 #include <interrupt/fwd.hpp>
 
-#ifndef CIB_INTERRUPT_IMPL_SUB_IRQ_IMPL_HPP
-#define CIB_INTERRUPT_IMPL_SUB_IRQ_IMPL_HPP
+#include <boost/hana.hpp>
 
 namespace interrupt {
 /**
@@ -36,7 +37,7 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
         : interrupt_service_routine(flow) {}
 
     [[nodiscard]] auto get_interrupt_enables() const {
-        return hana::make_tuple(*enable_field);
+        return boost::hana::make_tuple(*enable_field);
     }
 
     /**
@@ -59,5 +60,3 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_IMPL_SUB_IRQ_IMPL_HPP

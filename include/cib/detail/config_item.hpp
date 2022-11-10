@@ -1,9 +1,7 @@
-#include <cib/detail/compiler.hpp>
-#include <cib/detail/type_list.hpp>
-#include <cib/tuple.hpp>
+#pragma once
 
-#ifndef COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP
-#define COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP
+#include <cib/detail/compiler.hpp>
+#include <cib/tuple.hpp>
 
 namespace cib::detail {
 struct config_item {
@@ -13,5 +11,3 @@ struct config_item {
     }
 };
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_CONFIG_DETAIL_HPP

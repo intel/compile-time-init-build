@@ -1,5 +1,4 @@
-#ifndef CIB_DONT_PANIC_HPP
-#define CIB_DONT_PANIC_HPP
+#pragma once
 
 #include <cib/cib.hpp>
 
@@ -17,5 +16,3 @@ struct dont_panic {
     constexpr static auto config = cib::config(
         cib::extend<say_message>(&say_it), cib::extend<say_message>(&so_long));
 };
-
-#endif // CIB_DONT_PANIC_HPP

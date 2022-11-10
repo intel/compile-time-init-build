@@ -1,11 +1,8 @@
+#pragma once
+
 #include <cib/detail/builder_traits.hpp>
 #include <cib/detail/config_item.hpp>
 #include <cib/tuple.hpp>
-
-#include <utility>
-
-#ifndef COMPILE_TIME_INIT_BUILD_EXTEND_HPP
-#define COMPILE_TIME_INIT_BUILD_EXTEND_HPP
 
 namespace cib::detail {
 template <typename ServiceType, typename... Args>
@@ -25,5 +22,3 @@ struct extend : public config_item {
     }
 };
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_EXTEND_HPP

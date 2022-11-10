@@ -1,13 +1,10 @@
-#include <interrupt/config/fwd.hpp>
-#include <interrupt/fwd.hpp>
+#pragma once
+
 #include <interrupt/impl/sub_irq_impl.hpp>
 
 #include <boost/hana.hpp>
 
 #include <type_traits>
-
-#ifndef CIB_INTERRUPT_BUILDER_SUB_IRQ_BUILDER_HPP
-#define CIB_INTERRUPT_BUILDER_SUB_IRQ_BUILDER_HPP
 
 namespace interrupt {
 /**
@@ -66,5 +63,3 @@ template <typename ConfigT> struct sub_irq_builder {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_BUILDER_SUB_IRQ_BUILDER_HPP

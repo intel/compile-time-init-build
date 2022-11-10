@@ -1,11 +1,9 @@
+#pragma once
+
 #include <cib/detail/type_pack_element.hpp>
 
 #include <array>
-#include <type_traits>
 #include <utility>
-
-#ifndef COMPILE_TIME_INIT_BUILD_TYPE_LIST_HPP
-#define COMPILE_TIME_INIT_BUILD_TYPE_LIST_HPP
 
 namespace cib::detail {
 template <typename... Values> struct type_list {
@@ -64,5 +62,3 @@ constexpr auto type_list_cat(TypeLists... type_lists) {
         type_lists...);
 }
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_TYPE_LIST_HPP

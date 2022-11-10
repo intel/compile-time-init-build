@@ -1,5 +1,4 @@
-#ifndef CIB_LAZY_DOG_HPP
-#define CIB_LAZY_DOG_HPP
+#pragma once
 
 #include <cib/cib.hpp>
 
@@ -14,5 +13,3 @@ struct lazy_dog {
     constexpr static auto config =
         cib::config(cib::extend<say_message>(&talk_about_the_dog));
 };
-
-#endif // CIB_LAZY_DOG_HPP

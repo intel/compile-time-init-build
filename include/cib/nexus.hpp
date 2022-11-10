@@ -1,12 +1,10 @@
+#pragma once
+
 #include <cib/built.hpp>
 #include <cib/detail/compiler.hpp>
-#include <cib/detail/meta.hpp>
 #include <cib/detail/nexus_details.hpp>
 
 #include <type_traits>
-
-#ifndef COMPILE_TIME_INIT_BUILD_NEXUS_HPP
-#define COMPILE_TIME_INIT_BUILD_NEXUS_HPP
 
 namespace cib {
 /**
@@ -52,5 +50,3 @@ template <typename Config> struct nexus {
     }
 };
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_NEXUS_HPP

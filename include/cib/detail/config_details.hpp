@@ -1,11 +1,11 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/config_item.hpp>
 #include <cib/detail/meta.hpp>
-#include <cib/detail/type_list.hpp>
 #include <cib/tuple.hpp>
 
-#ifndef COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP
-#define COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP
+#include <type_traits>
 
 namespace cib::detail {
 template <auto Value>
@@ -37,5 +37,3 @@ struct config : public detail::config_item {
     }
 };
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_DETAIL_CONFIG_HPP

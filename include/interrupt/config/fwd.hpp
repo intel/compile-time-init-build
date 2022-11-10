@@ -1,6 +1,3 @@
-#ifndef CIB_INTERRUPT_CONFIG_FWD_HPP
-#define CIB_INTERRUPT_CONFIG_FWD_HPP
+#pragma once
 
 using EnableActionType = void (*)();
-
-#endif // CIB_INTERRUPT_CONFIG_FWD_HPP

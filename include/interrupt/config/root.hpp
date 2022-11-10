@@ -1,10 +1,9 @@
+#pragma once
+
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
 #include <boost/hana.hpp>
-
-#ifndef CIB_INTERRUPT_CONFIG_ROOT_HPP
-#define CIB_INTERRUPT_CONFIG_ROOT_HPP
 
 namespace interrupt {
 namespace hana = boost::hana;
@@ -40,5 +39,3 @@ template <typename InterruptHalT, typename... IrqsT> struct root {
         });
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_CONFIG_ROOT_HPP

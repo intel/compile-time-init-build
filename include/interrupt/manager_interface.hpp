@@ -1,5 +1,4 @@
-#ifndef CIB_INTERRUPT_MANAGER_INTERFACE_HPP
-#define CIB_INTERRUPT_MANAGER_INTERFACE_HPP
+#pragma once
 
 namespace interrupt {
 /**
@@ -12,5 +11,3 @@ class manager_interface {
     virtual void init_sub_interrupts() const = 0;
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_MANAGER_INTERFACE_HPP

@@ -1,11 +1,10 @@
+#pragma once
+
 #include <interrupt/manager_interface.hpp>
 
 #include <boost/hana.hpp>
 
-#include <type_traits>
-
-#ifndef CIB_INTERRUPT_IMPL_MANAGER_IMPL_HPP
-#define CIB_INTERRUPT_IMPL_MANAGER_IMPL_HPP
+#include <cstddef>
 
 namespace interrupt {
 namespace hana = boost::hana;
@@ -104,5 +103,3 @@ class manager_impl : public manager_interface {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_IMPL_MANAGER_IMPL_HPP

@@ -1,5 +1,4 @@
-#ifndef COMPILE_TIME_INIT_BUILD_BUILDER_META_HPP
-#define COMPILE_TIME_INIT_BUILD_BUILDER_META_HPP
+#pragma once
 
 namespace cib {
 /**
@@ -25,5 +24,3 @@ template <typename BuilderType, typename InterfaceType> struct builder_meta {
     auto interface() -> InterfaceType;
 };
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_BUILDER_META_HPP

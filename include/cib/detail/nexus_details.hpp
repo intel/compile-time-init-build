@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/meta.hpp>
@@ -5,8 +7,8 @@
 #include <cib/set.hpp>
 #include <cib/tuple.hpp>
 
-#ifndef COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
-#define COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
+#include <type_traits>
+#include <utility>
 
 namespace cib {
 struct extract_service_tag {
@@ -68,7 +70,4 @@ template <typename Config, typename Tag> struct initialized {
     CIB_CONSTEXPR static auto value =
         initialized_builders_v<Config>.get(cib::tag_<Tag>).builder;
 };
-
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_NEXUS_DETAILS_HPP
