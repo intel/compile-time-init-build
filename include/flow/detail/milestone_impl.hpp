@@ -10,6 +10,6 @@ class milestone_base;
 
 namespace flow::detail {
 template <typename NameType> void log_flow_milestone() {
-    TRACE("flow.milestone({})", NameType{});
+    CIB_TRACE("flow.milestone({})", NameType{});
 }
 } // namespace flow::detail

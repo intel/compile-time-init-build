@@ -46,7 +46,7 @@ class PriorityQueue {
      */
     [[nodiscard]] constexpr auto top() const -> ValueType {
         if (empty()) {
-            FATAL("PriorityQueue::top() called on empty PriorityQueue");
+            CIB_FATAL("PriorityQueue::top() called on empty PriorityQueue");
             return {};
         }
         return heap[0];
@@ -76,7 +76,7 @@ class PriorityQueue {
      */
     constexpr auto push(const ValueType value) -> void {
         if (full()) {
-            FATAL("PriorityQueue::push() attempted when full");
+            CIB_FATAL("PriorityQueue::push() attempted when full");
             return;
         }
         *end = value;
@@ -96,7 +96,7 @@ class PriorityQueue {
      */
     constexpr auto pop() -> ValueType {
         if (empty()) {
-            FATAL("PriorityQueue::pop() attempted when empty");
+            CIB_FATAL("PriorityQueue::pop() attempted when empty");
             return {};
         }
         ValueType topValue = top();

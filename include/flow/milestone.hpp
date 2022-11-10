@@ -22,7 +22,7 @@ class milestone_base {
     template <typename Name>
     constexpr milestone_base([[maybe_unused]] Name name, FunctionPtr run_ptr)
         : run{run_ptr}, log_name {
-        []() { TRACE("flow.milestone({})", Name{}); }
+        []() { CIB_TRACE("flow.milestone({})", Name{}); }
     }
 
 #if defined(__GNUC__) && __GNUC__ < 12

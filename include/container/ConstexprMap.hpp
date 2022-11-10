@@ -98,7 +98,7 @@ class ConstexprMap {
      *      An Entry from the map.
      */
     [[nodiscard]] constexpr auto pop() -> Entry {
-        ASSERT(size > 0);
+        CIB_ASSERT(size > 0);
         size--;
         return storage[size];
     }
@@ -150,7 +150,7 @@ class ConstexprMap {
      */
     [[nodiscard]] constexpr auto get(KeyType targetKey) -> ValueType & {
         auto entryIndex = find(targetKey);
-        ASSERT(entryIndex);
+        CIB_ASSERT(entryIndex);
         return storage[*entryIndex].value;
     }
 
@@ -168,7 +168,7 @@ class ConstexprMap {
     [[nodiscard]] constexpr auto get(KeyType targetKey) const
         -> ValueType const & {
         auto entryIndex = find(targetKey);
-        ASSERT(entryIndex);
+        CIB_ASSERT(entryIndex);
         return storage[*entryIndex].value;
     }
 
@@ -190,7 +190,7 @@ class ConstexprMap {
         if (entryIndex) {
             storage[*entryIndex].value = v;
         } else {
-            ASSERT(size < Capacity);
+            CIB_ASSERT(size < Capacity);
             storage[size] = Entry(k, v);
             size++;
         }

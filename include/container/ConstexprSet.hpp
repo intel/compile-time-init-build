@@ -31,9 +31,9 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
 
     constexpr ConstexprSet(std::initializer_list<KeyType> src) {
         if (src.size() > Capacity) {
-            FATAL("Initializer list size {} is bigger than allocated set "
-                  "capacity {}",
-                  src.size(), Capacity);
+            CIB_FATAL("Initializer list size {} is bigger than allocated set "
+                      "capacity {}",
+                      src.size(), Capacity);
         } else {
             for (auto k : src) {
                 storage.put(k, true);
