@@ -2,40 +2,21 @@
 
 #include <cib/builder_meta.hpp>
 #include <container/ConstexprMultiMap.hpp>
-#include <flow/impl.hpp>
-#include <flow/milestone.hpp>
+#include <seq/build_status.hpp>
+#include <seq/impl.hpp>
+#include <seq/step.hpp>
 
-namespace flow {
-/**
- * flow::builder enables multiple independent components to collaboratively
- * build a flow::impl.
- *
- * flow::builder is fully constexpr and is not intended to ever execute at
- * runtime. Instead, flow::builder is intended to be executed in a constexpr
- * context to build Flows. The entire flow::impl building process can occur at
- * compile-time.
- *
- * @tparam NodeCapacity
- *      The maximum number of actions and milestones that can be added to a
- *      flow::builder.
- * *
- * @tparam DependencyCapacity
- *      The maximum number of dependencies from one action or milestone to
- *      another.
- *
- * @see flow::impl
- */
-template <typename NodeType, template <typename, int> typename ImplType,
-          typename NameT = void, std::size_t NodeCapacity = 64,
+namespace seq {
+template <typename NameT = void, std::size_t NodeCapacity = 64,
           std::size_t DependencyCapacity = 16>
-class generic_builder {
+class builder {
   private:
     /**
-     * A type to map milestone sources to milestone destinations. Like edges
+     * A type to map step sources to step destinations. Like edges
      * on a graph.
      */
-    using GraphType =
-        ConstexprMultiMap<NodeType, NodeType, NodeCapacity, DependencyCapacity>;
+    using GraphType = ConstexprMultiMap<step_base, step_base, NodeCapacity,
+                                        DependencyCapacity>;
 
     GraphType dependencyGraph;
 
@@ -44,12 +25,12 @@ class generic_builder {
      *      The graph to check for edges.
      *
      * @param node
-     *      The milestone to inspect.
+     *      The step to inspect.
      *
      * @return
-     *      True if the milestone has no incoming edges.
+     *      True if the step has no incoming edges.
      */
-    static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
+    static constexpr auto hasNoIncomingEdges(GraphType &graph, step_base node)
         -> bool {
         // std::find_if is not constexpr in c++17 :(
         for (auto s : graph) {
@@ -62,9 +43,9 @@ class generic_builder {
     }
 
     [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const
-        -> ConstexprSet<NodeType, NodeCapacity> {
+        -> ConstexprSet<step_base, NodeCapacity> {
         GraphType graph = dependencyGraph;
-        ConstexprSet<NodeType, NodeCapacity> nodesWithNoIncomingEdge;
+        ConstexprSet<step_base, NodeCapacity> nodesWithNoIncomingEdge;
 
         for (auto const &entry : graph) {
             nodesWithNoIncomingEdge.add(entry.key);
@@ -82,21 +63,21 @@ class generic_builder {
   public:
     using Name = NameT;
 
-    constexpr generic_builder() : dependencyGraph() {}
+    constexpr builder() : dependencyGraph() {}
 
     /**
-     * Add a flow description. A flow description describes the dependencies
-     * between two or more milestones.
+     * Add a seq description. A seq description describes the dependencies
+     * between two or more steps.
      *
-     * For example, the following describes a flow with three milestones, each
+     * For example, the following describes a seq with three steps, each
      * one ordered after the previous:
      *
      * <pre>
      *      builder.add(a >> b >> c);
      * </pre>
      *
-     * in_t this sequence milestones a, b, and c would be executed in that order
-     * if the flow were directed to go to milestone c.
+     * in_t this sequence steps a, b, and c would be executed in that order
+     * if the seq were directed to go to step c.
      *
      * detail::Milestones can be referenced in multiple calls to "add". For
      * example, the following specifies that both "b" and "c" will be executed
@@ -110,13 +91,14 @@ class generic_builder {
      * Note that it does not specify an ordering requirement between "b" and
      * "c".
      */
-    template <typename T> constexpr auto add(T const &flow_description) {
-        if constexpr (std::is_base_of_v<NodeType, T>) {
-            dependencyGraph.put(flow_description);
+    template <typename T>
+    constexpr auto add(T const &flowDescription) -> builder & {
+        if constexpr (std::is_base_of_v<step_base, T>) {
+            dependencyGraph.put(flowDescription);
 
         } else {
-            flow_description.walk([&](NodeType lhs, NodeType rhs) {
-                if (rhs == NodeType{}) {
+            flowDescription.walk([&](step_base lhs, step_base rhs) {
+                if (rhs == step_base{}) {
                     dependencyGraph.put(lhs);
                 } else {
                     dependencyGraph.put(lhs, rhs);
@@ -128,24 +110,24 @@ class generic_builder {
     }
 
     /**
-     * Create a flow::impl object combining all the specifications previously
-     * given to the flow::builder.
+     * Create a seq::impl object combining all the specifications previously
+     * given to the seq::builder.
      *
      * @tparam OptimizedFlowCapacity
-     *      The maximum number of detail::Milestones and actions the flow::impl
+     *      The maximum number of detail::Milestones and actions the seq::impl
      * will contain. This can be optimized to the minimal value if the
-     *      flow::builder is assigned to a constexpr variable. The size()
+     *      seq::builder is assigned to a constexpr variable. The size()
      *      method can then be used as this template parameter.
      *
      * @return
-     *      A flow::impl with all dependencies and requirements resolved.
+     *      A seq::impl with all dependencies and requirements resolved.
      */
     template <int OptimizedFlowCapacity>
     [[nodiscard]] constexpr auto internal_build() const
-        -> ImplType<Name, OptimizedFlowCapacity> {
+        -> seq::impl<OptimizedFlowCapacity> {
         // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
         GraphType graph = dependencyGraph;
-        NodeType orderedList[NodeCapacity] = {};
+        step_base orderedList[NodeCapacity] = {};
         int listSize = 0;
 
         auto nodesWithNoIncomingEdge = getNodesWithNoIncomingEdge();
@@ -188,18 +170,18 @@ class generic_builder {
          */
         auto buildStatus = graph.isEmpty()
                                ? build_status::SUCCESS
-                               : build_status::FLOW_HAS_CIRCULAR_DEPENDENCY;
+                               : build_status::SEQ_HAS_CIRCULAR_DEPENDENCY;
 
-        return ImplType<Name, OptimizedFlowCapacity>(orderedList, buildStatus);
+        return seq::impl<OptimizedFlowCapacity>(orderedList, buildStatus);
     }
 
     /**
      * @return
-     *      The flow::impl Capacity necessary to fit the built flow::impl.
+     *      The seq::impl Capacity necessary to fit the built seq::impl.
      */
     [[nodiscard]] constexpr auto size() const -> std::size_t {
         GraphType graph = dependencyGraph;
-        ConstexprSet<NodeType, NodeCapacity> allNodes;
+        ConstexprSet<step_base, NodeCapacity> allNodes;
 
         for (auto entry : graph) {
             allNodes.add(entry.key);
@@ -215,33 +197,27 @@ class generic_builder {
     /// this builder supports the cib pattern and how to build it.
     ///
     ///////////////////////////////////////////////////////////////////////////
-    using FunctionPtr = std::add_pointer<void()>::type;
 
-    template <typename BuilderValue> static void runImpl() {
+    template <typename BuilderValue> static auto runImpl() -> void {
         constexpr auto builder = BuilderValue::value;
         constexpr auto size = builder.size();
-        constexpr auto flow = builder.template internal_build<size>();
+        constexpr auto seq = builder.template internal_build<size>();
 
-        static_assert(flow.getBuildStatus() == build_status::SUCCESS);
+        static_assert(seq.getBuildStatus() == build_status::SUCCESS);
 
-        flow();
+        seq();
     }
 
     template <typename BuilderValue>
-    [[nodiscard]] static constexpr auto build() -> FunctionPtr {
+    [[nodiscard]] static constexpr auto build() -> func_ptr {
         return runImpl<BuilderValue>;
     }
 };
 
-template <typename NameT = void, std::size_t NodeCapacity = 64,
-          std::size_t DependencyCapacity = 16>
-using builder = generic_builder<milestone_base, flow::impl, NameT, NodeCapacity,
-                                DependencyCapacity>;
-
 /**
- * Extend this to create named flow services.
+ * Extend this to create named seq services.
  *
- * Types that extend flow::meta can be used as unique names with
+ * Types that extend seq::meta can be used as unique names with
  * cib::exports and cib::extend.
  *
  * @see cib::exports
@@ -251,5 +227,7 @@ template <typename NameT = void, std::size_t NodeCapacity = 64,
           std::size_t DependencyCapacity = 16>
 struct service
     : public cib::builder_meta<builder<NameT, NodeCapacity, DependencyCapacity>,
-                               FunctionPtr> {};
-} // namespace flow
+                               func_ptr> // FIXME: this needs to be updated to
+                                         // use a pure virtual base class
+{};
+} // namespace seq

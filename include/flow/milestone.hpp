@@ -46,12 +46,12 @@ class milestone_base {
 
 template <typename LhsT, typename RhsT>
 [[nodiscard]] constexpr auto operator>>(LhsT const &lhs, RhsT const &rhs) {
-    return detail::dependency{lhs, rhs};
+    return detail::dependency<milestone_base, LhsT, RhsT>{lhs, rhs};
 }
 
 template <typename LhsT, typename RhsT>
 [[nodiscard]] constexpr auto operator&&(LhsT const &lhs, RhsT const &rhs) {
-    return detail::parallel{lhs, rhs};
+    return detail::parallel<milestone_base, LhsT, RhsT>{lhs, rhs};
 }
 
 /**
