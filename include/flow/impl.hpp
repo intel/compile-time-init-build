@@ -6,6 +6,10 @@
 #include <type_traits>
 
 namespace flow {
+struct interface {
+    virtual auto operator()() const -> void {}
+};
+
 /**
  * flow::impl is a constant representation of a series of Milestones and actions
  * to be executed in a specific order.
@@ -23,7 +27,7 @@ namespace flow {
  *
  * @see flow::builder
  */
-template <typename Name, int NumSteps> class impl {
+template <typename Name, int NumSteps> class impl : public interface {
   private:
     constexpr static bool loggingEnabled = !std::is_same<Name, void>::value;
 
@@ -74,7 +78,7 @@ template <typename Name, int NumSteps> class impl {
     /**
      * Execute the entire flow in order.
      */
-    constexpr void operator()() const {
+    auto operator()() const -> void final {
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.start({})", Name{});
         }

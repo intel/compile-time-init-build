@@ -3,7 +3,7 @@ IndentWidth: 4
 
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^<(container|cib|flow|interrupt|log|msg|sc)/.*'
+  - Regex: '^<(container|cib|flow|interrupt|log|msg|sc|seq)/.*'
     Priority: 1
   - Regex: '^<(boost|catch2|gmock|gtest)/.*'
     Priority: 2

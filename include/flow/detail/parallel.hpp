@@ -3,23 +3,26 @@
 #include <flow/detail/walk.hpp>
 
 namespace flow::detail {
-template <typename LhsType, typename RhsType> struct parallel {
+template <typename NodeType, typename LhsType, typename RhsType>
+struct parallel {
     LhsType lhs;
     RhsType rhs;
 
     constexpr parallel(LhsType l, RhsType r) : lhs(l), rhs(r) {}
 
     template <typename Callable> constexpr void walk(Callable c) const {
-        detail::node_walk(c, lhs);
-        detail::node_walk(c, rhs);
+        detail::node_walk<NodeType>(c, lhs);
+        detail::node_walk<NodeType>(c, rhs);
     }
 
     constexpr auto get_heads() const {
-        return detail::get_heads(lhs) + detail::get_heads(rhs);
+        return detail::get_heads<NodeType>(lhs) +
+               detail::get_heads<NodeType>(rhs);
     }
 
     constexpr auto get_tails() const {
-        return detail::get_tails(lhs) + detail::get_tails(rhs);
+        return detail::get_tails<NodeType>(lhs) +
+               detail::get_tails<NodeType>(rhs);
     }
 };
 } // namespace flow::detail

@@ -35,7 +35,8 @@ add_executable(
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
-    msg/message.cpp)
+    msg/message.cpp
+    seq/sequencer.cpp)
 
 target_link_libraries_system(cib-catch-tests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(cib-catch-tests PRIVATE cib warnings)
