@@ -1,9 +1,8 @@
+#pragma once
+
 #include <cib/config.hpp>
 #include <cib/nexus.hpp>
 #include <flow/flow.hpp>
-
-#ifndef COMPILE_TIME_INIT_BUILD_TOP_HPP
-#define COMPILE_TIME_INIT_BUILD_TOP_HPP
 
 namespace cib {
 /**
@@ -69,5 +68,3 @@ template <typename ProjectConfig> class top {
     static auto &service = my_nexus.template service<ServiceMeta>;
 };
 } // namespace cib
-
-#endif

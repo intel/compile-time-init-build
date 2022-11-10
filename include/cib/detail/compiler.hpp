@@ -1,5 +1,4 @@
-#ifndef COMPILE_TIME_INIT_BUILD_COMPILER_HPP
-#define COMPILE_TIME_INIT_BUILD_COMPILER_HPP
+#pragma once
 
 #ifndef __cpp_constinit
 #if defined(__clang__)
@@ -18,5 +17,3 @@
 #endif
 
 #define CIB_CONSTEXPR constexpr
-
-#endif // COMPILE_TIME_INIT_BUILD_COMPILER_HPP

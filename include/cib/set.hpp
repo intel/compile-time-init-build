@@ -1,8 +1,7 @@
+#pragma once
+
 #include <cib/detail/meta.hpp>
 #include <cib/detail/set_details.hpp>
-
-#ifndef CIB_SET_HPP
-#define CIB_SET_HPP
 
 namespace cib {
 template <typename LhsTuple, typename RhsTuple, typename MetaFunc = self_type>
@@ -170,5 +169,3 @@ template <typename MetaFunc, typename Tuple>
 #undef tags
 }
 } // namespace cib
-
-#endif // CIB_SET_HPP

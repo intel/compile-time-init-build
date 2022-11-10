@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
 
 #include <array>
@@ -7,9 +9,6 @@
 #include <cstddef>
 #include <type_traits>
 #include <utility>
-
-#ifndef COMPILE_TIME_INIT_BUILD_TUPLE_HPP
-#define COMPILE_TIME_INIT_BUILD_TUPLE_HPP
 
 namespace cib {
 template <typename T> struct tag_t {};
@@ -545,5 +544,3 @@ template <typename... Tuples> constexpr auto tuple_cat(Tuples &&...tuples) {
 template <typename... Elements>
 struct std::tuple_size<cib::tuple_impl<Elements...>>
     : std::integral_constant<std::size_t, sizeof...(Elements)> {};
-
-#endif // COMPILE_TIME_INIT_BUILD_TUPLE_HPP

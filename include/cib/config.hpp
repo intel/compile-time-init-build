@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cib/builder_meta.hpp>
 #include <cib/detail/builder_traits.hpp>
 #include <cib/detail/compiler.hpp>
@@ -8,11 +10,6 @@
 #include <cib/detail/exports.hpp>
 #include <cib/detail/extend.hpp>
 #include <cib/detail/meta.hpp>
-
-#include <type_traits>
-
-#ifndef COMPILE_TIME_INIT_BUILD_CONFIG_HPP
-#define COMPILE_TIME_INIT_BUILD_CONFIG_HPP
 
 namespace cib {
 /**
@@ -107,5 +104,3 @@ template <typename Predicate, typename... Configs>
     return detail::conditional{predicate, configs...};
 }
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_CONFIG_HPP

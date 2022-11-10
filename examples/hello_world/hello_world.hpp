@@ -1,5 +1,4 @@
-#ifndef CIB_HELLO_WORLD_HPP
-#define CIB_HELLO_WORLD_HPP
+#pragma once
 
 #include <cib/cib.hpp>
 
@@ -12,5 +11,3 @@ struct hello_world {
     constexpr static auto config =
         cib::components<core, say_hello_world, lazy_dog, dont_panic>;
 };
-
-#endif // CIB_HELLO_WORLD_HPP

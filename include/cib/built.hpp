@@ -1,8 +1,6 @@
-#include <cib/builder_meta.hpp>
-#include <cib/detail/builder_traits.hpp>
+#pragma once
 
-#ifndef COMPILE_TIME_INIT_BUILD_BUILT_HPP
-#define COMPILE_TIME_INIT_BUILD_BUILT_HPP
+#include <cib/detail/builder_traits.hpp>
 
 namespace cib {
 /**
@@ -15,5 +13,3 @@ namespace cib {
  */
 template <typename ServiceMeta> traits::interface_t<ServiceMeta> service;
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_BUILT_HPP

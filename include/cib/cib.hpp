@@ -1,5 +1,4 @@
-#ifndef COMPILE_TIME_INIT_BUILD_CIB_HPP
-#define COMPILE_TIME_INIT_BUILD_CIB_HPP
+#pragma once
 
 /*
  * Boost Software License - Version 1.0 - August 17th, 2003
@@ -45,5 +44,3 @@
 #include <cib/tuple.hpp>
 #include <interrupt/manager.hpp>
 #include <log/log.hpp>
-
-#endif // COMPILE_TIME_INIT_BUILD_CIB_HPP

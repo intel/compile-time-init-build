@@ -1,12 +1,11 @@
+#pragma once
+
 #include <cib/builder_meta.hpp>
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/meta.hpp>
 
 #include <array>
 #include <type_traits>
-
-#ifndef COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
-#define COMPILE_TIME_INIT_BUILD_CALLBACK_HPP
 
 namespace cib {
 /**
@@ -129,5 +128,3 @@ template <typename... ArgTypes>
 struct callback_meta : public cib::builder_meta<callback<0, ArgTypes...>,
                                                 void (*)(ArgTypes...)> {};
 } // namespace cib
-
-#endif // COMPILE_TIME_INIT_BUILD_CALLBACK_HPP

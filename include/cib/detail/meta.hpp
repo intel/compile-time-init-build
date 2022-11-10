@@ -1,10 +1,10 @@
+#pragma once
+
 #include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
 
+#include <cstddef>
 #include <type_traits>
-
-#ifndef COMPILE_TIME_INIT_BUILD_META_HPP
-#define COMPILE_TIME_INIT_BUILD_META_HPP
+#include <utility>
 
 namespace cib::detail {
 template <int value>
@@ -52,5 +52,3 @@ CIB_CONSTEXPR inline void for_each(
     for_each(seq, operation);
 }
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_META_HPP

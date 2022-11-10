@@ -1,8 +1,6 @@
-#include <type_traits>
-#include <utility>
+#pragma once
 
-#ifndef COMPILE_TIME_INIT_BUILD_TYPE_PACK_ELEMENT_HPP
-#define COMPILE_TIME_INIT_BUILD_TYPE_PACK_ELEMENT_HPP
+#include <utility>
 
 namespace cib::detail {
 #if defined(__clang__)
@@ -25,5 +23,3 @@ template <int Index, typename... Tn>
 using type_pack_element = typename get_type_pack_element<Index, Tn...>::type;
 #endif
 } // namespace cib::detail
-
-#endif // COMPILE_TIME_INIT_BUILD_TYPE_PACK_ELEMENT_HPP

@@ -1,14 +1,11 @@
+#pragma once
+
 #include <interrupt/builder/sub_irq_builder.hpp>
-#include <interrupt/config/fwd.hpp>
-#include <interrupt/fwd.hpp>
 #include <interrupt/impl/shared_sub_irq_impl.hpp>
 
 #include <boost/hana.hpp>
 
 #include <type_traits>
-
-#ifndef CIB_INTERRUPT_BUILDER_SHARED_SUB_IRQ_BUILDER_HPP
-#define CIB_INTERRUPT_BUILDER_SHARED_SUB_IRQ_BUILDER_HPP
 
 namespace interrupt {
 template <typename ConfigT> struct shared_sub_irq_builder {
@@ -17,8 +14,9 @@ template <typename ConfigT> struct shared_sub_irq_builder {
     constexpr static auto children = ConfigT::children;
 
     constexpr static auto irqs_type =
-        hana::transform(ConfigT::children, [](auto child) {
-            if constexpr (hana::size(child.children) > hana::size_c<0>) {
+        boost::hana::transform(ConfigT::children, [](auto child) {
+            if constexpr (boost::hana::size(child.children) >
+                          boost::hana::size_c<0>) {
                 return shared_sub_irq_builder<decltype(child)>{};
             } else {
                 return sub_irq_builder<decltype(child)>{};
@@ -29,7 +27,7 @@ template <typename ConfigT> struct shared_sub_irq_builder {
 
     template <typename IrqType, typename T>
     void constexpr add(T const &flow_description) {
-        hana::for_each(irqs, [&](auto &irq) {
+        boost::hana::for_each(irqs, [&](auto &irq) {
             irq.template add<IrqType>(flow_description);
         });
     }
@@ -43,6 +41,7 @@ template <typename ConfigT> struct shared_sub_irq_builder {
      */
     template <typename BuilderValue>
     [[nodiscard]] auto constexpr build() const {
+        using namespace boost;
         auto constexpr builder = BuilderValue::value;
 
         auto constexpr irq_indices = hana::to<hana::tuple_tag>(
@@ -60,5 +59,3 @@ template <typename ConfigT> struct shared_sub_irq_builder {
     }
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_BUILDER_SHARED_SUB_IRQ_BUILDER_HPP

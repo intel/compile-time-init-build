@@ -1,10 +1,9 @@
+#pragma once
+
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
 #include <boost/hana.hpp>
-
-#ifndef CIB_INTERRUPT_CONFIG_SUB_IRQ_HPP
-#define CIB_INTERRUPT_CONFIG_SUB_IRQ_HPP
 
 namespace interrupt {
 namespace hana = boost::hana;
@@ -41,5 +40,3 @@ struct sub_irq {
     constexpr static hana::tuple<> children{};
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_CONFIG_SUB_IRQ_HPP

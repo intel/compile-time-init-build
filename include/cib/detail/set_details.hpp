@@ -1,10 +1,12 @@
+#pragma once
+
 #include <cib/tuple.hpp>
 
 #include <array>
+#include <cstddef>
+#include <iterator>
 #include <string_view>
-
-#ifndef CIB_SET_DETAILS_HPP
-#define CIB_SET_DETAILS_HPP
+#include <utility>
 
 namespace cib::detail {
 // https://en.wikipedia.org/wiki/Quicksort#Hoare_partition_scheme
@@ -229,5 +231,3 @@ struct set_operation_algorithm {
     }
 };
 } // namespace cib::detail
-
-#endif // CIB_SET_DETAILS_HPP

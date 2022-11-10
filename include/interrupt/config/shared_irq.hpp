@@ -1,10 +1,9 @@
+#pragma once
+
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
 #include <boost/hana.hpp>
-
-#ifndef CIB_INTERRUPT_CONFIG_SHARED_IRQ_HPP
-#define CIB_INTERRUPT_CONFIG_SHARED_IRQ_HPP
 
 namespace interrupt {
 namespace hana = boost::hana;
@@ -51,5 +50,3 @@ struct shared_irq {
     constexpr static auto irq_number = IrqNumberT;
 };
 } // namespace interrupt
-
-#endif // CIB_INTERRUPT_CONFIG_SHARED_IRQ_HPP
