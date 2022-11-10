@@ -40,6 +40,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
+    add_subdirectory(examples)
 
     # Build single-header release.
     find_package(PythonInterp 3 REQUIRED)
