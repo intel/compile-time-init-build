@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cib/tuple.hpp>
-#include <container/Array.hpp>
 #include <container/Vector.hpp>
 #include <log/log.hpp>
 #include <msg/message.hpp>
 
+#include <array>
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 
@@ -171,7 +172,7 @@ template <typename BaseMsgT, size_t NumMsgCallbacksT,
 class handler {
   private:
     using CallbackType = Callback<BaseMsgT, ExtraCallbackArgsT...>;
-    using CallbacksType = Array<CallbackType const *, NumMsgCallbacksT>;
+    using CallbacksType = std::array<CallbackType const *, NumMsgCallbacksT>;
     CallbacksType callbacks{};
 
   public:
@@ -222,8 +223,8 @@ class handler_builder {
     template <size_t NumMsgCallbacksT>
     [[nodiscard]] constexpr auto build_backend() const
         -> handler<BaseMsgT, NumMsgCallbacksT, ExtraCallbackArgsT...> {
-        Array<Callback<BaseMsgT, ExtraCallbackArgsT...> const *,
-              NumMsgCallbacksT>
+        std::array<Callback<BaseMsgT, ExtraCallbackArgsT...> const *,
+                   NumMsgCallbacksT>
             new_msg_callbacks;
 
         for (std::size_t i = 0; i < callbacks.size(); i++) {

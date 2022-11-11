@@ -3,6 +3,7 @@
 #include <container/ConstexprMap.hpp>
 
 #include <cstddef>
+#include <initializer_list>
 
 /**
  * A fully constexpr set implementation.

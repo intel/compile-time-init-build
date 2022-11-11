@@ -2,6 +2,7 @@
 
 #include <log/log.hpp>
 
+#include <array>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
@@ -15,9 +16,8 @@ using size_t = std::size_t;
  * @tparam Capacity  Maximum amount of elements the Vector can hold.
  */
 template <typename ValueType, size_t Capacity> class Vector {
-  private:
-    ValueType storage[Capacity]{};
-    size_t currentSize{};
+    std::array<ValueType, Capacity> storage{};
+    std::size_t currentSize{};
 
   public:
     using value_type = ValueType;
@@ -38,7 +38,7 @@ template <typename ValueType, size_t Capacity> class Vector {
                 "Initializer list size {} is bigger than vector capacity {}",
                 src.size(), sc::int_<Capacity>);
         } else {
-            auto i = 0;
+            auto i = std::size_t{};
             for (auto element : src) {
                 storage[i] = element;
                 i++;
@@ -50,18 +50,18 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr Vector() = default;
 
-    [[nodiscard]] constexpr auto begin() -> iterator { return storage; }
+    [[nodiscard]] constexpr auto begin() -> iterator { return &storage[0]; }
 
     [[nodiscard]] constexpr auto begin() const -> const_iterator {
-        return storage;
+        return &storage[0];
     }
 
     [[nodiscard]] constexpr auto end() -> iterator {
-        return &(storage[currentSize]);
+        return &storage[currentSize];
     }
 
     [[nodiscard]] constexpr auto end() const -> const_iterator {
-        return &(storage[currentSize]);
+        return &storage[currentSize];
     }
 
     [[nodiscard]] constexpr auto size() const -> std::size_t {

@@ -1,11 +1,12 @@
 #pragma once
 
-#include <container/Array.hpp>
 #include <log/log.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <functional>
+#include <iterator>
 
 /**
  * A PriorityQueue is a container that maintains the highest priority element
@@ -27,10 +28,7 @@ template <typename ValueType, std::size_t MaxSize,
 class PriorityQueue {
     static_assert(MaxSize > 0, "PriorityQueue MaxSize must be at least 1");
 
-  private:
-    using StorageType = ValueType[MaxSize];
-
-    StorageType heap{};
+    std::array<ValueType, MaxSize> heap{};
     decltype(std::begin(heap)) end{std::begin(heap)};
 
   public:
