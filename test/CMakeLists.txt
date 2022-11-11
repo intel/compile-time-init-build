@@ -26,11 +26,8 @@ add_executable(
     container/ConstexprMap.cpp
     container/ConstexprMultiMap.cpp
     container/ConstexprSet.cpp
-    container/DoubleLinkedList.cpp
-    container/LinkedList.cpp
     container/Vector.cpp
     container/PriorityQueue.cpp
-    container/Queue.cpp
     msg/match.cpp
     msg/disjoint_field.cpp
     msg/field.cpp
