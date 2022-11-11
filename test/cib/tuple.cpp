@@ -620,3 +620,51 @@ TEST_CASE("fold_right (heterogeneous types in tuple)", "[tuple]") {
     REQUIRE(t.fold_right(std::plus{}) == addend<3>{});
     static_assert(t.fold_right(std::plus{}) == addend<3>{});
 }
+
+TEST_CASE("for_each (member function)", "[tuple]") {
+    {
+        auto const t = cib::make_tuple(1, 2, 3);
+        auto sum = 0;
+        t.for_each([&](auto x) { sum += x; });
+        REQUIRE(sum == 6);
+    }
+    {
+        auto t = cib::make_tuple(1, 2, 3);
+        t.for_each([](auto &x) { x += 5; });
+        REQUIRE(t == cib::make_tuple(6, 7, 8));
+    }
+    {
+        auto const t = cib::make_tuple(1, 2, 3);
+        auto f = t.for_each([calls = 0](auto) mutable {
+            ++calls;
+            return calls;
+        });
+        REQUIRE(f(0) == 4);
+    }
+}
+
+TEST_CASE("for_each (free function)", "[tuple]") {
+    {
+        const auto t = cib::make_tuple(1, 2, 3);
+        auto sum = 0;
+        for_each([&](auto x, auto y) { sum += x + y; }, t, t);
+        REQUIRE(sum == 12);
+    }
+    {
+        const auto t = cib::make_tuple(1);
+        auto sum = 0;
+        for_each([&](auto x, auto &&y) { sum += x + y.value; }, t,
+                 cib::make_tuple(move_only{2}));
+        REQUIRE(sum == 3);
+    }
+    {
+        auto const t = cib::make_tuple(1, 2, 3);
+        auto f = for_each(
+            [calls = 0](auto) mutable {
+                ++calls;
+                return calls;
+            },
+            t);
+        REQUIRE(f(0) == 4);
+    }
+}
