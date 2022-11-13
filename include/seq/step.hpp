@@ -21,7 +21,8 @@ class step_base {
 
   public:
     template <typename Name>
-    constexpr step_base(Name name, func_ptr forward_ptr, func_ptr backward_ptr)
+    constexpr step_base([[maybe_unused]] Name name, func_ptr forward_ptr,
+                        func_ptr backward_ptr)
         : _forward_ptr{forward_ptr}, _backward_ptr{backward_ptr}, log_name {
         []() { CIB_TRACE("seq.step({})", Name{}); }
     }
@@ -38,7 +39,7 @@ class step_base {
         -> bool {
 #if defined(__GNUC__) && __GNUC__ < 12
         return lhs.hash == rhs.hash;
-#elif
+#else
         return (lhs._forward_ptr) == (rhs._forward_ptr) &&
                (lhs._backward_ptr) == (rhs._backward_ptr) &&
                (lhs.log_name) == (rhs.log_name);

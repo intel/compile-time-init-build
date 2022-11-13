@@ -122,15 +122,19 @@ downloaded. To avoid re-downloading dependencies when reconfiguring cmake, it's
 recommended to designate a cache directory and set the `CPM_SOURCE_CACHE`
 environment variable.
 
-Unit tests are registered with CTest:
+Unit tests are registered with CTest, and will build and run as part of the
+built-in `all` target.
 
 ```shell
 cmake -B build
-cmake --build build -t all-cib-tests
-ctest --test-dir build
+cmake --build build
 ```
 
-This will build and run all the unit tests with CMake, Catch2 and GTest.
+This will build and run all the unit tests with Catch2 and GTest. To re-run them:
+
+```shell
+ctest --test-dir build
+```
 
 ## Features
 

@@ -14,7 +14,7 @@ function(clang_tidy_header HEADER TARGET)
                 ${HEADER}
         DEPENDS ${HEADER} ${CMAKE_SOURCE_DIR}/.clang-tidy)
 
-    add_library(${CT_NAME} ${CPP_NAME})
+    add_library(${CT_NAME} EXCLUDE_FROM_ALL ${CPP_NAME})
     target_link_libraries(${CT_NAME} PRIVATE ${TARGET})
     set_target_properties(
         ${CT_NAME}
