@@ -9,11 +9,11 @@
 
 namespace cib::detail {
 template <auto Value>
-CIB_CONSTEXPR static auto as_constant_v = std::integral_constant<
+constexpr static auto as_constant_v = std::integral_constant<
     std::remove_cv_t<std::remove_reference_t<decltype(Value)>>, Value>{};
 
 template <auto... Args> struct args {
-    static CIB_CONSTEXPR auto value =
+    static constexpr auto value =
         cib::make_tuple(self_type_index, as_constant_v<Args>...);
 };
 
@@ -27,7 +27,7 @@ struct config : public detail::config_item {
     }
 
     template <typename... Args>
-    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(Args const &...args) const {
+    [[nodiscard]] constexpr auto extends_tuple(Args const &...args) const {
         return ConfigArgs::value.apply([&](auto const &...config_args) {
             return configs_tuple.apply([&](auto const &...configs_pack) {
                 return cib::tuple_cat(

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
 
 #include <array>
