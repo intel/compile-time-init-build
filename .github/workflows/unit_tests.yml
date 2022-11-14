@@ -8,7 +8,7 @@ on:
     branches: [ main ]
 
 env:
-  BUILD_TYPE: Debug
+  CMAKE_GENERATOR: Ninja
 
 jobs:
   build_and_test:
@@ -16,126 +16,105 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler:
-          # test the generated single header
-          - name: clang-14
-            single_header: 1
+        compiler: [clang, gcc]
+        version: [9, 10, 11, 12, 13, 14]
+        cxx_standard: [17, 20]
+        build_type: [Debug]
+        include:
+          - version: 14
+            compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
-            cc: " /usr/lib/llvm-14/bin/clang"
+            cc: "/usr/lib/llvm-14/bin/clang"
             cxx: "/usr/lib/llvm-14/bin/clang++"
-          - name: gcc-11
-            single_header: 1
-            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
-            cc: "/usr/bin/gcc-11"
-            cxx: "/usr/bin/g++-11"
-
-          # test c++20 build
-          - name: clang-14
-            cxx_standard: 20
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
-            cc: " /usr/lib/llvm-14/bin/clang"
-            cxx: "/usr/lib/llvm-14/bin/clang++"
-          - name: clang-13
-            cxx_standard: 20
+          - version: 13
+            compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13
-            cc: " /usr/lib/llvm-13/bin/clang"
+            cc: "/usr/lib/llvm-13/bin/clang"
             cxx: "/usr/lib/llvm-13/bin/clang++"
-          - name: clang-12
-            cxx_standard: 20
+          - version: 12
+            compiler: clang
             install: sudo apt update && sudo apt-get install -y clang-12
-            cc: " /usr/lib/llvm-12/bin/clang"
+            cc: "/usr/lib/llvm-12/bin/clang"
             cxx: "/usr/lib/llvm-12/bin/clang++"
-          - name: clang-11
-            cxx_standard: 20
+          - version: 11
+            compiler: clang
             install: sudo apt update && sudo apt-get install -y clang-11
-            cc: " /usr/lib/llvm-11/bin/clang"
+            cc: "/usr/lib/llvm-11/bin/clang"
             cxx: "/usr/lib/llvm-11/bin/clang++"
-          - name: gcc-11
-            cxx_standard: 20
-            install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
-            cc: "/usr/bin/gcc-11"
-            cxx: "/usr/bin/g++-11"
-          - name: gcc-10
-            cxx_standard: 20
-            install: sudo apt update && sudo apt-get install -y gcc-10
-            cc: "/usr/bin/gcc-10"
-            cxx: "/usr/bin/g++-10"
-
-          # test c++17 build
-          - name: clang-14
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
-            cc: " /usr/lib/llvm-14/bin/clang"
-            cxx: "/usr/lib/llvm-14/bin/clang++"
-          - name: clang-13
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 13
-            cc: " /usr/lib/llvm-13/bin/clang"
-            cxx: "/usr/lib/llvm-13/bin/clang++"
-          - name: clang-12
-            install: sudo apt update && sudo apt-get install -y clang-12
-            cc: " /usr/lib/llvm-12/bin/clang"
-            cxx: "/usr/lib/llvm-12/bin/clang++"
-          - name: clang-11
-            install: sudo apt update && sudo apt-get install -y clang-11
-            cc: " /usr/lib/llvm-11/bin/clang"
-            cxx: "/usr/lib/llvm-11/bin/clang++"
-          - name: clang-10
+          - version: 10
+            compiler: clang
             install: sudo apt update && sudo apt-get install -y clang-10
-            cc: " /usr/lib/llvm-10/bin/clang"
+            cc: "/usr/lib/llvm-10/bin/clang"
             cxx: "/usr/lib/llvm-10/bin/clang++"
-          - name: clang-9
+          - version: 9
+            compiler: clang
             install: sudo apt update && sudo apt-get install -y clang-9
-            cc: " /usr/lib/llvm-9/bin/clang"
+            cc: "/usr/lib/llvm-9/bin/clang"
             cxx: "/usr/lib/llvm-9/bin/clang++"
-          - name: clang-8
-            install: sudo apt update && sudo apt-get install -y clang-8
-            cc: " /usr/lib/llvm-8/bin/clang"
-            cxx: "/usr/lib/llvm-8/bin/clang++"
-          - name: clang-7
-            install: sudo apt update && sudo apt-get install -y clang-7
-            cc: " /usr/lib/llvm-7/bin/clang"
-            cxx: "/usr/lib/llvm-7/bin/clang++"
-
-          - name: gcc-11
+          - version: 11
+            compiler: gcc
             install: sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt update && sudo apt-get install -y gcc-11 g++-11
             cc: "/usr/bin/gcc-11"
             cxx: "/usr/bin/g++-11"
-          - name: gcc-10
+          - version: 10
+            compiler: gcc
             install: sudo apt update && sudo apt-get install -y gcc-10
             cc: "/usr/bin/gcc-10"
             cxx: "/usr/bin/g++-10"
-          - name: gcc-9
+          - version: 9
+            compiler: gcc
             install: sudo apt update && sudo apt-get install -y gcc-9
             cc: "/usr/bin/gcc-9"
             cxx: "/usr/bin/g++-9"
-          
+        exclude:
+          # clang pre-version 11: C++17 only
+          - compiler: clang
+            version: 10
+            cxx_standard: 20
+          - compiler: clang
+            version: 9
+            cxx_standard: 20
+          # gcc only goes up to 11 on ubuntu-20.04
+          - compiler: gcc
+            version: 14
+          - compiler: gcc
+            version: 13
+          - compiler: gcc
+            version: 12
+          # gcc pre-version 10: C++17 only
+          - compiler: gcc
+            version: 9
+            cxx_standard: 20
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: install compiler
-        run: ${{ matrix.compiler.install }}
+      - name: Install build tools
+        run: |
+          ${{ matrix.install }}
+          sudo apt install -y ninja-build
 
       - name: Configure CMake
         env:
-          CC: ${{ matrix.compiler.cc }}
-          CXX: ${{ matrix.compiler.cxx }}
-          SINGLE_HEADER: ${{ matrix.compiler.single_header }}
-          CXX_STANDARD: ${{ matrix.compiler.cxx_standard }}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+          CXX_STANDARD: ${{ matrix.cxx_standard }}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t all-cib-tests
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t all-cib-tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}}
+        run: ctest -C ${{matrix.build_type}}
 
   quality_checks_pass:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install compiler
-        run: sudo apt update && sudo apt-get install -y clang-11
+      - name: Install build tools
+        run: sudo apt update && sudo apt-get install -y clang-11 ninja-build
 
       - name: Install cmake-format
         run: |
@@ -147,24 +126,28 @@ jobs:
           CC: "/usr/lib/llvm-11/bin/clang"
           CXX: "/usr/lib/llvm-11/bin/clang++"
           CXX_STANDARD: 20
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        run: cmake -B ${{github.workspace}}/build
 
       - name: Run quality checks
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t quality
+        run: cmake --build ${{github.workspace}}/build -t quality
 
   build_single_header:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+
+      - name: Install build tools
+        run: sudo apt update && sudo apt-get install -y clang-11 ninja-build
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        env:
+          CC: "/usr/lib/llvm-11/bin/clang"
+          CXX: "/usr/lib/llvm-11/bin/clang++"
+          CXX_STANDARD: 20
+        run: cmake -B ${{github.workspace}}/build
 
       - name: Build
-        # Build your program with the given configuration
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target release_header
+        run: cmake --build ${{github.workspace}}/build -t release_header
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
