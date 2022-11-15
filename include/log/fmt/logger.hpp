@@ -1,6 +1,5 @@
 #pragma once
 
-#define FMT_HEADER_ONLY
 #include <log/fmt/catalog.hpp>
 #include <log/log_level.hpp>
 #include <sc/format.hpp>
