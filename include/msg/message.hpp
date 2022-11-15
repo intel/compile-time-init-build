@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cib/tuple.hpp>
-#include <container/Array.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
 #include <sc/string_constant.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
@@ -26,12 +26,17 @@ constexpr bool is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),
 template <std::uint32_t MaxNumDWordsT> struct message_data {
     static constexpr auto MaxNumDWords = MaxNumDWordsT;
     std::uint32_t num_dwords{};
-    Array<std::uint32_t, MaxNumDWords> data{};
+    std::array<std::uint32_t, MaxNumDWords> data{};
 
     constexpr message_data() = default;
 
     constexpr message_data(std::initializer_list<std::uint32_t> src)
-        : num_dwords{static_cast<std::uint32_t>(src.size())}, data{src} {}
+        : num_dwords{static_cast<std::uint32_t>(src.size())} {
+        auto i = std::size_t{};
+        for (auto element : src) {
+            data[i++] = element;
+        }
+    }
 
     [[nodiscard]] constexpr auto operator[](std::size_t index) const
         -> const std::uint32_t & {

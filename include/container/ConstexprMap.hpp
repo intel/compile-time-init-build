@@ -2,6 +2,7 @@
 
 #include <log/log.hpp>
 
+#include <array>
 #include <cstddef>
 #include <iterator>
 #include <optional>
@@ -46,7 +47,7 @@ class ConstexprMap {
     using Entry = MapEntry<KeyType, ValueType>;
 
   private:
-    Entry storage[Capacity]{};
+    std::array<Entry, Capacity> storage{};
     std::size_t size{};
 
     /**

@@ -19,7 +19,6 @@ add_unit_test(
     container_test
     CATCH2
     FILES
-    container/Array.cpp
     container/ConstexprMap.cpp
     container/ConstexprMultiMap.cpp
     container/ConstexprSet.cpp
