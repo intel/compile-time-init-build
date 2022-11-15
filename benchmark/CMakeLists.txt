@@ -1,4 +1,4 @@
-add_executable(compilation_benchmark big_nexus.cpp)
+add_executable(compilation_benchmark EXCLUDE_FROM_ALL big_nexus.cpp)
 
 target_compile_options(
     compilation_benchmark

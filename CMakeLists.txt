@@ -34,10 +34,10 @@ target_compile_options(
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    include(cmake/test.cmake)
     include(cmake/warnings.cmake)
 
     # Enable functional and performance test suites.
-    enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)

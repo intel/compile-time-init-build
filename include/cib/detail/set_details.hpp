@@ -53,32 +53,45 @@ template <typename T> CIB_CONSTEVAL static void quicksort(T &collection) {
 
 namespace cib::detail {
 struct typename_map_entry {
-    std::string_view name;
-    std::size_t index;
-    std::size_t src;
+    std::string_view name{};
+    std::size_t index{};
+    std::size_t src{};
 
-    constexpr auto operator<(typename_map_entry rhs) const {
-        return name < rhs.name;
+  private:
+    [[nodiscard]] constexpr friend auto
+    operator==(typename_map_entry const &lhs, typename_map_entry const &rhs)
+        -> bool {
+        return lhs.name == rhs.name;
     }
 
-    constexpr auto operator<=(typename_map_entry rhs) const {
-        return name <= rhs.name;
+    [[nodiscard]] constexpr friend auto
+    operator!=(typename_map_entry const &lhs, typename_map_entry const &rhs)
+        -> bool {
+        return not(lhs == rhs);
     }
 
-    constexpr auto operator>(typename_map_entry rhs) const {
-        return name > rhs.name;
+    [[nodiscard]] constexpr friend auto operator<(typename_map_entry const &lhs,
+                                                  typename_map_entry const &rhs)
+        -> bool {
+        return lhs.name < rhs.name; // NOLINT(modernize-use-nullptr)
     }
 
-    constexpr auto operator>=(typename_map_entry rhs) const {
-        return name >= rhs.name;
+    [[nodiscard]] constexpr friend auto operator>(typename_map_entry const &lhs,
+                                                  typename_map_entry const &rhs)
+        -> bool {
+        return rhs < lhs;
     }
 
-    constexpr auto operator==(typename_map_entry rhs) const {
-        return name == rhs.name;
+    [[nodiscard]] constexpr friend auto
+    operator<=(typename_map_entry const &lhs, typename_map_entry const &rhs)
+        -> bool {
+        return not(rhs < lhs);
     }
 
-    constexpr auto operator!=(typename_map_entry rhs) const {
-        return name != rhs.name;
+    [[nodiscard]] constexpr friend auto
+    operator>=(typename_map_entry const &lhs, typename_map_entry const &rhs)
+        -> bool {
+        return not(lhs < rhs);
     }
 };
 

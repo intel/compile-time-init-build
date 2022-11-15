@@ -102,7 +102,7 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t all-cib-tests
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
