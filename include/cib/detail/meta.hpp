@@ -1,20 +1,18 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
-
 #include <cstddef>
 #include <type_traits>
 #include <utility>
 
 namespace cib::detail {
 template <int value>
-CIB_CONSTEXPR static auto int_ = std::integral_constant<int, value>{};
+constexpr static auto int_ = std::integral_constant<int, value>{};
 
 template <std::size_t value>
-CIB_CONSTEXPR static auto size_ = std::integral_constant<std::size_t, value>{};
+constexpr static auto size_ = std::integral_constant<std::size_t, value>{};
 
 template <typename Lhs, typename Rhs>
-CIB_CONSTEXPR static auto is_same_v =
+constexpr static auto is_same_v =
     std::is_same_v<std::remove_cv_t<std::remove_reference_t<Lhs>>,
                    std::remove_cv_t<std::remove_reference_t<Rhs>>>;
 
@@ -26,7 +24,7 @@ CIB_CONSTEXPR static auto is_same_v =
  * parameter.
  */
 template <typename IntegralType, IntegralType... Indices, typename CallableType>
-CIB_CONSTEXPR inline static void
+constexpr inline static void
 for_each([[maybe_unused]] std::integer_sequence<IntegralType, Indices...> const
              &sequence,
          CallableType const &operation) {
@@ -43,11 +41,11 @@ for_each([[maybe_unused]] std::integer_sequence<IntegralType, Indices...> const
  */
 template <typename IntegralType, IntegralType NumElements,
           typename CallableType>
-CIB_CONSTEXPR inline void for_each(
+constexpr inline void for_each(
     [[maybe_unused]] std::integral_constant<IntegralType, NumElements> const
         &num_elements,
     CallableType const &operation) {
-    CIB_CONSTEXPR auto seq =
+    constexpr auto seq =
         std::make_integer_sequence<IntegralType, NumElements>{};
     for_each(seq, operation);
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/meta.hpp>
 #include <cib/detail/type_list.hpp>
@@ -40,7 +39,7 @@ struct get_service_from_tuple {
 };
 
 template <typename Config> struct initialized_builders {
-    CIB_CONSTEXPR static auto value = transform(
+    constexpr static auto value = transform(
         index_metafunc_<extract_service_tag>,
         demux(get_service{}, Config::config.extends_tuple()),
         [](auto extensions) {
@@ -63,11 +62,11 @@ template <typename Config> struct initialized_builders {
 };
 
 template <typename Config>
-CIB_CONSTEXPR static auto &initialized_builders_v =
+constexpr static auto &initialized_builders_v =
     initialized_builders<Config>::value;
 
 template <typename Config, typename Tag> struct initialized {
-    CIB_CONSTEXPR static auto value =
+    constexpr static auto value =
         initialized_builders_v<Config>.get(cib::tag_<Tag>).builder;
 };
 } // namespace cib

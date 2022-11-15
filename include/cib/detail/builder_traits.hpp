@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
-
 #include <utility>
 
 namespace cib::traits {
@@ -12,8 +10,7 @@ template <typename BuilderMeta> struct builder {
 template <typename BuilderMeta>
 using builder_t = typename builder<BuilderMeta>::type;
 
-template <typename BuilderMeta>
-CIB_CONSTEXPR builder_t<BuilderMeta> builder_v = {};
+template <typename BuilderMeta> constexpr builder_t<BuilderMeta> builder_v = {};
 
 template <typename BuilderMeta> struct interface {
     using type = decltype(std::declval<BuilderMeta>().interface());

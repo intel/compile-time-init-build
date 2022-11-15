@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/detail/builder_traits.hpp>
+#include <cib/detail/compiler.hpp>
 #include <cib/detail/config_item.hpp>
 #include <cib/tuple.hpp>
 
@@ -17,7 +18,7 @@ struct extend : public config_item {
     }
 
     template <typename... InitArgs>
-    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(InitArgs const &...) const {
+    [[nodiscard]] constexpr auto extends_tuple(InitArgs const &...) const {
         return cib::make_tuple(*this);
     }
 };

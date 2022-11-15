@@ -55,7 +55,7 @@ template <auto... Args, typename... Configs>
  * @see cib::args
  */
 template <typename Args, typename... Components>
-CIB_CONSTEXPR static detail::components<Args, Components...> components{};
+constexpr static detail::components<Args, Components...> components{};
 
 /**
  * Declare a list of services for use in the project.
@@ -63,7 +63,7 @@ CIB_CONSTEXPR static detail::components<Args, Components...> components{};
  * @tparam Services
  */
 template <typename... Services>
-CIB_CONSTEXPR static detail::exports<Services...> exports{};
+constexpr static detail::exports<Services...> exports{};
 
 /**
  * Extend a service with new functionality.
@@ -89,7 +89,7 @@ template <typename Service, typename... Args>
  * @tparam ArgType
  *      The type of argument to reference from the args list.
  */
-template <typename ArgType> CIB_CONSTEXPR static detail::arg<ArgType> arg{};
+template <typename ArgType> constexpr static detail::arg<ArgType> arg{};
 
 /**
  * Include configs based on predicate.

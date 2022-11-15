@@ -8,14 +8,14 @@
 namespace cib::detail {
 template <typename Condition, typename... Configs>
 struct conditional : public config_item {
-    CIB_CONSTEXPR static Condition condition{};
+    constexpr static Condition condition{};
     detail::config<detail::args<>, Configs...> body;
 
     CIB_CONSTEVAL explicit conditional(Condition, Configs const &...configs)
         : body{{}, configs...} {}
 
     template <typename... Args>
-    [[nodiscard]] CIB_CONSTEXPR auto extends_tuple(Args const &...) const {
+    [[nodiscard]] constexpr auto extends_tuple(Args const &...) const {
         if constexpr (condition(Args{}...)) {
             return body.extends_tuple(Args{}...);
         } else {
@@ -25,11 +25,11 @@ struct conditional : public config_item {
 };
 
 template <typename Lhs, typename Rhs> struct equality {
-    CIB_CONSTEXPR static Lhs lhs{};
-    CIB_CONSTEXPR static Rhs rhs{};
+    constexpr static Lhs lhs{};
+    constexpr static Rhs rhs{};
 
     template <typename... Args>
-    CIB_CONSTEXPR auto operator()(Args const &...args) const -> bool {
+    constexpr auto operator()(Args const &...args) const -> bool {
         return lhs(args...) ==
                rhs; // FIXME: this assumes the RHS is a literal value
     }
@@ -42,8 +42,7 @@ template <typename MatchType> struct arg {
         return {};
     }
 
-    template <typename... Args>
-    CIB_CONSTEXPR auto operator()(Args... args) const {
+    template <typename... Args> constexpr auto operator()(Args... args) const {
         return cib::make_tuple(self_type_index, args...)
             .fold_right(
                 detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state) {

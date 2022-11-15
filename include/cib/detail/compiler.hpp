@@ -15,5 +15,3 @@
 #else
 #define CIB_CONSTEVAL consteval
 #endif
-
-#define CIB_CONSTEXPR constexpr

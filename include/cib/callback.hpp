@@ -50,11 +50,11 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      * @see cib::built
      */
     template <typename BuilderValue> static void run(ArgTypes... args) {
-        CIB_CONSTEXPR auto handler_builder = BuilderValue::value;
-        CIB_CONSTEXPR auto num_funcs = std::integral_constant<int, NumFuncs>{};
+        constexpr auto handler_builder = BuilderValue::value;
+        constexpr auto num_funcs = std::integral_constant<int, NumFuncs>{};
 
         detail::for_each(num_funcs, [&](auto i) {
-            CIB_CONSTEXPR auto func = handler_builder.funcs[i];
+            constexpr auto func = handler_builder.funcs[i];
             func(args...);
         });
     }
