@@ -25,7 +25,7 @@ add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_17)
 target_include_directories(cib INTERFACE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cib SYSTEM INTERFACE ${hana_SOURCE_DIR}/include)
-target_link_libraries_system(cib INTERFACE fmt::fmt)
+target_link_libraries_system(cib INTERFACE fmt::fmt-header-only)
 
 target_compile_options(
     cib
