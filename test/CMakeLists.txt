@@ -23,7 +23,6 @@ add_unit_test(
     container/ConstexprMultiMap.cpp
     container/ConstexprSet.cpp
     container/Vector.cpp
-    container/PriorityQueue.cpp
     LIBRARIES
     cib
     warnings)
