@@ -39,9 +39,7 @@ struct get_service_from_tuple {
 };
 
 template <typename Config> struct initialized_builders {
-    constexpr static auto value = transform(
-        index_metafunc_<extract_service_tag>,
-        demux(get_service{}, Config::config.extends_tuple()),
+    constexpr static auto value = transform<extract_service_tag>(
         [](auto extensions) {
             constexpr auto initial_builder = extensions.get(index_<0>).builder;
             using service =
@@ -56,7 +54,8 @@ template <typename Config> struct initialized_builders {
 
             return detail::service_entry<service, decltype(built_service)>{
                 built_service};
-        });
+        },
+        demux(get_service{}, Config::config.extends_tuple()));
 
     using type = decltype(value);
 };
