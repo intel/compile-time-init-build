@@ -1,5 +1,6 @@
 #pragma once
 
+#include <flow/impl.hpp>
 #include <interrupt/impl/sub_irq_impl.hpp>
 
 #include <boost/hana.hpp>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <flow/impl.hpp>
 #include <interrupt/impl/irq_impl.hpp>
 
 #include <type_traits>

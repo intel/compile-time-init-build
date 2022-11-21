@@ -1,3 +1,5 @@
 #pragma once
 
-using EnableActionType = void (*)();
+namespace interrupt {
+using EnableActionType = auto (*)() -> void;
+} // namespace interrupt

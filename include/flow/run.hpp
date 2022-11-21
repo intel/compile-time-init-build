@@ -2,11 +2,9 @@
 
 #include <cib/built.hpp>
 
-#include <utility>
-
 namespace flow {
 namespace detail {
-using FunctionPtr = std::add_pointer<void()>::type;
+using FunctionPtr = auto (*)() -> void;
 }
 
 /**
