@@ -3,6 +3,9 @@
 #include <flow/detail/dependency.hpp>
 #include <flow/detail/parallel.hpp>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace seq {
 enum class status { NOT_DONE = 0, DONE = 1 };
 
@@ -19,7 +22,7 @@ class step_base {
     uint64_t hash{};
 #endif
 
-    template <int NumSteps> friend struct impl;
+    template <std::size_t NumSteps> friend struct impl;
 
   public:
     template <typename Name>

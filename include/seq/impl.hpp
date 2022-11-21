@@ -3,21 +3,23 @@
 #include <seq/build_status.hpp>
 #include <seq/step.hpp>
 
+#include <array>
+#include <cstddef>
+
 namespace seq {
 enum class direction { FORWARD = 0, BACKWARD = 1 };
 
-template <int NumSteps = 0> struct impl {
-    func_ptr _forward_steps[NumSteps];
-    func_ptr _backward_steps[NumSteps];
-    int next_step{};
+template <std::size_t NumSteps> struct impl {
+    std::array<func_ptr, NumSteps> _forward_steps{};
+    std::array<func_ptr, NumSteps> _backward_steps{};
+    std::size_t next_step{};
 
     status prev_status{};
     direction prev_direction{};
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     constexpr explicit impl(func_ptr const *forward_steps = nullptr,
                             func_ptr const *backward_steps = nullptr) {
-        for (auto i = 0; i < NumSteps; i++) {
+        for (auto i = std::size_t{}; i < NumSteps; i++) {
             _forward_steps[i] = forward_steps[i];
             _backward_steps[i] = backward_steps[i];
         }
@@ -26,9 +28,8 @@ template <int NumSteps = 0> struct impl {
         prev_direction = direction::BACKWARD;
     }
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     constexpr impl(step_base const *steps, build_status) {
-        for (auto i = 0; i < NumSteps; i++) {
+        for (auto i = std::size_t{}; i < NumSteps; i++) {
             _forward_steps[i] = steps[i]._forward_ptr;
             _backward_steps[i] = steps[i]._backward_ptr;
         }
@@ -42,7 +43,7 @@ template <int NumSteps = 0> struct impl {
         if (_forward_steps[next_step]() == status::NOT_DONE) {
             return status::NOT_DONE;
         }
-        next_step += 1;
+        ++next_step;
         return status::DONE;
     }
 
@@ -50,7 +51,7 @@ template <int NumSteps = 0> struct impl {
         if (_backward_steps[next_step - 1]() == status::NOT_DONE) {
             return status::NOT_DONE;
         }
-        next_step -= 1;
+        --next_step;
         return status::DONE;
     }
 

@@ -122,13 +122,13 @@ class builder {
      * @return
      *      A seq::impl with all dependencies and requirements resolved.
      */
-    template <int OptimizedFlowCapacity>
+    template <std::size_t OptimizedFlowCapacity>
     [[nodiscard]] constexpr auto internal_build() const
         -> seq::impl<OptimizedFlowCapacity> {
         // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
         GraphType graph = dependencyGraph;
-        step_base orderedList[NodeCapacity] = {};
-        int listSize = 0;
+        std::array<step_base, NodeCapacity> orderedList{};
+        std::size_t listSize = 0;
 
         auto nodesWithNoIncomingEdge = getNodesWithNoIncomingEdge();
 
@@ -172,7 +172,8 @@ class builder {
                                ? build_status::SUCCESS
                                : build_status::SEQ_HAS_CIRCULAR_DEPENDENCY;
 
-        return seq::impl<OptimizedFlowCapacity>(orderedList, buildStatus);
+        return seq::impl<OptimizedFlowCapacity>(orderedList.data(),
+                                                buildStatus);
     }
 
     /**

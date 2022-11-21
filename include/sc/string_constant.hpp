@@ -15,7 +15,7 @@ template <typename CharT, CharT... chars> struct string_constant {
     using This = string_constant<CharT, chars...>;
     using StringView = std::basic_string_view<CharT>;
 
-    constexpr static CharT storage[sizeof...(chars)]{chars...};
+    constexpr static std::array<CharT, sizeof...(chars)> storage{chars...};
 
   public:
     using char_type = CharT;
@@ -32,7 +32,7 @@ template <typename CharT, CharT... chars> struct string_constant {
     using size_type = int;
     using difference_type = int;
 
-    constexpr static StringView value{storage, sizeof...(chars)};
+    constexpr static StringView value{storage.data(), sizeof...(chars)};
     constexpr static size_type npos = std::numeric_limits<size_type>::max();
 
     // NOLINTNEXTLINE(google-explicit-constructor)
