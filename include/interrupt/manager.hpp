@@ -1,6 +1,6 @@
 #pragma once
 
-#include <flow/flow.hpp>
+#include <flow/builder.hpp>
 #include <interrupt/builder/irq_builder.hpp>
 #include <interrupt/builder/shared_irq_builder.hpp>
 #include <interrupt/builder/shared_sub_irq_builder.hpp>
@@ -16,6 +16,7 @@
 #include <type_traits>
 
 namespace interrupt {
+template <typename Name = void> using irq_flow = flow::builder<Name, 16, 8>;
 
 /**
  * Declare one or more Irqs, SharedIrqs, and their corresponding interrupt
