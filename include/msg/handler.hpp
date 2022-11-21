@@ -77,11 +77,12 @@ void dispatch_single_callable(CallableT const &callable,
                               DataIterableT const &data,
                               ExtraCallbackArgsT const &...args) {
     auto const provided_args_tuple = std::tuple(args...);
-    auto const required_args_tuple =
-        cib::transform(func_args_v<CallableT>, [&](auto requiredArg) {
+    auto const required_args_tuple = cib::transform(
+        [&](auto requiredArg) {
             using RequiredArgType = decltype(requiredArg);
             return std::get<RequiredArgType>(provided_args_tuple);
-        });
+        },
+        func_args_v<CallableT>);
 
     required_args_tuple.apply([&](auto const &...requiredArgs) {
         using MsgType = msg_type_t<decltype(callable)>;
@@ -118,10 +119,12 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
     [[nodiscard]] constexpr auto match_any_callback() const {
-        auto const matchers = cib::transform(callbacks, [&](auto callback) {
-            using MsgType = msg_type_t<decltype(callback)>;
-            return is_valid_msg<MsgType>(match::always<true>);
-        });
+        auto const matchers = cib::transform(
+            [&](auto callback) {
+                using MsgType = msg_type_t<decltype(callback)>;
+                return is_valid_msg<MsgType>(match::always<true>);
+            },
+            callbacks);
 
         return matchers.apply(
             [](auto... matchersPack) { return match::any(matchersPack...); });

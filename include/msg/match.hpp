@@ -64,11 +64,12 @@ constexpr static void process(NameType const &name, EventType const &event,
                 }
             });
         } else {
-            const auto mismatch_descriptions =
-                cib::transform(handlers_tuple, [&](auto handler) {
+            const auto mismatch_descriptions = cib::transform(
+                [&](auto handler) {
                     return format("    {} - F:({})\n"_sc, handler.name,
                                   handler.matcher.describe_match(event));
-                });
+                },
+                handlers_tuple);
 
             const auto mismatch_description = mismatch_descriptions.fold_left(
                 [](auto lhs, auto rhs) { return lhs + rhs; });
@@ -119,7 +120,7 @@ template <typename... MatcherTypes> struct any_t {
 
     [[nodiscard]] constexpr auto describe() const {
         const auto matcher_descriptions = cib::transform(
-            matchers, [&](auto m) { return "("_sc + m.describe() + ")"_sc; });
+            [&](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
 
         return matcher_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + " || "_sc + rhs; });
@@ -127,10 +128,12 @@ template <typename... MatcherTypes> struct any_t {
 
     template <typename EventType>
     [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
-        const auto matcher_descriptions = cib::transform(matchers, [&](auto m) {
-            return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
-                          m.describe_match(event));
-        });
+        const auto matcher_descriptions = cib::transform(
+            [&](auto m) {
+                return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
+                              m.describe_match(event));
+            },
+            matchers);
 
         return matcher_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + " || "_sc + rhs; });
@@ -188,7 +191,7 @@ template <typename... MatcherTypes> struct all_t {
 
     [[nodiscard]] constexpr auto describe() const {
         const auto matcher_descriptions = cib::transform(
-            matchers, [&](auto m) { return "("_sc + m.describe() + ")"_sc; });
+            [&](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
 
         return matcher_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + " && "_sc + rhs; });
@@ -196,10 +199,12 @@ template <typename... MatcherTypes> struct all_t {
 
     template <typename EventType>
     [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
-        const auto matcher_descriptions = cib::transform(matchers, [&](auto m) {
-            return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
-                          m.describe_match(event));
-        });
+        const auto matcher_descriptions = cib::transform(
+            [&](auto m) {
+                return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
+                              m.describe_match(event));
+            },
+            matchers);
 
         return matcher_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + " && "_sc + rhs; });

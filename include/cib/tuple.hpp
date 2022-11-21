@@ -432,8 +432,9 @@ constexpr auto apply(Callable &&operation, Tuple &&t) {
 
 namespace detail {
 template <std::size_t Index, typename TOp, typename... Tuples>
-constexpr auto invoke_at(TOp &&op, Tuples &&...ts) -> void {
-    std::forward<TOp>(op)(std::forward<Tuples>(ts).get(index_<Index>)...);
+constexpr auto invoke_at(TOp &&op, Tuples &&...ts) {
+    return std::forward<TOp>(op)(
+        std::forward<Tuples>(ts).get(index_<Index>)...);
 }
 
 template <typename TOp, std::size_t... Indices, typename... Tuples>
@@ -441,6 +442,14 @@ constexpr auto for_each_impl(TOp &&op, std::index_sequence<Indices...>,
                              Tuples &&...ts) -> TOp {
     (invoke_at<Indices>(op, std::forward<Tuples>(ts)...), ...);
     return op;
+}
+
+template <typename... TIndexMetafuncs, typename TOp, std::size_t... Indices,
+          typename... Tuples>
+constexpr auto transform_impl(TOp &&op, std::index_sequence<Indices...> is,
+                              Tuples &&...ts) {
+    return make_tuple_impl<TIndexMetafuncs...>(
+        is, invoke_at<Indices>(op, std::forward<Tuples>(ts)...)...);
 }
 } // namespace detail
 
@@ -452,69 +461,63 @@ constexpr auto for_each(TOp &&op, Tuple &&t, Tuples &&...ts) -> TOp {
         std::forward<Tuple>(t), std::forward<Tuples>(ts)...);
 }
 
-template <typename MetaFunc, typename Tuple, typename Operation>
-[[nodiscard]] constexpr auto transform(MetaFunc meta_func, Tuple tuple,
-                                       Operation op) {
+template <typename... TIndexMetafuncs, typename TOp, typename Tuple,
+          typename... Tuples>
+constexpr auto transform(TOp &&op, Tuple &&t, Tuples &&...ts) {
+    return detail::transform_impl<TIndexMetafuncs...>(
+        std::forward<TOp>(op),
+        std::make_index_sequence<std::decay_t<Tuple>::size()>{},
+        std::forward<Tuple>(t), std::forward<Tuples>(ts)...);
+}
+
+namespace detail {
+template <std::size_t... Indices, typename TOp, typename Tuple>
+[[nodiscard]] constexpr auto sampled_transform(std::index_sequence<Indices...>,
+                                               TOp &&op, Tuple &&t) {
+    return make_tuple(op(std::integral_constant<std::size_t, Indices>{},
+                         std::forward<Tuple>(t))...);
+}
+} // namespace detail
+
+template <typename Tuple, typename TOp>
+[[nodiscard]] constexpr auto filter(Tuple &&tuple, TOp op) {
     return tuple.apply([&](auto... elements) {
-        return cib::make_tuple(meta_func, op(elements)...);
-    });
-}
-
-template <typename Tuple, typename Operation>
-[[nodiscard]] constexpr auto transform(Tuple tuple, Operation op) {
-    return tuple.apply(
-        [&](auto... elements) { return cib::make_tuple(op(elements)...); });
-}
-
-template <typename IntegralType, IntegralType... Indices, typename CallableType>
-[[nodiscard]] constexpr auto
-transform(std::integer_sequence<IntegralType, Indices...>,
-          CallableType const &op) {
-    return cib::make_tuple(
-        op(std::integral_constant<IntegralType, Indices>{})...);
-}
-
-template <typename Tuple, typename Operation>
-[[nodiscard]] constexpr auto filter(Tuple tuple, Operation op) {
-    return tuple.apply([&](auto... elements) {
-        std::array<bool, tuple.size()> constexpr op_results{
+        constexpr std::array<bool, sizeof...(elements)> op_results{
             op(decltype(elements){})...};
 
         // std::count
-        auto constexpr num_matches = [&]() {
-            int count = 0;
-
+        constexpr auto num_matches = [&]() {
+            std::size_t count = 0;
             for (bool v : op_results) {
                 if (v) {
                     count += 1;
                 }
             }
-
             return count;
         }();
 
-        auto constexpr indices = [&]() {
+        constexpr auto indices = [&]() {
             std::array<std::size_t, num_matches> result{};
             auto dst = std::size_t{};
 
             for (auto i = std::size_t{}; i < op_results.size(); i++) {
                 if (op_results[i]) {
-                    result[dst] = i;
-                    dst += 1;
+                    result[dst++] = i;
                 }
             }
 
             return result;
         }();
 
-        return transform(
+        return detail::sampled_transform(
             std::make_index_sequence<indices.size()>{},
-            [&](auto i) { return tuple.get(index_<indices[i.value]>); });
+            [&](auto i, auto &t) { return t.get(index_<indices[i.value]>); },
+            tuple);
     });
 }
 
-template <typename Operation>
-[[nodiscard]] constexpr auto filter(cib::tuple_impl<> t, Operation) {
+template <typename TOp>
+[[nodiscard]] constexpr auto filter(cib::tuple_impl<> t, TOp &&) {
     return t;
 }
 

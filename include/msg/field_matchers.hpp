@@ -45,15 +45,16 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
     static constexpr auto expected_values_tuple =
         cib::make_tuple(expected_values...);
 
-    static constexpr auto expected_value_strings_tuple =
-        cib::transform(expected_values_tuple, [](auto v) {
+    static constexpr auto expected_value_strings_tuple = cib::transform(
+        [](auto v) {
             if constexpr (std::is_integral_v<T>) {
                 return format("0x{:x}"_sc, v);
             } else {
                 return format("{} (0x{:x})"_sc, sc::enum_<v.value>,
                               sc::int_<static_cast<std::uint32_t>(v.value)>);
             }
-        });
+        },
+        expected_values_tuple);
 
     static constexpr auto expected_values_string =
         expected_value_strings_tuple.fold_right(

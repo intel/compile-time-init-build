@@ -194,11 +194,12 @@ struct message_base : public message_data<MaxNumDWords> {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        const auto field_descriptions =
-            cib::transform(FieldTupleType{}, [&](auto field) {
+        const auto field_descriptions = cib::transform(
+            [&](auto field) {
                 using FieldType = decltype(field);
                 return FieldType{FieldType::extract(this->data)}.describe();
-            });
+            },
+            FieldTupleType{});
 
         const auto middle_string = field_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });

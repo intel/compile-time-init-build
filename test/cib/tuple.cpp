@@ -668,3 +668,44 @@ TEST_CASE("for_each (free function)", "[tuple]") {
         REQUIRE(f(0) == 4);
     }
 }
+
+TEST_CASE("unary transform (without indexing)", "[tuple]") {
+    constexpr auto t = cib::make_tuple(1, 2, 3);
+    constexpr auto u = transform([](auto x) { return x + 1; }, t);
+    REQUIRE(u == cib::make_tuple(2, 3, 4));
+    static_assert(u == cib::make_tuple(2, 3, 4));
+}
+
+TEST_CASE("n-ary transform (without indexing)", "[tuple]") {
+    constexpr auto t = cib::make_tuple(1, 2, 3);
+    constexpr auto u = transform([](auto x, auto y) { return x + y; }, t, t);
+    REQUIRE(u == cib::make_tuple(2, 4, 6));
+    static_assert(u == cib::make_tuple(2, 4, 6));
+}
+
+TEST_CASE("unary transform (with indexing)", "[tuple]") {
+    constexpr auto t = cib::make_tuple(5, true, 10l);
+    constexpr auto u =
+        cib::transform<cib::self_type>([](auto x) { return x; }, t);
+    REQUIRE(u == cib::make_tuple(cib::self_type_index, 5, true, 10l));
+    static_assert(u == cib::make_tuple(cib::self_type_index, 5, true, 10l));
+}
+
+TEST_CASE("n-ary transform (with indexing)", "[tuple]") {
+    constexpr auto t = cib::make_tuple(5, true, 10l);
+    constexpr auto u =
+        cib::transform<cib::self_type>([](auto x, auto) { return x; }, t, t);
+    REQUIRE(u == cib::make_tuple(cib::self_type_index, 5, true, 10l));
+    static_assert(u == cib::make_tuple(cib::self_type_index, 5, true, 10l));
+}
+
+TEST_CASE("filter", "[tuple]") {
+    constexpr auto t = cib::make_tuple(
+        std::integral_constant<int, 1>{}, std::integral_constant<int, 2>{},
+        std::integral_constant<int, 3>{}, std::integral_constant<int, 4>{});
+    constexpr auto u = filter(t, [](auto x) { return x % 2 == 0; });
+    REQUIRE(u == cib::make_tuple(std::integral_constant<int, 2>{},
+                                 std::integral_constant<int, 4>{}));
+    static_assert(u == cib::make_tuple(std::integral_constant<int, 2>{},
+                                       std::integral_constant<int, 4>{}));
+}
