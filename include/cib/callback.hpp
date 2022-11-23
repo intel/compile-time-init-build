@@ -26,8 +26,7 @@ namespace cib {
 template <int NumFuncs = 0, typename... ArgTypes> struct callback {
   private:
     using func_ptr_t = void (*)(ArgTypes...);
-
-    std::array<func_ptr_t, NumFuncs> funcs;
+    std::array<func_ptr_t, NumFuncs> funcs{};
 
     /**
      * Runtime implementation of a callback service.
@@ -64,8 +63,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
 
     template <typename PrevFuncsType>
     CIB_CONSTEVAL explicit callback(PrevFuncsType const &prev_funcs,
-                                    func_ptr_t new_func)
-        : funcs{} {
+                                    func_ptr_t new_func) {
         for (unsigned int i = 0; i < prev_funcs.size(); i++) {
             funcs[i] = prev_funcs[i];
         }
