@@ -78,3 +78,14 @@ add_unit_test(
     LIBRARIES
     cib
     warnings)
+
+add_unit_test(
+    log_test
+    CATCH2
+    FILES
+    log/mipi_encoder.cpp
+    INCLUDE_DIRECTORIES
+    ${CMAKE_SOURCE_DIR}/test/
+    LIBRARIES
+    cib
+    warnings)
