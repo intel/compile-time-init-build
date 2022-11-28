@@ -44,8 +44,7 @@ struct mipi_encoder {
                0x3u; // mipi sys-t type: catalog
     }
 
-    CIB_CONSTEVAL static auto make_short32_header(string_id id)
-        -> std::uint32_t {
+    constexpr static auto make_short32_header(string_id id) -> std::uint32_t {
         return (id << 4u) | 1u;
     }
 
