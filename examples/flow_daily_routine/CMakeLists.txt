@@ -23,5 +23,4 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     endif()
 endif()
 
-
 target_link_libraries(flow_daily_routine cib)
