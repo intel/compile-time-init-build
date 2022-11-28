@@ -1,7 +1,8 @@
-#include<iostream>
-#include<flow/flow.hpp>
 #include<cib/cib.hpp>
+#include<flow/flow.hpp>
+
 #include<chrono>
+#include<iostream>
 
 //In this example we shall see the Daily routine of a individual person
 /*
@@ -54,18 +55,18 @@
 /*
   Service definitions!!
 */
-//struct Morning_Routine_t : public flow::service<decltype("Morning_Routine_t"_sc)> //decltype("Morning_Routine_t"_sc) - string constant "Morning_Routine_t" is used during the logging
-struct Morning_Routine_t : public flow::service<> //When logging or naming is not needed!!
+//struct morning_routine_t : public flow::service<decltype("morning_routine_t"_sc)> //decltype("morning_routine_t"_sc) - string constant "morning_routine_t" is used during the logging
+struct morning_routine_t : public flow::service<> //When logging or naming is not needed!!
 {};
 
-//struct Evening_Routine_t : public flow::service<decltype("Evening_Routine_t"_sc)>
-struct Evening_Routine_t : public flow::service<>
+//struct evening_routine_t : public flow::service<decltype("evening_routine_t"_sc)>
+struct evening_routine_t : public flow::service<>
 {};
 
 /*
   Component definitions!!
 */
-struct Self_Care_Component_t
+struct self_care_component_t
 {
   /*
     Actions: WAKE_UP, EXERCISE, GO_TO_BED, RELAX, TAKE_BATH
@@ -113,22 +114,22 @@ struct Self_Care_Component_t
 
   //Extend flow services!!
   constexpr static auto config = cib::config(
-    cib::extend<Morning_Routine_t>(
-      Self_Care_Component_t::WAKE_UP >>
-      Self_Care_Component_t::EXERCISE >>
-      Self_Care_Component_t::TAKE_BATH
+    cib::extend<morning_routine_t>(
+      self_care_component_t::WAKE_UP >>
+      self_care_component_t::EXERCISE >>
+      self_care_component_t::TAKE_BATH
     ),
 
-    cib::extend<Evening_Routine_t>(
-      Self_Care_Component_t::EXERCISE >>
-      Self_Care_Component_t::TAKE_BATH >>
-      Self_Care_Component_t::RELAX >>
-      Self_Care_Component_t::GO_TO_BED
+    cib::extend<evening_routine_t>(
+      self_care_component_t::EXERCISE >>
+      self_care_component_t::TAKE_BATH >>
+      self_care_component_t::RELAX >>
+      self_care_component_t::GO_TO_BED
     )
   );
 };
 
-struct Food_Component_t
+struct food_component_t
 {
   /*
     Actions: BREAKFAST, DINNER
@@ -151,20 +152,20 @@ struct Food_Component_t
 
   //Extend flow services!!
   constexpr static auto config = cib::config(
-    cib::extend<Morning_Routine_t>(
-      Self_Care_Component_t::TAKE_BATH >>
-      Food_Component_t::BREAKFAST
+    cib::extend<morning_routine_t>(
+      self_care_component_t::TAKE_BATH >>
+      food_component_t::BREAKFAST
     ),
 
-    cib::extend<Evening_Routine_t>(
-      Self_Care_Component_t::RELAX >>
-      Food_Component_t::DINNER >>
-      Self_Care_Component_t::GO_TO_BED
+    cib::extend<evening_routine_t>(
+      self_care_component_t::RELAX >>
+      food_component_t::DINNER >>
+      self_care_component_t::GO_TO_BED
     )
   );
 };
 
-struct Dress_Up_Component_t
+struct dress_up_component_t
 {
   /*
     Actions: GET_READY_FOR_EXERCISE, GET_READY_TO_WORK
@@ -187,23 +188,23 @@ struct Dress_Up_Component_t
 
   //Extend flow services!!
   constexpr static auto config = cib::config(
-    cib::extend<Morning_Routine_t>(
-      Self_Care_Component_t::WAKE_UP >>
-      Dress_Up_Component_t::GET_READY_FOR_EXERCISE >>
-      Self_Care_Component_t::EXERCISE >>
-      Self_Care_Component_t::TAKE_BATH >>
-      Dress_Up_Component_t::GET_READY_TO_WORK >>
-      Food_Component_t::BREAKFAST
+    cib::extend<morning_routine_t>(
+      self_care_component_t::WAKE_UP >>
+      dress_up_component_t::GET_READY_FOR_EXERCISE >>
+      self_care_component_t::EXERCISE >>
+      self_care_component_t::TAKE_BATH >>
+      dress_up_component_t::GET_READY_TO_WORK >>
+      food_component_t::BREAKFAST
     ),
   
-    cib::extend<Evening_Routine_t>(
-      Dress_Up_Component_t::GET_READY_FOR_EXERCISE >>
-      Self_Care_Component_t::EXERCISE
+    cib::extend<evening_routine_t>(
+      dress_up_component_t::GET_READY_FOR_EXERCISE >>
+      self_care_component_t::EXERCISE
     )
   );
 };
 
-struct Commute_Component_t
+struct commute_component_t
 {
   /*
     Actions: GO_TO_OFFICE, RETURN_HOME
@@ -226,18 +227,18 @@ struct Commute_Component_t
 
   //Extend flow services!!
   constexpr static auto config = cib::config(
-    cib::extend<Morning_Routine_t>(
-      Food_Component_t::BREAKFAST  >>
-      Commute_Component_t::GO_TO_OFFICE
+    cib::extend<morning_routine_t>(
+      food_component_t::BREAKFAST  >>
+      commute_component_t::GO_TO_OFFICE
     ),
-    cib::extend<Evening_Routine_t>(
-      Commute_Component_t::RETURN_HOME >>
-      Dress_Up_Component_t::GET_READY_FOR_EXERCISE
+    cib::extend<evening_routine_t>(
+      commute_component_t::RETURN_HOME >>
+      dress_up_component_t::GET_READY_FOR_EXERCISE
     )
   );
 };
 
-struct Daily_Routine_Component_t
+struct daily_routine_component_t
 {
   constexpr static auto DAILY_ROUTINES = flow::action(
     "Daily Routines"_sc,
@@ -253,8 +254,8 @@ struct Daily_Routine_Component_t
       if(!daysRoutineComplete)
       {
         std::cout << "----- Day: " << dayCount << " -----\n";
-        flow::run<Morning_Routine_t>();
-        flow::run<Evening_Routine_t>();
+        flow::run<morning_routine_t>();
+        flow::run<evening_routine_t>();
         daysRoutineComplete = true;
       }
 
@@ -271,8 +272,8 @@ struct Daily_Routine_Component_t
 
   constexpr static auto config = cib::config(
     cib::exports<
-      Morning_Routine_t,
-      Evening_Routine_t>,    
+      morning_routine_t,
+      evening_routine_t>,    
 
     // we need to extend the MainLoop as cib::top implements MainLoop service
     cib::extend<cib::MainLoop>(
@@ -281,18 +282,18 @@ struct Daily_Routine_Component_t
   );
 };
 
-struct Person_Routine_Proj
+struct person_routine_proj
 {
   constexpr static auto config = cib::components<
-      Daily_Routine_Component_t,
-      Self_Care_Component_t,
-      Food_Component_t,
-      Dress_Up_Component_t,
-      Commute_Component_t
+      daily_routine_component_t,
+      self_care_component_t,
+      food_component_t,
+      dress_up_component_t,
+      commute_component_t
     >;
 };
 
-cib::top<Person_Routine_Proj> top{};
+cib::top<person_routine_proj> top{};
 
 int main()
 {

@@ -1,82 +1,82 @@
-#include<iostream>
-
 #include<cib/cib.hpp>
 
+#include<iostream>
+
 //Services - basically like a function prototypes - callback function declaration!!
-struct Send_Byte_t : public cib::callback_meta<uint8_t>
+struct send_byte_t : public cib::callback_meta<uint8_t>
 {};
 
-struct Get_Byte_t : public cib::callback_meta<>
+struct get_byte_t : public cib::callback_meta<>
 {};
 
-struct Serial_Port_Init_t : public cib::callback_meta<>
+struct serial_port_init_t : public cib::callback_meta<>
 {};
 
-struct Run_t : public cib::callback_meta<>
+struct run_t : public cib::callback_meta<>
 {};
 
 //components defintion!!
-struct Core_Component_t
+struct core_component_t
 {
   constexpr static auto config = cib::config(
 
-    cib::exports<Send_Byte_t>,
-    cib::extend<Send_Byte_t>([](uint8_t byte){
+    cib::exports<send_byte_t>,
+    cib::extend<send_byte_t>([](uint8_t byte){
       std::cout << "From CoreComponent: " << byte << std::endl;
     }),
 
-    cib::extend<Get_Byte_t>([](){
+    cib::extend<get_byte_t>([](){
       uint8_t readByte;
       std::cin >> readByte;
 
-      cib::service<Send_Byte_t>(readByte); // This invokes both implementation of the SendByte - TxComponent and CoreComponent implementation
+      cib::service<send_byte_t>(readByte); // This invokes both implementation of the SendByte - TxComponent and CoreComponent implementation
     }),
     
-    cib::extend<Serial_Port_Init_t>([](){
+    cib::extend<serial_port_init_t>([](){
       std::cout<<"Initialized\n";
     }),
 
-    cib::extend<Run_t>([](){
+    cib::extend<run_t>([](){
       std::cout << "Type Something!!\n";
     })
   );
 };
 
-struct Tx_Component_t
+struct tx_component_t
 {
-  //tx - feature which implement a function which takes uint8_t argument! - Send_Byte_t service!!
+  //tx - feature which implement a function which takes uint8_t argument! - send_byte_t service!!
   constexpr static auto tx = [](uint8_t byte) {
     std::cout << "From TxComponent: " << byte << std::endl;
   };
 
   constexpr static auto config = cib::config(
-    cib::exports<Send_Byte_t>,
-    cib::extend<Send_Byte_t>(tx)
+    cib::exports<send_byte_t>,
+    cib::extend<send_byte_t>(tx)
     );
 };
 
-struct Export_Components_t
+struct export_components_t
 {
-  constexpr static auto config = cib::exports<Get_Byte_t, Serial_Port_Init_t, Run_t>;
+  constexpr static auto config = cib::exports<get_byte_t, serial_port_init_t, run_t>;
 };
 
 //Project definition with mutiple components
-struct Dummy_Serial_Port_Project_t
+struct dummy_serial_port_project_t
 {
-  constexpr static auto config = cib::components<Core_Component_t, Tx_Component_t, Export_Components_t>;
+  constexpr static auto config = cib::components<core_component_t, tx_component_t, export_components_t>;
 };
 
-static cib::nexus<Dummy_Serial_Port_Project_t> nexus{};
+static cib::nexus<dummy_serial_port_project_t> nexus{};
 
 int main()
 {
   nexus.init(); // This is critical!! otherwise accessing service from another service will result in the segmentation fault!!
-  nexus.service<Serial_Port_Init_t>();
+  nexus.service<serial_port_init_t>();
 
   while(true)
   {
-    nexus.service<Run_t>();
-    nexus.service<Get_Byte_t>();
+    nexus.service<run_t>();
+    nexus.service<get_byte_t>();
   }
   return 0;
 }
