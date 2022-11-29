@@ -83,6 +83,7 @@ add_unit_test(
     log_test
     CATCH2
     FILES
+    log/logger.cpp
     log/mipi_encoder.cpp
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/test/
