@@ -1,36 +1,26 @@
 #include <log/fmt/logger.hpp>
-#include "testing_logger.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "testing_logger.hpp"
 #include <atomic>
 
 static std::atomic<bool> testing_logger_flag{false};
 
-testing_logger::testing_logger()
-{
-    testing_logger_flag.store(true);
-}
+testing_logger::testing_logger() { testing_logger_flag.store(true); }
 
-testing_logger::~testing_logger()
-{
-    testing_logger_flag.store(false);
-}
+testing_logger::~testing_logger() { testing_logger_flag.store(false); }
 
-void* operator new  ( std::size_t count ) {
-    if(testing_logger_flag.load())
-    {
+void *operator new(std::size_t count) {
+    if (testing_logger_flag.load()) {
         REQUIRE(false);
     }
     return malloc(count);
 }
 
-void operator delete  ( void* ptr, size_t ) {
-    return free(ptr);
-}
+void operator delete(void *ptr, std::size_t) noexcept { return free(ptr); }
 
-void operator delete  ( void* ptr) {
-    return free(ptr);
-}
+void operator delete(void *ptr) noexcept { return free(ptr); }
 
 TEST_CASE("TRACE doesn't use dynamic memory", "[log]") {
     testing_logger test;

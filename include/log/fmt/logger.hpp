@@ -39,10 +39,11 @@ template <> struct fmt::formatter<log_level> {
 };
 
 namespace {
-inline const auto loggingStartTime = std::chrono::high_resolution_clock::now();
+inline const auto logging_start_time =
+    std::chrono::high_resolution_clock::now();
 
 template <typename StringType>
-inline auto trimSourceFilename(StringType src) -> char const * {
+inline auto trim_source_filename(StringType src) -> char const * {
     return std::strstr(src, "src");
 }
 
@@ -56,25 +57,28 @@ template <typename T> struct FormatHelper {
     }
 };
 
-inline auto outputLine = []([[maybe_unused]] auto filename,
-                            [[maybe_unused]] auto lineNumber, auto level,
-                            auto msg) {
-    auto currentTime =
+inline auto output_line = []([[maybe_unused]] auto filename,
+                             [[maybe_unused]] auto line_number, auto level,
+                             const auto &msg) {
+    const auto currentTime =
         std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::high_resolution_clock::now() - loggingStartTime)
+            std::chrono::high_resolution_clock::now() - logging_start_time)
             .count();
 
-    fmt::print("{:>8}us {}: {}\n", currentTime, level, msg);
+    fmt::print("{:>8}us {}: {}\n", currentTime, level, msg.data());
 };
 
 template <typename FilenameStringType, typename LineNumberType,
           typename MsgType>
-void log(FilenameStringType filename, LineNumberType lineNumber,
+void log(FilenameStringType filename, LineNumberType line_number,
          log_level level, MsgType msg) {
-    auto formattedMsg = msg.args.apply(
-        [&](auto... args) { return fmt::format(msg.str.value, args...); });
+    auto formatted_msg = msg.args.apply([&](auto... args) {
+        auto out = fmt::memory_buffer();
+        fmt::format_to(std::back_inserter(out), msg.str.value, args...);
+        return out;
+    });
 
-    outputLine(filename, lineNumber, level, formattedMsg);
+    output_line(filename, line_number, level, formatted_msg);
 }
 } // namespace
 
