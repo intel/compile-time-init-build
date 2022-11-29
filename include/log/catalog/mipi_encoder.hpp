@@ -1,16 +1,18 @@
 #pragma once
 
+#include <cib/detail/compiler.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log_level.hpp>
 #include <sc/format.hpp>
 #include <sc/string_constant.hpp>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <tuple>
 
 #define CIB_LOG(LEVEL, MSG, ...)                                               \
-    log::logger_impl::log_impl<LEVEL>(                                         \
-        log::format_helper{MSG##_sc}.f(__VA_ARGS__))
+    mipi::logger_impl::log_impl<LEVEL>(                                        \
+        mipi::format_helper{MSG##_sc}.f(__VA_ARGS__))
 
 #define CIB_TRACE(...) CIB_LOG(log_level::TRACE, __VA_ARGS__)
 #define CIB_INFO(...) CIB_LOG(log_level::INFO, __VA_ARGS__)
@@ -20,22 +22,14 @@
 
 #define CIB_ASSERT(expr)
 
-#ifndef CIB_LOG_ALWAYS_INLINE
-#define CIB_LOG_ALWAYS_INLINE inline __attribute__((always_inline))
-#endif
-
-#ifndef CIB_LOG_NEVER_INLINE
-#define CIB_LOG_NEVER_INLINE __attribute__((noinline))
-#endif
-
-namespace log {
+namespace mipi {
 template <typename T> struct format_helper {
     constexpr static T str{};
 
     constexpr explicit format_helper(T) {}
 
     template <typename... Ts>
-    CIB_LOG_ALWAYS_INLINE constexpr static auto f(Ts... args) {
+    CIB_ALWAYS_INLINE constexpr static auto f(Ts... args) {
         return format(str, args...);
     }
 };
@@ -43,100 +37,56 @@ template <typename T> struct format_helper {
 template <typename CriticalSectionRaii, typename... LogDestinations>
 struct mipi_encoder {
   private:
-    constexpr static auto MAX_ARG_LENGTH = sc::int_<3>;
+    CIB_CONSTEVAL static auto make_catalog32_header(log_level level)
+        -> std::uint32_t {
+        return (0x1u << 24u) | // mipi sys-t subtype: id32_p32
+               (static_cast<std::uint32_t>(level) << 4u) |
+               0x3u; // mipi sys-t type: catalog
+    }
+
+    constexpr static auto make_short32_header(string_id id) -> std::uint32_t {
+        return (id << 4u) | 1u;
+    }
 
     template <typename... MsgDataTypes>
-    CIB_LOG_NEVER_INLINE static void
+    CIB_NEVER_INLINE static void
     dispatch_pass_by_args(MsgDataTypes... msg_data) {
-        CriticalSectionRaii cs;
+        CriticalSectionRaii cs{};
         (LogDestinations::log_by_args(msg_data...), ...);
     }
 
-    template <log_level level, typename IdType, typename... MsgDataTypes>
-    CIB_LOG_NEVER_INLINE static void
-    log_pass_by_args(IdType id, MsgDataTypes... msg_data) {
-        if constexpr (sizeof...(msg_data) == 0) {
-            dispatch_pass_by_args((id << 4) | 1);
-        } else {
-            std::uint32_t constexpr normal_header_dw =
-                (0x1u << 24u) | // mipi sys-t subtype: id32_p32
-                (static_cast<std::uint32_t>(level) << 4u) |
-                0x3u; // mipi sys-t type: catalog
-
-            dispatch_pass_by_args(normal_header_dw, id, msg_data...);
-        }
-    }
-
-    CIB_LOG_NEVER_INLINE static void
+    CIB_NEVER_INLINE static void
     dispatch_pass_by_buffer(std::uint32_t *msg, std::uint32_t msg_size) {
-        CriticalSectionRaii cs;
+        CriticalSectionRaii cs{};
         (LogDestinations::log_by_buf(msg, msg_size), ...);
     }
 
-    template <log_level level>
-    CIB_LOG_NEVER_INLINE static void
-    log_pass_by_buffer(std::uint32_t *msg, std::uint32_t msg_size) {
-        msg[0] = (0x1u << 24u) | // mipi sys-t subtype: id32_p32
-                 (static_cast<std::uint32_t>(level) << 4u) |
-                 0x3u; // mipi sys-t type: catalog
-
-        dispatch_pass_by_buffer(msg, msg_size);
-    }
-
-    /**
-     * @tparam MsgDataTupleType
-     * @param msg_data_tuple
-     */
-    template <log_level level, typename MsgDataTupleType>
-    CIB_LOG_ALWAYS_INLINE static void
-    dispatch_message(MsgDataTupleType msg_data_tuple) {
-        constexpr auto msg_size = std::tuple_size_v<MsgDataTupleType>;
-
-        if constexpr (msg_size <= MAX_ARG_LENGTH) {
-            std::apply(
-                [&](auto... payload) { log_pass_by_args<level>(payload...); },
-                msg_data_tuple);
+    template <log_level Level, typename... MsgDataTypes>
+    CIB_ALWAYS_INLINE static void dispatch_message(string_id id,
+                                                   MsgDataTypes &&...msg_data) {
+        if constexpr (sizeof...(msg_data) == 0u) {
+            dispatch_pass_by_args(make_short32_header(id));
+        } else if constexpr (sizeof...(msg_data) <= 2u) {
+            dispatch_pass_by_args(make_catalog32_header(Level), id,
+                                  msg_data...);
         } else {
-            // we need an additional dword for mipi syst header
-            auto const full_msg_size = msg_size + 1;
-
-            std::apply(
-                [&](auto... payload) {
-                    std::uint32_t full_args_array[full_msg_size] = {0,
-                                                                    payload...};
-                    log_pass_by_buffer<level>(full_args_array, full_msg_size);
-                },
-                msg_data_tuple);
+            std::array args = {make_catalog32_header(Level), id, msg_data...};
+            dispatch_pass_by_buffer(args.data(), args.size());
         }
     }
 
-    template <typename IdType, typename ArgTupleType>
-    CIB_LOG_ALWAYS_INLINE static auto to_tuple(IdType id,
-                                               ArgTupleType arg_tuple) {
-        auto const normal_headers = std::make_tuple(id);
-
-        auto const normal_payloads = std::apply(
-            [&](auto... args_pack) {
-                return std::make_tuple(
-                    static_cast<std::uint32_t>(args_pack)...);
-            },
-            arg_tuple);
-
-        return std::tuple_cat(normal_headers, normal_payloads);
-    }
-
   public:
-    template <log_level level, typename StringType>
-    CIB_LOG_ALWAYS_INLINE static void log_impl(StringType msg) {
-        using Message = message<level, StringType>;
-        auto const id = catalog<Message>();
-        auto const msg_tuple = to_tuple(id, msg.args);
-        dispatch_message<level>(msg_tuple);
+    template <log_level Level, typename StringType>
+    CIB_ALWAYS_INLINE static void log_impl(StringType msg) {
+        msg.args.apply([](auto... args) {
+            using Message = message<Level, StringType>;
+            dispatch_message<Level>(catalog<Message>(),
+                                    static_cast<std::uint32_t>(args)...);
+        });
     }
 
-    CIB_LOG_ALWAYS_INLINE static void log_id(string_id id) {
-        auto const msg_tuple = to_tuple(id, std::make_tuple());
-        dispatch_message<log_level::TRACE>(msg_tuple);
+    CIB_ALWAYS_INLINE static void log_id(string_id id) {
+        dispatch_message<log_level::TRACE>(id);
     }
 };
 
@@ -150,4 +100,4 @@ struct CIB_LOG_DESTINATIONS {
 
 using logger_impl =
     mipi_encoder<CIB_LOG_CRITICAL_SECTION_RAII_TYPE, CIB_LOG_DESTINATIONS>;
-} // namespace log
+} // namespace mipi
