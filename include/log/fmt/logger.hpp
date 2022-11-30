@@ -39,8 +39,7 @@ template <> struct fmt::formatter<log_level> {
 };
 
 namespace {
-inline const auto logging_start_time =
-    std::chrono::high_resolution_clock::now();
+inline const auto logging_start_time = std::chrono::steady_clock::now();
 
 template <typename StringType>
 inline auto trim_source_filename(StringType src) -> char const * {
@@ -62,7 +61,7 @@ inline auto output_line = []([[maybe_unused]] auto filename,
                              const auto &msg) {
     const auto currentTime =
         std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::high_resolution_clock::now() - logging_start_time)
+            std::chrono::steady_clock::now() - logging_start_time)
             .count();
 
     fmt::print("{:>8}us {}: {}\n", currentTime, level, msg.data());
