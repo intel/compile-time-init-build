@@ -1,1 +1,3 @@
 add_subdirectory(hello_world)
+add_subdirectory(cib_serial_port)
+add_subdirectory(flow_daily_routine)
