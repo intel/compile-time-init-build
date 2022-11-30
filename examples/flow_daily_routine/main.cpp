@@ -27,7 +27,7 @@
   Evening_Routine_ts are:  ReturnHome, GetReadyToExercise, Exercise, TakeBath,
   RelaxForSometime, HaveDinner, GoToBed
 
-  These things should be done in order!!
+  These things should be done in order:
   Flow part of the CIB library will help us to achieve the same
   Following concents in the flow can be used to achieve the same
     + Flow::Service<>
@@ -37,28 +37,29 @@
     + operator &&
 
   Flow::Service ==> 2 or more Actions and/or MileStones
-  >>            ==> used to link actions/milestones to be executed in order
-  &&            ==> used to link actions/milestones without any order!!
+  >>            ==> used to link actions/milestones to be executed in order.
+  &&            ==> used to link actions/milestones without any order.
 
   Note::
     services can be defined using
       + cib::callback_meta<>  - can have only one function pointer assigned to
-  execute
+  execute.
       + flow::service<>       - set of actions/milestones which are to be
   executed in specific order. So basically sequential execution of multiple
-  function pointers!!
+  function pointers.
 
     both services are different.
 
-    Flow can be treated like a Directed Acyclic graph
-    Any component can implement actions/milestones
-    Any component can mention a sequence of execution of actions/milestones
-    Services can be executed with flow::run() in an action
-    That action should extend the MainLoop of the cib library!!
+  Flow in short:
+    + Flow can be treated like a Directed Acyclic graph.
+    + Any component can implement actions/milestones.
+    + Any component can mention a sequence of execution of actions/milestones.
+    + Services can be executed with flow::run() in an action.
+    + That action should extend the MainLoop of the cib library.
 */
 
 /*
-  Service definitions!!
+  Service definitions
 */
 // decltype("morning_routine_log_t"_sc) - used during the logging
 // struct morning_routine_log_t
@@ -70,7 +71,7 @@ struct morning_routine_t : public flow::service<> {};
 struct evening_routine_t : public flow::service<> {};
 
 /*
-  Component definitions!!
+  Component definitions
 */
 struct self_care_component_t {
     /*
@@ -80,7 +81,7 @@ struct self_care_component_t {
         "WakeUp"_sc, []() { std::cout << "Wake up at 6:00 AM" << std::endl; });
 
     constexpr static auto EXERCISE = flow::action(
-        "Exercise"_sc, []() { std::cout << "Gym activities!!" << std::endl; });
+        "Exercise"_sc, []() { std::cout << "Gym activities" << std::endl; });
 
     constexpr static auto GO_TO_BED = flow::action("GoToBed"_sc, []() {
         std::cout << "Go to bed at 10:00 PM" << std::endl;
@@ -93,7 +94,7 @@ struct self_care_component_t {
     constexpr static auto TAKE_BATH = flow::action(
         "TakeBath"_sc, []() { std::cout << "Take a bath" << std::endl; });
 
-    // Extend flow services!!
+    // Extend flow services
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(self_care_component_t::WAKE_UP >>
@@ -117,7 +118,7 @@ struct food_component_t {
     constexpr static auto DINNER = flow::action(
         "Dinner"_sc, []() { std::cout << "Have early dinner" << std::endl; });
 
-    // Extend flow services!!
+    // Extend flow services
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(self_care_component_t::TAKE_BATH >>
@@ -139,7 +140,7 @@ struct dress_up_component_t {
     constexpr static auto GET_READY_TO_WORK = flow::action(
         "GetReadyToWork"_sc, []() { std::cout << "Office wear" << std::endl; });
 
-    // Extend flow services!!
+    // Extend flow services
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(
@@ -166,7 +167,7 @@ struct commute_component_t {
     constexpr static auto RETURN_HOME = flow::action(
         "ReturnHome"_sc, []() { std::cout << "Commute to home" << std::endl; });
 
-    // Extend flow services!!
+    // Extend flow services
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(food_component_t::BREAKFAST >>

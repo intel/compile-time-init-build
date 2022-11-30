@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-// Services - basically like a function prototypes - callback function
-// declaration!!
+// Services - basically like a function prototypes.
+//          - callback function declaration.
 struct send_byte_t : public cib::callback_meta<uint8_t> {};
 
 struct get_byte_t : public cib::callback_meta<> {};
@@ -12,14 +12,14 @@ struct serial_port_init_t : public cib::callback_meta<> {};
 
 struct run_t : public cib::callback_meta<> {};
 
-// components defintion!!
+// components defintion
 struct core_component_t {
     constexpr static auto config = cib::config(
 
         cib::exports<send_byte_t>,
 
         cib::extend<send_byte_t>([](uint8_t byte) {
-            std::cout << "From CoreComponent: " << byte << std::endl;
+            std::cout << "From core_component_t: " << byte << std::endl;
         }),
 
         cib::extend<get_byte_t>([]() {
@@ -27,20 +27,20 @@ struct core_component_t {
             std::cin >> readByte;
 
             // This invokes both implementation of the send_byte_t
-            // from tx_component_t and core_component_t
+            // from components: tx_component_t and core_component_t
             cib::service<send_byte_t>(readByte);
         }),
 
         cib::extend<serial_port_init_t>([]() { std::cout << "Initialized\n"; }),
 
-        cib::extend<run_t>([]() { std::cout << "Type Something!!\n"; }));
+        cib::extend<run_t>([]() { std::cout << "Type Something:\n"; }));
 };
 
 struct tx_component_t {
-    // tx - feature which implement a function which takes uint8_t argument! -
-    // send_byte_t service!!
+    // tx - function which implement a function which takes uint8_t argument.
+    //    - send_byte_t service.
     constexpr static auto tx = [](uint8_t byte) {
-        std::cout << "From TxComponent: " << byte << std::endl;
+        std::cout << "From tx_component_t: " << byte << std::endl;
     };
 
     constexpr static auto config = cib::config(
@@ -64,11 +64,12 @@ struct dummy_serial_port_project_t {
 static cib::nexus<dummy_serial_port_project_t> nexus{};
 
 int main() {
-    nexus.init(); // This is critical!! otherwise accessing service from another
-                  // service will result in the segmentation fault!!
+    nexus.init(); // This is critical. otherwise accessing service from another
+                  // service will result in the segmentation fault.
     nexus.service<serial_port_init_t>();
 
     while (true) {
+        // Here both services will execute for every byte input.
         nexus.service<run_t>();
         nexus.service<get_byte_t>();
     }
