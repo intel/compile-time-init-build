@@ -1,6 +1,7 @@
-name: Unit Tests
+name: Performance Tests
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [ main ]
 
@@ -15,16 +16,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
-      - name: install compiler
+      - name: Install compiler
         run: sudo apt update && sudo apt-get install -y clang-12
 
       - name: Configure CMake
         env:
           CC: clang-12
           CXX: clang++-12
+          CXX_STANDARD: 20
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
