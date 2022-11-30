@@ -4,18 +4,18 @@
 
 #include <array>
 #include <cstddef>
+#include <iterator>
 #include <string_view>
 #include <type_traits>
 
 namespace sc::detail {
 template <typename CharT, int SizeT> struct static_string {
     std::array<CharT, SizeT> data{};
-    std::size_t pos{};
-    std::size_t count{};
+    std::size_t size{};
 
-    // NOLINTNEXTLINE(google-explicit-constructor)
-    constexpr operator std::basic_string_view<CharT>() const {
-        return std::string_view{data.data() + pos, count};
+    constexpr explicit operator std::basic_string_view<CharT>() const {
+        return std::string_view{std::prev(data.end(), static_cast<int>(size)),
+                                size};
     }
 };
 
@@ -29,13 +29,12 @@ template <typename IntegralTypeT, typename BaseTypeT>
     char const ext_char_start = uppercase ? 'A' : 'a';
 
     value = negative ? -value : value;
-    auto digit = MAX_LENGTH;
 
     static_string<char, MAX_LENGTH> ret{};
+    auto it = ret.data.end(); // NOLINT(cppcoreguidelines-pro-type-vararg)
 
     if (value == 0) {
-        digit = digit - 1;
-        ret.data[digit] = '0';
+        *--it = '0';
     } else {
         while (value > 0) {
             auto const digit_value = (value % base);
@@ -46,20 +45,15 @@ template <typename IntegralTypeT, typename BaseTypeT>
                 return digit_value + '0';
             }();
 
-            digit -= 1;
-            ret.data[digit] = static_cast<char>(digit_char);
+            *--it = static_cast<char>(digit_char);
             value /= base;
         }
     }
 
     if (negative) {
-        digit -= 1;
-        ret.data[digit] = '-';
+        *--it = '-';
     }
-
-    ret.pos = digit;
-    ret.count = MAX_LENGTH - digit;
-
+    ret.size = static_cast<std::size_t>(std::distance(it, ret.data.end()));
     return ret;
 }
 
@@ -71,7 +65,8 @@ struct IntegralToString {
     constexpr static static_string<char, MAX_LENGTH> intermediate =
         integral_to_string(ValueT, BaseT, UppercaseT);
 
-    constexpr static std::basic_string_view<char> value = intermediate;
+    constexpr static std::string_view value =
+        static_cast<std::string_view>(intermediate);
 };
 
 template <typename Tag>

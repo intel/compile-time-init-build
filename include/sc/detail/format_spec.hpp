@@ -19,7 +19,7 @@ struct fast_format_spec {
     int id{};
 
     bool zero_pad{};
-    int padding_width{};
+    std::size_t padding_width{};
 
     char type{};
 
@@ -81,8 +81,8 @@ struct fast_format_spec {
 
         // parse padding width
         while (is_digit(*i)) {
-            int const d = *i - '0';
-            padding_width = (padding_width * 10) + d;
+            auto const d = *i - '0';
+            padding_width = (padding_width * 10) + static_cast<std::size_t>(d);
             i++;
         }
 
