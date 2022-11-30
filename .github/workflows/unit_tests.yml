@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   CMAKE_GENERATOR: Ninja
 
@@ -130,6 +134,13 @@ jobs:
 
       - name: Run quality checks
         run: cmake --build ${{github.workspace}}/build -t quality
+
+  merge_ok:
+    runs-on: ubuntu-20.04
+    needs: [build_and_test, quality_checks_pass]
+    steps:
+      - name: Enable merge
+        run: echo "OK to merge!"
 
   build_single_header:
     runs-on: ubuntu-20.04
