@@ -564,8 +564,16 @@ template <typename... Tuples> constexpr auto tuple_cat(Tuples &&...tuples) {
         std::make_index_sequence<total_num_elements>{},
         std::forward<Tuples>(tuples)...);
 }
-} // namespace cib
 
-template <typename... Elements>
-struct std::tuple_size<cib::tuple_impl<Elements...>>
-    : std::integral_constant<std::size_t, sizeof...(Elements)> {};
+template <typename T, typename TTuple>
+[[nodiscard]] constexpr auto get(TTuple &&t)
+    -> decltype(std::forward<TTuple>(t).get(tag_<T>)) {
+    return std::forward<TTuple>(t).get(tag_<T>);
+}
+
+template <std::size_t I, typename TTuple>
+[[nodiscard]] constexpr auto get(TTuple &&t)
+    -> decltype(std::forward<TTuple>(t).get(cib::index_<I>)) {
+    return std::forward<TTuple>(t).get(cib::index_<I>);
+}
+} // namespace cib

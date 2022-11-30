@@ -9,7 +9,7 @@
 namespace {
 
 TEST_CASE("construct empty sequencer", "[seq]") {
-    seq::impl<> seq_impl{};
+    seq::impl<0> seq_impl{};
 
     SECTION("forward can be called without issue") {
         REQUIRE(seq_impl.forward() == seq::status::DONE);

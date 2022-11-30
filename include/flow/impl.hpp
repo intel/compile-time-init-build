@@ -3,6 +3,8 @@
 #include <flow/build_status.hpp>
 #include <flow/milestone.hpp>
 
+#include <array>
+#include <cstddef>
 #include <type_traits>
 
 namespace flow {
@@ -27,7 +29,7 @@ struct interface {
  *
  * @see flow::builder
  */
-template <typename Name, int NumSteps> class impl : public interface {
+template <typename Name, std::size_t NumSteps> class impl : public interface {
   private:
     constexpr static bool loggingEnabled = !std::is_same<Name, void>::value;
 
@@ -39,7 +41,7 @@ template <typename Name, int NumSteps> class impl : public interface {
         }
     }();
 
-    FunctionPtr functionPtrs[capacity];
+    std::array<FunctionPtr, capacity> functionPtrs{};
     build_status buildStatus;
 
   public:
@@ -61,15 +63,15 @@ template <typename Name, int NumSteps> class impl : public interface {
      *
      * @see flow::builder
      */
-    constexpr impl(milestone_base newMilestones[], build_status newBuildStatus)
+    constexpr impl(milestone_base *newMilestones, build_status newBuildStatus)
         : functionPtrs(), buildStatus(newBuildStatus) {
         if constexpr (loggingEnabled) {
-            for (int i = 0; i < NumSteps; i++) {
+            for (auto i = std::size_t{}; i < NumSteps; i++) {
                 functionPtrs[(i * 2)] = newMilestones[i].log_name;
                 functionPtrs[(i * 2) + 1] = newMilestones[i].run;
             }
         } else {
-            for (int i = 0; i < NumSteps; i++) {
+            for (auto i = std::size_t{}; i < NumSteps; i++) {
                 functionPtrs[i] = newMilestones[i].run;
             }
         }

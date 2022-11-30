@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <tuple>
 #include <type_traits>
 
 template <typename BuilderValue> constexpr static auto build() {
@@ -113,19 +112,19 @@ TEST_CASE("callback with args with no extensions", "[callback]") {
 }
 
 template <int Id, typename... ArgTypes>
-static std::tuple<ArgTypes...> callback_args{};
+static cib::tuple<ArgTypes...> callback_args{};
 
 struct CallbackWithArgsWithMultipleExtensions {
     using meta = cib::callback_meta<int, bool>;
 
     static void extension_one(int a, bool b) {
         is_callback_invoked<1> = true;
-        callback_args<1, int, bool> = {a, b};
+        callback_args<1, int, bool> = cib::make_tuple(a, b);
     }
 
     static constexpr auto extension_two = [](int a, bool b) {
         is_callback_invoked<2> = true;
-        callback_args<2, int, bool> = {a, b};
+        callback_args<2, int, bool> = cib::make_tuple(a, b);
     };
 
     constexpr static auto value = []() {
@@ -134,7 +133,7 @@ struct CallbackWithArgsWithMultipleExtensions {
         return builder
             .add([](int a, bool b) {
                 is_callback_invoked<0> = true;
-                callback_args<0, int, bool> = {a, b};
+                callback_args<0, int, bool> = cib::make_tuple(a, b);
             })
             .add(extension_one)
             .add(extension_two);
@@ -148,25 +147,25 @@ TEST_CASE("callback with args with multiple extensions", "[callback]") {
     SECTION("can be called") {
         built_callback(42, true);
 
-        REQUIRE(std::get<0>(callback_args<0, int, bool>) == 42);
-        REQUIRE(std::get<1>(callback_args<0, int, bool>) == true);
+        REQUIRE(cib::get<0>(callback_args<0, int, bool>) == 42);
+        REQUIRE(cib::get<1>(callback_args<0, int, bool>) == true);
 
-        REQUIRE(std::get<0>(callback_args<1, int, bool>) == 42);
-        REQUIRE(std::get<1>(callback_args<1, int, bool>) == true);
+        REQUIRE(cib::get<0>(callback_args<1, int, bool>) == 42);
+        REQUIRE(cib::get<1>(callback_args<1, int, bool>) == true);
 
-        REQUIRE(std::get<0>(callback_args<2, int, bool>) == 42);
-        REQUIRE(std::get<1>(callback_args<2, int, bool>) == true);
+        REQUIRE(cib::get<0>(callback_args<2, int, bool>) == 42);
+        REQUIRE(cib::get<1>(callback_args<2, int, bool>) == true);
 
         built_callback(12, false);
 
-        REQUIRE(std::get<0>(callback_args<0, int, bool>) == 12);
-        REQUIRE(std::get<1>(callback_args<0, int, bool>) == false);
+        REQUIRE(cib::get<0>(callback_args<0, int, bool>) == 12);
+        REQUIRE(cib::get<1>(callback_args<0, int, bool>) == false);
 
-        REQUIRE(std::get<0>(callback_args<1, int, bool>) == 12);
-        REQUIRE(std::get<1>(callback_args<1, int, bool>) == false);
+        REQUIRE(cib::get<0>(callback_args<1, int, bool>) == 12);
+        REQUIRE(cib::get<1>(callback_args<1, int, bool>) == false);
 
-        REQUIRE(std::get<0>(callback_args<2, int, bool>) == 12);
-        REQUIRE(std::get<1>(callback_args<2, int, bool>) == false);
+        REQUIRE(cib::get<0>(callback_args<2, int, bool>) == 12);
+        REQUIRE(cib::get<1>(callback_args<2, int, bool>) == false);
     }
 
     SECTION("built type is convertable to the interface type") {

@@ -15,7 +15,7 @@ class milestone_base {
     uint64_t hash{};
 #endif
 
-    template <typename Name, int NumSteps> friend class impl;
+    template <typename Name, std::size_t NumSteps> friend class impl;
 
   public:
     template <typename Name>

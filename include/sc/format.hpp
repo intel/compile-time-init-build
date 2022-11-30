@@ -8,6 +8,7 @@
 #include <sc/string_constant.hpp>
 
 #include <array>
+#include <iterator>
 #include <string_view>
 #include <type_traits>
 
@@ -137,18 +138,12 @@ format_field(std::string_view field,
     auto const int_static_string =
         detail::integral_to_string(ValueT, base, uppercase);
 
-    if (spec.padding_width > 0) {
-        auto const padding_width = std::max(
-            spec.padding_width - static_cast<int>(int_static_string.count), 0);
-
-        auto const pad_char = spec.zero_pad ? '0' : ' ';
-
-        for (int i = 0; i < padding_width; i++) {
-            *out++ = pad_char;
-        }
+    auto const pad_char = spec.zero_pad ? '0' : ' ';
+    for (auto i = int_static_string.size; i < spec.padding_width; ++i) {
+        *out++ = pad_char;
     }
 
-    std::string_view const int_sv = int_static_string;
+    auto const int_sv = static_cast<std::string_view>(int_static_string);
     return copy(int_sv.begin(), int_sv.end(), out);
 }
 

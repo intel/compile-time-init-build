@@ -25,7 +25,7 @@ namespace flow {
  *
  * @see flow::impl
  */
-template <typename NodeType, template <typename, int> typename ImplType,
+template <typename NodeType, template <typename, std::size_t> typename ImplType,
           typename NameT = void, std::size_t NodeCapacity = 64,
           std::size_t DependencyCapacity = 16>
 class generic_builder {
@@ -140,13 +140,13 @@ class generic_builder {
      * @return
      *      A flow::impl with all dependencies and requirements resolved.
      */
-    template <int OptimizedFlowCapacity>
+    template <std::size_t OptimizedFlowCapacity>
     [[nodiscard]] constexpr auto internal_build() const
         -> ImplType<Name, OptimizedFlowCapacity> {
         // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
         GraphType graph = dependencyGraph;
-        NodeType orderedList[NodeCapacity] = {};
-        int listSize = 0;
+        std::array<NodeType, NodeCapacity> orderedList{};
+        std::size_t listSize = 0;
 
         auto nodesWithNoIncomingEdge = getNodesWithNoIncomingEdge();
 
@@ -190,7 +190,8 @@ class generic_builder {
                                ? build_status::SUCCESS
                                : build_status::FLOW_HAS_CIRCULAR_DEPENDENCY;
 
-        return ImplType<Name, OptimizedFlowCapacity>(orderedList, buildStatus);
+        return ImplType<Name, OptimizedFlowCapacity>(orderedList.data(),
+                                                     buildStatus);
     }
 
     /**

@@ -709,3 +709,61 @@ TEST_CASE("filter", "[tuple]") {
     static_assert(u == cib::make_tuple(std::integral_constant<int, 2>{},
                                        std::integral_constant<int, 4>{}));
 }
+
+TEST_CASE("free get", "[tuple]") {
+    constexpr auto t = cib::make_tuple(cib::self_type_index, 5, true, 10l);
+
+    REQUIRE(cib::get<0>(t) == 5);
+    REQUIRE(cib::get<1>(t) == true);
+    REQUIRE(cib::get<2>(t) == 10);
+    static_assert(cib::get<0>(t) == 5);
+    static_assert(cib::get<1>(t) == true);
+    static_assert(cib::get<2>(t) == 10);
+
+    REQUIRE(cib::get<int>(t) == 5);
+    REQUIRE(cib::get<bool>(t) == true);
+    REQUIRE(cib::get<long>(t) == 10);
+    static_assert(cib::get<int>(t) == 5);
+    static_assert(cib::get<bool>(t) == true);
+    static_assert(cib::get<long>(t) == 10);
+}
+
+TEST_CASE("free get is SFINAE-friendly", "[tuple]") {
+    constexpr auto empty = cib::make_tuple();
+    constexpr auto t = cib::transform(
+        [&](auto... args) {
+            return cib::make_tuple(cib::get<decltype(args)>(empty)...);
+        },
+        cib::make_tuple());
+    static_assert(t == cib::make_tuple());
+}
+
+TEST_CASE("free get value categories", "[tuple]") {
+    {
+        auto const t = cib::make_tuple(42);
+        static_assert(std::is_same_v<decltype(cib::get<0>(t)), int const &>);
+    }
+    {
+        auto t = cib::make_tuple(42);
+        static_assert(std::is_same_v<decltype(cib::get<0>(t)), int &>);
+    }
+    static_assert(
+        std::is_same_v<decltype(cib::get<0>(cib::make_tuple(42))), int &&>);
+
+    {
+        auto const t = cib::make_tuple(index_metafunc_<extract_key>,
+                                       map_entry<A, int>{42});
+        static_assert(std::is_same_v<decltype(cib::get<A>(t)),
+                                     map_entry<A, int> const &>);
+    }
+    {
+        auto t = cib::make_tuple(index_metafunc_<extract_key>,
+                                 map_entry<A, int>{42});
+        static_assert(
+            std::is_same_v<decltype(cib::get<A>(t)), map_entry<A, int> &>);
+    }
+    static_assert(std::is_same_v<decltype(cib::get<A>(cib::make_tuple(
+                                     index_metafunc_<extract_key>,
+                                     map_entry<A, int>{42}))),
+                                 map_entry<A, int> &&>);
+}

@@ -7,7 +7,6 @@
 
 #include <array>
 #include <cstddef>
-#include <tuple>
 #include <type_traits>
 
 namespace msg {
@@ -76,11 +75,12 @@ template <typename CallableT, typename DataIterableT,
 void dispatch_single_callable(CallableT const &callable,
                               DataIterableT const &data,
                               ExtraCallbackArgsT const &...args) {
-    auto const provided_args_tuple = std::tuple(args...);
+    auto const provided_args_tuple =
+        cib::make_tuple(cib::self_type_index, args...);
     auto const required_args_tuple = cib::transform(
         [&](auto requiredArg) {
             using RequiredArgType = decltype(requiredArg);
-            return std::get<RequiredArgType>(provided_args_tuple);
+            return cib::get<RequiredArgType>(provided_args_tuple);
         },
         func_args_v<CallableT>);
 
