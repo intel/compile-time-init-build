@@ -2,6 +2,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string_view>
+#include <type_traits>
+
 namespace sc {
 TEST_CASE("fast_format_no_name_no_id", "[sc::format]") {
     detail::fast_format_spec spec{"", 0};
@@ -197,7 +200,7 @@ TEST_CASE("int_format_options", "[sc::format]") {
     REQUIRE(format("{:04x}"_sc, int_<0xbea75>) == "bea75"_sc);
 }
 
-TEST_CASE("lazy_runtime_values", "[sc::format]") {
+TEST_CASE("lazy_runtime_integral_values", "[sc::format]") {
     REQUIRE(format("{}"_sc, 0) ==
             (lazy_string_format{"{}"_sc, cib::make_tuple(0)}));
     REQUIRE(format("{}"_sc, 1) ==
@@ -209,6 +212,41 @@ TEST_CASE("lazy_runtime_values", "[sc::format]") {
             (lazy_string_format{"{}"_sc, cib::make_tuple(99)}));
     REQUIRE(format("{}"_sc, true) ==
             (lazy_string_format{"{}"_sc, cib::make_tuple(true)}));
+}
+
+namespace ns {
+template <typename T> struct IntegerLike { T value; };
+template <typename T> IntegerLike(T) -> IntegerLike<T>;
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+[[nodiscard]] constexpr auto to_integral(IntegerLike<T> i) -> T {
+    return i.value;
+}
+
+enum struct UserEnum1 : int {};
+enum struct UserEnum2 : int {};
+
+[[nodiscard]] constexpr auto to_integral(UserEnum1 e) {
+    return static_cast<std::underlying_type_t<UserEnum1>>(e);
+}
+} // namespace ns
+
+TEST_CASE("integral_conversion", "[sc::format]") {
+    static_assert(sc::is_integral_v<int>);
+    static_assert(sc::is_integral_v<ns::IntegerLike<int>>);
+    static_assert(sc::is_integral_v<ns::UserEnum1>);
+    static_assert(not sc::is_integral_v<ns::IntegerLike<float>>);
+    static_assert(not sc::is_integral_v<void>);
+    static_assert(not sc::is_integral_v<ns::UserEnum2>);
+}
+
+TEST_CASE("lazy_runtime_integer-convertible_values", "[sc::format]") {
+    REQUIRE(format("{}"_sc, ns::IntegerLike{42}) ==
+            (lazy_string_format{"{}"_sc, cib::make_tuple(42)}));
+    REQUIRE(format("{}"_sc, ns::IntegerLike{true}) ==
+            (lazy_string_format{"{}"_sc, cib::make_tuple(true)}));
+    REQUIRE(format("{}"_sc, ns::UserEnum1{42}) ==
+            (lazy_string_format{"{}"_sc, cib::make_tuple(42)}));
 }
 
 TEST_CASE("mixed_runtime_compile_time", "[sc::format]") {
