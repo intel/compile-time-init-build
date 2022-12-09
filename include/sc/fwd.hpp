@@ -25,7 +25,7 @@ template <typename T> struct type_name {
     constexpr type_name() = default;
 };
 
-template <typename T> constexpr static type_name<T> type_{T{}};
+template <typename T> constexpr static type_name<T> type_{};
 
 template <typename CharT, CharT... chars> struct string_constant;
 } // namespace sc
