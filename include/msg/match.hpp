@@ -105,8 +105,9 @@ template <bool value> constexpr always_t<value> always{};
 
 template <typename... MatcherTypes> struct any_t {
     using MatchersType = cib::tuple<MatcherTypes...>;
-    MatchersType matchers;
+    MatchersType matchers{};
 
+    constexpr any_t() = default;
     constexpr explicit any_t(MatchersType new_matchers)
         : matchers{new_matchers} {}
 

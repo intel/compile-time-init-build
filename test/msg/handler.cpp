@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 namespace msg {
+
 bool correctDispatch = false;
 
 using TestIdField = field<decltype("TestIdField"_sc), 0, 31, 24, std::uint32_t>;
@@ -19,6 +20,10 @@ using TestMsg =
     message_base<decltype("TestMsg"_sc), 4, 2, TestIdField::WithRequired<0x80>,
                  TestField1, TestField2, TestField3>;
 
+using TestMsgMultiCb =
+    message_base<decltype("TestMsg"_sc), 4, 2, TestIdField::WithRequired<0x81>,
+                 TestField1, TestField2, TestField3>;
+
 using TestMsgFieldRequired = message_base<decltype("TestMsgFieldRequired"_sc),
                                           4, 2, TestIdField::WithRequired<0x44>,
                                           TestField1, TestField2, TestField3>;
@@ -32,6 +37,8 @@ using TestMsgOp = message_base<decltype("TestMsg"_sc), 4, 2,
                                TestField1, TestField2>;
 
 TEST_CASE("TestMsgDispatch1", "[handler]") {
+    correctDispatch = false;
+
     static auto callback = msg::callback<TestBaseMsg>(
         "TestCallback"_sc, match::always<true>,
         [](const TestMsg &) { correctDispatch = true; });
@@ -47,6 +54,8 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
 // TODO: test is_match
 
 TEST_CASE("TestMsgDispatch2", "[handler]") {
+    correctDispatch = false;
+
     static auto callback1 = msg::callback<TestBaseMsg>(
         "TestCallback1"_sc, match::always<true>,
 
@@ -69,6 +78,8 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
 }
 
 TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
+    correctDispatch = false;
+
     static auto callback = msg::callback<TestBaseMsg, int>(
         "TestCallback"_sc, match::always<true>, [](TestMsg, int value) {
             correctDispatch = true;
@@ -91,5 +102,29 @@ TEST_CASE("TestMsgWithinEnum", "[handler]") {
 
     handler.handle({0x0800ba11, 0x0042d00d});
     REQUIRE(handled);
+}
+
+TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
+    {
+        auto correct = false;
+        auto const callback = msg::callback<TestBaseMsg>(
+            "TestCallback"_sc, match::always<true>,
+            [&](TestMsg const &) { correct = true; },
+            [](TestMsgMultiCb const &) {});
+        auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+
+        handler.handle({0x8000ba11, 0x0042d00d});
+        REQUIRE(correct);
+    }
+    {
+        auto correct = false;
+        auto const callback = msg::callback<TestBaseMsg>(
+            "TestCallback"_sc, match::always<true>, [](TestMsg const &) {},
+            [&](TestMsgMultiCb const &) { correct = true; });
+        auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+
+        handler.handle({0x8100ba11, 0x0042d00d});
+        REQUIRE(correct);
+    }
 }
 } // namespace msg
