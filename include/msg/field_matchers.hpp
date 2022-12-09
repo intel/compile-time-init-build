@@ -42,32 +42,28 @@ template <typename FieldType, typename T, T expected_value> struct equal_to_t {
 };
 
 template <typename FieldType, typename T, T... expected_values> struct in_t {
-    static constexpr auto expected_values_tuple =
-        cib::make_tuple(expected_values...);
+  private:
+    template <auto Value> static constexpr auto format_value() {
+        if constexpr (std::is_integral_v<decltype(Value)>) {
+            return format("0x{:x}"_sc, Value);
+        } else {
+            return format("{} (0x{:x})"_sc, sc::enum_<Value>,
+                          sc::int_<static_cast<std::uint32_t>(Value)>);
+        }
+    }
 
-    static constexpr auto expected_value_strings_tuple = cib::transform(
-        [](auto v) {
-            if constexpr (std::is_integral_v<T>) {
-                return format("0x{:x}"_sc, v);
-            } else {
-                return format("{} (0x{:x})"_sc, sc::enum_<v.value>,
-                              sc::int_<static_cast<std::uint32_t>(v.value)>);
-            }
-        },
-        expected_values_tuple);
+    static constexpr auto expected_value_strings_tuple =
+        cib::make_tuple(format_value<expected_values>()...);
 
     static constexpr auto expected_values_string =
         expected_value_strings_tuple.fold_right(
             [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 
+  public:
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         auto const actual_value = msg.template get<FieldType>();
-
-        return expected_values_tuple.fold_right(
-            false, [&](auto expected_value, bool match) {
-                return match || (actual_value == expected_value);
-            });
+        return ((actual_value == expected_values) or ...);
     }
 
     [[nodiscard]] constexpr auto describe() const {
