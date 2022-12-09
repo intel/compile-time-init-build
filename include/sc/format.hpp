@@ -79,7 +79,18 @@ format_field([[maybe_unused]] std::string_view field,
     return copy(arg.begin(), arg.end(), out);
 }
 
-template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr auto to_integral(T t) -> T {
+    return t;
+}
+
+template <typename, typename = void> constexpr auto is_integral_v = false;
+template <typename T>
+constexpr auto
+    is_integral_v<T, std::void_t<decltype(to_integral(std::declval<T>()))>> =
+        true;
+
+template <typename T, std::enable_if_t<is_integral_v<T>, bool> = true>
 [[nodiscard]] constexpr auto format_field(std::string_view field, T, char *out)
     -> char * {
     return copy(field.begin() - 1, field.end() + 1, out);
@@ -211,12 +222,10 @@ template <typename CharT, CharT... chars, typename... ArgTs>
                                     ArgTs... args) {
     auto const runtime_args = [&]() {
         constexpr bool has_runtime_args = []() {
-            constexpr bool has_integral_args =
-                (std::is_integral_v<ArgTs> || ...);
+            constexpr bool has_integral_args = (is_integral_v<ArgTs> || ...);
 
             if constexpr (has_integral_args) {
                 return true;
-
             } else {
                 constexpr bool has_lazy_args =
                     (is_lazy_format_string_v<ArgTs> || ...);
@@ -232,18 +241,16 @@ template <typename CharT, CharT... chars, typename... ArgTs>
         if constexpr (has_runtime_args) {
             return cib::make_tuple(args...).fold_right(
                 cib::make_tuple(), [](auto arg, auto state) {
-                    if constexpr (std::is_integral_v<decltype(arg)>) {
-                        return cib::tuple_cat(cib::make_tuple(arg), state);
-
+                    if constexpr (is_integral_v<decltype(arg)>) {
+                        return cib::tuple_cat(cib::make_tuple(to_integral(arg)),
+                                              state);
                     } else if constexpr (is_lazy_format_string_v<decltype(
                                              arg)>) {
                         return cib::tuple_cat(arg.args, state);
-
                     } else {
                         return state;
                     }
                 });
-
         } else {
             return cib::make_tuple();
         }
