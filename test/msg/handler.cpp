@@ -23,6 +23,14 @@ using TestMsgFieldRequired = message_base<decltype("TestMsgFieldRequired"_sc),
                                           4, 2, TestIdField::WithRequired<0x44>,
                                           TestField1, TestField2, TestField3>;
 
+enum class Opcode { A = 0x8, B = 0x9, C = 0xA };
+
+using TestOpField = field<decltype("TestOpField"_sc), 0, 27, 24, Opcode>;
+
+using TestMsgOp = message_base<decltype("TestMsg"_sc), 4, 2,
+                               TestOpField::WithIn<Opcode::A, Opcode::B>,
+                               TestField1, TestField2>;
+
 TEST_CASE("TestMsgDispatch1", "[handler]") {
     static auto callback = msg::callback<TestBaseMsg>(
         "TestCallback"_sc, match::always<true>,
@@ -72,5 +80,16 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
     handler.handle({0x8000ba11, 0x0042d00d}, 0xcafe);
 
     REQUIRE(correctDispatch);
+}
+
+TEST_CASE("TestMsgWithinEnum", "[handler]") {
+    auto handled = false;
+    auto const callback =
+        msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
+                                   [&](const TestMsgOp &) { handled = true; });
+    auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+
+    handler.handle({0x0800ba11, 0x0042d00d});
+    REQUIRE(handled);
 }
 } // namespace msg

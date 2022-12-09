@@ -3,7 +3,7 @@
 #include <cib/tuple.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/fwd.hpp>
 
 #include <algorithm>
 #include <array>
