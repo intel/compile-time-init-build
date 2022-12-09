@@ -153,6 +153,13 @@ TEST_CASE("typenames", "[sc::format]") {
             "Type = sc::ExampleTypeName"_sc);
 }
 
+struct IncompleteType;
+
+TEST_CASE("incomplete typenames", "[sc::format]") {
+    REQUIRE(format("Type = {}"_sc, type_<IncompleteType>).str ==
+            "Type = sc::IncompleteType"_sc);
+}
+
 static_assert(sc::to_string_constant(int_<5>) == "5"_sc);
 static_assert(sc::to_string_constant(int_<0>) == "0"_sc);
 static_assert(sc::to_string_constant(int_<10>) == "10"_sc);
