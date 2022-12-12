@@ -4,6 +4,7 @@
 #include <log/log.hpp>
 #include <sc/string_constant.hpp>
 
+#include <functional>
 #include <type_traits>
 
 namespace match {
@@ -51,8 +52,7 @@ constexpr static void process(NameType const &name, EventType const &event,
         }
     });
 
-    constexpr bool hasDefault =
-        (HandlerTypes::is_default_handler || ... || false);
+    constexpr bool hasDefault = (HandlerTypes::is_default_handler or ...);
 
     if (!event_handled) {
         if constexpr (hasDefault) {
@@ -103,28 +103,35 @@ template <bool value> struct always_t {
 
 template <bool value> constexpr always_t<value> always{};
 
-template <typename... MatcherTypes> struct any_t {
+namespace detail {
+struct any_op : std::logical_or<> {
+    static constexpr auto text = " || "_sc;
+    static constexpr auto unit = false;
+};
+struct all_op : std::logical_and<> {
+    static constexpr auto text = " && "_sc;
+    static constexpr auto unit = true;
+};
+
+template <typename TOp, typename... MatcherTypes> struct logical_matcher {
     using MatchersType = cib::tuple<MatcherTypes...>;
     MatchersType matchers{};
 
-    constexpr any_t() = default;
-    constexpr explicit any_t(MatchersType new_matchers)
-        : matchers{new_matchers} {}
-
     template <typename EventType>
     [[nodiscard]] constexpr auto operator()(EventType const &event) const
         -> bool {
-        return matchers.fold_left(false, [&](bool state, auto matcher) {
-            return state || matcher(event);
-        });
+        return matchers.fold_left(TOp::unit,
+                                  [&](bool state, auto matcher) -> bool {
+                                      return TOp{}(state, matcher(event));
+                                  });
     }
 
     [[nodiscard]] constexpr auto describe() const {
         const auto matcher_descriptions = cib::transform(
-            [&](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
+            [](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
 
         return matcher_descriptions.fold_left(
-            [](auto lhs, auto rhs) { return lhs + " || "_sc + rhs; });
+            [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
 
     template <typename EventType>
@@ -137,116 +144,52 @@ template <typename... MatcherTypes> struct any_t {
             matchers);
 
         return matcher_descriptions.fold_left(
-            [](auto lhs, auto rhs) { return lhs + " || "_sc + rhs; });
+            [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
 };
 
-template <typename... MatcherTypes>
-[[nodiscard]] constexpr auto any(MatcherTypes... matchers) {
-    auto const matcher_tuple = cib::make_tuple(matchers...);
-
-    auto const remaining_matcher_tuple =
-        cib::filter(matcher_tuple, [](auto matcher) {
-            using MatcherType = decltype(matcher);
-            return sc::bool_<!std::is_same_v<MatcherType, always_t<false>>>;
-        });
-
-    auto const is_always_true = remaining_matcher_tuple.fold_right(
-        sc::bool_<false>, [](auto matcher, auto already_found_always_true) {
-            using MatcherType = decltype(matcher);
-            auto constexpr matcher_is_always_true =
-                std::is_same_v<MatcherType, always_t<true>>;
-            return sc::bool_ < already_found_always_true ||
-                   sc::bool_<matcher_is_always_true> > ;
-        });
-
-    if constexpr (is_always_true.value) {
-        return always<true>;
-
-    } else if constexpr (remaining_matcher_tuple.size() == 0) {
-        // if there are no terms, then an OR-reduction should always be false
-        return always<false>;
-
-    } else if constexpr (remaining_matcher_tuple.size() == 1) {
-        return remaining_matcher_tuple.get(cib::index_<0>);
-
+template <typename TOp, typename... MatcherTypes>
+[[nodiscard]] constexpr auto
+make_logical_matcher(MatcherTypes const &...matchers) {
+    if constexpr ((std::is_same_v<MatcherTypes, always_t<not TOp::unit>> or
+                   ...)) {
+        return always<not TOp::unit>;
     } else {
-        return remaining_matcher_tuple.apply([&](auto... remaining_matchers) {
-            return any_t<decltype(remaining_matchers)...>{
-                remaining_matcher_tuple};
-        });
+        auto const remaining_matcher_tuple =
+            cib::filter(cib::make_tuple(matchers...), [](auto matcher) {
+                using MatcherType = decltype(matcher);
+                return not std::is_same_v<MatcherType, always_t<TOp::unit>>;
+            });
+
+        if constexpr (remaining_matcher_tuple.size() == 0) {
+            return always<TOp::unit>;
+        } else if constexpr (remaining_matcher_tuple.size() == 1) {
+            return remaining_matcher_tuple.get(cib::index_<0>);
+        } else {
+            return remaining_matcher_tuple.apply(
+                [&](auto... remaining_matchers) {
+                    return logical_matcher<TOp,
+                                           decltype(remaining_matchers)...>{
+                        remaining_matcher_tuple};
+                });
+        }
     }
 }
-
-template <typename... MatcherTypes> struct all_t {
-    using MatchersType = cib::tuple<MatcherTypes...>;
-    MatchersType matchers;
-
-    template <typename EventType>
-    [[nodiscard]] constexpr auto operator()(EventType const &event) const
-        -> bool {
-        return matchers.fold_left(true, [&](bool state, auto matcher) {
-            return state && matcher(event);
-        });
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        const auto matcher_descriptions = cib::transform(
-            [&](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
-
-        return matcher_descriptions.fold_left(
-            [](auto lhs, auto rhs) { return lhs + " && "_sc + rhs; });
-    }
-
-    template <typename EventType>
-    [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
-        const auto matcher_descriptions = cib::transform(
-            [&](auto m) {
-                return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
-                              m.describe_match(event));
-            },
-            matchers);
-
-        return matcher_descriptions.fold_left(
-            [](auto lhs, auto rhs) { return lhs + " && "_sc + rhs; });
-    }
-};
+} // namespace detail
 
 template <typename... MatcherTypes>
-[[nodiscard]] constexpr auto all(MatcherTypes... matchers) {
-    auto const matcher_tuple = cib::make_tuple(matchers...);
+using any_t = detail::logical_matcher<detail::any_op, MatcherTypes...>;
+template <typename... MatcherTypes>
+using all_t = detail::logical_matcher<detail::all_op, MatcherTypes...>;
 
-    auto const remaining_matcher_tuple =
-        cib::filter(matcher_tuple, [](auto matcher) {
-            using MatcherType = decltype(matcher);
-            return sc::bool_<!std::is_same_v<MatcherType, always_t<true>>>;
-        });
+template <typename... MatcherTypes>
+[[nodiscard]] constexpr auto any(MatcherTypes const &...matchers) {
+    return detail::make_logical_matcher<detail::any_op>(matchers...);
+}
 
-    auto const is_always_false = remaining_matcher_tuple.fold_right(
-        sc::bool_<false>, [](auto matcher, auto already_found_always_false) {
-            using MatcherType = decltype(matcher);
-            bool constexpr matcher_is_always_false =
-                std::is_same_v<MatcherType, always_t<false>>;
-            return sc::bool_ < already_found_always_false ||
-                   sc::bool_<matcher_is_always_false> > ;
-        });
-
-    if constexpr (is_always_false.value) {
-        return always<false>;
-
-    } else if constexpr (remaining_matcher_tuple.size() == 0) {
-        // if there are no terms, then an AND-reduction should always be true
-        return always<true>;
-
-    } else if constexpr (remaining_matcher_tuple.size() == 1) {
-        return remaining_matcher_tuple.get(cib::index_<0>);
-
-    } else {
-        return remaining_matcher_tuple.apply([&](auto... remaining_matchers) {
-            return all_t<decltype(remaining_matchers)...>{
-                remaining_matcher_tuple};
-        });
-    }
+template <typename... MatcherTypes>
+[[nodiscard]] constexpr auto all(MatcherTypes const &...matchers) {
+    return detail::make_logical_matcher<detail::all_op>(matchers...);
 }
 
 template <typename MatcherType> struct not_t {

@@ -474,8 +474,8 @@ namespace detail {
 template <std::size_t... Indices, typename TOp, typename Tuple>
 [[nodiscard]] constexpr auto sampled_transform(std::index_sequence<Indices...>,
                                                TOp &&op, Tuple &&t) {
-    return make_tuple(op(std::integral_constant<std::size_t, Indices>{},
-                         std::forward<Tuple>(t))...);
+    return cib::make_tuple(op(std::integral_constant<std::size_t, Indices>{},
+                              std::forward<Tuple>(t))...);
 }
 } // namespace detail
 
