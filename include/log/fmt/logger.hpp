@@ -5,9 +5,10 @@
 #include <sc/format.hpp>
 #include <sc/string_constant.hpp>
 
-#include <cctype>
-#include <chrono>
 #include <fmt/format.h>
+
+#include <chrono>
+#include <iostream>
 
 template <> struct fmt::formatter<log_level> {
     constexpr static auto parse(format_parse_context &ctx) {
@@ -41,11 +42,6 @@ template <> struct fmt::formatter<log_level> {
 namespace {
 inline const auto logging_start_time = std::chrono::steady_clock::now();
 
-template <typename StringType>
-inline auto trim_source_filename(StringType src) -> char const * {
-    return std::strstr(src, "src");
-}
-
 template <typename T> struct FormatHelper {
     constexpr static T str{};
 
@@ -56,28 +52,19 @@ template <typename T> struct FormatHelper {
     }
 };
 
-inline auto output_line = []([[maybe_unused]] auto filename,
-                             [[maybe_unused]] auto line_number, auto level,
-                             const auto &msg) {
+template <typename FilenameStringType, typename LineNumberType,
+          typename MsgType>
+void log(FilenameStringType, LineNumberType, log_level level, MsgType msg) {
     const auto currentTime =
         std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - logging_start_time)
             .count();
 
-    fmt::print("{:>8}us {}: {}\n", currentTime, level, msg.data());
-};
-
-template <typename FilenameStringType, typename LineNumberType,
-          typename MsgType>
-void log(FilenameStringType filename, LineNumberType line_number,
-         log_level level, MsgType msg) {
-    auto formatted_msg = msg.args.apply([&](auto... args) {
-        auto out = fmt::memory_buffer();
-        fmt::format_to(std::back_inserter(out), msg.str.value, args...);
-        return out;
-    });
-
-    output_line(filename, line_number, level, formatted_msg);
+    std::ostream_iterator<char> out{std::cout};
+    fmt::format_to(out, "{:>8}us {}: ", currentTime, level);
+    msg.args.apply(
+        [&](auto... args) { fmt::format_to(out, msg.str.value, args...); });
+    *out = '\n';
 }
 } // namespace
 
