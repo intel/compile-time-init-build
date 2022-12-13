@@ -17,6 +17,7 @@ endif()
 
 include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
+include(cmake/sanitizers.cmake)
 
 add_versioned_package("gh:boostorg/hana#b804937")
 add_versioned_package("gh:fmtlib/fmt#9.1.0")

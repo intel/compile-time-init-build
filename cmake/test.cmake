@@ -23,6 +23,7 @@ function(add_unit_test name)
     target_include_directories(${name} PRIVATE ${UNIT_INCLUDE_DIRECTORIES})
     target_link_libraries(${name} PRIVATE ${UNIT_LIBRARIES})
     target_link_libraries_system(${name} PRIVATE ${UNIT_SYSTEM_LIBRARIES})
+    target_link_libraries(${name} PRIVATE sanitizers)
 
     set(target_test_command $<TARGET_FILE:${name}>)
 
