@@ -135,9 +135,29 @@ jobs:
       - name: Run quality checks
         run: cmake --build ${{github.workspace}}/build -t quality
 
+  sanitize:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install build tools
+        run: |
+          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
+          sudo apt install -y ninja-build
+
+      - name: Configure CMake
+        env:
+          CC: "/usr/lib/llvm-14/bin/clang"
+          CXX: "/usr/lib/llvm-14/bin/clang++"
+          CXX_STANDARD: 20
+        run: cmake -B ${{github.workspace}}/build -DSANITIZERS=undefined,address
+
+      - name: Build Unit Tests
+        run: cmake --build ${{github.workspace}}/build -t unit_tests
+
   merge_ok:
     runs-on: ubuntu-20.04
-    needs: [build_and_test, quality_checks_pass]
+    needs: [build_and_test, quality_checks_pass, sanitize]
     steps:
       - name: Enable merge
         run: echo "OK to merge!"

@@ -11,6 +11,7 @@ testing_logger::testing_logger() { testing_logger_flag.store(true); }
 
 testing_logger::~testing_logger() { testing_logger_flag.store(false); }
 
+#ifndef SANITIZER_NEW_DEL
 void *operator new(std::size_t count) {
     if (testing_logger_flag.load()) {
         REQUIRE(false);
@@ -19,8 +20,8 @@ void *operator new(std::size_t count) {
 }
 
 void operator delete(void *ptr, std::size_t) noexcept { return free(ptr); }
-
 void operator delete(void *ptr) noexcept { return free(ptr); }
+#endif
 
 TEST_CASE("TRACE doesn't use dynamic memory", "[log]") {
     testing_logger test;
