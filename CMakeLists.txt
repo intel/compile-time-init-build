@@ -31,7 +31,8 @@ target_link_libraries_system(cib INTERFACE fmt::fmt-header-only)
 target_compile_options(
     cib
     INTERFACE
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>)
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
