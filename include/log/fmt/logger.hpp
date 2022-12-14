@@ -78,4 +78,4 @@ void log(FilenameStringType, LineNumberType, log_level level, MsgType msg) {
 #define CIB_FATAL(...) CIB_LOG(log_level::FATAL, __VA_ARGS__)
 
 #define CIB_ASSERT(expr)                                                       \
-    ((expr) ? void(0) : CIB_FATAL("Assertion failure:  #expr"))
+    ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
