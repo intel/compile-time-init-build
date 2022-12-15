@@ -12,8 +12,8 @@ add_unit_test(
     cib/set.cpp
     cib/readme_hello_world.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     container_test
@@ -24,8 +24,8 @@ add_unit_test(
     container/ConstexprSet.cpp
     container/Vector.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     msg_test
@@ -37,8 +37,8 @@ add_unit_test(
     msg/handler.cpp
     msg/message.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     flow_test
@@ -46,8 +46,8 @@ add_unit_test(
     FILES
     flow/flow.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     sc_test
@@ -56,8 +56,8 @@ add_unit_test(
     sc/format.cpp
     sc/string_constant.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     seq_test
@@ -65,8 +65,8 @@ add_unit_test(
     FILES
     seq/sequencer.cpp
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     interrupt_test
@@ -76,8 +76,8 @@ add_unit_test(
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)
 
 add_unit_test(
     log_test
@@ -88,5 +88,5 @@ add_unit_test(
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
-    cib
-    warnings)
+    warnings
+    cib)

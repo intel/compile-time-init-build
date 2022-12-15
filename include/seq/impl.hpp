@@ -14,8 +14,8 @@ template <std::size_t NumSteps> struct impl {
     std::array<func_ptr, NumSteps> _backward_steps{};
     std::size_t next_step{};
 
-    status prev_status{};
-    direction prev_direction{};
+    status prev_status{status::DONE};
+    direction prev_direction{direction::BACKWARD};
 
     constexpr explicit impl(func_ptr const *forward_steps = nullptr,
                             func_ptr const *backward_steps = nullptr) {
@@ -23,9 +23,6 @@ template <std::size_t NumSteps> struct impl {
             _forward_steps[i] = forward_steps[i];
             _backward_steps[i] = backward_steps[i];
         }
-
-        prev_status = status::DONE;
-        prev_direction = direction::BACKWARD;
     }
 
     constexpr impl(step_base const *steps, build_status) {
@@ -33,9 +30,6 @@ template <std::size_t NumSteps> struct impl {
             _forward_steps[i] = steps[i]._forward_ptr;
             _backward_steps[i] = steps[i]._backward_ptr;
         }
-
-        prev_status = status::DONE;
-        prev_direction = direction::BACKWARD;
     }
 
   private:
@@ -108,4 +102,13 @@ template <std::size_t NumSteps> struct impl {
     constexpr auto forward() -> status { return go<direction::FORWARD>(); }
     constexpr auto backward() -> status { return go<direction::BACKWARD>(); }
 };
+
+template <> struct impl<0u> {
+    constexpr impl() = default;
+    constexpr impl(step_base const *, build_status) noexcept {}
+
+    static constexpr auto forward() -> status { return status::DONE; }
+    static constexpr auto backward() -> status { return status::DONE; }
+};
+
 } // namespace seq

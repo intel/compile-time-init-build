@@ -25,12 +25,11 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wnewline-eof>
         -Wold-style-cast
         -Woverloaded-virtual
+        $<$<CXX_COMPILER_ID:Clang>:-Wpedantic>
         -Wshadow
         $<$<CXX_COMPILER_ID:GNU>:-Wuseless-cast>
         -Wunused
         $<$<CXX_COMPILER_ID:Clang>:-Wmissing-prototypes>
-        # warnings turned off
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
         # other compilation flags
         $<$<CXX_COMPILER_ID:Clang>:-ferror-limit=8>
         $<$<CXX_COMPILER_ID:GNU>:-fmax-errors=8>
