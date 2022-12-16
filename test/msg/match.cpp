@@ -4,32 +4,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 namespace {
-template <bool Value> struct always_t {
-    template <typename T>
-    [[nodiscard]] constexpr bool operator()(T const &) const {
-        return Value;
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        if constexpr (Value) {
-            return "true"_sc;
-        } else {
-            return "false"_sc;
-        }
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr auto describe_match(T const &) const {
-        if constexpr (Value) {
-            return "true"_sc;
-        } else {
-            return "false"_sc;
-        }
-    }
-};
-
-template <bool Value> static constexpr always_t<Value> always{};
-
 template <int Value> struct Number {
     [[nodiscard]] constexpr bool operator()(int const &event) const {
         return event == Value;
@@ -49,18 +23,22 @@ template <int Value> static constexpr Number<Value> number{};
 TEST_CASE("MatchAny", "[match]") {
     REQUIRE_FALSE(match::any()(0));
 
-    REQUIRE_FALSE(match::any(always<false>)(0));
-    REQUIRE(match::any(always<true>)(0));
+    REQUIRE_FALSE(match::any(match::always<false>)(0));
+    REQUIRE(match::any(match::always<true>)(0));
 
-    REQUIRE_FALSE(match::any(always<false>, always<false>)(0));
-    REQUIRE(match::any(always<false>, always<true>)(0));
-    REQUIRE(match::any(always<true>, always<false>)(0));
-    REQUIRE(match::any(always<true>, always<true>)(0));
+    REQUIRE_FALSE(match::any(match::always<false>, match::always<false>)(0));
+    REQUIRE(match::any(match::always<false>, match::always<true>)(0));
+    REQUIRE(match::any(match::always<true>, match::always<false>)(0));
+    REQUIRE(match::any(match::always<true>, match::always<true>)(0));
 
-    REQUIRE_FALSE(match::any(always<false>, always<false>, always<false>)(0));
-    REQUIRE(match::any(always<true>, always<false>, always<false>)(0));
-    REQUIRE(match::any(always<false>, always<true>, always<false>)(0));
-    REQUIRE(match::any(always<false>, always<false>, always<true>)(0));
+    REQUIRE_FALSE(match::any(match::always<false>, match::always<false>,
+                             match::always<false>)(0));
+    REQUIRE(match::any(match::always<true>, match::always<false>,
+                       match::always<false>)(0));
+    REQUIRE(match::any(match::always<false>, match::always<true>,
+                       match::always<false>)(0));
+    REQUIRE(match::any(match::always<false>, match::always<false>,
+                       match::always<true>)(0));
 }
 
 TEST_CASE("MatchAnyWithEvents", "[match]") {
@@ -100,19 +78,24 @@ TEST_CASE("MatchAnyDescriptionWithEvent", "[match]") {
 TEST_CASE("MatchAll", "[match]") {
     REQUIRE(match::all()(0));
 
-    REQUIRE_FALSE(match::all(always<false>)(0));
-    REQUIRE(match::all(always<true>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>)(0));
+    REQUIRE(match::all(match::always<true>)(0));
 
-    REQUIRE_FALSE(match::all(always<false>, always<false>)(0));
-    REQUIRE_FALSE(match::all(always<false>, always<true>)(0));
-    REQUIRE_FALSE(match::all(always<true>, always<false>)(0));
-    REQUIRE(match::all(always<true>, always<true>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>, match::always<false>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>, match::always<true>)(0));
+    REQUIRE_FALSE(match::all(match::always<true>, match::always<false>)(0));
+    REQUIRE(match::all(match::always<true>, match::always<true>)(0));
 
-    REQUIRE_FALSE(match::all(always<false>, always<false>, always<false>)(0));
-    REQUIRE_FALSE(match::all(always<true>, always<false>, always<false>)(0));
-    REQUIRE_FALSE(match::all(always<false>, always<true>, always<false>)(0));
-    REQUIRE_FALSE(match::all(always<false>, always<false>, always<true>)(0));
-    REQUIRE(match::all(always<true>, always<true>, always<true>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>, match::always<false>,
+                             match::always<false>)(0));
+    REQUIRE_FALSE(match::all(match::always<true>, match::always<false>,
+                             match::always<false>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>, match::always<true>,
+                             match::always<false>)(0));
+    REQUIRE_FALSE(match::all(match::always<false>, match::always<false>,
+                             match::always<true>)(0));
+    REQUIRE(match::all(match::always<true>, match::always<true>,
+                       match::always<true>)(0));
 }
 
 TEST_CASE("MatchAllWithEvents", "[match]") {
