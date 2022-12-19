@@ -83,7 +83,28 @@ add_unit_test(
     log_test
     CATCH2
     FILES
-    log/logger.cpp
+    log/log.cpp
+    INCLUDE_DIRECTORIES
+    ${CMAKE_SOURCE_DIR}/test/
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    fmt_log_test
+    CATCH2
+    FILES
+    log/fmt_logger.cpp
+    INCLUDE_DIRECTORIES
+    ${CMAKE_SOURCE_DIR}/test/
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    mipi_log_test
+    CATCH2
+    FILES
     log/mipi_encoder.cpp
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/test/

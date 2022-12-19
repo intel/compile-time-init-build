@@ -261,4 +261,11 @@ template <typename CharT, CharT... chars, typename... ArgTs>
         runtime_args};
 }
 
+template <typename T> struct formatter {
+    constexpr explicit formatter(T) {}
+
+    template <typename... Ts> constexpr auto operator()(Ts &&...args) {
+        return format(T{}, std::forward<Ts>(args)...);
+    }
+};
 } // namespace sc

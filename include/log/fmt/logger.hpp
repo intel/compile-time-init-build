@@ -1,81 +1,64 @@
 #pragma once
 
-#include <log/fmt/catalog.hpp>
-#include <log/log_level.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+#include <cib/tuple.hpp>
+#include <log/level.hpp>
 
 #include <fmt/format.h>
 
 #include <chrono>
+#include <exception>
 #include <iostream>
+#include <iterator>
+#include <utility>
 
-template <> struct fmt::formatter<log_level> {
+template <auto L> struct fmt::formatter<logging::level_constant<L>> {
     constexpr static auto parse(format_parse_context &ctx) {
         return ctx.begin();
     }
 
     template <typename FormatContext>
-    auto format(const log_level &level, FormatContext &ctx) {
-        switch (level) {
-        case log_level::TRACE:
-            return format_to(ctx.out(), "TRACE");
-
-        case log_level::INFO:
-            return format_to(ctx.out(), "INFO");
-
-        case log_level::WARN:
-            return format_to(ctx.out(), "WARN");
-
-        case log_level::ERROR:
-            return format_to(ctx.out(), "ERROR");
-
-        case log_level::FATAL:
-            return format_to(ctx.out(), "FATAL");
-
-        default:
-            return format_to(ctx.out(), "UNKNOWN");
-        }
+    auto format(logging::level_constant<L>, FormatContext &ctx) {
+        return format_to(ctx.out(), to_text(L));
     }
 };
 
-namespace {
-inline const auto logging_start_time = std::chrono::steady_clock::now();
+namespace logging::fmt {
+template <typename TDestinations> struct log_handler {
+    constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-template <typename T> struct FormatHelper {
-    constexpr static T str{};
+    template <logging::level L, typename FilenameStringType,
+              typename LineNumberType, typename MsgType>
+    auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
+        const auto currentTime =
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - start_time)
+                .count();
 
-    constexpr explicit FormatHelper(T) {}
-
-    template <typename... Ts> constexpr static auto f(Ts... args) {
-        return format(str, args...);
+        cib::for_each(
+            [&](auto &out) {
+                ::fmt::format_to(out, "{:>8}us {}: ", currentTime,
+                                 level_constant<L>{});
+                msg.args.apply([&](auto const &...args) {
+                    ::fmt::format_to(out, MsgType::str.value, args...);
+                });
+                *out = '\n';
+            },
+            dests);
     }
+
+  private:
+    inline static const auto start_time = std::chrono::steady_clock::now();
+    TDestinations dests;
 };
 
-template <typename FilenameStringType, typename LineNumberType,
-          typename MsgType>
-void log(FilenameStringType, LineNumberType, log_level level, MsgType msg) {
-    const auto currentTime =
-        std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - logging_start_time)
-            .count();
+template <typename... TDestinations> struct config {
+    using destinations_tuple_t =
+        decltype(cib::make_tuple(std::declval<TDestinations>()...));
+    constexpr explicit config(TDestinations... dests)
+        : logger{cib::make_tuple(dests...)} {}
 
-    std::ostream_iterator<char> out{std::cout};
-    fmt::format_to(out, "{:>8}us {}: ", currentTime, level);
-    msg.args.apply(
-        [&](auto... args) { fmt::format_to(out, msg.str.value, args...); });
-    *out = '\n';
-}
-} // namespace
+    log_handler<destinations_tuple_t> logger;
 
-#define CIB_LOG(LEVEL, MSG, ...)                                               \
-    log(__FILE__, __LINE__, LEVEL, FormatHelper{MSG##_sc}.f(__VA_ARGS__))
-
-#define CIB_TRACE(...) CIB_LOG(log_level::TRACE, __VA_ARGS__)
-#define CIB_INFO(...) CIB_LOG(log_level::INFO, __VA_ARGS__)
-#define CIB_WARN(...) CIB_LOG(log_level::WARN, __VA_ARGS__)
-#define CIB_ERROR(...) CIB_LOG(log_level::ERROR, __VA_ARGS__)
-#define CIB_FATAL(...) CIB_LOG(log_level::FATAL, __VA_ARGS__)
-
-#define CIB_ASSERT(expr)                                                       \
-    ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
+    [[noreturn]] static auto terminate() { std::terminate(); }
+};
+} // namespace logging::fmt

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <log/log_level.hpp>
+#include <log/level.hpp>
 
 #include <string_view>
 
-template <log_level level, typename MessageString> struct message {};
+template <logging::level level, typename MessageString> struct message {};
 
 using string_id = std::uint32_t;
 
