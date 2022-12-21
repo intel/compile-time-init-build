@@ -7,7 +7,7 @@ struct test_config : logging::null::config {
     static auto terminate() noexcept -> void { terminated = true; }
 };
 
-template <> auto logging::config<> = test_config{};
+template <> inline auto logging::config<> = test_config{};
 
 TEST_CASE("FATAL calls terminate", "[log]") {
     CIB_FATAL("Hello");
