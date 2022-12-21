@@ -18,7 +18,7 @@ struct config {
 };
 } // namespace null
 
-template <typename...> static auto config = null::config{};
+template <typename...> inline auto config = null::config{};
 
 template <level L, typename... Ts, typename... TArgs>
 static auto log(TArgs &&...args) -> void {

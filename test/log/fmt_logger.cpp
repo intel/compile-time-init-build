@@ -18,7 +18,8 @@ std::string buffer{};
 // The override test requires that the specialization here happen after the body
 // of log_test_override above.
 template <>
-auto logging::config<> = logging::fmt::config{std::back_inserter(buffer)};
+inline auto logging::config<> =
+    logging::fmt::config{std::back_inserter(buffer)};
 
 #ifndef SANITIZER_NEW_DEL
 void *operator new(std::size_t count) {
