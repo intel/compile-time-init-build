@@ -16,5 +16,10 @@
 #define CIB_CONSTEVAL consteval
 #endif
 
+#ifndef CIB_ALWAYS_INLINE
 #define CIB_ALWAYS_INLINE inline __attribute__((always_inline))
+#endif
+
+#ifndef CIB_NEVER_INLINE
 #define CIB_NEVER_INLINE __attribute__((noinline))
+#endif
