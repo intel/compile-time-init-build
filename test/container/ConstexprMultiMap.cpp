@@ -6,8 +6,8 @@ namespace {
 TEST_CASE("EmptyAndSize", "[constexpr_multimap]") {
     ConstexprMultiMap<int, int, 64> t;
 
-    REQUIRE(t.getSize() == 0);
-    REQUIRE(t.isEmpty() == true);
+    CHECK(t.getSize() == 0);
+    CHECK(t.isEmpty() == true);
 }
 
 TEST_CASE("PutAndContains", "[constexpr_multimap]") {
@@ -15,13 +15,13 @@ TEST_CASE("PutAndContains", "[constexpr_multimap]") {
 
     t.put(60, 40);
 
-    REQUIRE(t.getSize() == 1);
-    REQUIRE(t.isEmpty() == false);
-    REQUIRE(t.contains(60) == true);
-    REQUIRE(t.contains(40) == false);
-    REQUIRE(t.contains(60, 40) == true);
-    REQUIRE(t.contains(60, 60) == false);
-    REQUIRE(t.contains(40, 40) == false);
+    CHECK(t.getSize() == 1);
+    CHECK(t.isEmpty() == false);
+    CHECK(t.contains(60) == true);
+    CHECK(t.contains(40) == false);
+    CHECK(t.contains(60, 40) == true);
+    CHECK(t.contains(60, 60) == false);
+    CHECK(t.contains(40, 40) == false);
 }
 
 constexpr auto emptyMultiMapTest = [] {
@@ -40,11 +40,11 @@ TEST_CASE("PutMultipleValues", "[constexpr_multimap]") {
     t.put(60, 2);
     t.put(60, 3);
 
-    REQUIRE(t.getSize() == 1);
-    REQUIRE(t.contains(60, 1) == true);
-    REQUIRE(t.contains(60, 2) == true);
-    REQUIRE(t.contains(60, 3) == true);
-    REQUIRE(t.contains(60, 0) == false);
+    CHECK(t.getSize() == 1);
+    CHECK(t.contains(60, 1) == true);
+    CHECK(t.contains(60, 2) == true);
+    CHECK(t.contains(60, 3) == true);
+    CHECK(t.contains(60, 0) == false);
 }
 
 constexpr auto populatedMultiMapTest = [] {
