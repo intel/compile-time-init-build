@@ -2,17 +2,19 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "log.hpp"
+
 namespace {
 TEST_CASE("EmptyAndSize", "[constexpr_map]") {
     ConstexprMap<int, int, 64> t;
 
-    REQUIRE(t.getSize() == 0);
-    REQUIRE(t.isEmpty() == true);
+    CHECK(t.getSize() == 0);
+    CHECK(t.isEmpty() == true);
 
     t.put(10, 50);
 
-    REQUIRE(t.getSize() == 1);
-    REQUIRE(t.isEmpty() == false);
+    CHECK(t.getSize() == 1);
+    CHECK(t.isEmpty() == false);
 }
 
 TEST_CASE("ContainsAndGet", "[constexpr_map]") {
@@ -21,10 +23,11 @@ TEST_CASE("ContainsAndGet", "[constexpr_map]") {
     t.put(11, 100);
 
     REQUIRE(t.contains(10) == true);
-    REQUIRE(t.get(10) == 50);
+    CHECK(t.get(10) == 50);
     REQUIRE(t.contains(11) == true);
-    REQUIRE(t.get(11) == 100);
-    REQUIRE(t.contains(12) == false);
+    CHECK(t.get(11) == 100);
+    CHECK(t.contains(12) == false);
+    CHECK_THROWS_AS(t.get(12), test_log_config::exception);
 }
 
 TEST_CASE("ConstGet", "[constexpr_map]") {
@@ -36,10 +39,11 @@ TEST_CASE("ConstGet", "[constexpr_map]") {
     }();
 
     REQUIRE(t.contains(10) == true);
-    REQUIRE(t.get(10) == 50);
+    CHECK(t.get(10) == 50);
     REQUIRE(t.contains(11) == true);
-    REQUIRE(t.get(11) == 100);
-    REQUIRE(t.contains(12) == false);
+    CHECK(t.get(11) == 100);
+    CHECK(t.contains(12) == false);
+    CHECK_THROWS_AS(t.get(12), test_log_config::exception);
 }
 
 TEST_CASE("UpdateExistingKey", "[constexpr_map]") {
@@ -48,7 +52,13 @@ TEST_CASE("UpdateExistingKey", "[constexpr_map]") {
     t.put(13, 700);
 
     REQUIRE(t.contains(13) == true);
-    REQUIRE(t.get(13) == 700);
+    CHECK(t.get(13) == 700);
+}
+
+TEST_CASE("PutWhenFull", "[constexpr_map]") {
+    ConstexprMap<int, int, 1> t;
+    t.put(13, 500);
+    CHECK_THROWS_AS(t.put(12, 700), test_log_config::exception);
 }
 
 TEST_CASE("Pop", "[constexpr_map]") {
@@ -57,10 +67,11 @@ TEST_CASE("Pop", "[constexpr_map]") {
 
     auto entry = t.pop();
 
-    REQUIRE(t.getSize() == 0);
-    REQUIRE(t.isEmpty() == true);
-    REQUIRE(entry.key == 13);
-    REQUIRE(entry.value == 500);
+    CHECK(t.getSize() == 0);
+    CHECK(t.isEmpty() == true);
+    CHECK(entry.key == 13);
+    CHECK(entry.value == 500);
+    CHECK_THROWS_AS(t.pop(), test_log_config::exception);
 }
 
 TEST_CASE("Remove", "[constexpr_map]") {
@@ -71,10 +82,10 @@ TEST_CASE("Remove", "[constexpr_map]") {
 
     t.remove(18);
 
-    REQUIRE(t.getSize() == 2);
-    REQUIRE(t.contains(18) == false);
-    REQUIRE(t.get(13) == 500);
-    REQUIRE(t.get(19) == 700);
+    CHECK(t.getSize() == 2);
+    CHECK(t.contains(18) == false);
+    CHECK(t.get(13) == 500);
+    CHECK(t.get(19) == 700);
 }
 
 TEST_CASE("RemoveNonExistantKey", "[constexpr_map]") {
@@ -84,16 +95,16 @@ TEST_CASE("RemoveNonExistantKey", "[constexpr_map]") {
 
     t.remove(50);
 
-    REQUIRE(t.getSize() == 2);
-    REQUIRE(t.contains(50) == false);
-    REQUIRE(t.get(13) == 500);
-    REQUIRE(t.get(18) == 600);
+    CHECK(t.getSize() == 2);
+    CHECK(t.contains(50) == false);
+    CHECK(t.get(13) == 500);
+    CHECK(t.get(18) == 600);
 }
 
 TEST_CASE("EmptyIterators", "[constexpr_map]") {
     ConstexprMap<int, int, 64> t;
 
-    REQUIRE(t.begin() == t.end());
+    CHECK(t.begin() == t.end());
 }
 
 TEST_CASE("NonEmptyIterators", "[constexpr_map]") {
@@ -101,7 +112,7 @@ TEST_CASE("NonEmptyIterators", "[constexpr_map]") {
 
     t.put(18, 600);
 
-    REQUIRE((t.begin() + 1) == t.end());
+    CHECK((t.begin() + 1) == t.end());
 }
 
 constexpr auto emptyMapTest = [] {

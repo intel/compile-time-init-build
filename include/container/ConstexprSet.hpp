@@ -165,3 +165,6 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      */
     [[nodiscard]] constexpr auto pop() -> KeyType { return storage.pop().key; }
 };
+
+template <typename T, typename... Ts>
+ConstexprSet(T, Ts...) -> ConstexprSet<T, 1 + sizeof...(Ts)>;

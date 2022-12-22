@@ -101,7 +101,7 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr auto push(ValueType value) -> void {
         if (isFull()) {
-            CIB_FATAL("Vector:push() attempted when full");
+            CIB_FATAL("Vector::push() attempted when full");
             return;
         }
         storage[currentSize] = value;
@@ -143,3 +143,6 @@ template <typename ValueType, size_t Capacity> class Vector {
         return result;
     }
 };
+
+template <typename T, typename... Ts>
+Vector(T, Ts...) -> Vector<T, 1 + sizeof...(Ts)>;
