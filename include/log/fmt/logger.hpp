@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
-#include <log/level.hpp>
+#include <log/log.hpp>
 
 #include <fmt/format.h>
 
