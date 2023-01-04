@@ -3,7 +3,7 @@
 #include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
 #include <log/catalog/catalog.hpp>
-#include <log/level.hpp>
+#include <log/log.hpp>
 
 #include <cstdint>
 #include <exception>

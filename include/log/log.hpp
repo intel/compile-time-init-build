@@ -45,6 +45,3 @@ template <typename... Ts> static auto terminate() -> void {
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
-
-#include <log/catalog/mipi_encoder.hpp>
-#include <log/fmt/logger.hpp>
