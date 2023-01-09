@@ -120,7 +120,7 @@ struct message_base : public message_data<MaxNumDWords> {
     static constexpr auto match_valid_encoding = []() {
         constexpr auto required_fields =
             cib::filter(FieldTupleType{}, [](auto field) {
-                using FieldType = decltype(field);
+                using FieldType = typename decltype(field)::type;
                 return sc::bool_<!std::is_same_v<
                     match::always_t<true>,
                     std::decay_t<decltype(FieldType::match_requirements)>>>;

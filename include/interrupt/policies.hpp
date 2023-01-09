@@ -2,13 +2,9 @@
 
 #include <cib/tuple.hpp>
 
-#include <boost/hana.hpp>
-
 #include <utility>
 
 namespace interrupt {
-namespace hana = boost::hana;
-
 struct status_clear_policy {};
 
 struct clear_status_first {
@@ -47,7 +43,7 @@ struct required_resources_policy {};
 template <typename... ResourcesT> struct required_resources {
     using PolicyType = required_resources_policy;
 
-    constexpr static hana::tuple<ResourcesT...> resources{};
+    constexpr static cib::tuple<ResourcesT...> resources{};
 };
 
 template <typename... PoliciesT> class policies {

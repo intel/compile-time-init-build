@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
@@ -7,7 +8,6 @@
 
 namespace interrupt {
 namespace hana = boost::hana;
-using namespace hana::literals;
 
 /**
  * Declare a sub-interrupt under a shared interrupt.
@@ -37,6 +37,6 @@ struct sub_irq {
                                 required_resources<>>()
             .resources;
     using IrqCallbackType = IrqCallbackT;
-    constexpr static hana::tuple<> children{};
+    constexpr static cib::tuple<> children{};
 };
 } // namespace interrupt

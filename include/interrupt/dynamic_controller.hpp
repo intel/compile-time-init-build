@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/detail/compiler.hpp>
+#include <cib/tuple.hpp>
 
 #include <boost/hana.hpp>
 
@@ -9,7 +10,6 @@
 
 namespace interrupt {
 namespace hana = boost::hana;
-using namespace hana::literals;
 
 enum class resource_status { OFF = 0, ON = 1 };
 
@@ -46,36 +46,39 @@ struct dynamic_controller {
     template <typename ResourceType, typename RegType>
     constexpr static typename RegType::DataType irqs_allowed = []() {
         // get all interrupt enable fields that don't require the given resource
-        auto const matching_irqs = hana::filter(RootT::all_irqs, [](auto irq) {
-            constexpr auto doesnt_require_resource =
-                hana::unpack(irq.resources, [](auto... resources_pack) {
-                    return (!std::is_same_v<decltype(resources_pack),
-                                            ResourceType> &&
+        auto const matching_irqs = cib::filter(RootT::all_irqs, [](auto irq) {
+            using irq_t = typename decltype(irq)::type;
+            constexpr auto doesnt_require_resource = cib::apply(
+                [](auto... resources_pack) {
+                    return (not std::is_same_v<decltype(resources_pack),
+                                               ResourceType> and
                             ...);
-                });
+                },
+                irq_t::resources);
 
-            constexpr auto has_enable_field = irq.enable_field != hana::nothing;
-            return hana::bool_c < doesnt_require_resource &&
-                   has_enable_field > ;
+            constexpr auto has_enable_field =
+                irq_t::enable_field != hana::nothing;
+            return doesnt_require_resource and has_enable_field;
         });
 
-        auto const interrupt_enables_tuple = hana::transform(
-            matching_irqs, [](auto irq) { return *irq.enable_field; });
+        auto const interrupt_enables_tuple = cib::transform(
+            [](auto irq) { return *irq.enable_field; }, matching_irqs);
 
         // filter fields that aren't in RegType
         auto const fields_in_reg =
-            hana::filter(interrupt_enables_tuple, [](auto field) {
-                using FieldsRegType = typename decltype(field)::RegisterType;
-                return hana::bool_c<std::is_same_v<FieldsRegType, RegType>>;
+            cib::filter(interrupt_enables_tuple, [](auto field) {
+                using FieldsRegType =
+                    typename decltype(field)::type::RegisterType;
+                return std::is_same_v<FieldsRegType, RegType>;
             });
 
         // set the bits in the mask for interrupts that don't require the
         // resource
         using DataType = typename RegType::DataType;
-        return hana::fold(fields_in_reg, DataType{},
-                          [](DataType value, auto field) {
-                              return value | field.get_mask();
-                          });
+        return fields_in_reg.fold_left(
+            DataType{}, [](DataType value, auto field) -> DataType {
+                return value | field.get_mask();
+            });
     }();
 
     template <typename ResourceType>
@@ -83,73 +86,77 @@ struct dynamic_controller {
 
     template <typename RegTypeTuple>
     static inline void reprogram_interrupt_enables(RegTypeTuple regs) {
-        hana::for_each(regs, [](auto reg) {
-            using RegType = decltype(reg);
+        cib::for_each(
+            [](auto reg) {
+                using RegType = decltype(reg);
 
-            // make sure we don't enable any interrupts that are not allowed
-            // according to resource availability
-            auto const final_enables =
-                allowed_enables<RegType> & dynamic_enables<RegType>;
+                // make sure we don't enable any interrupts that are not allowed
+                // according to resource availability
+                auto const final_enables =
+                    allowed_enables<RegType> & dynamic_enables<RegType>;
 
-            // update the hardware registers
-            apply(write(reg.raw(final_enables)));
-        });
+                // update the hardware registers
+                apply(write(reg.raw(final_enables)));
+            },
+            regs);
     }
 
     template <typename RegFieldTuple>
     constexpr static auto get_unique_regs(RegFieldTuple fields) {
-        return hana::fold(
-            fields, hana::make_tuple(), [](auto regs, auto field) {
-                constexpr bool reg_has_been_seen_already =
-                    hana::unpack(decltype(regs){}, [=](auto... regs_pack) {
-                        return (std::is_same_v<
-                                    typename decltype(field)::RegisterType,
-                                    decltype(regs_pack)> ||
-                                ...);
-                    });
+        return fields.fold_left(cib::make_tuple(), [](auto regs, auto field) {
+            constexpr bool reg_has_been_seen_already = cib::apply(
+                [=](auto... regs_pack) {
+                    return (
+                        std::is_same_v<typename decltype(field)::RegisterType,
+                                       decltype(regs_pack)> ||
+                        ...);
+                },
+                decltype(regs){});
 
-                if constexpr (reg_has_been_seen_already) {
-                    return regs;
-                } else {
-                    return hana::append(regs, field.get_register());
-                }
-            });
+            if constexpr (reg_has_been_seen_already) {
+                return regs;
+            } else {
+                return cib::tuple_cat(regs,
+                                      cib::make_tuple(field.get_register()));
+            }
+        });
     }
 
     /**
-     * hana::tuple of every resource mentioned in the interrupt configuration
+     * tuple of every resource mentioned in the interrupt configuration
      */
-    constexpr static auto all_resources = hana::fold(
-        RootT::all_irqs, hana::make_tuple(), [](auto resources, auto irq) {
+    constexpr static auto all_resources = RootT::all_irqs.fold_left(
+        cib::make_tuple(), [](auto resources, auto irq) {
             // TODO: check that an IRQ doesn't list a resource more than once
             auto const additional_resources =
-                hana::filter(irq.resources, [=](auto resource) {
-                    constexpr bool match =
-                        hana::unpack(resources, [](auto... resources_pack) {
-                            return (std::is_same_v<decltype(resource),
-                                                   decltype(resources_pack)> ||
+                cib::filter(irq.resources, [=](auto resource) {
+                    using resource_t = typename decltype(resource)::type;
+                    return not cib::apply(
+                        [](auto... resources_pack) {
+                            return (std::is_same_v<resource_t,
+                                                   decltype(resources_pack)> or
                                     ...);
-                        });
-
-                    return hana::bool_c<!match>;
+                        },
+                        resources);
                 });
-
-            return hana::concat(resources, additional_resources);
+            return cib::tuple_cat(resources, additional_resources);
         });
 
     /**
-     * hana::tuple of every interrupt register affected by a resource
+     * tuple of every interrupt register affected by a resource
      */
     constexpr static auto all_resource_affected_regs =
-        get_unique_regs(hana::fold(
-            RootT::all_irqs, hana::make_tuple(), [](auto registers, auto irq) {
+        get_unique_regs(RootT::all_irqs.fold_left(
+            cib::make_tuple(), [](auto registers, auto irq) {
+                using irq_t = decltype(irq);
                 constexpr bool has_enable_field =
-                    irq.enable_field != hana::nothing;
+                    irq_t::enable_field != hana::nothing;
                 constexpr bool depends_on_resources =
-                    hana::size(irq.resources) > hana::size_c<0>;
+                    irq_t::resources.size() > 0u;
                 if constexpr (has_enable_field && depends_on_resources) {
-                    return hana::append(registers,
-                                        irq.enable_field->get_register());
+                    return cib::tuple_cat(
+                        registers,
+                        cib::make_tuple(irq.enable_field->get_register()));
                 } else {
                     return registers;
                 }
@@ -160,23 +167,29 @@ struct dynamic_controller {
      */
     static inline auto recalculate_allowed_enables() {
         // set allowed_enables mask for each resource affected register
-        hana::for_each(all_resource_affected_regs, [](auto reg) {
-            using RegType = decltype(reg);
-            using DataType = typename RegType::DataType;
-            allowed_enables<RegType> = std::numeric_limits<DataType>::max();
-        });
+        cib::for_each(
+            [](auto reg) {
+                using RegType = decltype(reg);
+                using DataType = typename RegType::DataType;
+                allowed_enables<RegType> = std::numeric_limits<DataType>::max();
+            },
+            all_resource_affected_regs);
 
         // for each resource, if it is not on, mask out unavailable interrupts
-        hana::for_each(all_resources, [=](auto resource) {
-            using ResourceType = decltype(resource);
-            if (not is_resource_on<ResourceType>) {
-                hana::for_each(all_resource_affected_regs, [](auto reg) {
-                    using RegType = decltype(reg);
-                    allowed_enables<RegType> &=
-                        irqs_allowed<ResourceType, RegType>;
-                });
-            }
-        });
+        cib::for_each(
+            [=](auto resource) {
+                using ResourceType = decltype(resource);
+                if (not is_resource_on<ResourceType>) {
+                    cib::for_each(
+                        [](auto reg) {
+                            using RegType = decltype(reg);
+                            allowed_enables<RegType> &=
+                                irqs_allowed<ResourceType, RegType>;
+                        },
+                        all_resource_affected_regs);
+                }
+            },
+            all_resources);
 
         return all_resource_affected_regs;
     }
@@ -201,21 +214,22 @@ struct dynamic_controller {
         //       this will require another way to manage them vs. mmio
         //       registers. once that goes in, then enable_by_field should be
         //       removed or made private.
-        auto const matching_irqs = hana::filter(RootT::all_irqs, [](auto irq) {
-            using IrqType = decltype(irq);
-            using IrqCallbackType = typename IrqType::IrqCallbackType;
+        auto const matching_irqs = cib::filter(RootT::all_irqs, [](auto irq) {
+            using irq_t = typename decltype(irq)::type;
+            using IrqCallbackType = typename irq_t::IrqCallbackType;
             constexpr auto has_callback =
-                (std::is_same_v<CallbacksToFind, IrqCallbackType> || ...);
-            constexpr auto has_enable_field = irq.enable_field != hana::nothing;
-            return hana::bool_c < has_callback && has_enable_field > ;
+                (std::is_same_v<CallbacksToFind, IrqCallbackType> or ...);
+            constexpr auto has_enable_field =
+                irq_t::enable_field != hana::nothing;
+            return has_callback and has_enable_field;
         });
 
-        auto const interrupt_enables_tuple = hana::transform(
-            matching_irqs, [](auto irq) { return *irq.enable_field; });
+        auto const interrupt_enables_tuple = cib::transform(
+            [](auto irq) { return *irq.enable_field; }, matching_irqs);
 
-        hana::unpack(interrupt_enables_tuple, [](auto... fields) {
-            enable_by_field<en, decltype(fields)...>();
-        });
+        cib::apply(
+            [](auto... fields) { enable_by_field<en, decltype(fields)...>(); },
+            interrupt_enables_tuple);
     }
 
   public:
@@ -238,20 +252,24 @@ struct dynamic_controller {
 
     template <bool en, typename... FieldsToSet>
     static inline void enable_by_field() {
-        auto const interrupt_enables_tuple = hana::tuple<FieldsToSet...>{};
+        auto const interrupt_enables_tuple = cib::tuple<FieldsToSet...>{};
 
         ConcurrencyPolicyT::call_in_critical_section([&] {
             // update the dynamic enables
             if constexpr (en) {
-                hana::for_each(interrupt_enables_tuple, [](auto f) {
-                    using RegType = decltype(f.get_register());
-                    dynamic_enables<RegType> |= f.get_mask();
-                });
+                cib::for_each(
+                    [](auto f) {
+                        using RegType = decltype(f.get_register());
+                        dynamic_enables<RegType> |= f.get_mask();
+                    },
+                    interrupt_enables_tuple);
             } else {
-                hana::for_each(interrupt_enables_tuple, [](auto f) {
-                    using RegType = decltype(f.get_register());
-                    dynamic_enables<RegType> &= ~f.get_mask();
-                });
+                cib::for_each(
+                    [](auto f) {
+                        using RegType = decltype(f.get_register());
+                        dynamic_enables<RegType> &= ~f.get_mask();
+                    },
+                    interrupt_enables_tuple);
             }
 
             auto const unique_regs = get_unique_regs(interrupt_enables_tuple);

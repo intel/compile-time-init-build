@@ -1,9 +1,8 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/fwd.hpp>
-
-#include <boost/hana.hpp>
 
 namespace interrupt {
 /**
@@ -53,8 +52,8 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
         enable_action<InterruptHal, active>();
     }
 
-    inline auto get_interrupt_enables() const {
-        return boost::hana::make_tuple();
+    [[nodiscard]] inline auto get_interrupt_enables() const -> cib::tuple<> {
+        return {};
     }
 
     /**

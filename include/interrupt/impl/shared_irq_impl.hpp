@@ -1,8 +1,7 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
-
-#include <boost/hana.hpp>
 
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
@@ -24,11 +23,11 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     static bool constexpr active = (SubIrqImpls::active || ... || false);
 
   private:
-    boost::hana::tuple<SubIrqImpls...> sub_irq_impls;
+    cib::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
     explicit constexpr shared_irq_impl(SubIrqImpls const &...impls)
-        : sub_irq_impls(impls...) {}
+        : sub_irq_impls{cib::make_tuple(impls...)} {}
 
     /**
      * Initialize and enable the hardware interrupt along with
@@ -47,20 +46,20 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     }
 
     auto get_interrupt_enables() const {
-        using namespace boost;
         if constexpr (active) {
             auto const active_sub_irq_impls =
-                hana::filter(sub_irq_impls, [](auto irq) {
-                    return hana::bool_c<decltype(irq)::active>;
+                cib::filter(sub_irq_impls, [](auto irq) {
+                    return decltype(irq)::type::active;
                 });
 
-            return hana::unpack(active_sub_irq_impls, [](auto &&...irqs) {
-                return hana::flatten(
-                    hana::make_tuple(irqs.get_interrupt_enables()...));
-            });
+            return cib::apply(
+                [](auto &&...irqs) {
+                    return cib::tuple_cat(irqs.get_interrupt_enables()...);
+                },
+                active_sub_irq_impls);
 
         } else {
-            return hana::make_tuple();
+            return cib::make_tuple();
         }
     }
 
@@ -78,8 +77,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     template <typename InterruptHal> inline void run() const {
         if constexpr (active) {
             InterruptHal::template run<StatusPolicy>(irq_number, [&] {
-                boost::hana::for_each(sub_irq_impls,
-                                      [](auto irq) { irq.run(); });
+                cib::for_each([](auto irq) { irq.run(); }, sub_irq_impls);
             });
         }
     }
