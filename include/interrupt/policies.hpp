@@ -1,12 +1,13 @@
 #pragma once
 
+#include <cib/tuple.hpp>
+
 #include <boost/hana.hpp>
 
-#include <type_traits>
+#include <utility>
 
 namespace interrupt {
 namespace hana = boost::hana;
-using namespace hana::literals;
 
 struct status_clear_policy {};
 
@@ -49,21 +50,21 @@ template <typename... ResourcesT> struct required_resources {
     constexpr static hana::tuple<ResourcesT...> resources{};
 };
 
-template <typename... PoliciesT> struct policies {
-    constexpr static hana::tuple<PoliciesT...> values{};
+template <typename... PoliciesT> class policies {
+    template <typename Key, typename Value> struct type_pair {};
+    template <typename... Ts> struct type_map : Ts... {};
 
+    template <typename K, typename Default>
+    constexpr static auto lookup(...) -> Default;
+    template <typename K, typename Default, typename V>
+    constexpr static auto lookup(type_pair<K, V>) -> V;
+
+  public:
     template <typename PolicyType, typename DefaultPolicy>
     constexpr static auto get() {
-        auto const policy = hana::find_if(values, [](auto p) {
-            using CurrentPolicyType = typename decltype(p)::PolicyType;
-            return hana::bool_c<std::is_same_v<PolicyType, CurrentPolicyType>>;
-        });
-
-        if constexpr (policy == hana::nothing) {
-            return DefaultPolicy{};
-        } else {
-            return *policy;
-        }
+        using M =
+            type_map<type_pair<typename PoliciesT::PolicyType, PoliciesT>...>;
+        return decltype(lookup<PolicyType, DefaultPolicy>(std::declval<M>())){};
     }
 
     template <typename PolicyType, typename DefaultPolicy>
