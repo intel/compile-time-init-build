@@ -3,15 +3,16 @@
 #include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
 
-#include <boost/hana.hpp>
-
 #include <limits>
 #include <type_traits>
 
 namespace interrupt {
-namespace hana = boost::hana;
-
 enum class resource_status { OFF = 0, ON = 1 };
+
+template <typename T, typename = void> constexpr auto has_enable_field = false;
+template <typename T>
+constexpr auto has_enable_field<T, std::void_t<decltype(T::enable_field)>> =
+    true;
 
 template <typename RootT, typename ConcurrencyPolicyT>
 struct dynamic_controller {
@@ -55,14 +56,11 @@ struct dynamic_controller {
                             ...);
                 },
                 irq_t::resources);
-
-            constexpr auto has_enable_field =
-                irq_t::enable_field != hana::nothing;
-            return doesnt_require_resource and has_enable_field;
+            return doesnt_require_resource and has_enable_field<irq_t>;
         });
 
         auto const interrupt_enables_tuple = cib::transform(
-            [](auto irq) { return *irq.enable_field; }, matching_irqs);
+            [](auto irq) { return irq.enable_field; }, matching_irqs);
 
         // filter fields that aren't in RegType
         auto const fields_in_reg =
@@ -149,14 +147,12 @@ struct dynamic_controller {
         get_unique_regs(RootT::all_irqs.fold_left(
             cib::make_tuple(), [](auto registers, auto irq) {
                 using irq_t = decltype(irq);
-                constexpr bool has_enable_field =
-                    irq_t::enable_field != hana::nothing;
                 constexpr bool depends_on_resources =
                     irq_t::resources.size() > 0u;
-                if constexpr (has_enable_field && depends_on_resources) {
+                if constexpr (has_enable_field<irq_t> && depends_on_resources) {
                     return cib::tuple_cat(
                         registers,
-                        cib::make_tuple(irq.enable_field->get_register()));
+                        cib::make_tuple(irq.enable_field.get_register()));
                 } else {
                     return registers;
                 }
@@ -219,13 +215,11 @@ struct dynamic_controller {
             using IrqCallbackType = typename irq_t::IrqCallbackType;
             constexpr auto has_callback =
                 (std::is_same_v<CallbacksToFind, IrqCallbackType> or ...);
-            constexpr auto has_enable_field =
-                irq_t::enable_field != hana::nothing;
-            return has_callback and has_enable_field;
+            return has_callback and has_enable_field<irq_t>;
         });
 
         auto const interrupt_enables_tuple = cib::transform(
-            [](auto irq) { return *irq.enable_field; }, matching_irqs);
+            [](auto irq) { return irq.enable_field; }, matching_irqs);
 
         cib::apply(
             [](auto... fields) { enable_by_field<en, decltype(fields)...>(); },

@@ -41,7 +41,7 @@ struct shared_sub_irq_impl {
             return cib::apply(
                 [&](auto &&...irqs) {
                     return cib::tuple_cat(irqs.get_interrupt_enables()...,
-                                          cib::make_tuple(*enable_field));
+                                          cib::make_tuple(enable_field));
                 },
                 active_sub_irq_impls);
 
@@ -57,9 +57,8 @@ struct shared_sub_irq_impl {
      */
     inline void run() const {
         if constexpr (active) {
-            if (apply(read((*enable_field)(1))) &&
-                apply(read((*status_field)(1)))) {
-                StatusPolicy::run([&] { apply(clear(*status_field)); },
+            if (apply(read(enable_field(1))) && apply(read(status_field(1)))) {
+                StatusPolicy::run([&] { apply(clear(status_field)); },
                                   [&] {
                                       cib::for_each([](auto irq) { irq.run(); },
                                                     sub_irq_impls);

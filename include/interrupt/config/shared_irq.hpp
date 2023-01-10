@@ -4,11 +4,7 @@
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
-#include <boost/hana.hpp>
-
 namespace interrupt {
-namespace hana = boost::hana;
-
 /**
  * Declare a shared interrupt with one or more SubIrqs.
  *
@@ -36,8 +32,6 @@ struct shared_irq {
     template <typename InterruptHal, bool en>
     constexpr static EnableActionType enable_action =
         InterruptHal::template irqInit<en, IrqNumberT, IrqPriorityT>;
-    constexpr static auto enable_field = hana::nothing;
-    constexpr static auto status_field = hana::nothing;
     using StatusPolicy = typename PoliciesT::template type<status_clear_policy,
                                                            clear_status_first>;
     constexpr static auto resources =

@@ -40,6 +40,7 @@ add_unit_test(
     interrupt_test
     CATCH2
     FILES
+    interrupt/dynamic_controller.cpp
     interrupt/policies.cpp
     LIBRARIES
     warnings

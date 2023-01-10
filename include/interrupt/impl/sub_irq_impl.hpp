@@ -36,7 +36,7 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
         : interrupt_service_routine(flow) {}
 
     [[nodiscard]] auto get_interrupt_enables() const {
-        return cib::make_tuple(*enable_field);
+        return cib::make_tuple(enable_field);
     }
 
     /**
@@ -51,8 +51,8 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
      */
     inline void run() const {
         if constexpr (active) {
-            if (apply(read(*enable_field)) && apply(read(*status_field))) {
-                StatusPolicy::run([&] { apply(clear(*status_field)); },
+            if (apply(read(enable_field)) && apply(read(status_field))) {
+                StatusPolicy::run([&] { apply(clear(status_field)); },
                                   [&] { interrupt_service_routine(); });
             }
         }

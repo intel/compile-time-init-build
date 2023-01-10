@@ -4,18 +4,12 @@
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
-#include <boost/hana.hpp>
-
 namespace interrupt {
-namespace hana = boost::hana;
-
 template <typename InterruptHalT, typename... IrqsT> struct root {
     using InterruptHal = InterruptHalT;
 
     template <typename T, bool en>
     constexpr static EnableActionType enable_action = []() {};
-    constexpr static auto enable_field = hana::nothing;
-    constexpr static auto status_field = hana::nothing;
     using StatusPolicy = clear_status_first;
     constexpr static auto resources = cib::make_tuple();
     using IrqCallbackType = void;
