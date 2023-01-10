@@ -21,10 +21,15 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [9, 10, 11, 12, 13, 14]
+        version: [9, 10, 11, 12, 13, 14, 15]
         cxx_standard: [17, 20]
         build_type: [Debug]
         include:
+          - version: 15
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
+            cc: "/usr/lib/llvm-15/bin/clang"
+            cxx: "/usr/lib/llvm-15/bin/clang++"
           - version: 14
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
@@ -79,6 +84,8 @@ jobs:
             version: 9
             cxx_standard: 20
           # gcc only goes up to 11 on ubuntu-20.04
+          - compiler: gcc
+            version: 15
           - compiler: gcc
             version: 14
           - compiler: gcc
@@ -142,13 +149,13 @@ jobs:
 
       - name: Install build tools
         run: |
-          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 14
+          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
           sudo apt install -y ninja-build
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-14/bin/clang"
-          CXX: "/usr/lib/llvm-14/bin/clang++"
+          CC: "/usr/lib/llvm-15/bin/clang"
+          CXX: "/usr/lib/llvm-15/bin/clang++"
           CXX_STANDARD: 20
         run: cmake -B ${{github.workspace}}/build -DSANITIZERS=undefined,address
 
