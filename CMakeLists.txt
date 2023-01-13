@@ -17,7 +17,6 @@ endif()
 
 include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
-include(cmake/sanitizers.cmake)
 
 add_versioned_package("gh:boostorg/hana#b804937")
 add_versioned_package("gh:fmtlib/fmt#9.1.0")
@@ -36,6 +35,7 @@ target_compile_options(
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    include(cmake/sanitizers.cmake)
     include(cmake/test.cmake)
     include(cmake/warnings.cmake)
 
