@@ -77,10 +77,19 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_dependencies(quality check-clang-format check-cmake-format)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        find_program(CLANG_TIDY_PROGRAM "clang-tidy" REQUIRED)
-        add_custom_target(clang-tidy)
-        include(cmake/clang-tidy.cmake)
-        clang_tidy_interface(cib)
+        find_program(CLANG_TIDY_PROGRAM "clang-tidy")
+        if(CLANG_TIDY_PROGRAM)
+            add_custom_target(clang-tidy)
+            include(cmake/clang-tidy.cmake)
+            clang_tidy_interface(cib)
+        else()
+            message(STATUS "clang-tidy not found. Adding dummy target.")
+            set(CLANG_TIDY_NOT_FOUND_COMMAND_ARGS
+                COMMAND ${CMAKE_COMMAND} -E echo
+                "Cannot run clang-tidy because clang-tidy not found." COMMAND
+                ${CMAKE_COMMAND} -E false)
+            add_custom_target(clang-tidy ${CLANG_TIDY_NOT_FOUND_COMMAND_ARGS})
+        endif()
         add_dependencies(quality clang-tidy)
     endif()
 endif()
