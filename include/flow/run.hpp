@@ -4,7 +4,7 @@
 
 namespace flow {
 namespace detail {
-using FunctionPtr = auto (*)() -> void;
+using FunctionPtr = auto(*)() -> void;
 }
 
 /**

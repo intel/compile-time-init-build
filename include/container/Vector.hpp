@@ -50,10 +50,10 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr Vector() = default;
 
-    [[nodiscard]] constexpr auto begin() -> iterator { return &storage[0]; }
+    [[nodiscard]] constexpr auto begin() -> iterator { return storage.data(); }
 
     [[nodiscard]] constexpr auto begin() const -> const_iterator {
-        return &storage[0];
+        return storage.data();
     }
 
     [[nodiscard]] constexpr auto end() -> iterator {

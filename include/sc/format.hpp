@@ -36,8 +36,8 @@ struct repl_field_iter {
             end++;
         }
 
-        return std::string_view(
-            i, static_cast<std::string_view::size_type>(std::distance(i, end)));
+        return {
+            i, static_cast<std::string_view::size_type>(std::distance(i, end))};
     }
 
     [[nodiscard]] constexpr auto operator==(repl_field_iter other) const
@@ -244,8 +244,8 @@ template <typename CharT, CharT... chars, typename... ArgTs>
                     if constexpr (is_integral_v<decltype(arg)>) {
                         return cib::tuple_cat(cib::make_tuple(to_integral(arg)),
                                               state);
-                    } else if constexpr (is_lazy_format_string_v<decltype(
-                                             arg)>) {
+                    } else if constexpr (is_lazy_format_string_v<
+                                             decltype(arg)>) {
                         return cib::tuple_cat(arg.args, state);
                     } else {
                         return state;

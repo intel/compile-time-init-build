@@ -10,17 +10,17 @@ env:
 
 jobs:
   performance_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
       - name: Install compiler
-        run: sudo apt update && sudo apt-get install -y clang-12
+        run: sudo apt update && sudo apt-get install -y clang-14
 
       - name: Configure CMake
         env:
-          CC: clang-12
-          CXX: clang++-12
+          CC: "/usr/lib/llvm-14/bin/clang"
+          CXX: "/usr/lib/llvm-14/bin/clang++"
           CXX_STANDARD: 20
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 

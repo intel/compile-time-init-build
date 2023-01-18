@@ -32,10 +32,10 @@ template <typename BaseMsgT, typename ExtraCallbackArgsListT,
 struct callback_impl;
 
 template <typename CallableT> struct func_args {
-    using msg_type = typename func_args<decltype(
-        &remove_cvref_t<CallableT>::operator())>::msg_type;
-    using type = typename func_args<decltype(
-        &remove_cvref_t<CallableT>::operator())>::type;
+    using msg_type = typename func_args<
+        decltype(&remove_cvref_t<CallableT>::operator())>::msg_type;
+    using type = typename func_args<
+        decltype(&remove_cvref_t<CallableT>::operator())>::type;
 };
 
 template <typename DataIterableT, typename... ArgTs>

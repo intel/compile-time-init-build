@@ -102,9 +102,9 @@ struct dynamic_controller {
             fields, hana::make_tuple(), [](auto regs, auto field) {
                 constexpr bool reg_has_been_seen_already =
                     hana::unpack(decltype(regs){}, [=](auto... regs_pack) {
-                        return (std::is_same_v<typename decltype(
-                                                   field)::RegisterType,
-                                               decltype(regs_pack)> ||
+                        return (std::is_same_v<
+                                    typename decltype(field)::RegisterType,
+                                    decltype(regs_pack)> ||
                                 ...);
                     });
 

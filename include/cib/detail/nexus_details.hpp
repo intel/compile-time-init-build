@@ -34,8 +34,8 @@ struct get_service {
 
 struct get_service_from_tuple {
     template <typename T>
-    using invoke = typename std::remove_cv_t<std::remove_reference_t<decltype(
-        std::declval<T>().get(index_<0>))>>::service_type;
+    using invoke = typename std::remove_cv_t<std::remove_reference_t<
+        decltype(std::declval<T>().get(index_<0>))>>::service_type;
 };
 
 template <typename Config> struct initialized_builders {
