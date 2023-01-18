@@ -47,9 +47,9 @@ type_list_cat_impl(std::integer_sequence<unsigned int, Indices...>,
 
     auto const outer_type_list = type_list<decltype(type_lists)...>{};
 
-    return type_list<decltype(
-        outer_type_list.template get<element_indices[Indices].outer>()
-            .template get<element_indices[Indices].inner>())...>{};
+    return type_list<
+        decltype(outer_type_list.template get<element_indices[Indices].outer>()
+                     .template get<element_indices[Indices].inner>())...>{};
 }
 
 template <typename... TypeLists>

@@ -1,7 +1,9 @@
 #include <sc/string_constant.hpp>
 
 namespace sc {
-template <auto... chars> struct Log { constexpr static bool v = false; };
+template <auto... chars> struct Log {
+    constexpr static bool v = false;
+};
 
 template <char... chars> void log(sc::string_constant<char, chars...>) {
     static_assert(Log<chars...>::v);

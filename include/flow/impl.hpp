@@ -8,6 +8,7 @@
 #include <type_traits>
 
 namespace flow {
+// NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
 struct interface {
     virtual auto operator()() const -> void {}
 };

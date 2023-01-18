@@ -9,8 +9,8 @@
 namespace seq {
 enum class status { NOT_DONE = 0, DONE = 1 };
 
-using func_ptr = auto (*)() -> status;
-using log_func_ptr = auto (*)() -> void;
+using func_ptr = auto(*)() -> status;
+using log_func_ptr = auto(*)() -> void;
 
 class step_base {
   private:
@@ -28,14 +28,15 @@ class step_base {
     template <typename Name>
     constexpr step_base([[maybe_unused]] Name name, func_ptr forward_ptr,
                         func_ptr backward_ptr)
-        : _forward_ptr{forward_ptr}, _backward_ptr{backward_ptr}, log_name {
-        []() { CIB_TRACE("seq.step({})", Name{}); }
-    }
+        : _forward_ptr{forward_ptr}, _backward_ptr{backward_ptr},
+          log_name{[]() { CIB_TRACE("seq.step({})", Name{}); }}
 
 #if defined(__GNUC__) && __GNUC__ < 12
-    , hash { name.hash() }
+          ,
+          hash{name.hash()}
 #endif
-    {}
+    {
+    }
 
     constexpr step_base() = default;
 

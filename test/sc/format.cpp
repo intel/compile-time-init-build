@@ -222,7 +222,9 @@ TEST_CASE("lazy_runtime_integral_values", "[sc::format]") {
 }
 
 namespace ns {
-template <typename T> struct IntegerLike { T value; };
+template <typename T> struct IntegerLike {
+    T value;
+};
 template <typename T> IntegerLike(T) -> IntegerLike<T>;
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>

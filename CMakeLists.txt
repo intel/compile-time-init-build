@@ -34,6 +34,10 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    if(CLANG_TOOLS_PATH)
+        list(APPEND CMAKE_PROGRAM_PATH ${CLANG_TOOLS_PATH})
+    endif()
+
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     include(cmake/sanitizers.cmake)
     include(cmake/test.cmake)

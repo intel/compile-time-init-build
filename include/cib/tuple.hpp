@@ -349,9 +349,12 @@ template <typename... TupleElementTs> struct tuple_impl : TupleElementTs... {
         return not(lhs < rhs);
     }
 #else
-    [[nodiscard]] constexpr friend auto
-    operator<=>(tuple_impl const &lhs, tuple_impl const &rhs) requires(
-        std::three_way_comparable<typename TupleElementTs::value_type> and...) {
+    [[nodiscard]] constexpr friend auto operator<=>(tuple_impl const &lhs,
+                                                    tuple_impl const &rhs)
+        requires(
+            std::three_way_comparable<typename TupleElementTs::value_type> and
+            ...)
+    {
         std::common_comparison_category_t<std::compare_three_way_result_t<
             typename TupleElementTs::value_type>...>
             result{std::strong_ordering::equivalent};
