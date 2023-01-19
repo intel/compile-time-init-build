@@ -28,19 +28,6 @@ add_unit_test(
     cib)
 
 add_unit_test(
-    msg_test
-    CATCH2
-    FILES
-    msg/match.cpp
-    msg/disjoint_field.cpp
-    msg/field.cpp
-    msg/handler.cpp
-    msg/message.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
     flow_test
     CATCH2
     FILES
@@ -50,26 +37,17 @@ add_unit_test(
     cib)
 
 add_unit_test(
-    sc_test
-    CATCH2
-    FILES
-    sc/format.cpp
-    sc/string_constant.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    seq_test
-    CATCH2
-    FILES
-    seq/sequencer.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
     interrupt_test
+    CATCH2
+    FILES
+    interrupt/dynamic_controller.cpp
+    interrupt/policies.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    interrupt_manager_test
     GTEST
     FILES
     interrupt/manager.cpp
@@ -91,7 +69,7 @@ add_unit_test(
     cib)
 
 add_unit_test(
-    fmt_log_test
+    log_fmt_test
     CATCH2
     FILES
     log/fmt_logger.cpp
@@ -102,12 +80,44 @@ add_unit_test(
     cib)
 
 add_unit_test(
-    mipi_log_test
+    log_mipi_test
     CATCH2
     FILES
     log/mipi_encoder.cpp
     INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/test/
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    msg_test
+    CATCH2
+    FILES
+    msg/match.cpp
+    msg/disjoint_field.cpp
+    msg/field.cpp
+    msg/handler.cpp
+    msg/message.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    sc_test
+    CATCH2
+    FILES
+    sc/format.cpp
+    sc/string_constant.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    seq_test
+    CATCH2
+    FILES
+    seq/sequencer.cpp
     LIBRARIES
     warnings
     cib)

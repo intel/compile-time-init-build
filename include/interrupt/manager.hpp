@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <flow/builder.hpp>
 #include <interrupt/builder/irq_builder.hpp>
 #include <interrupt/builder/shared_irq_builder.hpp>
@@ -11,9 +12,9 @@
 #include <interrupt/manager_interface.hpp>
 #include <interrupt/policies.hpp>
 
-#include <boost/hana.hpp>
-
+#include <cstddef>
 #include <type_traits>
+#include <utility>
 
 namespace interrupt {
 template <typename Name = void> using irq_flow = flow::builder<Name, 16, 8>;
@@ -29,17 +30,30 @@ template <typename Name = void> using irq_flow = flow::builder<Name, 16, 8>;
  * @tparam IRQs
  */
 template <typename RootT, typename ConcurrencyPolicyT> class manager {
+    template <typename BuilderValue, std::size_t Index> struct sub_value {
+        constexpr static auto const &value =
+            cib::get<Index>(BuilderValue::value.irqs);
+    };
+
+    template <typename BuilderValue, auto... Is>
+    constexpr static auto built_irqs(std::index_sequence<Is...>) {
+        return cib::make_tuple(
+            cib::get<Is>(BuilderValue::value.irqs)
+                .template build<sub_value<BuilderValue, Is>>()...);
+    }
+
   public:
     using InterruptHal = typename RootT::InterruptHal;
 
-    constexpr static auto irqs_type =
-        hana::transform(RootT::children, [](auto child) {
-            if constexpr (hana::size(child.children) > hana::size_c<0>) {
+    constexpr static auto irqs_type = cib::transform(
+        [](auto child) {
+            if constexpr (decltype(child.children)::size() > 0u) {
                 return shared_irq_builder<decltype(child)>{};
             } else {
                 return irq_builder<decltype(child)>{};
             }
-        });
+        },
+        RootT::children);
 
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
@@ -57,9 +71,9 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      */
     template <typename IrqType, typename T>
     void constexpr add(T const &flow_description) {
-        hana::for_each(irqs, [&](auto &irq) {
-            irq.template add<IrqType>(flow_description);
-        });
+        cib::for_each(
+            [&](auto &irq) { irq.template add<IrqType>(flow_description); },
+            irqs);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -74,10 +88,6 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      */
     [[nodiscard]] auto base() const -> manager_interface *;
 
-    template <typename BuilderValue, typename Index> struct sub_value {
-        constexpr static auto const &value = BuilderValue::value.irqs[Index{}];
-    };
-
     /**
      * Given a constexpr Manager instance stored in BuilderValue::value, build
      * an optimal Manager::impl instance to initialize and run interrupts at
@@ -91,20 +101,17 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      */
     template <typename BuilderValue>
     [[nodiscard]] static auto constexpr build() {
-        auto constexpr builder = BuilderValue::value;
+        using irqs_t = decltype(BuilderValue::value.irqs);
+        auto const irq_impls = built_irqs<BuilderValue>(
+            std::make_index_sequence<irqs_t::size()>{});
 
-        auto constexpr irq_indices = hana::to<hana::tuple_tag>(
-            hana::make_range(hana::int_c<0>, hana::size(builder.irqs)));
-
-        auto const irq_impls = hana::transform(irq_indices, [&](auto i) {
-            constexpr auto irq = builder.irqs[i];
-            return irq.template build<sub_value<BuilderValue, decltype(i)>>();
-        });
-
-        return hana::unpack(irq_impls, [](auto... irq_impl_args) {
-            return manager_impl<InterruptHal, Dynamic,
-                                decltype(irq_impl_args)...>(irq_impl_args...);
-        });
+        return cib::apply(
+            [](auto... irq_impl_args) {
+                return manager_impl<InterruptHal, Dynamic,
+                                    decltype(irq_impl_args)...>(
+                    irq_impl_args...);
+            },
+            irq_impls);
     }
 };
 } // namespace interrupt

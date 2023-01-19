@@ -1,14 +1,14 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <interrupt/manager_interface.hpp>
 
-#include <boost/hana.hpp>
-
+#include <algorithm>
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace interrupt {
-namespace hana = boost::hana;
-using namespace hana::literals;
 
 /**
  * Created by calling Manager.build().
@@ -26,11 +26,19 @@ using namespace hana::literals;
 template <typename InterruptHal, typename Dynamic, typename... IrqImplTypes>
 class manager_impl : public manager_interface {
   private:
-    hana::tuple<IrqImplTypes...> irq_impls;
+    cib::tuple<cib::self_type_index_t, IrqImplTypes...> irq_impls;
+
+    template <std::size_t Key, typename Value> struct irq_pair {};
+    template <typename... Ts> struct irq_map : Ts... {};
+
+    template <std::size_t K, typename Default>
+    constexpr static auto lookup(...) -> Default;
+    template <std::size_t K, typename Default, typename V>
+    constexpr static auto lookup(irq_pair<K, V>) -> V;
 
   public:
     explicit constexpr manager_impl(IrqImplTypes... impls)
-        : irq_impls{impls...} {}
+        : irq_impls{cib::make_tuple(cib::self_type_index, impls...)} {}
 
     /**
      * Initialize the interrupt hardware and each of the active irqs.
@@ -47,25 +55,27 @@ class manager_impl : public manager_interface {
      */
     void init_mcu_interrupts() const final {
         InterruptHal::init();
-        hana::for_each(irq_impls, [](auto irq) {
-            irq.template init_mcu_interrupts<InterruptHal>();
-        });
+        cib::for_each(
+            [](auto irq) { irq.template init_mcu_interrupts<InterruptHal>(); },
+            irq_impls);
     }
 
     /**
      * Initialize the interrupt hardware and each of the active irqs.
      */
     void init_sub_interrupts() const final {
-        auto const interrupt_enables_tuple =
-            hana::unpack(irq_impls, [](auto... irqs_pack) {
-                return hana::flatten(
-                    hana::make_tuple(irqs_pack.get_interrupt_enables()...));
-            });
+        auto const interrupt_enables_tuple = cib::apply(
+            [](auto... irqs_pack) {
+                return cib::tuple_cat(irqs_pack.get_interrupt_enables()...);
+            },
+            irq_impls);
 
-        hana::unpack(interrupt_enables_tuple, [](auto... interrupt_enables) {
-            Dynamic::template enable_by_field<true,
-                                              decltype(interrupt_enables)...>();
-        });
+        cib::apply(
+            [](auto... interrupt_enables) {
+                Dynamic::template enable_by_field<
+                    true, decltype(interrupt_enables)...>();
+            },
+            interrupt_enables_tuple);
     }
 
     /**
@@ -78,28 +88,19 @@ class manager_impl : public manager_interface {
      *      The IRQ number that has been triggered by hardware.
      */
     template <std::size_t IrqNumber> inline void run() const {
-        // find the IRQ with the matching number
-        auto const matching_irq = hana::find_if(irq_impls, [](auto i) {
-            return hana::bool_c<IrqNumber == decltype(i)::irq_number>;
-        });
+        using M = irq_map<irq_pair<IrqImplTypes::irq_number, IrqImplTypes>...>;
+        using irq_t = decltype(lookup<IrqNumber, void>(std::declval<M>()));
 
-        auto constexpr run_irq = [](auto &irq) {
-            irq.template run<InterruptHal>();
-            return true;
-        };
-
-        // if the IRQ was found, then run it, otherwise do nothing
-        hana::maybe(false, run_irq, matching_irq);
+        if constexpr (not std::is_void_v<irq_t>) {
+            cib::get<irq_t>(irq_impls).template run<InterruptHal>();
+        }
     }
 
     /**
      * @return The highest active IRQ number.
      */
     [[nodiscard]] constexpr auto max_irq() const -> std::size_t {
-        auto const irq_numbers = hana::transform(
-            irq_impls, [](auto irq) { return decltype(irq)::irq_number; });
-
-        return hana::maximum(irq_numbers);
+        return std::max({IrqImplTypes::irq_number...});
     }
 };
 } // namespace interrupt

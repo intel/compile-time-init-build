@@ -703,11 +703,33 @@ TEST_CASE("filter", "[tuple]") {
     constexpr auto t = cib::make_tuple(
         std::integral_constant<int, 1>{}, std::integral_constant<int, 2>{},
         std::integral_constant<int, 3>{}, std::integral_constant<int, 4>{});
-    constexpr auto u = filter(t, [](auto x) { return x % 2 == 0; });
+    constexpr auto u = filter(t, [](auto x) {
+        using T = typename decltype(x)::type;
+        return T::value % 2 == 0;
+    });
     REQUIRE(u == cib::make_tuple(std::integral_constant<int, 2>{},
                                  std::integral_constant<int, 4>{}));
     static_assert(u == cib::make_tuple(std::integral_constant<int, 2>{},
                                        std::integral_constant<int, 4>{}));
+}
+
+struct not_default_constructible {
+    constexpr explicit not_default_constructible(int) {}
+    friend constexpr auto operator==(not_default_constructible,
+                                     not_default_constructible) -> bool {
+        return true;
+    }
+};
+
+TEST_CASE("filter (not default constructible)", "[tuple]") {
+    constexpr auto t = cib::make_tuple(not_default_constructible{1});
+    constexpr auto u = filter(t, [](auto x) {
+        using T = typename decltype(x)::type;
+        static_assert(std::is_same_v<T, not_default_constructible>);
+        return true;
+    });
+    REQUIRE(u == t);
+    static_assert(u == t);
 }
 
 TEST_CASE("free get", "[tuple]") {

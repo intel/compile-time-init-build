@@ -157,7 +157,7 @@ make_logical_matcher(MatcherTypes const &...matchers) {
     } else {
         auto const remaining_matcher_tuple =
             cib::filter(cib::make_tuple(matchers...), [](auto matcher) {
-                using MatcherType = decltype(matcher);
+                using MatcherType = typename decltype(matcher)::type;
                 return not std::is_same_v<MatcherType, always_t<TOp::unit>>;
             });
 

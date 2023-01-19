@@ -1,8 +1,7 @@
 #pragma once
 
+#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
-
-#include <boost/hana.hpp>
 
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls>
@@ -15,7 +14,7 @@ struct shared_sub_irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * irqs should not consume any resources.
      */
-    static bool constexpr active = (SubIrqImpls::active || ... || false);
+    static bool constexpr active = (SubIrqImpls::active or ...);
 
   private:
     template <typename InterruptHal, bool en>
@@ -26,30 +25,28 @@ struct shared_sub_irq_impl {
     constexpr static auto status_field = ConfigT::status_field;
     using StatusPolicy = typename ConfigT::StatusPolicy;
 
-    boost::hana::tuple<SubIrqImpls...> sub_irq_impls;
+    cib::tuple<SubIrqImpls...> sub_irq_impls;
 
   public:
     explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...impls)
-        : sub_irq_impls(impls...) {}
+        : sub_irq_impls{cib::make_tuple(impls...)} {}
 
     auto get_interrupt_enables() const {
-        using namespace boost;
         if constexpr (active) {
             auto const active_sub_irq_impls =
-                hana::filter(sub_irq_impls, [](auto irq) {
-                    return hana::bool_c<decltype(irq)::active>;
+                cib::filter(sub_irq_impls, [](auto irq) {
+                    return decltype(irq)::type::active;
                 });
 
-            auto const sub_irq_interrupt_enables =
-                hana::unpack(active_sub_irq_impls, [](auto &&...irqs) {
-                    return hana::flatten(
-                        hana::make_tuple(irqs.get_interrupt_enables()...));
-                });
-
-            return hana::append(sub_irq_interrupt_enables, *enable_field);
+            return cib::apply(
+                [&](auto &&...irqs) {
+                    return cib::tuple_cat(irqs.get_interrupt_enables()...,
+                                          cib::make_tuple(enable_field));
+                },
+                active_sub_irq_impls);
 
         } else {
-            return hana::make_tuple();
+            return cib::make_tuple();
         }
     }
 
@@ -60,13 +57,11 @@ struct shared_sub_irq_impl {
      */
     inline void run() const {
         if constexpr (active) {
-            if (apply(read((*enable_field)(1))) &&
-                apply(read((*status_field)(1)))) {
-                StatusPolicy::run([&] { apply(clear(*status_field)); },
+            if (apply(read(enable_field(1))) && apply(read(status_field(1)))) {
+                StatusPolicy::run([&] { apply(clear(status_field)); },
                                   [&] {
-                                      boost::hana::for_each(
-                                          sub_irq_impls,
-                                          [](auto irq) { irq.run(); });
+                                      cib::for_each([](auto irq) { irq.run(); },
+                                                    sub_irq_impls);
                                   });
             }
         }

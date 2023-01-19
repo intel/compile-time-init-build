@@ -21,7 +21,8 @@ template <typename T> constexpr static index_metafunc_t<T> index_metafunc_{};
 struct self_type {
     template <typename T> using invoke = T;
 };
-constexpr static index_metafunc_t<self_type> self_type_index{};
+using self_type_index_t = index_metafunc_t<self_type>;
+constexpr static self_type_index_t self_type_index{};
 
 namespace detail {
 template <typename ElementT, typename IndexT> struct type_indexed_element {
@@ -484,9 +485,9 @@ template <std::size_t... Indices, typename TOp, typename Tuple>
 
 template <typename Tuple, typename TOp>
 [[nodiscard]] constexpr auto filter(Tuple &&tuple, TOp op) {
-    return tuple.apply([&](auto... elements) {
+    return tuple.apply([&](auto const &...elements) {
         constexpr std::array<bool, sizeof...(elements)> op_results{
-            op(decltype(elements){})...};
+            op(std::common_type<decltype(elements)>{})...};
 
         // std::count
         constexpr auto num_matches = [&]() {
