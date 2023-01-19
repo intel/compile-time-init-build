@@ -55,7 +55,7 @@ template <typename Config> struct initialized_builders {
             return detail::service_entry<service, decltype(built_service)>{
                 built_service};
         },
-        demux(get_service{}, Config::config.extends_tuple()));
+        demux<get_service>(Config::config.extends_tuple()));
 
     using type = decltype(value);
 };
