@@ -569,6 +569,10 @@ template <typename... Tuples> constexpr auto tuple_cat(Tuples &&...tuples) {
         std::forward<Tuples>(tuples)...);
 }
 
+template <typename Tuple> constexpr auto tuple_cat(Tuple &&tuple) {
+    return tuple;
+}
+
 template <typename T, typename TTuple>
 [[nodiscard]] constexpr auto get(TTuple &&t)
     -> decltype(std::forward<TTuple>(t).get(tag_<T>)) {
