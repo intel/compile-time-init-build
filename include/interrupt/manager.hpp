@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cib/builder_meta.hpp>
+#include <cib/config.hpp>
+#include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
 #include <flow/builder.hpp>
 #include <interrupt/builder/irq_builder.hpp>
@@ -18,6 +21,21 @@
 
 namespace interrupt {
 template <typename Name = void> using irq_flow = flow::builder<Name, 16, 8>;
+
+template <typename FlowT, typename FlowDescriptionT> struct binding_t {
+    FlowDescriptionT flow_description;
+};
+
+template <typename FlowT, typename T>
+CIB_CONSTEVAL auto binding(T flow_description)
+    -> binding_t<FlowT, decltype(flow_description)> {
+    return {flow_description};
+}
+
+template <typename ServiceT, typename FlowT, typename T>
+CIB_CONSTEVAL auto extend(T flow_description) {
+    return cib::extend<ServiceT>(binding<FlowT>(flow_description));
+}
 
 /**
  * Declare one or more Irqs, SharedIrqs, and their corresponding interrupt
@@ -70,23 +88,14 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      *      See flow::Builder<>.add()
      */
     template <typename IrqType, typename T>
-    void constexpr add(T const &flow_description) {
+    auto constexpr add(binding_t<IrqType, T> const &binding) {
         cib::for_each(
-            [&](auto &irq) { irq.template add<IrqType>(flow_description); },
+            [&](auto &irq) {
+                irq.template add<IrqType>(binding.flow_description);
+            },
             irqs);
+        return *this;
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    ///
-    /// Everything below is for the cib extension interface. It lets cib know
-    /// this builder supports the cib pattern and how to build it.
-    ///
-    ///////////////////////////////////////////////////////////////////////////
-    /**
-     * Never called, but the return type is used by cib to determine what the
-     * abstract interface is.
-     */
-    [[nodiscard]] auto base() const -> manager_interface *;
 
     /**
      * Given a constexpr Manager instance stored in BuilderValue::value, build
@@ -114,4 +123,9 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
             irq_impls);
     }
 };
+
+template <typename Config, typename ConcurrencyPolicy>
+struct service : cib::builder_meta<manager<Config, ConcurrencyPolicy>,
+                                   manager_interface const *> {};
+
 } // namespace interrupt
