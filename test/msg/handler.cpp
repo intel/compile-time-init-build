@@ -43,7 +43,10 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
         "TestCallback"_sc, match::always<true>,
         [](const TestMsg &) { correctDispatch = true; });
 
-    static auto handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+    auto callbacks = cib::make_tuple(callback);
+
+    static auto handler =
+        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
     handler.handle({0x8000ba11, 0x0042d00d});
 
@@ -69,8 +72,10 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
         // TestMsgFieldRequired, execute this
         [](TestMsgFieldRequired const &) { correctDispatch = true; });
 
+    auto callbacks = cib::make_tuple(callback1, callback2);
+
     static auto handler =
-        msg::handler<TestBaseMsg, 2>{{&callback1, &callback2}};
+        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
     handler.handle({0x4400ba11, 0x0042d00d});
 
@@ -86,7 +91,10 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
             REQUIRE(value == 0xcafe);
         });
 
-    static auto handler = msg::handler<TestBaseMsg, 1, int>{{&callback}};
+    auto callbacks = cib::make_tuple(callback);
+
+    static auto handler =
+        msg::handler<decltype(callbacks), TestBaseMsg, int>{callbacks};
 
     handler.handle({0x8000ba11, 0x0042d00d}, 0xcafe);
 
@@ -98,7 +106,10 @@ TEST_CASE("TestMsgWithinEnum", "[handler]") {
     auto const callback =
         msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
                                    [&](const TestMsgOp &) { handled = true; });
-    auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+
+    auto callbacks = cib::make_tuple(callback);
+    auto const handler =
+        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
     handler.handle({0x0800ba11, 0x0042d00d});
     REQUIRE(handled);
@@ -111,7 +122,9 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
             "TestCallback"_sc, match::always<true>,
             [&](TestMsg const &) { correct = true; },
             [](TestMsgMultiCb const &) {});
-        auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+        auto callbacks = cib::make_tuple(callback);
+        auto const handler =
+            msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
         handler.handle({0x8000ba11, 0x0042d00d});
         REQUIRE(correct);
@@ -121,10 +134,13 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         auto const callback = msg::callback<TestBaseMsg>(
             "TestCallback"_sc, match::always<true>, [](TestMsg const &) {},
             [&](TestMsgMultiCb const &) { correct = true; });
-        auto const handler = msg::handler<TestBaseMsg, 1>{{&callback}};
+        auto callbacks = cib::make_tuple(callback);
+        auto const handler =
+            msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
         handler.handle({0x8100ba11, 0x0042d00d});
         REQUIRE(correct);
     }
 }
+
 } // namespace msg
