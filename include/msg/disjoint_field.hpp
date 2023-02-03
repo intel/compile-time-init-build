@@ -17,7 +17,7 @@ template <typename NameTypeT, typename FieldsT, typename T = std::uint32_t,
 class disjoint_field {
   private:
     static constexpr FieldsT fields{};
-    T value;
+    T value{};
 
   public:
     static constexpr size_t size = fields.fold_right(
