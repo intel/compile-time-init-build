@@ -27,9 +27,10 @@ struct handler_builder {
                                ExtraCallbackArgsT...>{new_callbacks};
     }
 
-    template <typename BuilderValue> static constexpr auto build() {
-        return handler<CallbacksT, BaseMsgT, ExtraCallbackArgsT...>{
-            BuilderValue::value.callbacks};
+    template <typename BuilderValue>
+    static constexpr auto build()
+        -> handler<CallbacksT, BaseMsgT, ExtraCallbackArgsT...> {
+        return {BuilderValue::value.callbacks};
     }
 };
 
