@@ -98,6 +98,7 @@ add_unit_test(
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
+    msg/handler_builder.cpp
     msg/message.cpp
     LIBRARIES
     warnings
