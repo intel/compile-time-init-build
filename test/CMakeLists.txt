@@ -101,6 +101,7 @@ add_unit_test(
     CATCH2
     FILES
     msg/match.cpp
+    msg/detail/bitset.cpp
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
