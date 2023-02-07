@@ -22,7 +22,7 @@ add_versioned_package("gh:fmtlib/fmt#9.1.0")
 
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_17)
-target_include_directories(cib INTERFACE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cib INTERFACE include)
 target_link_libraries_system(cib INTERFACE fmt::fmt-header-only)
 
 target_compile_options(
