@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 
 project(
     cib
@@ -15,8 +15,13 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     )
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS
+    ON
+    CACHE BOOL "Export compile commands to compile_commands.json." FORCE)
+
 include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
+include(cmake/quality.cmake)
 
 add_versioned_package("gh:fmtlib/fmt#9.1.0")
 
@@ -32,16 +37,10 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    if(CLANG_TOOLS_PATH)
-        list(APPEND CMAKE_PROGRAM_PATH ${CLANG_TOOLS_PATH})
-    endif()
-
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    include(cmake/sanitizers.cmake)
-    include(cmake/test.cmake)
-    include(cmake/warnings.cmake)
+    clang_tidy_interface(cib)
 
     # Enable functional and performance test suites.
+    enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)
@@ -64,39 +63,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 
     add_custom_target(release_header
                       DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
-
-    add_versioned_package(
-        NAME
-        Format.cmake
-        VERSION
-        1.7.3
-        GITHUB_REPOSITORY
-        TheLartians/Format.cmake
-        OPTIONS
-        "CMAKE_FORMAT_EXCLUDE cmake/CPM.cmake")
-
-    add_custom_target(quality)
-    add_dependencies(quality check-clang-format check-cmake-format)
-
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        find_program(CLANG_TIDY_PROGRAM "clang-tidy")
-        if(CLANG_TIDY_PROGRAM)
-            add_custom_target(clang-tidy)
-            include(cmake/clang-tidy.cmake)
-            clang_tidy_interface(cib)
-        else()
-            message(STATUS "clang-tidy not found. Adding dummy target.")
-            set(CLANG_TIDY_NOT_FOUND_COMMAND_ARGS
-                COMMAND ${CMAKE_COMMAND} -E echo
-                "Cannot run clang-tidy because clang-tidy not found." COMMAND
-                ${CMAKE_COMMAND} -E false)
-            add_custom_target(clang-tidy ${CLANG_TIDY_NOT_FOUND_COMMAND_ARGS})
-        endif()
-        add_dependencies(quality clang-tidy)
-    endif()
 endif()
 
-if($ENV{SINGLE_HEADER})
+if(DEFINED ENV{SINGLE_HEADER})
     add_dependencies(cib release_header)
 
     target_include_directories(

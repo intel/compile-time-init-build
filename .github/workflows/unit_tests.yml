@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  DEBIAN_FRONTEND: noninteractive
+  CMAKE_GENERATOR: Ninja
+
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -56,7 +60,6 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
           CXX_STANDARD: ${{ matrix.cxx_standard }}
-          CMAKE_GENERATOR: Ninja
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
@@ -133,7 +136,6 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
           CXX_STANDARD: ${{ matrix.cxx_standard }}
-          CMAKE_GENERATOR: Ninja
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
@@ -163,8 +165,8 @@ jobs:
           CC: "/usr/lib/llvm-15/bin/clang"
           CXX: "/usr/lib/llvm-15/bin/clang++"
           CXX_STANDARD: 20
-          CMAKE_GENERATOR: Ninja
-        run: cmake -B ${{github.workspace}}/build -DCLANG_TOOLS_PATH=/usr/lib/llvm-15/bin
+          CLANG_TOOLS_PATH: "/usr/lib/llvm-15/bin"
+        run: cmake -B ${{github.workspace}}/build
 
       - name: Run quality checks
         run: cmake --build ${{github.workspace}}/build -t quality
@@ -184,8 +186,8 @@ jobs:
           CC: "/usr/lib/llvm-15/bin/clang"
           CXX: "/usr/lib/llvm-15/bin/clang++"
           CXX_STANDARD: 20
-          CMAKE_GENERATOR: Ninja
-        run: cmake -B ${{github.workspace}}/build -DSANITIZERS=undefined,address
+          SANITIZERS: "undefined,address"
+        run: cmake -B ${{github.workspace}}/build
 
       - name: Build Unit Tests
         run: cmake --build ${{github.workspace}}/build -t unit_tests
@@ -201,6 +203,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install build tools
+        run: |
+          sudo apt install -y ninja-build
 
       - name: Configure CMake
         run: cmake -B ${{github.workspace}}/build
