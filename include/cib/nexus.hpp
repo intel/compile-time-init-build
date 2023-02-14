@@ -30,7 +30,7 @@ template <typename Config> struct nexus {
 #undef CIB_BUILD_SERVICE
 
     static void init() {
-        initialized_builders_v<Config>.for_each([](auto b) {
+        initialized_builders<Config>.for_each([](auto b) {
             using service_tag = typename decltype(b)::Service;
             using clean_service_tag =
                 std::remove_cv_t<std::remove_reference_t<service_tag>>;
