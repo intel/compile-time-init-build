@@ -38,34 +38,26 @@ struct get_service_from_tuple {
         decltype(std::declval<T>().get(index_<0>))>>::service_type;
 };
 
-template <typename Config> struct initialized_builders {
-    constexpr static auto value = transform<extract_service_tag>(
-        [](auto extensions) {
-            constexpr auto initial_builder = extensions.get(index_<0>).builder;
-            using service =
-                get_service_from_tuple::invoke<decltype(extensions)>;
-            auto built_service = extensions.fold_right(
-                initial_builder, [](auto extension, auto outer_builder) {
-                    return extension.args_tuple.fold_right(
-                        outer_builder, [](auto arg, auto inner_builder) {
-                            return inner_builder.add(arg);
-                        });
-                });
-
-            return detail::service_entry<service, decltype(built_service)>{
-                built_service};
-        },
-        demux<get_service>(Config::config.extends_tuple()));
-
-    using type = decltype(value);
-};
-
 template <typename Config>
-constexpr static auto &initialized_builders_v =
-    initialized_builders<Config>::value;
+constexpr static auto initialized_builders = transform<extract_service_tag>(
+    [](auto extensions) {
+        constexpr auto initial_builder = extensions.get(index_<0>).builder;
+        using service = get_service_from_tuple::invoke<decltype(extensions)>;
+        auto built_service = extensions.fold_right(
+            initial_builder, [](auto extension, auto outer_builder) {
+                return extension.args_tuple.fold_right(
+                    outer_builder, [](auto arg, auto inner_builder) {
+                        return inner_builder.add(arg);
+                    });
+            });
+
+        return detail::service_entry<service, decltype(built_service)>{
+            built_service};
+    },
+    demux<get_service>(Config::config.extends_tuple()));
 
 template <typename Config, typename Tag> struct initialized {
     constexpr static auto value =
-        initialized_builders_v<Config>.get(cib::tag_<Tag>).builder;
+        initialized_builders<Config>.get(cib::tag_<Tag>).builder;
 };
 } // namespace cib
