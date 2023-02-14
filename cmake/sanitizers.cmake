@@ -1,5 +1,9 @@
 add_library(sanitizers INTERFACE)
 
+if(DEFINED ENV{SANITIZERS})
+    set(SANITIZERS $ENV{SANITIZERS})
+endif()
+
 if(SANITIZERS)
     target_compile_options(
         sanitizers

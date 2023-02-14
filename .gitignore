@@ -3,3 +3,5 @@
 /venv
 /examples/hello_world/build
 /.vscode
+/toolchains
+CMakePresets.json
