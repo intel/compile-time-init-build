@@ -8,10 +8,10 @@ struct EmptyConfig {
     constexpr static auto config = cib::config<>();
 };
 
-// TEST_CASE("an empty configuration should compile and initialize") {
-//    cib::nexus<EmptyConfig> nexus{};
-//    nexus.init();
-//}
+TEST_CASE("an empty configuration should compile and initialize") {
+    cib::nexus<EmptyConfig> nexus{};
+    nexus.init();
+}
 
 template <int Id> static bool is_callback_invoked = false;
 

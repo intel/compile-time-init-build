@@ -34,7 +34,8 @@ target_compile_options(
     cib
     INTERFACE
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-braces>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     clang_tidy_interface(cib)

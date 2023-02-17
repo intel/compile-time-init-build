@@ -5,6 +5,7 @@
 #include <cib/detail/meta.hpp>
 
 #include <array>
+#include <concepts>
 #include <type_traits>
 
 namespace cib {
@@ -24,10 +25,51 @@ namespace cib {
  * @see cib::callback_meta
  */
 template <int NumFuncs = 0, typename... ArgTypes> struct callback {
-  private:
     using func_ptr_t = void (*)(ArgTypes...);
     std::array<func_ptr_t, NumFuncs> funcs{};
 
+    /**
+     * Add a function to be executed when the callback service is invoked.
+     *
+     * Do not call this function directly. The library will add functions
+     * to service builders based on a project's cib::config and cib::extend
+     * declarations.
+     *
+     * @return
+     *      A version of this callback builder with the addition of func.
+     *
+     * @see cib::extend
+     * @see cib::nexus
+     */
+    template <std::convertible_to<func_ptr_t>... Fs>
+    [[nodiscard]] constexpr auto add(Fs &&...fs) const {
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return callback<NumFuncs + sizeof...(Fs), ArgTypes...>{
+                {funcs[Is]..., std::forward<Fs>(fs)...}};
+        }
+        (std::make_index_sequence<NumFuncs>{});
+    }
+
+    /**
+     * Build and return a function pointer to the implemented callback
+     * builder. Used by cib nexus to automatically build an initialized
+     * builder.
+     *
+     * Do not call directly.
+     *
+     * @tparam BuilderValue
+     *      Struct that contains a "static constexpr auto value" field with the
+     * initialized builder.
+     *
+     * @return
+     *      Function pointer to the implemented callback service.
+     */
+    template <typename BuilderValue>
+    [[nodiscard]] CIB_CONSTEVAL static auto build() {
+        return run<BuilderValue>;
+    }
+
+  private:
     /**
      * Runtime implementation of a callback service.
      *
@@ -56,55 +98,6 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
             constexpr auto func = handler_builder.funcs[i];
             func(args...);
         });
-    }
-
-  public:
-    CIB_CONSTEVAL callback() = default;
-
-    template <typename PrevFuncsType>
-    CIB_CONSTEVAL explicit callback(PrevFuncsType const &prev_funcs,
-                                    func_ptr_t new_func) {
-        for (unsigned int i = 0; i < prev_funcs.size(); i++) {
-            funcs[i] = prev_funcs[i];
-        }
-
-        funcs[NumFuncs - 1] = new_func;
-    }
-
-    /**
-     * Add a function to be executed when the callback service is invoked.
-     *
-     * Do not call this function directly. The library will add functions
-     * to service builders based on a project's cib::config and cib::extend
-     * declarations.
-     *
-     * @return
-     *      A version of this callback builder with the addition of func.
-     *
-     * @see cib::extend
-     * @see cib::nexus
-     */
-    [[nodiscard]] CIB_CONSTEVAL auto add(func_ptr_t const &func) const {
-        return callback<NumFuncs + 1, ArgTypes...>{funcs, func};
-    }
-
-    /**
-     * Build and return a function pointer to the implemented callback
-     * builder. Used by cib nexus to automatically build an initialized
-     * builder.
-     *
-     * Do not call directly.
-     *
-     * @tparam BuilderValue
-     *      Struct that contains a "static constexpr auto value" field with the
-     * initialized builder.
-     *
-     * @return
-     *      Function pointer to the implemented callback service.
-     */
-    template <typename BuilderValue>
-    [[nodiscard]] CIB_CONSTEVAL static auto build() {
-        return run<BuilderValue>;
     }
 };
 

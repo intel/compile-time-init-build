@@ -43,18 +43,17 @@ template <typename MatchType> struct arg {
     }
 
     template <typename... Args> constexpr auto operator()(Args... args) const {
-        return cib::make_tuple(self_type_index, args...)
-            .fold_right(
-                detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state) {
-                    using ElemType = typename std::remove_cv_t<
-                        std::remove_reference_t<decltype(elem)>>::value_type;
+        return cib::make_tuple(args...).fold_right(
+            detail::int_<0>, [=](auto elem, [[maybe_unused]] auto state) {
+                using ElemType = typename std::remove_cv_t<
+                    std::remove_reference_t<decltype(elem)>>::value_type;
 
-                    if constexpr (std::is_same_v<ElemType, MatchType>) {
-                        return elem;
-                    } else {
-                        return state;
-                    }
-                });
+                if constexpr (std::is_same_v<ElemType, MatchType>) {
+                    return elem;
+                } else {
+                    return state;
+                }
+            });
     }
 };
 } // namespace cib::detail

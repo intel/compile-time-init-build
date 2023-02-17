@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 
@@ -17,19 +18,15 @@ template <typename InterruptHalT, typename... IrqsT> struct root {
 
   private:
     template <typename IrqType> constexpr static auto getAllIrqs(IrqType irq) {
-        return cib::apply(
-            [&](auto... irqChildren) {
-                return cib::tuple_cat(getAllIrqs(irqChildren)...,
-                                      cib::make_tuple(irq));
-            },
-            irq.children);
+        return irq.children.apply([&](auto... irqChildren) {
+            return cib::tuple_cat(getAllIrqs(irqChildren)...,
+                                  cib::make_tuple(irq));
+        });
     }
 
   public:
-    constexpr static auto all_irqs = cib::apply(
-        [](auto... irqChildren) {
-            return cib::tuple_cat(getAllIrqs(irqChildren)...);
-        },
-        children);
+    constexpr static auto all_irqs = children.apply([](auto... irqChildren) {
+        return cib::tuple_cat(getAllIrqs(irqChildren)...);
+    });
 };
 } // namespace interrupt

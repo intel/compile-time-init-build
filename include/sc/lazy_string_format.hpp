@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <sc/fwd.hpp>
 #include <sc/string_constant.hpp>
 

@@ -2,6 +2,7 @@
 
 #include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 
 #include <limits>
 #include <type_traits>
@@ -9,10 +10,8 @@
 namespace interrupt {
 enum class resource_status { OFF = 0, ON = 1 };
 
-template <typename T, typename = void> constexpr auto has_enable_field = false;
-template <typename T>
-constexpr auto has_enable_field<T, std::void_t<decltype(T::enable_field)>> =
-    true;
+template <typename Irq>
+static constexpr auto has_enable_field = requires { Irq::enable_field; };
 
 template <typename RootT, typename ConcurrencyPolicyT>
 struct dynamic_controller {
@@ -27,6 +26,18 @@ struct dynamic_controller {
     template <typename RegType>
     CIB_CONSTINIT static inline typename RegType::DataType allowed_enables =
         std::numeric_limits<typename RegType::DataType>::max();
+
+    template <typename ResourceType> struct doesnt_require_resource {
+        template <typename Irq>
+        using fn = std::bool_constant<
+            has_enable_field<Irq> and
+            not cib::contains_type<decltype(Irq::resources), ResourceType>>;
+    };
+
+    template <typename RegType> struct in_register {
+        template <typename Field>
+        using fn = std::is_same<RegType, typename Field::RegisterType>;
+    };
 
     /**
      * For each ResourceType, keep track of what interrupts can still be enabled
@@ -47,28 +58,16 @@ struct dynamic_controller {
     template <typename ResourceType, typename RegType>
     constexpr static typename RegType::DataType irqs_allowed = []() {
         // get all interrupt enable fields that don't require the given resource
-        auto const matching_irqs = cib::filter(RootT::all_irqs, [](auto irq) {
-            using irq_t = typename decltype(irq)::type;
-            constexpr auto doesnt_require_resource = cib::apply(
-                [](auto... resources_pack) {
-                    return (not std::is_same_v<decltype(resources_pack),
-                                               ResourceType> and
-                            ...);
-                },
-                irq_t::resources);
-            return doesnt_require_resource and has_enable_field<irq_t>;
-        });
-
+        auto const matching_irqs =
+            cib::filter<doesnt_require_resource<ResourceType>::template fn>(
+                RootT::all_irqs);
         auto const interrupt_enables_tuple = cib::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
         // filter fields that aren't in RegType
         auto const fields_in_reg =
-            cib::filter(interrupt_enables_tuple, [](auto field) {
-                using FieldsRegType =
-                    typename decltype(field)::type::RegisterType;
-                return std::is_same_v<FieldsRegType, RegType>;
-            });
+            cib::filter<in_register<RegType>::template fn>(
+                interrupt_enables_tuple);
 
         // set the bits in the mask for interrupts that don't require the
         // resource
@@ -102,15 +101,9 @@ struct dynamic_controller {
     template <typename RegFieldTuple>
     constexpr static auto get_unique_regs(RegFieldTuple fields) {
         return fields.fold_left(cib::make_tuple(), [](auto regs, auto field) {
-            constexpr bool reg_has_been_seen_already = cib::apply(
-                [=](auto... regs_pack) {
-                    return (
-                        std::is_same_v<typename decltype(field)::RegisterType,
-                                       decltype(regs_pack)> ||
-                        ...);
-                },
-                decltype(regs){});
-
+            constexpr bool reg_has_been_seen_already =
+                cib::contains_type<decltype(regs),
+                                   typename decltype(field)::RegisterType>;
             if constexpr (reg_has_been_seen_already) {
                 return regs;
             } else {
@@ -120,6 +113,12 @@ struct dynamic_controller {
         });
     }
 
+    template <typename ResourceTuple> struct not_in {
+        template <typename Resource>
+        using fn =
+            std::bool_constant<not cib::contains_type<ResourceTuple, Resource>>;
+    };
+
     /**
      * tuple of every resource mentioned in the interrupt configuration
      */
@@ -127,16 +126,8 @@ struct dynamic_controller {
         cib::make_tuple(), [](auto resources, auto irq) {
             // TODO: check that an IRQ doesn't list a resource more than once
             auto const additional_resources =
-                cib::filter(irq.resources, [=](auto resource) {
-                    using resource_t = typename decltype(resource)::type;
-                    return not cib::apply(
-                        [](auto... resources_pack) {
-                            return (std::is_same_v<resource_t,
-                                                   decltype(resources_pack)> or
-                                    ...);
-                        },
-                        resources);
-                });
+                cib::filter<not_in<decltype(resources)>::template fn>(
+                    irq.resources);
             return cib::tuple_cat(resources, additional_resources);
         });
 
@@ -201,6 +192,13 @@ struct dynamic_controller {
     template <typename RegType>
     CIB_CONSTINIT static inline typename RegType::DataType dynamic_enables{};
 
+    template <typename... Callbacks> struct match_callback {
+        template <typename Irq>
+        using fn = std::bool_constant<
+            has_enable_field<Irq> and
+            (... or std::is_same_v<typename Irq::IrqCallbackType, Callbacks>)>;
+    };
+
     template <bool en, typename... CallbacksToFind>
     static inline void enable_by_name() {
         // NOTE: critical section is not needed here because shared state is
@@ -210,20 +208,16 @@ struct dynamic_controller {
         //       this will require another way to manage them vs. mmio
         //       registers. once that goes in, then enable_by_field should be
         //       removed or made private.
-        auto const matching_irqs = cib::filter(RootT::all_irqs, [](auto irq) {
-            using irq_t = typename decltype(irq)::type;
-            using IrqCallbackType = typename irq_t::IrqCallbackType;
-            constexpr auto has_callback =
-                (std::is_same_v<CallbacksToFind, IrqCallbackType> or ...);
-            return has_callback and has_enable_field<irq_t>;
-        });
+        auto const matching_irqs =
+            cib::filter<match_callback<CallbacksToFind...>::template fn>(
+                RootT::all_irqs);
 
         auto const interrupt_enables_tuple = cib::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
-        cib::apply(
-            [](auto... fields) { enable_by_field<en, decltype(fields)...>(); },
-            interrupt_enables_tuple);
+        interrupt_enables_tuple.apply([]<typename... Fields>(Fields...) {
+            enable_by_field<en, Fields...>();
+        });
     }
 
   public:

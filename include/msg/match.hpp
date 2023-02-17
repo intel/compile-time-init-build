@@ -41,28 +41,32 @@ constexpr static void process(NameType const &name, EventType const &event,
 
     bool event_handled = false;
 
-    handlers_tuple.for_each([&](auto handler) {
-        if constexpr (!decltype(handler)::is_default_handler) {
-            if (handler.matcher(event)) {
-                CIB_INFO("{} - Processing [{}] due to match [{}]", name,
-                         handler.name, handler.matcher.describe());
-                handler.action();
-                event_handled = true;
+    cib::for_each(
+        [&](auto handler) {
+            if constexpr (!decltype(handler)::is_default_handler) {
+                if (handler.matcher(event)) {
+                    CIB_INFO("{} - Processing [{}] due to match [{}]", name,
+                             handler.name, handler.matcher.describe());
+                    handler.action();
+                    event_handled = true;
+                }
             }
-        }
-    });
+        },
+        handlers_tuple);
 
     constexpr bool hasDefault = (HandlerTypes::is_default_handler or ...);
 
     if (!event_handled) {
         if constexpr (hasDefault) {
-            handlers_tuple.for_each([&](auto handler) {
-                if constexpr (decltype(handler)::is_default_handler) {
-                    CIB_INFO("{} - Processing [default]", name);
-                    handler.action();
-                    event_handled = true;
-                }
-            });
+            cib::for_each(
+                [&](auto handler) {
+                    if constexpr (decltype(handler)::is_default_handler) {
+                        CIB_INFO("{} - Processing [default]", name);
+                        handler.action();
+                        event_handled = true;
+                    }
+                },
+                handlers_tuple);
         } else {
             const auto mismatch_descriptions = cib::transform(
                 [&](auto handler) {
@@ -71,7 +75,7 @@ constexpr static void process(NameType const &name, EventType const &event,
                 },
                 handlers_tuple);
 
-            const auto mismatch_description = mismatch_descriptions.fold_left(
+            const auto mismatch_description = mismatch_descriptions.join(
                 [](auto lhs, auto rhs) { return lhs + rhs; });
 
             CIB_ERROR("{} - Received event that does not match any known "
@@ -129,8 +133,7 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
     [[nodiscard]] constexpr auto describe() const {
         const auto matcher_descriptions = cib::transform(
             [](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
-
-        return matcher_descriptions.fold_left(
+        return matcher_descriptions.join(
             [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
 
@@ -142,10 +145,14 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
                               m.describe_match(event));
             },
             matchers);
-
-        return matcher_descriptions.fold_left(
+        return matcher_descriptions.join(
             [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
+};
+
+template <typename TOp> struct match_op {
+    template <typename T>
+    using fn = std::bool_constant<not std::is_same_v<always_t<TOp::unit>, T>>;
 };
 
 template <typename TOp, typename... MatcherTypes>
@@ -156,15 +163,12 @@ make_logical_matcher(MatcherTypes const &...matchers) {
         return always<not TOp::unit>;
     } else {
         auto const remaining_matcher_tuple =
-            cib::filter(cib::make_tuple(matchers...), [](auto matcher) {
-                using MatcherType = typename decltype(matcher)::type;
-                return not std::is_same_v<MatcherType, always_t<TOp::unit>>;
-            });
-
+            cib::filter<match_op<TOp>::template fn>(
+                cib::make_tuple(matchers...));
         if constexpr (remaining_matcher_tuple.size() == 0) {
             return always<TOp::unit>;
         } else if constexpr (remaining_matcher_tuple.size() == 1) {
-            return remaining_matcher_tuple.get(cib::index_<0>);
+            return remaining_matcher_tuple[cib::index<0>];
         } else {
             return remaining_matcher_tuple.apply(
                 [&](auto... remaining_matchers) {

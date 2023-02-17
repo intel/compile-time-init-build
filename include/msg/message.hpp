@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
 #include <sc/fwd.hpp>
@@ -117,18 +118,15 @@ struct message_base : public message_data<MaxNumDWords> {
         });
     }
 
+    template <typename T>
+    using not_required = std::bool_constant<not std::is_same_v<
+        match::always_t<true>, std::decay_t<decltype(T::match_requirements)>>>;
+
     static constexpr auto match_valid_encoding = []() {
         constexpr auto required_fields =
-            cib::filter(FieldTupleType{}, [](auto field) {
-                using FieldType = typename decltype(field)::type;
-                return sc::bool_<!std::is_same_v<
-                    match::always_t<true>,
-                    std::decay_t<decltype(FieldType::match_requirements)>>>;
-            });
-
+            cib::filter<not_required>(FieldTupleType{});
         if constexpr (required_fields.size() == 0) {
             return match::always<true>;
-
         } else {
             return required_fields.apply([](auto... required_fields_pack) {
                 return match::all(
@@ -147,7 +145,7 @@ struct message_base : public message_data<MaxNumDWords> {
 
         if (src.size() == 0) {
             // default constructor, set default values
-            FieldTupleType{}.for_each([&](auto field) { set(field); });
+            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
         }
     }
 
@@ -158,11 +156,10 @@ struct message_base : public message_data<MaxNumDWords> {
 
         if constexpr (sizeof...(argFields) == 0) {
             // default constructor, set default values
-            FieldTupleType{}.for_each([&](auto field) { set(field); });
-
+            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
         } else {
             auto const arg_field_tuple = cib::make_tuple(argFields...);
-            auto const first_arg = arg_field_tuple.get(cib::index_<0>);
+            auto const first_arg = cib::get<0>(arg_field_tuple);
 
             if constexpr (detail::is_iterable<decltype(first_arg)>) {
                 std::copy(std::begin(first_arg), std::end(first_arg),
@@ -173,10 +170,11 @@ struct message_base : public message_data<MaxNumDWords> {
                 // TODO: ensure fields aren't set more than once
 
                 // set default values
-                FieldTupleType{}.for_each([&](auto field) { set(field); });
+                cib::for_each([&](auto field) { set(field); },
+                              FieldTupleType{});
 
                 // set specified field values
-                arg_field_tuple.for_each([&](auto field) { set(field); });
+                cib::for_each([&](auto field) { set(field); }, arg_field_tuple);
             }
         }
     }

@@ -122,8 +122,9 @@ template <typename... ValueTypes> struct write_op_t {
     cib::tuple<ValueTypes...> values;
 
     void operator()() const {
-        values.for_each(
-            [](auto value) { callbackPtr->write(value.id, value.value); });
+        cib::for_each(
+            [](auto value) { callbackPtr->write(value.id, value.value); },
+            values);
     }
 };
 
