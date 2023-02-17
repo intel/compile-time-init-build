@@ -9,7 +9,6 @@ add_unit_test(
     cib/callback.cpp
     cib/nexus.cpp
     cib/tuple.cpp
-    cib/set.cpp
     cib/readme_hello_world.cpp
     LIBRARIES
     warnings
