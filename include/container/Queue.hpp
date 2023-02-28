@@ -9,8 +9,7 @@
  * @tparam EntryType The type of elements the Queue contains.
  * @tparam Capacity  Maximum amount of elements the circular Queue.
  */
-template <typename EntryType, std::size_t Capacity> 
-class Queue {
+template <typename EntryType, std::size_t Capacity> class Queue {
   private:
     std::array<EntryType, Capacity> storage{};
     std::size_t size{0};
@@ -18,17 +17,15 @@ class Queue {
     std::size_t getIndex{0};
 
   public:
-    [[nodiscard]] constexpr auto get_size() const -> std::size_t { 
-        return size; 
+    [[nodiscard]] constexpr auto get_size() const -> std::size_t {
+        return size;
     }
 
     [[nodiscard]] constexpr auto is_full() const -> bool {
         return size == Capacity;
     }
 
-    [[nodiscard]] constexpr auto is_empty() const -> bool { 
-        return size == 0; 
-    }
+    [[nodiscard]] constexpr auto is_empty() const -> bool { return size == 0; }
 
     constexpr void put(EntryType const &entry) {
         storage[putIndex] = entry;

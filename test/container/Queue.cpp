@@ -31,7 +31,7 @@ TEST_CASE("APIChecks", "[queue]") {
     CHECK(0x43 == queue.get());
     CHECK(0x1024 == queue.get());
     CHECK(0xdeadbeef == queue.get());
-    
+
     CHECK(0 == queue.get_size());
     CHECK(false == queue.is_full());
     CHECK(true == queue.is_empty());
@@ -65,8 +65,8 @@ TEST_CASE("OverwriteCheck", "[queue]") {
 
 TEST_CASE("SizeCheck", "[queue]") {
     Queue<uint32_t, 6> queue;
-    
-    //Size check after put()
+
+    // Size check after put()
     queue.put(6u);
     CHECK(1 == queue.get_size());
     CHECK(false == queue.is_full());
@@ -97,7 +97,7 @@ TEST_CASE("SizeCheck", "[queue]") {
     CHECK(true == queue.is_full());
     CHECK(false == queue.is_empty());
 
-    //Size check after get()
+    // Size check after get()
     CHECK(6u == queue.get());
     CHECK(5 == queue.get_size());
     CHECK(false == queue.is_full());
