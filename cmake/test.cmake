@@ -8,7 +8,7 @@ endif()
 
 macro(get_catch2)
     if(NOT DEFINED CPM_GOT_CATCH)
-        add_versioned_package("gh:catchorg/Catch2@3.3.1")
+        add_versioned_package("gh:catchorg/Catch2@3.3.2")
         list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
         include(Catch)
         set(CPM_GOT_CATCH 1)
