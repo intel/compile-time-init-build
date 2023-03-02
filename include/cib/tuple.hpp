@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -107,9 +108,15 @@ struct element<Index, T, Ts...> {
     T value;
 
   private:
+    [[nodiscard]] friend constexpr auto operator==(element x, element y) -> bool
+        requires(std::is_reference_v<T>)
+    {
+        return std::addressof(x.value) == std::addressof(y.value);
+    }
     [[nodiscard]] friend constexpr auto operator==(element const &,
-                                                   element const &)
-        -> bool = default;
+                                                   element const &) -> bool
+        requires(not std::is_reference_v<T>)
+    = default;
     [[nodiscard]] friend constexpr auto operator<=>(element const &,
                                                     element const &) = default;
 };
