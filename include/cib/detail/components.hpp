@@ -2,6 +2,7 @@
 
 #include <cib/detail/config_item.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 
 namespace cib::detail {
 template <typename... Components>

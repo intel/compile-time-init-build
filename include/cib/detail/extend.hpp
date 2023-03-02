@@ -12,10 +12,7 @@ struct extend : public config_item {
     constexpr static auto builder = cib::traits::builder_v<service_type>;
     cib::tuple<Args...> args_tuple;
 
-    CIB_CONSTEVAL explicit extend(Args const &...args)
-        : args_tuple{cib::make_tuple(args...)} {
-        // pass
-    }
+    CIB_CONSTEVAL explicit extend(Args const &...args) : args_tuple{args...} {}
 
     template <typename... InitArgs>
     [[nodiscard]] constexpr auto extends_tuple(InitArgs const &...) const {

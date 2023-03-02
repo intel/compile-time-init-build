@@ -1,6 +1,6 @@
-#include <cib/cib.hpp>
-
 #include "hello_world.hpp"
+
+#include <cib/cib.hpp>
 
 cib::nexus<hello_world> nexus{};
 

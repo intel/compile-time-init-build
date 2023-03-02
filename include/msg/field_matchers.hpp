@@ -57,7 +57,7 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
 
     static constexpr auto expected_values_string =
         expected_value_strings_tuple.fold_right(
-            [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
+            ""_sc, [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 
   public:
     template <typename MsgType>

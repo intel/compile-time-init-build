@@ -32,7 +32,7 @@ struct interface {
  */
 template <typename Name, std::size_t NumSteps> class impl : public interface {
   private:
-    constexpr static bool loggingEnabled = !std::is_same<Name, void>::value;
+    constexpr static bool loggingEnabled = not std::is_void_v<Name>;
 
     constexpr static auto capacity = [] {
         if constexpr (loggingEnabled) {

@@ -2,6 +2,7 @@
 
 #include <cib/detail/meta.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <sc/detail/conversions.hpp>
 #include <sc/detail/format_spec.hpp>
 #include <sc/lazy_string_format.hpp>

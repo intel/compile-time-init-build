@@ -30,7 +30,7 @@ class disjoint_field {
     using NameType = NameTypeT;
 
     template <typename MsgType> static constexpr void fits_inside(MsgType msg) {
-        fields.for_each([&](auto field) { field.fits_inside(msg); });
+        cib::for_each([&](auto field) { field.fits_inside(msg); }, fields);
     }
 
     static constexpr NameType name{};

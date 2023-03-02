@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <interrupt/manager_interface.hpp>
 
 #include <algorithm>
@@ -26,7 +27,7 @@ namespace interrupt {
 template <typename InterruptHal, typename Dynamic, typename... IrqImplTypes>
 class manager_impl : public manager_interface {
   private:
-    cib::tuple<cib::self_type_index_t, IrqImplTypes...> irq_impls;
+    cib::tuple<IrqImplTypes...> irq_impls;
 
     template <std::size_t Key, typename Value> struct irq_pair {};
     template <typename... Ts> struct irq_map : Ts... {};
@@ -38,7 +39,7 @@ class manager_impl : public manager_interface {
 
   public:
     explicit constexpr manager_impl(IrqImplTypes... impls)
-        : irq_impls{cib::make_tuple(cib::self_type_index, impls...)} {}
+        : irq_impls{impls...} {}
 
     /**
      * Initialize the interrupt hardware and each of the active irqs.
@@ -64,18 +65,14 @@ class manager_impl : public manager_interface {
      * Initialize the interrupt hardware and each of the active irqs.
      */
     void init_sub_interrupts() const final {
-        auto const interrupt_enables_tuple = cib::apply(
-            [](auto... irqs_pack) {
+        auto const interrupt_enables_tuple =
+            irq_impls.apply([](auto... irqs_pack) {
                 return cib::tuple_cat(irqs_pack.get_interrupt_enables()...);
-            },
-            irq_impls);
+            });
 
-        cib::apply(
-            [](auto... interrupt_enables) {
-                Dynamic::template enable_by_field<
-                    true, decltype(interrupt_enables)...>();
-            },
-            interrupt_enables_tuple);
+        interrupt_enables_tuple.apply([]<typename... Enables>(Enables...) {
+            Dynamic::template enable_by_field<true, Enables...>();
+        });
     }
 
     /**

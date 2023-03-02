@@ -5,6 +5,11 @@
 #include <flow/impl.hpp>
 #include <flow/milestone.hpp>
 
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <type_traits>
+
 namespace flow {
 /**
  * flow::builder enables multiple independent components to collaboratively
@@ -51,13 +56,11 @@ class generic_builder {
      */
     static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
         -> bool {
-        // std::find_if is not constexpr in c++17 :(
-        for (auto s : graph) {
-            if (s.value.contains(node)) {
+        for (auto const &entry : graph) {
+            if (entry.value.contains(node)) {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -77,6 +80,21 @@ class generic_builder {
         }
 
         return nodesWithNoIncomingEdge;
+    }
+
+    template <typename T>
+    constexpr auto add_flow(T const &flow_description) -> void {
+        if constexpr (std::is_base_of_v<NodeType, T>) {
+            dependencyGraph.put(flow_description);
+        } else {
+            flow_description.walk([&](NodeType lhs, NodeType rhs) {
+                if (rhs == NodeType{}) {
+                    dependencyGraph.put(lhs);
+                } else {
+                    dependencyGraph.put(lhs, rhs);
+                }
+            });
+        }
     }
 
   public:
@@ -110,20 +128,9 @@ class generic_builder {
      * Note that it does not specify an ordering requirement between "b" and
      * "c".
      */
-    template <typename T> constexpr auto add(T const &flow_description) {
-        if constexpr (std::is_base_of_v<NodeType, T>) {
-            dependencyGraph.put(flow_description);
-
-        } else {
-            flow_description.walk([&](NodeType lhs, NodeType rhs) {
-                if (rhs == NodeType{}) {
-                    dependencyGraph.put(lhs);
-                } else {
-                    dependencyGraph.put(lhs, rhs);
-                }
-            });
-        }
-
+    template <typename... Ts>
+    constexpr auto add(Ts const &...flow_descriptions) {
+        (add_flow(flow_descriptions), ...);
         return *this;
     }
 
