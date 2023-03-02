@@ -205,6 +205,16 @@ TEST_CASE("equality comparable", "[tuple]") {
     static_assert(t != cib::tuple{5, 11});
 }
 
+TEST_CASE("equality comparable (tuple of references)", "[tuple]") {
+    int x{5};
+    int y{5};
+    auto const t = cib::tuple<int &>{x};
+    auto const u = cib::tuple<int &>{y};
+
+    CHECK(t == t);
+    CHECK(t != u);
+}
+
 namespace {
 struct eq {
     [[nodiscard]] friend constexpr auto operator==(eq lhs, eq rhs) -> bool {
