@@ -1,3 +1,7 @@
+if(COMMAND clang_tidy_interface)
+    return()
+endif()
+
 function(clang_tidy_interface TARGET)
     message(
         STATUS
