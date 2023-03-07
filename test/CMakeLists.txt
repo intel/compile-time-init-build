@@ -106,7 +106,17 @@ add_unit_test(
     msg/field.cpp
     msg/handler.cpp
     msg/handler_builder.cpp
+    msg/indexed_handler.cpp
     msg/message.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    lookup_test
+    CATCH2
+    FILES
+    lookup/lookup.cpp
     LIBRARIES
     warnings
     cib)
