@@ -9,6 +9,17 @@ TEST_CASE("equality", "[bitset]") {
     REQUIRE(bitset<32>{1, 2, 3} != bitset<32>{6});
 }
 
+TEST_CASE("equality with mismatched sizes", "[bitset]") {
+    REQUIRE(bitset<32>{1, 2, 3, 4, 5} == bitset<128>{1, 2, 3, 4, 5});
+    REQUIRE(bitset<128>{1, 2, 3, 4, 5} == bitset<32>{1, 2, 3, 4, 5});
+
+    REQUIRE(bitset<32>{1, 2, 3} != bitset<128>{6});
+    REQUIRE(bitset<128>{1, 2, 3} != bitset<32>{6});
+
+    REQUIRE(bitset<128>{1, 2, 3, 96} != bitset<32>{1, 2, 3});
+    REQUIRE(bitset<32>{1, 2, 3} != bitset<128>{1, 2, 3, 96});
+}
+
 TEST_CASE("add", "[bitset]") {
     auto s = bitset<64>{};
 
@@ -73,4 +84,11 @@ TEST_CASE("long for_each", "[bitset]") {
 
     REQUIRE(result == s);
 }
+
+TEST_CASE("count", "[bitset]") {
+    REQUIRE(bitset<32>{1, 2, 3, 4, 5}.count() == 5);
+    REQUIRE(bitset<32>{}.count() == 0);
+    REQUIRE(bitset<64>{45, 0}.count() == 2);
+}
+
 }
