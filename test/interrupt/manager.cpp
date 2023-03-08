@@ -178,9 +178,9 @@ struct BasicBuilder {
                                                        test_resource_beta>>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
+    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
 
-    struct test_service : interrupt::service<Config, test::ConcurrencyPolicy> {
+    struct test_service : interrupt::service<Config, test::concurrency_policy> {
     };
 
     struct test_project {
@@ -272,9 +272,9 @@ struct NoIsrBuilder {
                            rsp_handler_irq, policies<>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
+    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
 
-    struct test_service : interrupt::service<Config, test::ConcurrencyPolicy> {
+    struct test_service : interrupt::service<Config, test::concurrency_policy> {
     };
 
     struct test_project {
@@ -309,9 +309,9 @@ struct ClearStatusFirstBuilder {
     using Config =
         root<MockIrqImpl, irq<38, 0, timer_irq, policies<clear_status_first>>>;
 
-    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
+    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
 
-    struct test_service : interrupt::service<Config, test::ConcurrencyPolicy> {
+    struct test_service : interrupt::service<Config, test::concurrency_policy> {
     };
 
     struct test_project {
@@ -344,9 +344,9 @@ struct DontClearStatusBuilder {
     using Config =
         root<MockIrqImpl, irq<38, 0, timer_irq, policies<dont_clear_status>>>;
 
-    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
+    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
 
-    struct test_service : interrupt::service<Config, test::ConcurrencyPolicy> {
+    struct test_service : interrupt::service<Config, test::concurrency_policy> {
     };
 
     struct test_project {
@@ -494,9 +494,9 @@ struct SharedSubIrqTest {
                                can_handler_irq, policies<dont_clear_status>>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::ConcurrencyPolicy>;
+    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
 
-    struct test_service : interrupt::service<Config, test::ConcurrencyPolicy> {
+    struct test_service : interrupt::service<Config, test::concurrency_policy> {
     };
 
     struct test_project {
