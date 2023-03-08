@@ -15,5 +15,10 @@ template <typename... Services> struct exports : public detail::config_item {
     [[nodiscard]] constexpr auto extends_tuple(InitArgs const &...) const {
         return cib::make_tuple(extend<Services>{}...);
     }
+
+    template <typename... InitArgs>
+    [[nodiscard]] constexpr auto exports_tuple(InitArgs const &...) const {
+        return cib::make_tuple(Services{}...);
+    }
 };
 } // namespace cib::detail

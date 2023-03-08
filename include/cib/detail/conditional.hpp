@@ -22,6 +22,15 @@ struct conditional : public config_item {
             return cib::tuple<>{};
         }
     }
+
+    template <typename... Args>
+    [[nodiscard]] constexpr auto exports_tuple(Args const &...) const {
+        if constexpr (condition(Args{}...)) {
+            return body.exports_tuple(Args{}...);
+        } else {
+            return cib::tuple<>{};
+        }
+    }
 };
 
 template <typename Lhs, typename Rhs> struct equality {

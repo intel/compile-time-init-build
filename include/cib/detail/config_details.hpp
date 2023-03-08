@@ -33,5 +33,15 @@ struct config : public detail::config_item {
             });
         });
     }
+
+    template <typename... Args>
+    [[nodiscard]] constexpr auto exports_tuple(Args const &...args) const {
+        return ConfigArgs::value.apply([&](auto const &...config_args) {
+            return configs_tuple.apply([&](auto const &...configs_pack) {
+                return cib::tuple_cat(
+                    configs_pack.exports_tuple(args..., config_args...)...);
+            });
+        });
+    }
 };
 } // namespace cib::detail
