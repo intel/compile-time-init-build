@@ -17,7 +17,7 @@ template <std::integral T, T Value, T Base = T{10}, bool Uppercase = false>
 }
 
 template <typename EnumTypeT, EnumTypeT ValueT,
-          std::enable_if_t<std::is_enum<EnumTypeT>::value, bool> = true>
+          std::enable_if_t<std::is_enum_v<EnumTypeT>, bool> = true>
 [[nodiscard]] constexpr auto
 to_string_constant(std::integral_constant<EnumTypeT, ValueT> const &) {
     return detail::create<detail::EnumToString<EnumTypeT, ValueT>>();

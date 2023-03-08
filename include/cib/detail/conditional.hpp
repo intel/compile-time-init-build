@@ -22,5 +22,14 @@ struct conditional : config_item {
             return cib::tuple<>{};
         }
     }
+
+    template <typename... Args>
+    [[nodiscard]] constexpr auto exports_tuple(Args const &...) const {
+        if constexpr (Pred{}(Args{}...)) {
+            return body.exports_tuple(Args{}...);
+        } else {
+            return cib::tuple<>{};
+        }
+    }
 };
 } // namespace cib::detail
