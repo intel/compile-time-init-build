@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
 
 #include <algorithm>
 #include <array>
@@ -16,9 +15,10 @@ struct typename_map_entry {
     std::size_t src{};
 
   private:
-    [[nodiscard]] constexpr friend auto
-    operator<=>(typename_map_entry const &lhs, typename_map_entry const &rhs) {
-        return lhs.name <=> rhs.name;
+    [[nodiscard]] constexpr friend auto operator<(typename_map_entry const &lhs,
+                                                  typename_map_entry const &rhs)
+        -> bool {
+        return lhs.name < rhs.name;
     }
 
     [[nodiscard]] constexpr friend auto
