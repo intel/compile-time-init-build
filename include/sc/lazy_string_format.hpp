@@ -71,15 +71,6 @@ template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
     return (lhs.str == rhs.str) && (lhs.args == rhs.args);
 }
 
-template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
-          CharT... charsRhs, typename ArgsTupleRhsT>
-[[nodiscard]] constexpr auto operator!=(
-    lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT> lhs,
-    lazy_string_format<string_constant<CharT, charsRhs...>, ArgsTupleRhsT>
-        rhs) noexcept -> bool {
-    return !(lhs == rhs);
-}
-
 template <typename StringConstantLhsT, typename TupleArgsLhsT,
           typename StringConstantRhsT, typename TupleArgsRhsT>
 [[nodiscard]] constexpr auto

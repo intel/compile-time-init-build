@@ -4,7 +4,6 @@
 #include <flow/detail/parallel.hpp>
 
 #include <cstddef>
-#include <cstdint>
 
 namespace seq {
 enum class status { NOT_DONE = 0, DONE = 1 };
@@ -18,10 +17,6 @@ class step_base {
     func_ptr _backward_ptr{};
     log_func_ptr log_name{};
 
-#if defined(__GNUC__) && __GNUC__ < 12
-    uint64_t hash{};
-#endif
-
     template <std::size_t NumSteps> friend struct impl;
 
   public:
@@ -29,31 +24,17 @@ class step_base {
     constexpr step_base([[maybe_unused]] Name name, func_ptr forward_ptr,
                         func_ptr backward_ptr)
         : _forward_ptr{forward_ptr}, _backward_ptr{backward_ptr},
-          log_name{[]() { CIB_TRACE("seq.step({})", Name{}); }}
-
-#if defined(__GNUC__) && __GNUC__ < 12
-          ,
-          hash{name.hash()}
-#endif
-    {
-    }
+          log_name{[]() { CIB_TRACE("seq.step({})", Name{}); }} {}
 
     constexpr step_base() = default;
 
-    [[nodiscard]] constexpr friend auto operator==(step_base const &lhs,
-                                                   step_base const &rhs)
-        -> bool {
-#if defined(__GNUC__) && __GNUC__ < 12
-        return lhs.hash == rhs.hash;
-#else
-        return (lhs._forward_ptr) == (rhs._forward_ptr) &&
-               (lhs._backward_ptr) == (rhs._backward_ptr) &&
-               (lhs.log_name) == (rhs.log_name);
-#endif
-    }
-
     constexpr void forward() const { _forward_ptr(); }
     constexpr void backward() const { _backward_ptr(); }
+
+  private:
+    [[nodiscard]] constexpr friend auto operator==(step_base const &lhs,
+                                                   step_base const &rhs)
+        -> bool = default;
 };
 
 template <typename LhsT, typename RhsT>

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <iterator>
 #include <string>
 
@@ -88,4 +89,9 @@ TEST_CASE("log levels are properly represented", "[log]") {
                        logging::level_constant<logging::level::MAX>{});
         REQUIRE(level == "UNKNOWN");
     }
+}
+
+TEST_CASE("logging can use std::cout", "[log]") {
+    [[maybe_unused]] auto cfg =
+        logging::fmt::config{std::ostream_iterator<char>{std::cout}};
 }

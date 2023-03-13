@@ -41,14 +41,11 @@ struct repl_field_iter {
             i, static_cast<std::string_view::size_type>(std::distance(i, end))};
     }
 
-    [[nodiscard]] constexpr auto operator==(repl_field_iter other) const
+  private:
+    [[nodiscard]] friend constexpr auto operator==(repl_field_iter lhs,
+                                                   repl_field_iter rhs)
         -> bool {
-        return i == other.i;
-    }
-
-    [[nodiscard]] constexpr auto operator!=(repl_field_iter other) const
-        -> bool {
-        return i != other.i;
+        return lhs.i == rhs.i;
     }
 };
 

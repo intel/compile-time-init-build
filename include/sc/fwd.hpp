@@ -3,9 +3,6 @@
 #include <type_traits>
 
 namespace sc {
-using size_type = int;
-using difference_type = int;
-
 template <int value> constexpr static std::integral_constant<int, value> int_{};
 
 template <unsigned int value>

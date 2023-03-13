@@ -11,10 +11,6 @@ class milestone_base {
     FunctionPtr run{};
     FunctionPtr log_name{};
 
-#if defined(__GNUC__) && __GNUC__ < 12
-    uint64_t hash{};
-#endif
-
     template <typename Name, std::size_t NumSteps> friend class impl;
 
   public:
@@ -22,27 +18,16 @@ class milestone_base {
     constexpr milestone_base([[maybe_unused]] Name name, FunctionPtr run_ptr)
         : run{run_ptr}, log_name{[]() {
               CIB_TRACE("flow.milestone({})", Name{});
-          }}
-
-#if defined(__GNUC__) && __GNUC__ < 12
-          ,
-          hash{name.hash()}
-#endif
-    {
-    }
+          }} {}
 
     constexpr milestone_base() = default;
 
-    [[nodiscard]] constexpr auto operator==(milestone_base const &rhs) const
-        -> bool {
-#if defined(__GNUC__) && __GNUC__ < 12
-        return this->hash == rhs.hash;
-#else
-        return (this->run) == (rhs.run) && (this->log_name) == (rhs.log_name);
-#endif
-    }
-
     constexpr void operator()() const { run(); }
+
+  private:
+    [[nodiscard]] friend constexpr auto operator==(milestone_base const &lhs,
+                                                   milestone_base const &rhs)
+        -> bool = default;
 };
 
 template <typename LhsT, typename RhsT>

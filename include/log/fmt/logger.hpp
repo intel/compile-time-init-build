@@ -52,10 +52,9 @@ template <typename TDestinations> struct log_handler {
 };
 
 template <typename... TDestinations> struct config {
-    using destinations_tuple_t =
-        decltype(cib::make_tuple(std::declval<TDestinations>()...));
+    using destinations_tuple_t = cib::tuple<TDestinations...>;
     constexpr explicit config(TDestinations... dests)
-        : logger{cib::make_tuple(dests...)} {}
+        : logger{cib::tuple{std::move(dests)...}} {}
 
     log_handler<destinations_tuple_t> logger;
 
