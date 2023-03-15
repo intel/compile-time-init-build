@@ -13,7 +13,7 @@ namespace msg::detail {
 //       to efficiently iterate over its set bits; see `for_each` below.
 template<std::size_t NumBits>
 struct bitset {
-    static constexpr int size = (NumBits + 31) / 32;
+    static constexpr std::size_t size = (NumBits + 31) / 32;
     std::array<uint32_t, size> data{};
 
 
@@ -23,19 +23,20 @@ struct bitset {
 
     template<auto RhsNumBits>
     constexpr inline bool operator==(bitset<RhsNumBits> const & rhs) const {
-        auto constexpr min_size = std::min(size, rhs.size);
+        auto constexpr rhs_size = bitset<RhsNumBits>::size;
+        auto constexpr min_size = std::min(size, rhs_size);
 
         bool match = true;
-        for (auto i = 0; i < min_size; i++) {
+        for (auto i = std::size_t{}; i < min_size; i++) {
             match &= (data[i] == rhs.data[i]);
         }
 
-        if constexpr (size > rhs.size) {
+        if constexpr (size > rhs_size) {
             for (auto i = min_size; i < size; i++) {
                 match &= (data[i] == 0);
             }
-        } else if constexpr (size < rhs.size) {
-            for (auto i = min_size; i < rhs.size; i++) {
+        } else if constexpr (size < rhs_size) {
+            for (auto i = min_size; i < rhs_size; i++) {
                 match &= (rhs.data[i] == 0);
             }
         }
@@ -86,6 +87,20 @@ struct bitset {
     constexpr inline bitset operator&(bitset const & rhs) const {
         auto result = *this;
         result &= rhs;
+        return result;
+    }
+
+    constexpr inline bitset & operator|=(bitset const & rhs) {
+        for (auto i = std::size_t{}; i < size; i++) {
+            data[i] |= rhs.data[i];
+        }
+
+        return *this;
+    }
+
+    constexpr inline bitset operator|(bitset const & rhs) const {
+        auto result = *this;
+        result |= rhs;
         return result;
     }
 

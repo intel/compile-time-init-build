@@ -43,8 +43,11 @@ namespace lookup {
 
             [[nodiscard]] constexpr auto operator[](key_type key) const -> value_type {
                 const auto index = key - min_key;
-                return *detail::select_lt(index, storage.size(), &(storage[index]), &default_value);
-                
+                return *detail::select_lt(
+                    index,
+                    static_cast<std::uint32_t>(storage.size()),
+                    std::next(storage.begin(), index),
+                    &default_value);
             }
         };
 

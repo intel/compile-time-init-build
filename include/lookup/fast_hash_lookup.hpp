@@ -21,7 +21,7 @@ namespace lookup {
             constexpr static auto storage_size =
                 2 << (std::bit_width(InputValues::entries.size()));
 
-            std::array<entry<key_type, value_type>, storage_size> storage;
+            std::array<entry<key_type, value_type>, storage_size + SearchLen> storage;
 
             [[nodiscard]] constexpr auto index(key_type key) const -> size_t {
                 auto const hash_value = HashFunc::calc(key);
@@ -33,20 +33,34 @@ namespace lookup {
 
                 for (auto const e : InputValues::entries) {
                     auto const i = index(e.key_);
-                    storage[i] = e;
+                    for (auto offset = std::size_t{}; offset <= SearchLen; offset++) {
+                        if (storage[i + offset].value_ == default_value) {
+                            storage[i + offset] = e;
+                            break;
+                        }
+                    }
                 }
             }
 
-            [[nodiscard]] constexpr auto operator[](key_type key) const -> value_type {
+            [[nodiscard]] constexpr auto operator[](key_type const key) const -> value_type {
                 auto const i = index(key);
-                entry const candidate = storage[i];
+                value_type result = default_value;
+                entry<key_type, value_type> e;
 
-                return select(
-                    candidate.key_,
-                    key,
-                    candidate.value_,
-                    default_value
-                );
+                if constexpr (SearchLen >= 1) {
+                    e = storage[i + 1];
+                    result = detail::select(key, e.key_, e.value_, result);
+                }
+
+                e = storage[i + 0];
+                result = detail::select(key, e.key_, e.value_, result);
+
+                //for (auto offset = std::size_t{}; offset <= 0; offset++) {
+                //    entry const e = storage[i + offset];
+                //    result = detail::select(key, e.key_, e.value_, result);
+                //}
+
+                return result;
             }
         };
 
