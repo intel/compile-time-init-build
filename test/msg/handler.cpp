@@ -120,8 +120,8 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         auto correct = false;
         auto const callback = msg::callback<TestBaseMsg>(
             "TestCallback"_sc, match::always<true>,
-            [&](TestMsg const &) { correct = true; },
-            [](TestMsgMultiCb const &) {});
+            [](TestMsgMultiCb const &) {},
+            [&](TestMsg const &) { correct = true; });
         auto callbacks = cib::make_tuple(callback);
         auto const handler =
             msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};

@@ -16,9 +16,9 @@ xml_file = sys.argv[4]
 
 catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))\s*$")
 
-# unsigned int catalog<message<(logging::level)7, sc::lazy_string_format<sc::string_constant<char, (char)102, (char)108, (char)111, (char)119, (char)46, (char)115, (char)116, (char)97, (char)114, (char)116, (char)40, (char)77, (char)101, (char)109, (char)111, (char)114, (char)121, (char)69, (char)114, (char)114, (char)111, (char)114, (char)41>, std::__1::tuple<> > > >()
+# unsigned int catalog<message<(logging::level)7, sc::lazy_string_format<sc::string_constant<char, (char)102, (char)108, (char)111, (char)119, (char)46, (char)115, (char)116, (char)97, (char)114, (char)116, (char)40, (char)77, (char)101, (char)109, (char)111, (char)114, (char)121, (char)69, (char)114, (char)114, (char)111, (char)114, (char)41>, cib::tuple<> > > >()
 string_re = re.compile(
-    "message<\(logging::level\)(\d+), sc::lazy_string_format<sc::string_constant<char, (.*)>\s*(?:const)?, cib::(?:[a-zA-Z0-9_]+::)*tuple_impl<(.*)>\s*>\s*>"
+    "message<\(logging::level\)(\d+), sc::lazy_string_format<sc::string_constant<char, (.*)>\s*(?:const)?, cib::(?:[a-zA-Z0-9_]+::)*tuple<(.*)>\s*>\s*>"
 )
 
 

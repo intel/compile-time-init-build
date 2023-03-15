@@ -65,12 +65,10 @@ template <typename ConfigT> class shared_irq_builder {
         auto const sub_irq_impls = built_irqs<BuilderValue>(
             std::make_index_sequence<irqs_t::size()>{});
 
-        return cib::apply(
-            [](auto... sub_irq_impl_args) {
-                return shared_irq_impl<ConfigT, decltype(sub_irq_impl_args)...>(
-                    sub_irq_impl_args...);
-            },
-            sub_irq_impls);
+        return sub_irq_impls.apply([](auto... sub_irq_impl_args) {
+            return shared_irq_impl<ConfigT, decltype(sub_irq_impl_args)...>(
+                sub_irq_impl_args...);
+        });
     }
 };
 } // namespace interrupt

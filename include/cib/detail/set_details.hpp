@@ -1,56 +1,12 @@
 #pragma once
 
 #include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iterator>
 #include <string_view>
-#include <utility>
-
-namespace cib::detail {
-// https://en.wikipedia.org/wiki/Quicksort#Hoare_partition_scheme
-
-template <typename T>
-CIB_CONSTEVAL static auto partition(T *elems, std::size_t lo, std::size_t hi)
-    -> std::size_t {
-    auto const pivot = elems[(hi + lo) / 2];
-
-    auto i = lo - 1;
-    auto j = hi + 1;
-
-    while (true) {
-        do {
-            i = i + 1;
-        } while (elems[i] < pivot);
-        do {
-            j = j - 1;
-        } while (elems[j] > pivot);
-        if (i >= j) {
-            return j;
-        }
-
-        auto const temp = elems[i];
-        elems[i] = elems[j];
-        elems[j] = temp;
-    }
-}
-
-template <typename T>
-CIB_CONSTEVAL static void quicksort(T *elems, std::size_t lo, std::size_t hi) {
-    if (lo < hi) {
-        auto const p = partition(elems, lo, hi);
-        quicksort(elems, lo, p);
-        quicksort(elems, p + 1, hi);
-    }
-}
-
-template <typename T> CIB_CONSTEVAL static void quicksort(T &collection) {
-    quicksort(std::begin(collection), 0,
-              std::size(collection) - std::size_t{1});
-}
-} // namespace cib::detail
 
 namespace cib::detail {
 struct typename_map_entry {
@@ -59,40 +15,16 @@ struct typename_map_entry {
     std::size_t src{};
 
   private:
+    [[nodiscard]] constexpr friend auto operator<(typename_map_entry const &lhs,
+                                                  typename_map_entry const &rhs)
+        -> bool {
+        return lhs.name < rhs.name;
+    }
+
     [[nodiscard]] constexpr friend auto
     operator==(typename_map_entry const &lhs, typename_map_entry const &rhs)
         -> bool {
         return lhs.name == rhs.name;
-    }
-
-    [[nodiscard]] constexpr friend auto
-    operator!=(typename_map_entry const &lhs, typename_map_entry const &rhs)
-        -> bool {
-        return not(lhs == rhs);
-    }
-
-    [[nodiscard]] constexpr friend auto operator<(typename_map_entry const &lhs,
-                                                  typename_map_entry const &rhs)
-        -> bool {
-        return lhs.name < rhs.name; // NOLINT(modernize-use-nullptr)
-    }
-
-    [[nodiscard]] constexpr friend auto operator>(typename_map_entry const &lhs,
-                                                  typename_map_entry const &rhs)
-        -> bool {
-        return rhs < lhs;
-    }
-
-    [[nodiscard]] constexpr friend auto
-    operator<=(typename_map_entry const &lhs, typename_map_entry const &rhs)
-        -> bool {
-        return not(rhs < lhs);
-    }
-
-    [[nodiscard]] constexpr friend auto
-    operator>=(typename_map_entry const &lhs, typename_map_entry const &rhs)
-        -> bool {
-        return not(lhs < rhs);
     }
 };
 
@@ -118,130 +50,12 @@ template <typename Tag> CIB_CONSTEVAL static auto name() -> std::string_view {
     return function_name.substr(lhs, rhs - lhs + 1);
 }
 
-template <typename MetaFunc, typename... Types>
+template <template <typename> typename MetaFunc, typename... Types>
 CIB_CONSTEVAL static auto create_type_names([[maybe_unused]] std::size_t src) {
-    if constexpr (sizeof...(Types) == 0) {
-        return std::array<typename_map_entry, 0>{};
-
-    } else {
-        std::size_t i = 0;
-
-        std::array<typename_map_entry, sizeof...(Types)> names = {
-            typename_map_entry{
-                name<typename MetaFunc::template invoke<Types>>(), i++,
-                src}...};
-
-        detail::quicksort(names);
-        return names;
-    }
+    auto i = std::size_t{};
+    std::array<typename_map_entry, sizeof...(Types)> names = {
+        typename_map_entry{name<MetaFunc<Types>>(), i++, src}...};
+    std::sort(std::begin(names), std::end(names));
+    return names;
 }
-
-template <typename DataT, typename SizeT> struct data_and_size {
-    DataT data;
-    SizeT size;
-
-    constexpr data_and_size(DataT data_arg, SizeT size_arg)
-        : data{data_arg}, size{size_arg} {}
-};
-
-template <typename Algorithm, typename MetaFunc, typename LhsTuple,
-          typename RhsTuple>
-struct set_operation_impl_t;
-
-template <typename Algorithm, typename MetaFunc, typename... LhsElems,
-          typename... RhsElems>
-struct set_operation_impl_t<Algorithm, MetaFunc, tuple_impl<LhsElems...>,
-                            tuple_impl<RhsElems...>> {
-    constexpr static auto result = []() {
-        constexpr auto lhs_tags =
-            create_type_names<MetaFunc, typename LhsElems::value_type...>(0);
-        constexpr auto rhs_tags =
-            create_type_names<MetaFunc, typename RhsElems::value_type...>(1);
-
-        constexpr auto max_size = lhs_tags.size() + rhs_tags.size();
-
-        std::array<detail::typename_map_entry, max_size> out{};
-
-        auto const out_end =
-            Algorithm::invoke(lhs_tags.begin(), lhs_tags.end(),
-                              rhs_tags.begin(), rhs_tags.end(), out.begin());
-
-        auto const out_size = std::distance(out.begin(), out_end);
-
-        return data_and_size{out, out_size};
-    };
-};
-
-template <int... Indices, typename IndexList, typename LhsTuple,
-          typename RhsTuple>
-[[nodiscard]] constexpr auto
-merge_tuple_impl(std::integer_sequence<int, Indices...>, IndexList,
-                 LhsTuple lhs, RhsTuple rhs) {
-    [[maybe_unused]] auto const tuples = cib::make_tuple(lhs, rhs);
-
-    return cib::make_tuple(
-        tuples.get(index_<IndexList::result().data[Indices].src>)
-            .get(index_<IndexList::result().data[Indices].index>)...);
-}
-
-template <typename Algorithm, typename MetaFunc, typename LhsTuple,
-          typename RhsTuple>
-[[nodiscard]] constexpr auto set_operation_impl(Algorithm, MetaFunc,
-                                                LhsTuple lhs, RhsTuple rhs) {
-    using index_list_t =
-        set_operation_impl_t<Algorithm, MetaFunc, LhsTuple, RhsTuple>;
-
-    constexpr auto result_size = index_list_t::result().size;
-
-    return merge_tuple_impl(std::make_integer_sequence<int, result_size>{},
-                            index_list_t{}, lhs, rhs);
-}
-
-template <bool keep_left_difference, bool keep_intersection,
-          bool keep_right_difference>
-struct set_operation_algorithm {
-    template <typename InputIt1, typename InputIt2, typename OutputIt>
-    constexpr static auto invoke(InputIt1 first1, InputIt1 last1,
-                                 InputIt2 first2, InputIt2 last2,
-                                 OutputIt d_first) -> OutputIt {
-        while (first1 != last1 && first2 != last2) {
-            if (*first1 < *first2) {
-                if constexpr (keep_left_difference) {
-                    *d_first++ = *first1;
-                }
-
-                first1++;
-
-            } else if (*first1 > *first2) {
-                if constexpr (keep_right_difference) {
-                    *d_first++ = *first2;
-                }
-
-                first2++;
-
-            } else {
-                if constexpr (keep_intersection) {
-                    *d_first++ = *first1;
-                }
-
-                first1++;
-                first2++;
-            }
-        }
-
-        if constexpr (keep_left_difference) {
-            while (first1 != last1) {
-                *d_first++ = *first1++;
-            }
-        }
-
-        if constexpr (keep_right_difference) {
-            while (first2 != last2) {
-                *d_first++ = *first2++;
-            }
-        }
-
-        return d_first;
-    }
-};
 } // namespace cib::detail

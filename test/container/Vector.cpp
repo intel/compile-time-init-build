@@ -1,8 +1,8 @@
+#include "log.hpp"
+
 #include <container/Vector.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-
-#include "log.hpp"
 
 namespace {
 TEST_CASE("EmptyVector", "[vector]") {

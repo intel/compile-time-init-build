@@ -1,8 +1,9 @@
 #pragma once
 
+#include "core.hpp"
+
 #include <cib/cib.hpp>
 
-#include "core.hpp"
 #include <iostream>
 
 // functions declared outside the component may be used within the component

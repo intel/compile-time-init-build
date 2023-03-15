@@ -10,7 +10,7 @@
 #include <utility>
 
 namespace logging::mipi {
-template <typename TCriticalSection, typename TDestinations>
+template <typename ConcurrencyPolicy, typename TDestinations>
 struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
@@ -49,17 +49,19 @@ struct log_handler {
     template <typename... MsgDataTypes>
     CIB_NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes... msg_data)
         -> void {
-        TCriticalSection cs{};
-        cib::for_each([&](auto &dest) { dest.log_by_args(msg_data...); },
-                      dests);
+        ConcurrencyPolicy::call_in_critical_section([&] {
+            cib::for_each([&](auto &dest) { dest.log_by_args(msg_data...); },
+                          dests);
+        });
     }
 
     CIB_NEVER_INLINE auto dispatch_pass_by_buffer(std::uint32_t *msg,
                                                   std::uint32_t msg_size)
         -> void {
-        TCriticalSection cs{};
-        cib::for_each([&](auto &dest) { dest.log_by_buf(msg, msg_size); },
-                      dests);
+        ConcurrencyPolicy::call_in_critical_section([&] {
+            cib::for_each([&](auto &dest) { dest.log_by_buf(msg, msg_size); },
+                          dests);
+        });
     }
 
     template <logging::level Level, typename... MsgDataTypes>
@@ -80,14 +82,14 @@ struct log_handler {
     TDestinations dests;
 };
 
-template <typename TCriticalSection> struct under {
+template <typename ConcurrencyPolicy> struct under {
     template <typename... TDestinations> struct config {
         using destinations_tuple_t =
             decltype(cib::make_tuple(std::declval<TDestinations>()...));
         constexpr explicit config(TDestinations... dests)
             : logger{cib::make_tuple(dests...)} {}
 
-        log_handler<TCriticalSection, destinations_tuple_t> logger;
+        log_handler<ConcurrencyPolicy, destinations_tuple_t> logger;
 
         [[noreturn]] static auto terminate() { std::terminate(); }
     };

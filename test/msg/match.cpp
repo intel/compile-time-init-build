@@ -112,13 +112,13 @@ TEST_CASE("MatchAllWithEvents", "[match]") {
 }
 
 TEST_CASE("MatchAllDescription", "[match]") {
-    REQUIRE(match::all(number<1>).describe() == "number == 1"_sc);
+    CHECK(match::all(number<1>).describe() == "number == 1"_sc);
 
-    REQUIRE(match::all(number<1>, number<4>).describe() ==
-            "(number == 1) && (number == 4)"_sc);
+    CHECK(match::all(number<1>, number<4>).describe() ==
+          "(number == 1) && (number == 4)"_sc);
 
-    REQUIRE(match::all(number<1>, number<2>, number<3>).describe() ==
-            "(number == 1) && (number == 2) && (number == 3)"_sc);
+    CHECK(match::all(number<1>, number<2>, number<3>).describe() ==
+          "(number == 1) && (number == 2) && (number == 3)"_sc);
 }
 
 TEST_CASE("MatchAllDescriptionWithEvent", "[match]") {

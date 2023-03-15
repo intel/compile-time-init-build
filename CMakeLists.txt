@@ -26,7 +26,7 @@ include(cmake/quality.cmake)
 add_versioned_package("gh:fmtlib/fmt#9.1.0")
 
 add_library(cib INTERFACE)
-target_compile_features(cib INTERFACE cxx_std_17)
+target_compile_features(cib INTERFACE cxx_std_20)
 target_include_directories(cib INTERFACE include)
 target_link_libraries_system(cib INTERFACE fmt::fmt-header-only)
 
@@ -34,7 +34,8 @@ target_compile_options(
     cib
     INTERFACE
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-braces>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     clang_tidy_interface(cib)

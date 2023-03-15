@@ -28,16 +28,13 @@ struct handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
     }
 
     void handle(BaseMsgT const &msg, ExtraCallbackArgsT... args) const final {
-        bool const found_valid_callback =
-            callbacks.fold_left(false, [&](bool state, auto &callback) {
-                return state || callback.handle(msg, args...);
-            });
-
+        bool const found_valid_callback = cib::any_of(
+            [&](auto &callback) { return callback.handle(msg, args...); },
+            callbacks);
         if (!found_valid_callback) {
             CIB_ERROR("None of the registered callbacks claimed this message:");
-
-            callbacks.for_each(
-                [&](auto &callback) { callback.log_mismatch(msg); });
+            cib::for_each([&](auto &callback) { callback.log_mismatch(msg); },
+                          callbacks);
         }
     }
 };

@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <interrupt/config/fwd.hpp>
+
+#include <type_traits>
 
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls>
@@ -27,23 +30,21 @@ struct shared_sub_irq_impl {
 
     cib::tuple<SubIrqImpls...> sub_irq_impls;
 
+    template <typename Irq> using is_active = std::bool_constant<Irq::active>;
+
   public:
     explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...impls)
-        : sub_irq_impls{cib::make_tuple(impls...)} {}
+        : sub_irq_impls{impls...} {}
 
     auto get_interrupt_enables() const {
         if constexpr (active) {
             auto const active_sub_irq_impls =
-                cib::filter(sub_irq_impls, [](auto irq) {
-                    return decltype(irq)::type::active;
-                });
+                cib::filter<is_active>(sub_irq_impls);
 
-            return cib::apply(
-                [&](auto &&...irqs) {
-                    return cib::tuple_cat(irqs.get_interrupt_enables()...,
-                                          cib::make_tuple(enable_field));
-                },
-                active_sub_irq_impls);
+            return active_sub_irq_impls.apply([&](auto &&...irqs) {
+                return cib::tuple_cat(irqs.get_interrupt_enables()...,
+                                      cib::make_tuple(enable_field));
+            });
 
         } else {
             return cib::make_tuple();

@@ -1,6 +1,7 @@
+include(CTest)
 add_custom_target(unit_tests)
 
-if(DEFINED ENV{CXX_STANDARD} AND NOT $ENV{CXX_STANDARD} EQUAL "")
+if(DEFINED ENV{CXX_STANDARD})
     set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
 else()
     set(CMAKE_CXX_STANDARD 17)
@@ -8,7 +9,7 @@ endif()
 
 macro(get_catch2)
     if(NOT DEFINED CPM_GOT_CATCH)
-        add_versioned_package("gh:catchorg/Catch2@3.3.1")
+        add_versioned_package("gh:catchorg/Catch2@3.3.2")
         list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
         include(Catch)
         set(CPM_GOT_CATCH 1)

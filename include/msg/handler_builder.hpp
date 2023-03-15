@@ -2,6 +2,7 @@
 
 #include <cib/builder_meta.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <container/Vector.hpp>
 #include <log/log.hpp>
 #include <msg/handler.hpp>
@@ -17,12 +18,9 @@ template <typename CallbacksT, typename BaseMsgT,
 struct handler_builder {
     CallbacksT callbacks;
 
-    template <typename T> [[nodiscard]] constexpr auto add(T callback) {
-        auto new_callbacks =
-            cib::tuple_cat(callbacks, cib::make_tuple(callback));
-
+    template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
+        auto new_callbacks = cib::tuple_cat(callbacks, cib::make_tuple(ts...));
         using new_callbacks_t = decltype(new_callbacks);
-
         return handler_builder<new_callbacks_t, BaseMsgT,
                                ExtraCallbackArgsT...>{new_callbacks};
     }

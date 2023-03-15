@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cib/cib.hpp>
-
 #include "core.hpp"
 #include "dont_panic.hpp"
 #include "lazy_dog.hpp"
 #include "say_hello_world.hpp"
+
+#include <cib/cib.hpp>
 
 struct hello_world {
     constexpr static auto config =

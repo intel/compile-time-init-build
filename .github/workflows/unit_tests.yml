@@ -16,67 +16,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_test_older_compilers:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [clang, gcc]
-        version: [9, 10]
-        cxx_standard: [17]
-        build_type: [Debug]
-        include:
-          - version: 10
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-10
-            cc: "/usr/lib/llvm-10/bin/clang"
-            cxx: "/usr/lib/llvm-10/bin/clang++"
-          - version: 9
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-9
-            cc: "/usr/lib/llvm-9/bin/clang"
-            cxx: "/usr/lib/llvm-9/bin/clang++"
-          - version: 10
-            compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-10
-            cc: "/usr/bin/gcc-10"
-            cxx: "/usr/bin/g++-10"
-          - version: 9
-            compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-9
-            cc: "/usr/bin/gcc-9"
-            cxx: "/usr/bin/g++-9"
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install build tools
-        run: |
-          ${{ matrix.install }}
-          sudo apt install -y ninja-build
-
-      - name: Configure CMake
-        env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
-          CXX_STANDARD: ${{ matrix.cxx_standard }}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
-
-      - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t unit_tests
-
-      - name: Test
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{matrix.build_type}}
-  
   build_and_test:
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [11, 12, 13, 14, 15]
-        cxx_standard: [17, 20]
+        version: [12, 14, 15]
+        cxx_standard: [20]
         build_type: [Debug]
         include:
           - version: 15
@@ -89,39 +36,18 @@ jobs:
             install: sudo apt update && sudo apt install -y clang-14
             cc: "/usr/lib/llvm-14/bin/clang"
             cxx: "/usr/lib/llvm-14/bin/clang++"
-          - version: 13
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-13
-            cc: "/usr/lib/llvm-13/bin/clang"
-            cxx: "/usr/lib/llvm-13/bin/clang++"
-          - version: 12
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-12
-            cc: "/usr/lib/llvm-12/bin/clang"
-            cxx: "/usr/lib/llvm-12/bin/clang++"
-          - version: 11
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-11
-            cc: "/usr/lib/llvm-11/bin/clang"
-            cxx: "/usr/lib/llvm-11/bin/clang++"
           - version: 12
             compiler: gcc
             install: sudo apt update && sudo apt install -y gcc-12
             cc: "/usr/bin/gcc-12"
             cxx: "/usr/bin/g++-12"
-          - version: 11
-            compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-11
-            cc: "/usr/bin/gcc-11"
-            cxx: "/usr/bin/g++-11"
         exclude:
-          # gcc only goes up to 12 on ubuntu-22.04
           - compiler: gcc
             version: 15
           - compiler: gcc
             version: 14
-          - compiler: gcc
-            version: 13
+          - compiler: clang
+            version: 12
 
     steps:
       - uses: actions/checkout@v3
@@ -194,7 +120,7 @@ jobs:
 
   merge_ok:
     runs-on: ubuntu-22.04
-    needs: [build_and_test_older_compilers, build_and_test, quality_checks_pass, sanitize]
+    needs: [build_and_test, quality_checks_pass, sanitize]
     steps:
       - name: Enable merge
         run: echo "OK to merge!"

@@ -1,4 +1,5 @@
-#include <cib/cib.hpp>
+#include <cib/detail/meta.hpp>
+#include <cib/detail/type_list.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
