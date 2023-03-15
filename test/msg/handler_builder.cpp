@@ -31,7 +31,7 @@ struct test_project {
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
 
-TEST_CASE("build handler", "[handler_builder]") {
+TEST_CASE("build handler", "[indexed_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 

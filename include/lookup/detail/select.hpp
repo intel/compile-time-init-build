@@ -34,7 +34,6 @@ namespace lookup::detail {
 
 // NOTE: optimized_select is intended to be a branchless select
 #if defined(__arc__) or defined(_ARC) or defined(_ARCOMPACT)
-    // FIXME: need to handle types larger than 32-bits
     template<typename T>
     static inline auto optimized_select(
         std::uint32_t lhs,
@@ -42,22 +41,26 @@ namespace lookup::detail {
         T first,
         T second
     ) -> T {
-        T result = second;
+        if constexpr (sizeof(T) <= 4) {
+            T result = second;
 
-        asm (
-            "cmp %[lhs], %[rhs]          \n\t"
-            "mov.eq %[result], %[first]  \n\t"
+            asm (
+                "cmp %[lhs], %[rhs]          \n\t"
+                "mov.eq %[result], %[first]  \n\t"
 
-            // output operands
-            : [result] "+r"(result)
+                // output operands
+                : [result] "+r,r,r,r,r,r,r,r"(result)
 
-            // input operands
-            : [lhs] "g"(lhs)
-            , [rhs] "g"(rhs)
-            , [first] "g"(first)
-        );
+                // input operands
+                : [lhs]   "r,r,r,r,i,i,i,i"(lhs)
+                , [rhs]   "r,r,i,i,r,r,i,i"(rhs)
+                , [first] "r,i,r,i,r,i,r,i"(first)
+            );
 
-        return result;
+            return result;
+        } else {
+            return fallback_select(lhs, rhs, first, second);
+        }
     }
 
     template<typename T>
@@ -67,51 +70,55 @@ namespace lookup::detail {
         T first,
         T second
     ) -> T {
-        T result = second;
+        if constexpr (sizeof(T) <= 4) {
+            T result = second;
 
-        asm (
-            "cmp %[lhs], %[rhs]          \n\t"
-            "mov.lo %[result], %[first]  \n\t"
+            asm (
+                "cmp %[lhs], %[rhs]          \n\t"
+                "mov.lo %[result], %[first]  \n\t"
 
-            // output operands
-            : [result] "+r"(result)
+                // output operands
+                : [result] "+r"(result)
 
-            // input operands
-            : [lhs] "g"(lhs)
-            , [rhs] "g"(rhs)
-            , [first] "g"(first)
-        );
+                // input operands
+                : [lhs] "g"(lhs)
+                , [rhs] "g"(rhs)
+                , [first] "g"(first)
+            );
 
-/*
-        // this gives better performance but is probably unsafe
-        int is_lo;
-        asm volatile (
-            "cmp %[lhs], %[rhs]          \n\t"
-            // output operands
-            : [is_lo] "=@cclo"(is_lo) 
+            /*
+            // this gives better performance but is probably unsafe
+            int is_lo;
+            asm volatile (
+                "cmp %[lhs], %[rhs]          \n\t"
+                // output operands
+                : [is_lo] "=@cclo"(is_lo)
 
-            // input operands
-            : [lhs] "g"(lhs)
-            , [rhs] "g"(rhs)
+                // input operands
+                : [lhs] "g"(lhs)
+                , [rhs] "g"(rhs)
 
-            // clobbers
-            : "cc"
-        );
+                // clobbers
+                : "cc"
+            );
 
-        asm (
-            "mov.lo %[result], %[first]  \n\t"
+            asm (
+                "mov.lo %[result], %[first]  \n\t"
 
-            // output operands
-            : [result] "+r"(result)
+                // output operands
+                : [result] "+r"(result)
 
-            // input operands
-            : [first] "g"(first)
-            , [is_lo] "X"(is_lo)
-        );
-*/
+                // input operands
+                : [first] "g"(first)
+                , [is_lo] "X"(is_lo)
+            );
 
+            */
+            return result;
 
-        return result;
+        } else {
+            return fallback_select_lt(lhs, rhs, first, second);
+        }
     }
 
 #else
@@ -152,7 +159,6 @@ namespace lookup::detail {
         }
     }
 
-
     template<typename T>
     constexpr inline auto select_lt(
         std::uint32_t lhs,
@@ -167,5 +173,4 @@ namespace lookup::detail {
             return optimized_select_lt(lhs, rhs, first, second);
         }
     }
-
 }

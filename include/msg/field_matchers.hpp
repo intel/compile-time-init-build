@@ -7,20 +7,23 @@
 #include <type_traits>
 
 namespace msg {
-template <typename FieldType, typename T, T expected_value> struct equal_to_t {
+template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
+    using field_type = FieldType;
+    constexpr static auto expected_values = cib::make_tuple(ExpectedValue);
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return expected_value == msg.template get<FieldType>();
+        return ExpectedValue == msg.template get<FieldType>();
     }
 
     [[nodiscard]] constexpr auto describe() const {
         if constexpr (std::is_integral_v<T>) {
             return format("{} == 0x{:x}"_sc, FieldType::name,
-                          sc::int_<static_cast<std::uint32_t>(expected_value)>);
+                          sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         } else {
             return format("{} == {} (0x{:x})"_sc, FieldType::name,
-                          sc::enum_<expected_value>,
-                          sc::int_<static_cast<std::uint32_t>(expected_value)>);
+                          sc::enum_<ExpectedValue>,
+                          sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         }
     }
 
@@ -30,18 +33,18 @@ template <typename FieldType, typename T, T expected_value> struct equal_to_t {
             return format(
                 "{} (0x{:x}) == 0x{:x}"_sc, FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(expected_value)>);
+                sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         } else {
             return format(
                 "{} (0x{:x}) == {} (0x{:x})"_sc, FieldType::name,
                 static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::enum_<expected_value>,
-                sc::int_<static_cast<std::uint32_t>(expected_value)>);
+                sc::enum_<ExpectedValue>,
+                sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         }
     }
 };
 
-template <typename FieldType, typename T, T... expected_values> struct in_t {
+template <typename FieldType, typename T, T... ExpectedValues> struct in_t {
   private:
     template <auto Value> constexpr static auto format_value() {
         if constexpr (std::is_integral_v<decltype(Value)>) {
@@ -53,17 +56,20 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
     }
 
     constexpr static auto expected_value_strings_tuple =
-        cib::make_tuple(format_value<expected_values>()...);
+        cib::make_tuple(format_value<ExpectedValues>()...);
 
     constexpr static auto expected_values_string =
         expected_value_strings_tuple.fold_right(
             ""_sc, [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 
   public:
+    using field_type = FieldType;
+    constexpr static auto expected_values = cib::make_tuple(ExpectedValues...);
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         auto const actual_value = msg.template get<FieldType>();
-        return ((actual_value == expected_values) or ...);
+        return ((actual_value == ExpectedValues) or ...);
     }
 
     [[nodiscard]] constexpr auto describe() const {

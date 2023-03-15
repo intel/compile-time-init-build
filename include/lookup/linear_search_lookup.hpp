@@ -16,7 +16,7 @@ namespace lookup {
                 value_type result = InputValues::default_value;
 
                 for (auto e : InputValues::entries) {
-                    result = detail::select(e.key_, key, e.value_, result);
+                    result = detail::select(key, e.key_, e.value_, result);
                 }
 
                 return result;

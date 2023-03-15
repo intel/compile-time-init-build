@@ -160,3 +160,4 @@ namespace lookup::strategy {
         fast_hash_lookup<50, 0, ops<mul_op<(813 << 1) | 1>, xorr_op<13>, addl_op<3>, xorr_op<7>, subl_op<2>>> /* score = 0.016001 */
     >;
 }
+

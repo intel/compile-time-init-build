@@ -107,6 +107,7 @@ add_unit_test(
     msg/handler.cpp
     msg/handler_builder.cpp
     msg/indexed_handler.cpp
+    msg/indexed_builder.cpp
     msg/message.cpp
     LIBRARIES
     warnings
