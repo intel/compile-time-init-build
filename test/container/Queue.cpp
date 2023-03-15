@@ -1,8 +1,8 @@
+#include "log.hpp"
+
 #include <container/Queue.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-
-#include "log.hpp"
 
 namespace {
 TEST_CASE("EmptyQueue", "[queue]") {
