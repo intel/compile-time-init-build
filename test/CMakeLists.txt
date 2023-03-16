@@ -31,6 +31,7 @@ add_unit_test(
     container/ConstexprMultiMap.cpp
     container/ConstexprSet.cpp
     container/Vector.cpp
+    container/queue.cpp
     LIBRARIES
     warnings
     cib)
