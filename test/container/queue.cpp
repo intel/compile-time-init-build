@@ -1,19 +1,19 @@
 #include "log.hpp"
 
-#include <container/Queue.hpp>
+#include <container/queue.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 namespace {
-TEST_CASE("EmptyQueue", "[queue]") {
-    const Queue<uint32_t, 3> queue({});
+TEST_CASE("Emptyqueue", "[queue]") {
+    const queue<uint32_t, 3> queue({});
     CHECK(0u == queue.get_size());
     CHECK(true == queue.is_empty());
     CHECK(false == queue.is_full());
 }
 
 TEST_CASE("APIChecks", "[queue]") {
-    Queue<uint32_t, 6> queue;
+    queue<uint32_t, 6> queue;
     queue.put(6u);
     queue.put(0x13);
     queue.put(0x8);
@@ -38,7 +38,7 @@ TEST_CASE("APIChecks", "[queue]") {
 }
 
 TEST_CASE("OverwriteCheck", "[queue]") {
-    Queue<uint32_t, 6> queue;
+    queue<uint32_t, 6> queue;
     queue.put(6u);
     queue.put(0x13);
     queue.put(0x8);
@@ -64,7 +64,7 @@ TEST_CASE("OverwriteCheck", "[queue]") {
 }
 
 TEST_CASE("SizeCheck", "[queue]") {
-    Queue<uint32_t, 6> queue;
+    queue<uint32_t, 6> queue;
 
     // Size check after put()
     queue.put(6u);

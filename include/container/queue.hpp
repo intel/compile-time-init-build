@@ -6,10 +6,10 @@
 /**
  * A circular queue implementation
  *
- * @tparam EntryType The type of elements the Queue contains.
- * @tparam Capacity  Maximum amount of elements the circular Queue.
+ * @tparam EntryType The type of elements the queue contains.
+ * @tparam Capacity  Maximum amount of elements the circular queue.
  */
-template <typename EntryType, std::size_t Capacity> class Queue {
+template <typename EntryType, std::size_t Capacity> class queue {
   private:
     std::array<EntryType, Capacity> storage{};
     std::size_t size{0};
