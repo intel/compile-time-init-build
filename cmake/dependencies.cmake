@@ -27,7 +27,7 @@ function(check_version dep required comp)
     endforeach()
     message(
         FATAL_ERROR
-            "Dependency error: ${version} (${comp}) not fulfilled by one of: ${ARGN}."
+            "Dependency error for ${dep}: ${version} (${comp}) not fulfilled by one of: ${ARGN}."
     )
 endfunction()
 
@@ -86,7 +86,7 @@ function(check_dependency_version dep version)
                 else()
                     message(
                         FATAL_ERROR
-                            "Dependency error: ${version} is not an ancestor of ${head_hash}."
+                            "Dependency error for ${dep}: ${version} is not an ancestor of ${head_hash}."
                     )
                 endif()
             endif()
