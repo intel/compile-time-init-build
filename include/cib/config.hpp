@@ -84,14 +84,6 @@ template <typename Service, typename... Args>
 }
 
 /**
- * Reference an argument by type.
- *
- * @tparam ArgType
- *      The type of argument to reference from the args list.
- */
-template <typename ArgType> constexpr static detail::arg<ArgType> arg{};
-
-/**
  * Include configs based on predicate.
  *
  * If predicate evaluates to true, then the configs will be added to the
@@ -99,8 +91,9 @@ template <typename ArgType> constexpr static detail::arg<ArgType> arg{};
  * will not be added.
  */
 template <typename Predicate, typename... Configs>
-[[nodiscard]] CIB_CONSTEVAL auto conditional(Predicate const &predicate,
+    requires std::is_default_constructible_v<Predicate>
+[[nodiscard]] CIB_CONSTEVAL auto conditional(Predicate const &,
                                              Configs const &...configs) {
-    return detail::conditional{predicate, configs...};
+    return detail::conditional<Predicate, Configs...>{configs...};
 }
 } // namespace cib
