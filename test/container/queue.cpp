@@ -4,129 +4,107 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstdint>
+
+TEST_CASE("empty", "[queue]") {
+    const queue<std::uint32_t, 1> q({});
+    CHECK(0u == q.size());
+    CHECK(1u == q.capacity());
+    CHECK(q.empty());
+    CHECK(not q.full());
+}
+
+TEST_CASE("full", "[queue]") {
+    queue<std::uint32_t, 1> q({});
+    q.push(1u);
+    CHECK(1u == q.size());
+    CHECK(1u == q.capacity());
+    CHECK(not q.empty());
+    CHECK(q.full());
+}
+
+TEST_CASE("push/pop", "[queue]") {
+    queue<std::uint32_t, 6> q;
+    q.push(1u);
+    CHECK(1u == q.size());
+    q.push(2u);
+    CHECK(2u == q.size());
+    q.push(3u);
+
+    REQUIRE(3u == q.size());
+    CHECK(1u == q.pop());
+    REQUIRE(2u == q.size());
+    CHECK(2u == q.pop());
+    REQUIRE(1u == q.size());
+    CHECK(3u == q.pop());
+
+    CHECK(0u == q.size());
+    CHECK(not q.full());
+    CHECK(q.empty());
+}
+
+TEST_CASE("push returns reference", "[queue]") {
+    queue<std::uint32_t, 1> q;
+    auto &ref = q.push(1u);
+    ref = 2u;
+    CHECK(2u == q.pop());
+}
+
+TEST_CASE("wraparound", "[queue]") {
+    queue<std::uint32_t, 2> q;
+
+    q.push(1u);
+    CHECK(1u == q.size());
+    q.push(2u);
+    REQUIRE(2u == q.size());
+    CHECK(1u == q.pop());
+    CHECK(1u == q.size());
+    q.push(3u);
+    REQUIRE(2u == q.size());
+    CHECK(2u == q.pop());
+    CHECK(3u == q.pop());
+
+    CHECK(0u == q.size());
+    CHECK(not q.full());
+    CHECK(q.empty());
+}
+
+TEST_CASE("safe over/underflow", "[queue]") {
+    queue<std::uint32_t, 1> q;
+    q.push(1u);
+    CHECK_THROWS_AS(q.push(2u), test_log_config::exception);
+    CHECK(1u == q.pop());
+    CHECK_THROWS_AS(q.pop(), test_log_config::exception);
+    CHECK_THROWS_AS(q.front(), test_log_config::exception);
+    CHECK_THROWS_AS(q.back(), test_log_config::exception);
+}
+
 namespace {
-TEST_CASE("Emptyqueue", "[queue]") {
-    const queue<uint32_t, 3> queue({});
-    CHECK(0u == queue.get_size());
-    CHECK(true == queue.is_empty());
-    CHECK(false == queue.is_full());
-}
-
-TEST_CASE("APIChecks", "[queue]") {
-    queue<uint32_t, 6> queue;
-    queue.put(6u);
-    queue.put(0x13);
-    queue.put(0x8);
-    queue.put(0x43);
-    queue.put(0x1024);
-    queue.put(0xdeadbeef);
-
-    CHECK(6 == queue.get_size());
-    CHECK(true == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(6u == queue.get());
-    CHECK(0x13 == queue.get());
-    CHECK(0x8 == queue.get());
-    CHECK(0x43 == queue.get());
-    CHECK(0x1024 == queue.get());
-    CHECK(0xdeadbeef == queue.get());
-
-    CHECK(0 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(true == queue.is_empty());
-}
-
-TEST_CASE("OverwriteCheck", "[queue]") {
-    queue<uint32_t, 6> queue;
-    queue.put(6u);
-    queue.put(0x13);
-    queue.put(0x8);
-    queue.put(0x43);
-    queue.put(0x1024);
-    queue.put(0xdeadbeef);
-
-    CHECK(6 == queue.get_size());
-    CHECK(true == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(600u);
-
-    CHECK(6 == queue.get_size());
-    CHECK(true == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(600u == queue.get());
-
-    CHECK(5 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-}
-
-TEST_CASE("SizeCheck", "[queue]") {
-    queue<uint32_t, 6> queue;
-
-    // Size check after put()
-    queue.put(6u);
-    CHECK(1 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(0x13);
-    CHECK(2 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(0x8);
-    CHECK(3 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(0x43);
-    CHECK(4 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(0x1024);
-    CHECK(5 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    queue.put(0xdeadbeef);
-    CHECK(6 == queue.get_size());
-    CHECK(true == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    // Size check after get()
-    CHECK(6u == queue.get());
-    CHECK(5 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(0x13 == queue.get());
-    CHECK(4 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(0x8 == queue.get());
-    CHECK(3 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(0x43 == queue.get());
-    CHECK(2 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(0x1024 == queue.get());
-    CHECK(1 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(false == queue.is_empty());
-
-    CHECK(0xdeadbeef == queue.get());
-    CHECK(0 == queue.get_size());
-    CHECK(false == queue.is_full());
-    CHECK(true == queue.is_empty());
-}
-
+struct move_only {
+    constexpr move_only() = default;
+    constexpr move_only(int i) : value{i} {}
+    constexpr move_only(move_only &&) = default;
+    constexpr auto operator=(move_only &&) noexcept -> move_only & = default;
+    int value{};
+};
 } // namespace
+
+TEST_CASE("move only elements", "[queue]") {
+    queue<move_only, 1> q;
+    q.push(move_only{1});
+    CHECK(1 == q.pop().value);
+}
+
+TEST_CASE("front/back", "[queue]") {
+    queue<std::uint32_t, 2> q;
+    q.push(1u);
+    q.push(2u);
+    CHECK(q.front() == 1u);
+    CHECK(q.back() == 2u);
+
+    q.front() = 2u;
+    CHECK(q.front() == 2u);
+
+    q.back() = 3u;
+    CHECK(q.back() == 3u);
+}

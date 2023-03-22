@@ -1,52 +1,91 @@
 #pragma once
 
+#include <log/log.hpp>
+
 #include <array>
-#include <cstdint>
+#include <cstddef>
+#include <utility>
+
+struct unsafe_overflow_policy {
+    static constexpr auto check_push(auto...) {}
+    static constexpr auto check_pop(auto...) {}
+};
+
+struct safe_overflow_policy {
+    static constexpr auto check_push(std::size_t size, std::size_t capacity) {
+        CIB_ASSERT(size < capacity);
+    }
+    static constexpr auto check_pop(std::size_t size) { CIB_ASSERT(size > 0); }
+};
 
 /**
  * A circular queue implementation
  *
  * @tparam EntryType The type of elements the queue contains.
- * @tparam Capacity  Maximum amount of elements the circular queue.
+ * @tparam Capacity  Maximum amount of elements in the circular queue.
+ * @tparam OverflowPolicy  Whether to check over/underflow.
  */
-template <typename EntryType, std::size_t Capacity> class queue {
+template <typename EntryType, std::size_t Capacity,
+          typename OverflowPolicy = safe_overflow_policy>
+class queue {
   private:
     std::array<EntryType, Capacity> storage{};
-    std::size_t size{0};
-    std::size_t putIndex{0};
-    std::size_t getIndex{0};
+    std::size_t size_{};
+    std::size_t push_index{Capacity - 1};
+    std::size_t pop_index{};
 
   public:
-    [[nodiscard]] constexpr auto get_size() const -> std::size_t {
-        return size;
+    [[nodiscard]] constexpr auto size() const -> std::size_t { return size_; }
+    [[nodiscard]] static constexpr auto capacity() -> std::size_t {
+        return Capacity;
+    }
+    [[nodiscard]] constexpr auto full() const -> bool {
+        return size_ == Capacity;
+    }
+    [[nodiscard]] constexpr auto empty() const -> bool { return size_ == 0u; }
+
+    [[nodiscard]] constexpr auto front() & -> EntryType & {
+        OverflowPolicy::check_pop(size_);
+        return storage[pop_index];
+    }
+    [[nodiscard]] constexpr auto front() const & -> EntryType const & {
+        OverflowPolicy::check_pop(size_);
+        return storage[pop_index];
+    }
+    [[nodiscard]] constexpr auto back() & -> EntryType & {
+        OverflowPolicy::check_pop(size_);
+        return storage[push_index];
+    }
+    [[nodiscard]] constexpr auto back() const & -> EntryType const & {
+        OverflowPolicy::check_pop(size_);
+        return storage[push_index];
     }
 
-    [[nodiscard]] constexpr auto is_full() const -> bool {
-        return size == Capacity;
-    }
-
-    [[nodiscard]] constexpr auto is_empty() const -> bool { return size == 0; }
-
-    constexpr void put(EntryType const &entry) {
-        storage[putIndex] = entry;
-
-        putIndex += 1;
-        if (putIndex >= Capacity) {
-            putIndex = 0;
+    constexpr auto push(EntryType const &entry) -> EntryType & {
+        OverflowPolicy::check_push(size_, Capacity);
+        if (++push_index == Capacity) {
+            push_index = 0;
         }
-
-        size += (size < Capacity) ? 1 : 0;
+        ++size_;
+        return storage[push_index] = entry;
     }
 
-    [[nodiscard]] constexpr auto get() -> EntryType {
-        auto const entry = storage[getIndex];
-
-        getIndex += 1;
-        if (getIndex >= Capacity) {
-            getIndex = 0;
+    constexpr auto push(EntryType &&entry) -> EntryType & {
+        OverflowPolicy::check_push(size_, Capacity);
+        if (++push_index == Capacity) {
+            push_index = 0;
         }
+        ++size_;
+        return storage[push_index] = std::move(entry);
+    }
 
-        size -= (size > 0) ? 1 : 0;
+    [[nodiscard]] constexpr auto pop() -> EntryType {
+        OverflowPolicy::check_pop(size_);
+        auto entry = std::move(storage[pop_index++]);
+        if (pop_index == Capacity) {
+            pop_index = 0;
+        }
+        --size_;
         return entry;
     }
 };
