@@ -101,28 +101,9 @@ TEST_CASE("configuration with multiple components, services, and features") {
     }
 }
 
-TEST_CASE("test conditional expressions") {
-    constexpr auto exp = cib::arg<int> == int_<42>;
-
-    SECTION("true evaluation") {
-        constexpr bool true_result = exp(int_<42>);
-        REQUIRE(true_result);
-    }
-
-    SECTION("true evaluation with cib::apply") {
-        constexpr bool true_result = cib::apply(exp, cib::make_tuple(int_<42>));
-        REQUIRE(true_result);
-    }
-
-    SECTION("false evaluation") {
-        constexpr bool false_result = cib::apply(exp, cib::make_tuple(int_<8>));
-        REQUIRE_FALSE(false_result);
-    }
-}
-
 struct SimpleConditionalComponent {
     constexpr static auto config = cib::config(cib::conditional(
-        cib::arg<int> == int_<42>,
+        []<typename Arg>(Arg) { return Arg::value == 42; },
         cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; })));
 };
 
@@ -153,10 +134,10 @@ TEST_CASE("configuration with one conditional component") {
 }
 
 template <int Id> struct ConditionalComponent {
-    constexpr static auto config = cib::config(cib::conditional(
-        cib::arg<int> == int_<Id>, cib::extend<TestCallback<Id>>([]() {
-            is_callback_invoked<Id> = true;
-        })));
+    constexpr static auto config = cib::config(
+        cib::conditional([]<typename Arg>(Arg) { return Arg::value == Id; },
+                         cib::extend<TestCallback<Id>>(
+                             []() { is_callback_invoked<Id> = true; })));
 };
 
 template <int EnabledId> struct ConditionalConfig {
