@@ -98,15 +98,49 @@ function(check_dependency_version dep version)
     endif()
 endfunction()
 
-function(add_versioned_package)
-    cpmaddpackage("${ARGN}")
+if(NOT DEPS_INDENT)
+    set(DEPS_INDENT
+        "${CMAKE_PROJECT_NAME}"
+        CACHE INTERNAL "")
+    set(DEPS_DEPTH
+        ""
+        CACHE INTERNAL "")
+endif()
 
+option(
+    LOG_CPM_DEPENDENCIES
+    "Log CPM dependencies fetched with add_versioned_package to cpm_dependencies.txt"
+    ON)
+
+function(log_dependency_trail parent child depth)
+    if(LOG_CPM_DEPENDENCIES)
+        string(REPLACE "/" "_" parent_target ${parent})
+        string(REPLACE "@" "_" parent_target ${parent_target})
+        string(APPEND parent_target "_deps")
+
+        set(DEPS_OUTPUT_FILE "${CMAKE_BINARY_DIR}/cpm_dependencies.txt")
+        if(NOT TARGET deps_file)
+            add_custom_target(deps_file)
+            file(WRITE ${DEPS_OUTPUT_FILE} "")
+        endif()
+
+        if(NOT TARGET ${parent_target})
+            add_custom_target(${parent_target})
+            if(depth STREQUAL "")
+                file(APPEND ${DEPS_OUTPUT_FILE} "${depth}${parent}\n")
+            endif()
+        endif()
+        file(APPEND ${DEPS_OUTPUT_FILE} "${depth}└─ ${child}\n")
+    endif()
+endfunction()
+
+function(add_versioned_package)
     list(LENGTH ARGN argnLength)
     if(argnLength EQUAL 1)
         cpm_parse_add_package_single_arg("${ARGN}" ARGN)
     endif()
 
-    set(oneValueArgs VERSION GIT_TAG COMPARE)
+    set(oneValueArgs NAME VERSION GITHUB_REPOSITORY GIT_TAG COMPARE)
     cmake_parse_arguments(ARGS "" "${oneValueArgs}" "" "${ARGN}")
     if(NOT DEFINED ARGS_GIT_TAG)
         set(ARGS_GIT_TAG v${ARGS_VERSION})
@@ -114,6 +148,17 @@ function(add_versioned_package)
     if(NOT DEFINED ARGS_COMPARE)
         set(ARGS_COMPARE GREATER_EQUAL)
     endif()
+    if(NOT DEFINED ARGS_NAME)
+        set(ARGS_NAME ${ARGS_GITHUB_REPOSITORY})
+    endif()
+
+    set(DEPS_PARENT_INDENT "${DEPS_INDENT}")
+    set(DEPS_INDENT "${ARGS_NAME}@${ARGS_GIT_TAG}")
+    log_dependency_trail(${DEPS_PARENT_INDENT} ${DEPS_INDENT} "${DEPS_DEPTH}")
+    string(APPEND DEPS_DEPTH "   ")
+    cpmaddpackage("${ARGN}")
+    string(REGEX REPLACE "^(.*)...$" "\\1" DEPS_DEPTH ${DEPS_DEPTH})
+    set(DEPS_INDENT "${DEPS_PARENT_INDENT}")
 
     check_dependency_version(${CPM_LAST_PACKAGE_NAME} ${ARGS_GIT_TAG}
                              ${ARGS_COMPARE})
