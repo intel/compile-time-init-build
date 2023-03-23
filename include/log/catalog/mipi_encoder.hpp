@@ -47,11 +47,14 @@ struct log_handler {
     }
 
     template <typename... MsgDataTypes>
-    CIB_NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes... msg_data)
+    CIB_NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes &&...msg_data)
         -> void {
         ConcurrencyPolicy::call_in_critical_section([&] {
-            cib::for_each([&](auto &dest) { dest.log_by_args(msg_data...); },
-                          dests);
+            cib::for_each(
+                [&](auto &dest) {
+                    dest.log_by_args(std::forward<MsgDataTypes>(msg_data)...);
+                },
+                dests);
         });
     }
 
@@ -72,9 +75,10 @@ struct log_handler {
             dispatch_pass_by_args(make_short32_header(id));
         } else if constexpr (sizeof...(msg_data) <= 2u) {
             dispatch_pass_by_args(make_catalog32_header(Level), id,
-                                  msg_data...);
+                                  std::forward<MsgDataTypes>(msg_data)...);
         } else {
-            std::array args = {make_catalog32_header(Level), id, msg_data...};
+            std::array args = {make_catalog32_header(Level), id,
+                               std::forward<MsgDataTypes>(msg_data)...};
             dispatch_pass_by_buffer(args.data(), args.size());
         }
     }
@@ -84,18 +88,18 @@ struct log_handler {
 
 template <typename ConcurrencyPolicy> struct under {
     template <typename... TDestinations> struct config {
-        using destinations_tuple_t =
-            decltype(cib::make_tuple(std::declval<TDestinations>()...));
+        using destinations_tuple_t = cib::tuple<TDestinations...>;
         constexpr explicit config(TDestinations... dests)
-            : logger{cib::make_tuple(dests...)} {}
+            : logger{cib::tuple{std::move(dests)...}} {}
 
         log_handler<ConcurrencyPolicy, destinations_tuple_t> logger;
 
         [[noreturn]] static auto terminate() { std::terminate(); }
     };
 
-    // Clang needs a deduction guide here. GCC does not, and in fact GCC has a
-    // bug: it claims that deduction guides must be at namespace scope.
+    // Clang needs a deduction guide here. GCC does not, and in fact GCC
+    // has a bug: it claims that deduction guides must be at namespace
+    // scope.
 #ifdef __clang__
     template <typename... Ts> config(Ts...) -> config<Ts...>;
 #endif

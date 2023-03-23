@@ -64,7 +64,7 @@ class ConstexprMap {
      */
     [[nodiscard]] constexpr auto find(KeyType targetKey) const
         -> std::optional<std::size_t> {
-        for (std::size_t i = 0; i < size; i++) {
+        for (auto i = std::size_t{}; i < size; ++i) {
             if (storage[i].key == targetKey) {
                 return i;
             }
@@ -100,8 +100,7 @@ class ConstexprMap {
      */
     [[nodiscard]] constexpr auto pop() -> Entry {
         CIB_ASSERT(size > 0);
-        size--;
-        return storage[size];
+        return storage[--size];
     }
 
     /**
@@ -192,8 +191,7 @@ class ConstexprMap {
             storage[*entryIndex].value = v;
         } else {
             CIB_ASSERT(size < Capacity);
-            storage[size] = Entry(k, v);
-            size++;
+            storage[size++] = Entry(k, v);
         }
     }
 
@@ -223,10 +221,8 @@ class ConstexprMap {
      */
     constexpr auto remove(KeyType targetKey) -> void {
         auto entryIndex = find(targetKey);
-
         if (entryIndex) {
-            storage[*entryIndex] = storage[size - 1];
-            size--;
+            storage[*entryIndex] = storage[--size];
         }
     }
 };

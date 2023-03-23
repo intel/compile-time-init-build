@@ -7,12 +7,7 @@
 #include <utility>
 
 namespace sc::detail {
-template <typename StringViewConstant, size_type... indices>
-[[nodiscard]] constexpr static auto unpack_into_string_constant(
-    std::integer_sequence<size_type, indices...>) noexcept {
-    using value_type = typename decltype(StringViewConstant::value)::value_type;
-    return string_constant<value_type, StringViewConstant::value[indices]...>{};
-}
+using size_type = int;
 
 template <typename This, size_type pos, size_type count> struct SubStr {
     using char_type = typename This::char_type;
@@ -60,8 +55,10 @@ struct Replace {
 
 template <typename StringViewConstant>
 [[nodiscard]] constexpr static auto create() noexcept {
-    return detail::unpack_into_string_constant<StringViewConstant>(
-        std::make_integer_sequence<size_type,
-                                   StringViewConstant::value.size()>{});
+    using value_type = typename decltype(StringViewConstant::value)::value_type;
+    return [&]<size_type... Is>(std::integer_sequence<size_type, Is...>) {
+        return string_constant<value_type, StringViewConstant::value[Is]...>{};
+    }
+    (std::make_integer_sequence<size_type, StringViewConstant::value.size()>{});
 }
 } // namespace sc::detail

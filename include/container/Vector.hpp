@@ -40,8 +40,7 @@ template <typename ValueType, size_t Capacity> class Vector {
         } else {
             auto i = std::size_t{};
             for (auto element : src) {
-                storage[i] = element;
-                i++;
+                storage[i++] = element;
             }
 
             currentSize = src.size();
@@ -104,8 +103,7 @@ template <typename ValueType, size_t Capacity> class Vector {
             CIB_FATAL("Vector::push() attempted when full");
             return;
         }
-        storage[currentSize] = value;
-        currentSize++;
+        storage[currentSize++] = value;
     }
 
     [[nodiscard]] constexpr auto pop() -> ValueType {
@@ -113,33 +111,29 @@ template <typename ValueType, size_t Capacity> class Vector {
             CIB_FATAL("Vector::pop() attempted when empty");
             return {};
         }
-        currentSize--;
-        return storage[currentSize];
+        return storage[--currentSize];
     }
 
-    [[nodiscard]] constexpr auto operator==(Vector const &rhs) const -> bool {
-        if (size() != rhs.size()) {
+  private:
+    [[nodiscard]] friend constexpr auto operator==(Vector const &lhs,
+                                                   Vector const &rhs) -> bool {
+        if (lhs.size() != rhs.size()) {
             return false;
         }
-        for (auto i = std::size_t{}; i < size(); i++) {
-            if ((*this)[i] != rhs[i]) {
+        for (auto i = std::size_t{}; i < lhs.size(); ++i) {
+            if (lhs[i] != rhs[i]) {
                 return false;
             }
         }
         return true;
     }
 
-    [[nodiscard]] constexpr auto operator!=(Vector const &rhs) const -> bool {
-        return !((*this) == rhs);
-    }
-
-    [[nodiscard]] constexpr auto operator+(Vector const &rhs) const -> Vector {
-        Vector result = *this;
-
-        for (auto i = rhs.begin(); i != rhs.end(); i++) {
-            result.push(*i);
+    [[nodiscard]] friend constexpr auto operator+(Vector const &lhs,
+                                                  Vector const &rhs) -> Vector {
+        Vector result = lhs;
+        for (const auto &elem : rhs) {
+            result.push(elem);
         }
-
         return result;
     }
 };

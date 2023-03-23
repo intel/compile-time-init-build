@@ -88,103 +88,61 @@ template <typename CharT, CharT... chars> struct string_constant {
             std::integral_constant<size_type, count>, StrT) noexcept {
         return detail::create<detail::Replace<This, pos, count, StrT>>();
     }
-
-    [[nodiscard]] constexpr static auto hash() -> uint64_t {
-        // http://www.cse.yorku.ca/~oz/hash.html @ Aug. 19, 2022
-        // this is a very slightly cleaned up version of djb2
-        std::uint64_t hash = 5381;
-
-        for (auto const c : value) {
-            hash = hash * 33 + static_cast<std::uint64_t>(c);
-        }
-
-        return hash;
-    }
 };
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
 operator==(string_constant<CharT, charsLhs...>,
-           string_constant<CharT, charsRhs...>) noexcept {
+           string_constant<CharT, charsRhs...>) noexcept -> bool {
     return false;
 }
 
 template <class CharT, CharT... chars>
 [[nodiscard]] constexpr auto
 operator==(string_constant<CharT, chars...>,
-           string_constant<CharT, chars...>) noexcept {
+           string_constant<CharT, chars...>) noexcept -> bool {
     return true;
 }
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
-operator!=(string_constant<CharT, charsLhs...>,
-           string_constant<CharT, charsRhs...>) noexcept {
-    return true;
-}
-
-template <class CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-operator!=(string_constant<CharT, chars...>,
-           string_constant<CharT, chars...>) noexcept {
-    return false;
-}
-
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
-[[nodiscard]] constexpr auto
-operator<(string_constant<CharT, charsLhs...> lhs,
-          string_constant<CharT, charsRhs...> rhs) noexcept {
-    return lhs.value < rhs.value;
-}
-
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
-[[nodiscard]] constexpr auto
-operator<=(string_constant<CharT, charsLhs...> lhs,
-           string_constant<CharT, charsRhs...> rhs) noexcept {
-    return lhs.value <= rhs.value;
-}
-
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
-[[nodiscard]] constexpr auto
-operator>(string_constant<CharT, charsLhs...> lhs,
-          string_constant<CharT, charsRhs...> rhs) noexcept {
-    return lhs.value > rhs.value;
-}
-
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
-[[nodiscard]] constexpr auto
-operator>=(string_constant<CharT, charsLhs...> lhs,
-           string_constant<CharT, charsRhs...> rhs) noexcept {
-    return lhs.value >= rhs.value;
+operator<=>(string_constant<CharT, charsLhs...> lhs,
+            string_constant<CharT, charsRhs...> rhs) noexcept {
+    return lhs.value <=> rhs.value;
 }
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
 operator+(string_constant<CharT, charsLhs...>,
-          string_constant<CharT, charsRhs...>) noexcept {
-    return string_constant<CharT, charsLhs..., charsRhs...>{};
+          string_constant<CharT, charsRhs...>) noexcept
+    -> string_constant<CharT, charsLhs..., charsRhs...> {
+    return {};
 }
+
+namespace detail {
+[[nodiscard]] constexpr auto to_int(auto first, auto last, auto op) noexcept
+    -> int {
+    auto value = 0;
+    while (first != last) {
+        value = op(value, *first);
+        ++first;
+    }
+    return value;
+}
+} // namespace detail
 
 template <typename CharT, CharT... chars>
 [[nodiscard]] constexpr auto
 to_int(string_constant<CharT, chars...> strc) noexcept -> int {
-    int value = 0;
-    bool negative = false;
-    std::basic_string_view<CharT> str = strc.value;
+    return detail::to_int(strc.value.cbegin(), strc.value.cend(),
+                          [](auto v, auto c) { return v * 10 - '0' + c; });
+}
 
-    while (str.size() > 0) {
-        if (str.front() == '-') {
-            negative = true;
-            str.remove_prefix(1);
-        } else {
-            value *= 10;
-            value += str.front() - '0';
-            str.remove_prefix(1);
-        }
-    }
-
-    value = negative ? -value : value;
-
-    return value;
+template <typename CharT, CharT firstchar, CharT... chars>
+    requires(firstchar == '-')
+[[nodiscard]] constexpr auto to_int(
+    string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
+    return detail::to_int(std::next(strc.value.cbegin()), strc.value.cend(),
+                          [](auto v, auto c) { return v * 10 + '0' - c; });
 }
 } // namespace sc

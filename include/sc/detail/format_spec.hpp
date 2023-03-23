@@ -1,6 +1,5 @@
 #pragma once
 
-#include <sc/fwd.hpp>
 #include <sc/lazy_string_format.hpp>
 #include <sc/string_constant.hpp>
 #include <sc/to_string_constant.hpp>

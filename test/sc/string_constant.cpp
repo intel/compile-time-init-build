@@ -42,7 +42,7 @@ static_assert(sc::to_int("2345"_sc) == 2345);
 static_assert(sc::to_int("2147483647"_sc) == 2147483647);
 static_assert(sc::to_int("-1"_sc) == -1);
 static_assert(sc::to_int("-732"_sc) == -732);
-// static_assert(sc::to_int("-2147483648"_sc) == -2147483648);
+static_assert(sc::to_int("-2147483648"_sc) == -2147483648);
 static_assert(sc::to_int("-2147483647"_sc) == -2147483647);
 
 // TODO: check for inconsistent format string and arguments
