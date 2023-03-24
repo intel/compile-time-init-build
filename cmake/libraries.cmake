@@ -1,3 +1,7 @@
+if(COMMAND target_link_libraries_system)
+    return()
+endif()
+
 function(target_link_library_includes target scope)
     set(libs ${ARGN})
     foreach(lib ${libs})
