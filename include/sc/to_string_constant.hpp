@@ -3,21 +3,17 @@
 #include <sc/detail/conversions.hpp>
 #include <sc/string_constant.hpp>
 
+#include <concepts>
 #include <type_traits>
 
 namespace sc {
-template <typename IntegralTypeT, IntegralTypeT ValueT,
-          typename BaseTypeT = int, BaseTypeT BaseT = 10,
-          bool UppercaseT = false,
-          std::enable_if_t<std::is_integral<IntegralTypeT>::value, bool> = true>
+template <std::integral T, T Value, T Base = T{10}, bool Uppercase = false>
 [[nodiscard]] constexpr auto to_string_constant(
-    std::integral_constant<IntegralTypeT, ValueT> const &,
-    [[maybe_unused]] std::integral_constant<BaseTypeT, BaseT> const &base =
-        int_<10>,
-    [[maybe_unused]] std::integral_constant<bool, UppercaseT> const &uppercase =
-        bool_<false>) {
-    return detail::create<detail::IntegralToString<
-        IntegralTypeT, ValueT, BaseTypeT, BaseT, UppercaseT>>();
+    std::integral_constant<T, Value> const &,
+    [[maybe_unused]] std::integral_constant<T, Base> const &base = {},
+    [[maybe_unused]] std::bool_constant<Uppercase> const &uppercase = {}) {
+    return detail::create<
+        detail::IntegralToString<T, Value, Base, Uppercase>>();
 }
 
 template <typename EnumTypeT, EnumTypeT ValueT,

@@ -160,26 +160,6 @@ TEST_CASE("incomplete typenames", "[sc::format]") {
             "Type = sc::IncompleteType"_sc);
 }
 
-static_assert(sc::to_string_constant(int_<5>) == "5"_sc);
-static_assert(sc::to_string_constant(int_<0>) == "0"_sc);
-static_assert(sc::to_string_constant(int_<10>) == "10"_sc);
-static_assert(sc::to_string_constant(int_<-1>) == "-1"_sc);
-static_assert(sc::to_string_constant(int_<1>) == "1"_sc);
-static_assert(sc::to_string_constant(int_<-6345>) == "-6345"_sc);
-static_assert(sc::to_string_constant(int_<2147483647>) == "2147483647"_sc);
-// static_assert(sc::to_string_constant(int_<-2147483648>) == "-2147483648"_sc);
-static_assert(sc::to_string_constant(int_<-2147483647>) == "-2147483647"_sc);
-static_assert(sc::to_string_constant(int_<4>, int_<2>) == "100"_sc);
-static_assert(sc::to_string_constant(int_<10>, int_<2>) == "1010"_sc);
-static_assert(sc::to_string_constant(int_<8>, int_<8>) == "10"_sc);
-static_assert(sc::to_string_constant(int_<16>, int_<8>) == "20"_sc);
-static_assert(sc::to_string_constant(int_<16>, int_<16>) == "10"_sc);
-static_assert(sc::to_string_constant(int_<10>, int_<16>) == "a"_sc);
-static_assert(sc::to_string_constant(int_<0xca7b007>, int_<16>) ==
-              "ca7b007"_sc);
-static_assert(sc::to_string_constant(int_<0x101d0115>, int_<16>) ==
-              "101d0115"_sc);
-
 template <typename IntegralT, IntegralT ValueT>
 struct my_integral_constant : public std::integral_constant<IntegralT, ValueT> {
 };

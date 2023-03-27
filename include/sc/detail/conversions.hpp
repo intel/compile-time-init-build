@@ -3,6 +3,7 @@
 #include <sc/detail/string_meta.hpp>
 
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <string_view>
@@ -19,51 +20,56 @@ template <typename CharT, int SizeT> struct static_string {
     }
 };
 
-template <typename IntegralTypeT, typename BaseTypeT>
-[[nodiscard]] constexpr auto integral_to_string(IntegralTypeT value,
-                                                BaseTypeT base, bool uppercase)
+[[nodiscard]] constexpr auto to_chars(auto value, auto last, auto base,
+                                      auto op) noexcept {
+    while (value != 0) {
+        *--last = static_cast<char>(op(value % base));
+        value /= base;
+    }
+    return last;
+}
+
+template <std::integral T>
+[[nodiscard]] constexpr auto integral_to_string(T value, T base, bool uppercase)
     -> static_string<char, 65> {
     constexpr std::size_t MAX_LENGTH = 65;
-
-    bool const negative = std::is_signed_v<IntegralTypeT> && (value < 0);
-    char const ext_char_start = uppercase ? 'A' : 'a';
-
-    value = negative ? -value : value;
-
+    auto const ext_char_start = static_cast<T>(uppercase ? 'A' : 'a');
     static_string<char, MAX_LENGTH> ret{};
-    auto it = ret.data.end(); // NOLINT(cppcoreguidelines-pro-type-vararg)
+    auto it = ret.data.end();
 
     if (value == 0) {
         *--it = '0';
     } else {
-        while (value > 0) {
-            auto const digit_value = (value % base);
-            auto const digit_char = [=]() {
-                if (digit_value > 9) {
-                    return (digit_value - 10) + ext_char_start;
-                }
-                return digit_value + '0';
-            }();
-
-            *--it = static_cast<char>(digit_char);
-            value /= base;
+        if constexpr (std::signed_integral<T>) {
+            if (value < T{}) {
+                it = to_chars(value, it, base, [=](auto v) {
+                    if (v < -9) {
+                        return 10 - v + ext_char_start;
+                    }
+                    return '0' - v;
+                });
+                *--it = '-';
+                ret.size =
+                    static_cast<std::size_t>(std::distance(it, ret.data.end()));
+                return ret;
+            }
         }
-    }
-
-    if (negative) {
-        *--it = '-';
+        it = to_chars(value, it, base, [=](auto v) {
+            if (v > 9) {
+                return v - 10 + ext_char_start;
+            }
+            return '0' + v;
+        });
     }
     ret.size = static_cast<std::size_t>(std::distance(it, ret.data.end()));
     return ret;
 }
 
-template <typename IntegralTypeT, IntegralTypeT ValueT, typename BaseTypeT,
-          BaseTypeT BaseT, bool UppercaseT>
-struct IntegralToString {
+template <typename T, T Value, T Base, bool Uppercase> struct IntegralToString {
     constexpr static int MAX_LENGTH = 65;
 
     constexpr static static_string<char, MAX_LENGTH> intermediate =
-        integral_to_string(ValueT, BaseT, UppercaseT);
+        integral_to_string(Value, Base, Uppercase);
 
     constexpr static std::string_view value =
         static_cast<std::string_view>(intermediate);
