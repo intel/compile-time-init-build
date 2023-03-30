@@ -92,7 +92,7 @@ function(gen_str_catalog)
         add_custom_command(
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
             DEPENDS ${X}
-            COMMAND nm -uC ${X} >>
+            COMMAND ${CMAKE_NM} -uC ${X} >>
                     ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt)
     endforeach()
 
