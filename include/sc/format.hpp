@@ -8,6 +8,7 @@
 #include <sc/lazy_string_format.hpp>
 #include <sc/string_constant.hpp>
 
+#include <algorithm>
 #include <array>
 #include <iterator>
 #include <string_view>
@@ -60,21 +61,11 @@ struct repl_fields {
     }
 };
 
-template <typename InputIter, typename OutputIter>
-constexpr auto copy(InputIter in_iter, InputIter in_end, OutputIter out_iter)
-    -> OutputIter {
-    while (in_iter != in_end) {
-        *out_iter++ = *in_iter++;
-    }
-
-    return out_iter;
-}
-
 template <typename CharT, CharT... chars>
 [[nodiscard]] constexpr auto
 format_field([[maybe_unused]] std::string_view field,
              string_constant<CharT, chars...> arg, char *out) -> char * {
-    return copy(arg.begin(), arg.end(), out);
+    return std::copy(arg.begin(), arg.end(), out);
 }
 
 template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
@@ -91,7 +82,7 @@ constexpr auto
 template <typename T, std::enable_if_t<is_integral_v<T>, bool> = true>
 [[nodiscard]] constexpr auto format_field(std::string_view field, T, char *out)
     -> char * {
-    return copy(field.begin() - 1, field.end() + 1, out);
+    return std::copy(field.begin() - 1, field.end() + 1, out);
 }
 
 template <typename CharT, CharT... chars, typename ArgsTupleT>
@@ -99,7 +90,7 @@ template <typename CharT, CharT... chars, typename ArgsTupleT>
     [[maybe_unused]] std::string_view field,
     lazy_string_format<string_constant<CharT, chars...>, ArgsTupleT> lazy,
     char *out) -> char * {
-    return copy(lazy.str.begin(), lazy.str.end(), out);
+    return std::copy(lazy.str.begin(), lazy.str.end(), out);
 }
 
 template <typename EnumTypeT, EnumTypeT ValueT,
@@ -108,7 +99,7 @@ template <typename EnumTypeT, EnumTypeT ValueT,
 format_field([[maybe_unused]] std::string_view field,
              std::integral_constant<EnumTypeT, ValueT>, char *out) -> char * {
     auto const &enum_sv = detail::EnumToString<EnumTypeT, ValueT>::value;
-    return copy(enum_sv.begin(), enum_sv.end(), out);
+    return std::copy(enum_sv.begin(), enum_sv.end(), out);
 }
 
 template <typename T>
@@ -116,7 +107,7 @@ template <typename T>
 format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out)
     -> char * {
     auto const &type_name_sv = detail::TypeNameToString<T>::value;
-    return copy(type_name_sv.begin(), type_name_sv.end(), out);
+    return std::copy(type_name_sv.begin(), type_name_sv.end(), out);
 }
 
 template <typename IntegralTypeT, IntegralTypeT ValueT,
@@ -153,7 +144,7 @@ format_field(std::string_view field,
     }
 
     auto const int_sv = static_cast<std::string_view>(int_static_string);
-    return copy(int_sv.begin(), int_sv.end(), out);
+    return std::copy(int_sv.begin(), int_sv.end(), out);
 }
 
 struct format_buf_result {
@@ -178,13 +169,13 @@ template <typename FmtStringConstant, typename... ArgTs> struct format_t {
              auto const f = *field_iter;
              ++field_iter;
 
-             out = copy(in, f.begin() - 1, out); // copy before the field
+             out = std::copy(in, f.begin() - 1, out); // copy before the field
              out = format_field(f, arg, out);
              in = f.end() + 1;
          }(ArgTs{})),
          ...);
 
-        out = copy(in, fmt.end(), out);
+        out = std::copy(in, fmt.end(), out);
 
         tmp_buf.size =
             static_cast<std::size_t>(std::distance(tmp_buf.data.begin(), out));
