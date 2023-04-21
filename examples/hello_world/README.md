@@ -91,7 +91,7 @@ All the components are brought together in the project configuration, `hello_wor
 
 struct hello_world {
     constexpr static auto config =
-        cib::components<core, say_hello_world, lazy_dog>;
+        cib::components<core, say_hello_world, lazy_dog, dont_panic>;
 };
 ```
 #### [main.cpp](main.cpp)
