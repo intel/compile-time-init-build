@@ -56,12 +56,9 @@ class generic_builder {
      */
     static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
         -> bool {
-        for (auto const &entry : graph) {
-            if (entry.value.contains(node)) {
-                return false;
-            }
-        }
-        return true;
+        return std::find_if(graph.begin(), graph.end(), [&](auto const &entry) {
+                   return entry.value.contains(node);
+               }) == graph.end();
     }
 
     [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const

@@ -60,7 +60,7 @@ class ConstexprMap {
      *
      * @return
      *      Index into storage where the corresponding entry is stored. If
-     *      the targetKey cannot be found, then -1 is returned.
+     *      the targetKey cannot be found, then std::nullopt is returned.
      */
     [[nodiscard]] constexpr auto find(KeyType targetKey) const
         -> std::optional<std::size_t> {
@@ -121,7 +121,9 @@ class ConstexprMap {
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr auto end() -> Entry * { return &(storage[size]); }
+    [[nodiscard]] constexpr auto end() -> Entry * {
+        return std::begin(storage) + size;
+    }
 
     /**
      * <b>Runtime complexity:</b> O(1)
@@ -134,7 +136,7 @@ class ConstexprMap {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto end() const -> Entry const * {
-        return &(storage[size]);
+        return std::cbegin(storage) + size;
     }
 
     /**

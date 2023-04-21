@@ -46,18 +46,20 @@ template <typename ValueType, size_t Capacity> class Vector {
 
     constexpr Vector() = default;
 
-    [[nodiscard]] constexpr auto begin() -> iterator { return storage.data(); }
+    [[nodiscard]] constexpr auto begin() -> iterator {
+        return std::begin(storage);
+    }
 
     [[nodiscard]] constexpr auto begin() const -> const_iterator {
-        return storage.data();
+        return std::cbegin(storage);
     }
 
     [[nodiscard]] constexpr auto end() -> iterator {
-        return &storage[currentSize];
+        return std::begin(storage) + currentSize;
     }
 
     [[nodiscard]] constexpr auto end() const -> const_iterator {
-        return &storage[currentSize];
+        return std::cbegin(storage) + currentSize;
     }
 
     [[nodiscard]] constexpr auto size() const -> std::size_t {
