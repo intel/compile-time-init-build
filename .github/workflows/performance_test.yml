@@ -28,8 +28,18 @@ jobs:
         id: build_step
         shell: bash
         run: |
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark | tee ${{github.workspace}}/build/compilation_output.log
-          echo "compile_benchmark_time="`grep "Clang front-end timer" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}'` >> $GITHUB_OUTPUT
+          # interesting summary data on stderr
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark 2>&1 | tee ${{github.workspace}}/build/compilation_output.log
+          FRONT_END_TIME=$(grep "Clang front-end timer" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}')
+
+          # generate summary with expandable section
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "  <summary>Clang front-end: ${FRONT_END_TIME} seconds</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat ${{github.workspace}}/build/compilation_output.log >> $GITHUB_STEP_SUMMARY
+          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
 
       - name: 'Upload Compilation Trace'
         uses: actions/upload-artifact@v3
