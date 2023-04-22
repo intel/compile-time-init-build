@@ -2,6 +2,7 @@
 
 #include <log/log.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <initializer_list>
@@ -38,29 +39,27 @@ template <typename ValueType, size_t Capacity> class Vector {
                 "Initializer list size {} is bigger than vector capacity {}",
                 src.size(), sc::int_<Capacity>);
         } else {
-            auto i = std::size_t{};
-            for (auto element : src) {
-                storage[i++] = element;
-            }
-
+            std::copy(src.begin(), src.end(), storage.begin());
             currentSize = src.size();
         }
     }
 
     constexpr Vector() = default;
 
-    [[nodiscard]] constexpr auto begin() -> iterator { return storage.data(); }
+    [[nodiscard]] constexpr auto begin() -> iterator {
+        return std::begin(storage);
+    }
 
     [[nodiscard]] constexpr auto begin() const -> const_iterator {
-        return storage.data();
+        return std::cbegin(storage);
     }
 
     [[nodiscard]] constexpr auto end() -> iterator {
-        return &storage[currentSize];
+        return std::begin(storage) + currentSize;
     }
 
     [[nodiscard]] constexpr auto end() const -> const_iterator {
-        return &storage[currentSize];
+        return std::cbegin(storage) + currentSize;
     }
 
     [[nodiscard]] constexpr auto size() const -> std::size_t {

@@ -33,10 +33,7 @@ template <std::uint32_t MaxNumDWordsT> struct message_data {
 
     constexpr message_data(std::initializer_list<std::uint32_t> src)
         : num_dwords{static_cast<std::uint32_t>(src.size())} {
-        auto i = std::size_t{};
-        for (auto element : src) {
-            data[i++] = element;
-        }
+        std::copy(src.begin(), src.end(), data.begin());
     }
 
     [[nodiscard]] constexpr auto operator[](std::size_t index) const

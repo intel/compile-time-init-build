@@ -2,6 +2,7 @@
 
 #include <sc/fwd.hpp>
 
+#include <algorithm>
 #include <array>
 #include <string_view>
 #include <utility>
@@ -24,28 +25,15 @@ struct Replace {
     constexpr static StrT str{};
     constexpr static int size = thisStr.length() - count + str.length();
     constexpr static std::array<char_type, size> storage = []() {
-        // NOTE: use algorithms when moving to c++20
-
         std::array<char_type, size> buffer{};
         auto dst = buffer.begin();
 
         auto const first = thisStr.begin() + pos;
         auto const last = first + count;
 
-        // copy begin() until first
-        for (auto src = thisStr.begin(); src != first; src++, dst++) {
-            *dst = *src;
-        }
-
-        // copy str.begin() until str.end()
-        for (auto src = str.begin(); src != str.end(); src++, dst++) {
-            *dst = *src;
-        }
-
-        // copy last until end()
-        for (auto src = last; src != thisStr.end(); src++, dst++) {
-            *dst = *src;
-        }
+        dst = std::copy(thisStr.begin(), first, dst);
+        dst = std::copy(str.begin(), str.end(), dst);
+        std::copy(last, thisStr.end(), dst);
 
         return buffer;
     }();

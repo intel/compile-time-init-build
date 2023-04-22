@@ -6,6 +6,8 @@
 #include <seq/impl.hpp>
 #include <seq/step.hpp>
 
+#include <algorithm>
+
 namespace seq {
 template <typename NameT = void, std::size_t NodeCapacity = 64,
           std::size_t DependencyCapacity = 16>
@@ -32,14 +34,9 @@ class builder {
      */
     static constexpr auto hasNoIncomingEdges(GraphType &graph, step_base node)
         -> bool {
-        // std::find_if is not constexpr in c++17 :(
-        for (auto s : graph) {
-            if (s.value.contains(node)) {
-                return false;
-            }
-        }
-
-        return true;
+        return std::find_if(graph.begin(), graph.end(), [&](auto const &s) {
+                   return s.value.contains(node);
+               }) == graph.end();
     }
 
     [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const

@@ -23,12 +23,13 @@
  * quadratically, or O(n^2).
  *
  * Consider an appropriate Capacity for the ConstexprMultiMap. It will be
- * able to contain up to "Capacity" number of keys, and each key will be
- * able to contain up to "Capacity" number of values.
+ * able to contain up to "KeyCapacity" number of keys, and each key will be
+ * able to contain up to "ValueCapacity" number of values.
  *
  * @tparam KeyType
  * @tparam ValueType
  * @tparam KeyCapacity
+ * @tparam ValueCapacity
  */
 template <typename KeyType, typename ValueType, std::size_t KeyCapacity,
           std::size_t ValueCapacity = KeyCapacity>
