@@ -5,3 +5,6 @@
 /.vscode
 /toolchains
 CMakePresets.json
+# clion
+.idea/
+cmake-build-*
