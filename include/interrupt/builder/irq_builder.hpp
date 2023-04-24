@@ -37,7 +37,7 @@ template <typename ConfigT> struct irq_builder {
      *      See flow::Builder<>.add()
      */
     template <typename IrqType, typename T>
-    void constexpr add(T const &flow_description) {
+    constexpr void add(T const &flow_description) {
         if constexpr (std::is_same_v<IrqCallbackType, IrqType>) {
             interrupt_service_routine.add(flow_description);
         }
@@ -47,8 +47,8 @@ template <typename ConfigT> struct irq_builder {
      * @return irq::impl specialization optimized for size and runtime.
      */
     template <typename BuilderValue>
-    [[nodiscard]] auto constexpr build() const {
-        auto constexpr run_flow = [] {
+    [[nodiscard]] constexpr auto build() const {
+        constexpr auto run_flow = [] {
             auto constexpr flow_builder =
                 BuilderValue::value.interrupt_service_routine;
             auto constexpr flow_size = flow_builder.size();
@@ -57,9 +57,9 @@ template <typename ConfigT> struct irq_builder {
             flow();
         };
 
-        auto constexpr flow_builder =
+        constexpr auto flow_builder =
             BuilderValue::value.interrupt_service_routine;
-        auto constexpr flow_size = flow_builder.size();
+        constexpr auto flow_size = flow_builder.size();
         auto const optimized_irq_impl =
             irq_impl<ConfigT,
                      flow::impl<typename IrqCallbackType::Name, flow_size>>(

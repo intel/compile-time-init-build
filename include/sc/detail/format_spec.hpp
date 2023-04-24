@@ -23,23 +23,23 @@ struct fast_format_spec {
     char type{};
 
     template <typename T>
-    static constexpr auto is_in_range(T value, T lower, T upper) -> bool {
+    constexpr static auto is_in_range(T value, T lower, T upper) -> bool {
         return value >= lower && value <= upper;
     }
 
-    static constexpr auto is_alpha(char value) -> bool {
+    constexpr static auto is_alpha(char value) -> bool {
         return is_in_range(value, 'A', 'Z') || is_in_range(value, 'a', 'z');
     }
 
-    static constexpr auto is_digit(char value) -> bool {
+    constexpr static auto is_digit(char value) -> bool {
         return is_in_range(value, '0', '9');
     }
 
-    static constexpr auto is_id_start(char value) -> bool {
+    constexpr static auto is_id_start(char value) -> bool {
         return is_alpha(value) || value == '_';
     }
 
-    static constexpr auto is_id_continue(char value) -> bool {
+    constexpr static auto is_id_continue(char value) -> bool {
         return is_id_start(value) || is_digit(value);
     }
 

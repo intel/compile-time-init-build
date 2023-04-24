@@ -7,7 +7,7 @@
 #include <cstdint>
 
 TEST_CASE("empty", "[queue]") {
-    const queue<std::uint32_t, 1> q({});
+    queue<std::uint32_t, 1> const q({});
     CHECK(0u == q.size());
     CHECK(1u == q.capacity());
     CHECK(q.empty());

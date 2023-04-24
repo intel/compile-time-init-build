@@ -20,9 +20,9 @@ TEST_CASE("type pack element") {
         std::is_same_v<void,
                        cib::detail::type_pack_element<2, void, void, void>>);
     static_assert(
-        std::is_same_v<const int &,
-                       cib::detail::type_pack_element<0, const int &, void *>>);
+        std::is_same_v<int const &,
+                       cib::detail::type_pack_element<0, int const &, void *>>);
     static_assert(
         std::is_same_v<void *,
-                       cib::detail::type_pack_element<1, const int &, void *>>);
+                       cib::detail::type_pack_element<1, int const &, void *>>);
 }

@@ -28,7 +28,7 @@ struct MockIrqImpl {
     static void init() { callbackPtr->init(); }
 
     template <bool enable, int irq_number, int priorityLevel>
-    inline static void irqInit() {
+    static inline void irqInit() {
         if constexpr (enable) {
             callbackPtr->init(irq_number, priorityLevel);
         }
@@ -52,15 +52,15 @@ class InterruptManagerTest : public ::testing::Test {
     void SetUp() override { callbackPtr = &callback; }
 };
 
-static auto constexpr msg_handler = flow::action("msg_handler"_sc, [] {
+constexpr static auto msg_handler = flow::action("msg_handler"_sc, [] {
     // do nothing
 });
 
-static auto constexpr rsp_handler = flow::action("rsp_handler"_sc, [] {
+constexpr static auto rsp_handler = flow::action("rsp_handler"_sc, [] {
     // do nothing
 });
 
-static auto constexpr timer_action = flow::action("timer_action"_sc, [] {
+constexpr static auto timer_action = flow::action("timer_action"_sc, [] {
     // do nothing
 });
 
@@ -184,7 +184,7 @@ struct BasicBuilder {
     };
 
     struct test_project {
-        static constexpr auto config = cib::config(
+        constexpr static auto config = cib::config(
             cib::exports<test_service>,
             interrupt::extend<test_service, msg_handler_irq>(msg_handler),
             interrupt::extend<test_service, rsp_handler_irq>(rsp_handler),
@@ -278,7 +278,7 @@ struct NoIsrBuilder {
     };
 
     struct test_project {
-        static constexpr auto config = cib::config(cib::exports<test_service>);
+        constexpr static auto config = cib::config(cib::exports<test_service>);
     };
 
     CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
@@ -315,7 +315,7 @@ struct ClearStatusFirstBuilder {
     };
 
     struct test_project {
-        static constexpr auto config = cib::config(
+        constexpr static auto config = cib::config(
             cib::exports<test_service>,
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
@@ -350,7 +350,7 @@ struct DontClearStatusBuilder {
     };
 
     struct test_project {
-        static constexpr auto config = cib::config(
+        constexpr static auto config = cib::config(
             cib::exports<test_service>,
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
@@ -445,7 +445,7 @@ TEST_F(InterruptManagerTest, ResourceDisableEnableMultiResource) {
     BasicBuilder::Dynamic::turn_on_resource<test_resource_beta>();
 }
 
-static auto constexpr bscan =
+constexpr static auto bscan =
     flow::action("bscan"_sc, [] { callbackPtr->run(0xba5eba11); });
 
 struct hwio_int_sts_field_t
@@ -500,7 +500,7 @@ struct SharedSubIrqTest {
     };
 
     struct test_project {
-        static constexpr auto config = cib::config(
+        constexpr static auto config = cib::config(
             cib::exports<test_service>,
             interrupt::extend<test_service, i2c_handler_irq>(bscan));
     };

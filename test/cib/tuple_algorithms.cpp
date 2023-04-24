@@ -27,7 +27,7 @@ TEST_CASE("n-ary transform", "[tuple_algorithms]") {
 
 TEST_CASE("rvalue transform", "[tuple_algorithms]") {
     auto t = cib::tuple{1, 2, 3};
-    const auto u = cib::transform([](int &&x) { return x + 1; }, std::move(t));
+    auto const u = cib::transform([](int &&x) { return x + 1; }, std::move(t));
     CHECK(u == cib::tuple{2, 3, 4});
 }
 
@@ -78,19 +78,19 @@ TEST_CASE("join", "[tuple_algorithms]") {
 
 TEST_CASE("for_each", "[tuple_algorithms]") {
     {
-        const auto t = cib::tuple{};
+        auto const t = cib::tuple{};
         auto sum = 0;
         cib::for_each([&](auto x, auto y) { sum += x + y; }, t, t);
         CHECK(sum == 0);
     }
     {
-        const auto t = cib::tuple{1, 2, 3};
+        auto const t = cib::tuple{1, 2, 3};
         auto sum = 0;
         cib::for_each([&](auto x, auto y) { sum += x + y; }, t, t);
         CHECK(sum == 12);
     }
     {
-        const auto t = cib::tuple{1};
+        auto const t = cib::tuple{1};
         auto sum = 0;
         cib::for_each([&](auto x, auto &&y) { sum += x + y.value; }, t,
                       cib::tuple{move_only{2}});
@@ -248,7 +248,7 @@ TEST_CASE("fold_right (heterogeneous types in tuple)", "[tuple_algorithms]") {
 }
 
 template <typename T> struct is_even {
-    static constexpr auto value = T::value % 2 == 0;
+    constexpr static auto value = T::value % 2 == 0;
 };
 
 TEST_CASE("filter", "[tuple_algorithms]") {

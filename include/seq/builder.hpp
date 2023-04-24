@@ -32,7 +32,7 @@ class builder {
      * @return
      *      True if the step has no incoming edges.
      */
-    static constexpr auto hasNoIncomingEdges(GraphType &graph, step_base node)
+    constexpr static auto hasNoIncomingEdges(GraphType &graph, step_base node)
         -> bool {
         return std::find_if(graph.begin(), graph.end(), [&](auto const &s) {
                    return s.value.contains(node);
@@ -207,7 +207,7 @@ class builder {
     }
 
     template <typename BuilderValue>
-    [[nodiscard]] static constexpr auto build() -> func_ptr {
+    [[nodiscard]] constexpr static auto build() -> func_ptr {
         return runImpl<BuilderValue>;
     }
 };

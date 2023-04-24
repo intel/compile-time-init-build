@@ -54,7 +54,7 @@ class generic_builder {
      * @return
      *      True if the milestone has no incoming edges.
      */
-    static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
+    constexpr static auto hasNoIncomingEdges(GraphType &graph, NodeType node)
         -> bool {
         return std::find_if(graph.begin(), graph.end(), [&](auto const &entry) {
                    return entry.value.contains(node);
@@ -233,7 +233,7 @@ class generic_builder {
     }
 
     template <typename BuilderValue>
-    [[nodiscard]] static constexpr auto build() -> FunctionPtr {
+    [[nodiscard]] constexpr static auto build() -> FunctionPtr {
         return runImpl<BuilderValue>;
     }
 };

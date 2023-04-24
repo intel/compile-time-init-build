@@ -17,7 +17,7 @@ struct shared_sub_irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * irqs should not consume any resources.
      */
-    static bool constexpr active = (SubIrqImpls::active or ...);
+    constexpr static bool active = (SubIrqImpls::active or ...);
 
   private:
     template <typename InterruptHal, bool en>

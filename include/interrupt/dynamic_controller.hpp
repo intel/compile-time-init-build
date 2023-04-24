@@ -11,7 +11,7 @@ namespace interrupt {
 enum class resource_status { OFF = 0, ON = 1 };
 
 template <typename Irq>
-static constexpr auto has_enable_field = requires { Irq::enable_field; };
+constexpr static auto has_enable_field = requires { Irq::enable_field; };
 
 template <typename RootT, typename ConcurrencyPolicyT>
 struct dynamic_controller {

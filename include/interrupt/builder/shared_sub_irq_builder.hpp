@@ -40,7 +40,7 @@ template <typename ConfigT> class shared_sub_irq_builder {
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
     template <typename IrqType, typename T>
-    void constexpr add(T const &flow_description) {
+    constexpr void add(T const &flow_description) {
         cib::for_each(
             [&](auto &irq) { irq.template add<IrqType>(flow_description); },
             irqs);
@@ -50,7 +50,7 @@ template <typename ConfigT> class shared_sub_irq_builder {
      * @return shared_irq::impl specialization optimized for size and runtime.
      */
     template <typename BuilderValue>
-    [[nodiscard]] auto constexpr build() const {
+    [[nodiscard]] constexpr auto build() const {
         using sub_irqs_t = decltype(BuilderValue::value.irqs);
         auto const sub_irq_impls = built_irqs<BuilderValue>(
             std::make_index_sequence<sub_irqs_t::size()>{});

@@ -6,7 +6,7 @@
 
 namespace {
 TEST_CASE("EmptyVector", "[vector]") {
-    const Vector<uint32_t, 3> vector({});
+    Vector<uint32_t, 3> const vector({});
     CHECK(0u == vector.size());
     CHECK(3u == vector.getCapacity());
 }
@@ -45,7 +45,7 @@ TEST_CASE("NonConstVector", "[vector]") {
 }
 
 TEST_CASE("ConstVector", "[vector]") {
-    const Vector<uint32_t, 7> vector{0xFF0F, 0x1420, 0x5530};
+    Vector<uint32_t, 7> const vector{0xFF0F, 0x1420, 0x5530};
 
     REQUIRE(3u == vector.size());
     CHECK(0xFF0F == vector[0]);
@@ -59,7 +59,7 @@ TEST_CASE("OutOfBounds", "[vector]") {
 }
 
 TEST_CASE("OutOfBoundsConst", "[vector]") {
-    const Vector<uint32_t, 9> vector;
+    Vector<uint32_t, 9> const vector;
     CHECK_THROWS_AS(vector[8], test_log_config::exception);
 }
 
@@ -102,7 +102,7 @@ TEST_CASE("VectorIterator", "[vector]") {
 }
 
 TEST_CASE("VectorConstIterator", "[vector]") {
-    const Vector<uint32_t, 7> vector{0x54, 0x70, 0x31};
+    Vector<uint32_t, 7> const vector{0x54, 0x70, 0x31};
 
     auto iter = vector.begin();
     CHECK(0x54 == *iter);

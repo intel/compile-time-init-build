@@ -23,7 +23,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * irqs should not consume any resources.
      */
-    static bool constexpr active = (SubIrqImpls::active or ...);
+    constexpr static bool active = (SubIrqImpls::active or ...);
 
   private:
     cib::tuple<SubIrqImpls...> sub_irq_impls;

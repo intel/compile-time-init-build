@@ -41,7 +41,7 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
 
     static auto callback = msg::callback<TestBaseMsg>(
         "TestCallback"_sc, match::always<true>,
-        [](const TestMsg &) { correctDispatch = true; });
+        [](TestMsg const &) { correctDispatch = true; });
 
     auto callbacks = cib::make_tuple(callback);
 
@@ -105,7 +105,7 @@ TEST_CASE("TestMsgWithinEnum", "[handler]") {
     auto handled = false;
     auto const callback =
         msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
-                                   [&](const TestMsgOp &) { handled = true; });
+                                   [&](TestMsgOp const &) { handled = true; });
 
     auto callbacks = cib::make_tuple(callback);
     auto const handler =

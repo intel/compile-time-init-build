@@ -26,7 +26,7 @@ class field {
     static_assert(LsbT <= MsbT, "msb needs to be lower than or equal to lsb");
     static_assert(LsbT <= 31, "lsb needs to be lower than or equal to 31");
 
-    static constexpr size_t size = (MsbT - LsbT) + 1;
+    constexpr static size_t size = (MsbT - LsbT) + 1;
     static_assert(size <= 64, "field must be 64 bits or smaller");
 
     using FieldId = field<NameTypeT, DWordIndexT, MsbT, LsbT, T>;
@@ -34,15 +34,15 @@ class field {
                        MatchRequirementsType>;
     using ValueType = T;
 
-    template <typename MsgType> static constexpr void fits_inside(MsgType) {
+    template <typename MsgType> constexpr static void fits_inside(MsgType) {
         static_assert(DWordIndex < MsgType::NumDWords);
     }
 
     using NameType = NameTypeT;
-    static constexpr auto DWordIndex = DWordIndexT;
+    constexpr static auto DWordIndex = DWordIndexT;
 
-    static constexpr NameType name{};
-    static constexpr uint64_t bit_mask = [] {
+    constexpr static NameType name{};
+    constexpr static uint64_t bit_mask = [] {
         if constexpr (size == 64) {
             return 0xFFFFFFFFFFFFFFFFUL;
         } else {
@@ -51,31 +51,31 @@ class field {
         }
     }();
 
-    static constexpr uint64_t field_mask = bit_mask << LsbT;
+    constexpr static uint64_t field_mask = bit_mask << LsbT;
 
-    static constexpr MatchRequirementsType match_requirements{};
+    constexpr static MatchRequirementsType match_requirements{};
 
     template <T expected_value>
-    static constexpr msg::equal_to_t<This, T, expected_value> equal_to{};
+    constexpr static msg::equal_to_t<This, T, expected_value> equal_to{};
 
-    static constexpr msg::equal_to_t<This, T, DefaultValue> match_default{};
+    constexpr static msg::equal_to_t<This, T, DefaultValue> match_default{};
 
     template <T... expected_values>
-    static constexpr msg::in_t<This, T, expected_values...> in{};
+    constexpr static msg::in_t<This, T, expected_values...> in{};
 
     template <T expected_value>
-    static constexpr msg::greater_than_t<This, T, expected_value>
+    constexpr static msg::greater_than_t<This, T, expected_value>
         greater_than{};
 
     template <T expected_value>
-    static constexpr msg::greater_than_or_equal_to_t<This, T, expected_value>
+    constexpr static msg::greater_than_or_equal_to_t<This, T, expected_value>
         greater_than_or_equal_to{};
 
     template <T expected_value>
-    static constexpr msg::less_than_t<This, T, expected_value> less_than{};
+    constexpr static msg::less_than_t<This, T, expected_value> less_than{};
 
     template <T expected_value>
-    static constexpr msg::less_than_or_equal_to_t<This, T, expected_value>
+    constexpr static msg::less_than_or_equal_to_t<This, T, expected_value>
         less_than_or_equal_to{};
 
     template <T NewGreaterValue>
@@ -115,7 +115,7 @@ class field {
     constexpr field() = default;
 
     template <typename DataType>
-    [[nodiscard]] static constexpr auto extract(DataType const &data) -> T {
+    [[nodiscard]] constexpr static auto extract(DataType const &data) -> T {
         std::uint32_t const lower = data[DWordIndex] >> LsbT;
 
         std::uint64_t const mid = [&] {
