@@ -30,7 +30,7 @@ template <typename Config> struct nexus {
 #undef CIB_BUILD_SERVICE
 
     static void init() {
-        const auto service = []<typename T> {
+        auto const service = []<typename T> {
             auto &service_impl = this_t::service<T>;
             using service_impl_type =
                 std::remove_reference_t<decltype(service_impl)>;

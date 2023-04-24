@@ -43,7 +43,7 @@ template <typename FieldType, typename T, T expected_value> struct equal_to_t {
 
 template <typename FieldType, typename T, T... expected_values> struct in_t {
   private:
-    template <auto Value> static constexpr auto format_value() {
+    template <auto Value> constexpr static auto format_value() {
         if constexpr (std::is_integral_v<decltype(Value)>) {
             return format("0x{:x}"_sc, Value);
         } else {
@@ -52,10 +52,10 @@ template <typename FieldType, typename T, T... expected_values> struct in_t {
         }
     }
 
-    static constexpr auto expected_value_strings_tuple =
+    constexpr static auto expected_value_strings_tuple =
         cib::make_tuple(format_value<expected_values>()...);
 
-    static constexpr auto expected_values_string =
+    constexpr static auto expected_values_string =
         expected_value_strings_tuple.fold_right(
             ""_sc, [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 

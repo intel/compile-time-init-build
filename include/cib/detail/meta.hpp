@@ -24,7 +24,7 @@ constexpr static auto is_same_v =
  * parameter.
  */
 template <typename IntegralType, IntegralType... Indices, typename CallableType>
-constexpr inline static void
+constexpr static inline void
 for_each([[maybe_unused]] std::integer_sequence<IntegralType, Indices...> const
              &sequence,
          CallableType const &operation) {

@@ -30,7 +30,7 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * Irqs should not consume any resources.
      */
-    static bool constexpr active = FlowTypeT::active;
+    constexpr static bool active = FlowTypeT::active;
 
   private:
     FunctionPtr interrupt_service_routine;

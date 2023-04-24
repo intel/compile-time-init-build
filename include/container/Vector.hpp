@@ -25,9 +25,9 @@ template <typename ValueType, size_t Capacity> class Vector {
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
     using reference = ValueType &;
-    using const_reference = const ValueType &;
+    using const_reference = ValueType const &;
     using pointer = ValueType *;
-    using const_pointer = const ValueType *;
+    using const_pointer = ValueType const *;
     using iterator = pointer;
     using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
@@ -130,7 +130,7 @@ template <typename ValueType, size_t Capacity> class Vector {
     [[nodiscard]] friend constexpr auto operator+(Vector const &lhs,
                                                   Vector const &rhs) -> Vector {
         Vector result = lhs;
-        for (const auto &elem : rhs) {
+        for (auto const &elem : rhs) {
             result.push(elem);
         }
         return result;

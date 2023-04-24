@@ -18,7 +18,7 @@ template <int Value> struct Number {
     }
 };
 
-template <int Value> static constexpr Number<Value> number{};
+template <int Value> constexpr static Number<Value> number{};
 
 TEST_CASE("MatchAny", "[match]") {
     REQUIRE_FALSE(match::any()(0));

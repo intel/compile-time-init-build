@@ -25,7 +25,7 @@ constexpr bool is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),
 } // namespace detail
 
 template <std::uint32_t MaxNumDWordsT> struct message_data {
-    static constexpr auto MaxNumDWords = MaxNumDWordsT;
+    constexpr static auto MaxNumDWords = MaxNumDWordsT;
     std::uint32_t num_dwords{};
     std::array<std::uint32_t, MaxNumDWords> data{};
 
@@ -37,7 +37,7 @@ template <std::uint32_t MaxNumDWordsT> struct message_data {
     }
 
     [[nodiscard]] constexpr auto operator[](std::size_t index) const
-        -> const std::uint32_t & {
+        -> std::uint32_t const & {
         return data[index];
     }
 
@@ -96,19 +96,19 @@ template <typename NameType, std::uint32_t MaxNumDWords,
           std::uint32_t NumDWordsT, typename... FieldsT>
 struct message_base : public message_data<MaxNumDWords> {
     using This = message_base<NameType, MaxNumDWords, NumDWordsT, FieldsT...>;
-    static constexpr NameType name{};
-    static constexpr auto NumDWords = NumDWordsT;
+    constexpr static NameType name{};
+    constexpr static auto NumDWords = NumDWordsT;
     using FieldTupleType = cib::tuple<FieldsT...>;
 
     template <typename additional_matcherType>
-    [[nodiscard]] static constexpr auto match(additional_matcherType) {
+    [[nodiscard]] constexpr static auto match(additional_matcherType) {
         return is_valid_msg_t<This, additional_matcherType>{};
     }
 
     // TODO: need a static_assert to check that fields are not overlapping
 
     template <typename FieldType>
-    [[nodiscard]] static constexpr auto is_valid_field() -> bool {
+    [[nodiscard]] constexpr static auto is_valid_field() -> bool {
         return FieldTupleType{}.fold_right(false, [](auto field, bool isValid) {
             return isValid || std::is_same_v<typename FieldType::FieldId,
                                              typename decltype(field)::FieldId>;
@@ -119,7 +119,7 @@ struct message_base : public message_data<MaxNumDWords> {
     using not_required = std::bool_constant<not std::is_same_v<
         match::always_t<true>, std::decay_t<decltype(T::match_requirements)>>>;
 
-    static constexpr auto match_valid_encoding = []() {
+    constexpr static auto match_valid_encoding = []() {
         constexpr auto required_fields =
             cib::filter<not_required>(FieldTupleType{});
         if constexpr (required_fields.size() == 0) {
@@ -189,14 +189,14 @@ struct message_base : public message_data<MaxNumDWords> {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        const auto field_descriptions = cib::transform(
+        auto const field_descriptions = cib::transform(
             [&](auto field) {
                 using FieldType = decltype(field);
                 return FieldType{FieldType::extract(this->data)}.describe();
             },
             FieldTupleType{});
 
-        const auto middle_string = field_descriptions.fold_left(
+        auto const middle_string = field_descriptions.fold_left(
             [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
 
         return format("{}({})"_sc, name, middle_string);

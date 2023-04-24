@@ -7,15 +7,15 @@
 #include <utility>
 
 struct unsafe_overflow_policy {
-    static constexpr auto check_push(auto...) {}
-    static constexpr auto check_pop(auto...) {}
+    constexpr static auto check_push(auto...) {}
+    constexpr static auto check_pop(auto...) {}
 };
 
 struct safe_overflow_policy {
-    static constexpr auto check_push(std::size_t size, std::size_t capacity) {
+    constexpr static auto check_push(std::size_t size, std::size_t capacity) {
         CIB_ASSERT(size < capacity);
     }
-    static constexpr auto check_pop(std::size_t size) { CIB_ASSERT(size > 0); }
+    constexpr static auto check_pop(std::size_t size) { CIB_ASSERT(size > 0); }
 };
 
 /**
@@ -36,7 +36,7 @@ class queue {
 
   public:
     [[nodiscard]] constexpr auto size() const -> std::size_t { return size_; }
-    [[nodiscard]] static constexpr auto capacity() -> std::size_t {
+    [[nodiscard]] constexpr static auto capacity() -> std::size_t {
         return Capacity;
     }
     [[nodiscard]] constexpr auto full() const -> bool {

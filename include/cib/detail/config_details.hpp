@@ -14,7 +14,7 @@ constexpr static auto as_constant_v = std::integral_constant<
     std::remove_cv_t<std::remove_reference_t<decltype(Value)>>, Value>{};
 
 template <auto... Args> struct args {
-    static constexpr auto value = cib::make_tuple(as_constant_v<Args>...);
+    constexpr static auto value = cib::make_tuple(as_constant_v<Args>...);
 };
 
 template <typename ConfigArgs, typename... ConfigTs>

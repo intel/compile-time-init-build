@@ -39,9 +39,9 @@ namespace cib {
 // - top-level types are aliases if alias CTAD is available
 
 template <std::size_t> struct index_constant;
-template <std::size_t I> static constexpr index_constant<I> *index{};
+template <std::size_t I> constexpr static index_constant<I> *index{};
 template <typename> struct tag_constant;
-template <typename T> static constexpr tag_constant<T> *tag{};
+template <typename T> constexpr static tag_constant<T> *tag{};
 
 namespace tuple_literals {
 template <char... Chars>
@@ -99,7 +99,7 @@ struct element<Index, T, Ts...> {
         return std::forward<T>(value);
     }
 
-    static constexpr auto ugly_Value(index_constant<Index> *) -> T;
+    constexpr static auto ugly_Value(index_constant<Index> *) -> T;
     constexpr auto ugly_Value_clvr() const & -> T const & { return value; }
     constexpr auto ugly_Value_lvr() & -> T & { return value; }
     constexpr auto ugly_Value_rvr() && -> T && {
@@ -124,7 +124,7 @@ struct element<Index, T, Ts...> {
 
 template <std::size_t Index, derivable T, typename... Ts>
 struct element<Index, T, Ts...> : T {
-    static constexpr auto ugly_Index = Index;
+    constexpr static auto ugly_Index = Index;
 
     [[nodiscard]] constexpr auto
     ugly_iGet_clvr(index_constant<Index> *) const &noexcept -> T const & {
@@ -158,7 +158,7 @@ struct element<Index, T, Ts...> : T {
         return std::move(*this);
     }
 
-    static constexpr auto ugly_Value(index_constant<Index> *) -> T;
+    constexpr static auto ugly_Value(index_constant<Index> *) -> T;
     constexpr auto ugly_Value_clvr() const & -> T const & { return *this; }
     constexpr auto ugly_Value_lvr() & -> T & { return *this; }
     constexpr auto ugly_Value_rvr() && -> T && { return std::move(*this); }
@@ -319,15 +319,15 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
             .value;
     }
 
-    static constexpr auto size() -> std::size_t { return sizeof...(Ts); }
-    static constexpr auto ugly_Value(...) -> void;
+    constexpr static auto size() -> std::size_t { return sizeof...(Ts); }
+    constexpr static auto ugly_Value(...) -> void;
 
-    [[nodiscard]] static constexpr auto fill_inner_indices(index_pair *p)
+    [[nodiscard]] constexpr static auto fill_inner_indices(index_pair *p)
         -> index_pair * {
         ((p++->inner = Is), ...);
         return p;
     }
-    [[nodiscard]] static constexpr auto
+    [[nodiscard]] constexpr static auto
     fill_outer_indices(index_pair *p, [[maybe_unused]] std::size_t n)
         -> index_pair * {
         ((p++->outer = (static_cast<void>(Is), n)), ...);

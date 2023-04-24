@@ -22,7 +22,7 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * SubIrqs should not consume any resources.
      */
-    static bool constexpr active = FlowTypeT::active;
+    constexpr static bool active = FlowTypeT::active;
 
   private:
     constexpr static auto enable_field = ConfigT::enable_field;

@@ -43,7 +43,7 @@ TEST_CASE("multi element tuple", "[tuple]") {
 }
 
 TEST_CASE("constexpr tuple of references", "[tuple]") {
-    static constexpr int x = 1;
+    constexpr static int x = 1;
     constexpr auto t = cib::tuple<int const &>{x};
     using T = std::remove_const_t<decltype(t)>;
     static_assert(cib::tuple_size_v<T> == 1);

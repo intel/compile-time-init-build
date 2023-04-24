@@ -31,7 +31,7 @@ TEST_CASE("ContainsAndGet", "[constexpr_map]") {
 }
 
 TEST_CASE("ConstGet", "[constexpr_map]") {
-    const ConstexprMap<int, int, 64> t = [] {
+    ConstexprMap<int, int, 64> const t = [] {
         ConstexprMap<int, int, 64> m;
         m.put(10, 50);
         m.put(11, 100);

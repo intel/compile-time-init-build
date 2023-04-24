@@ -44,7 +44,7 @@ struct bin {
 };
 
 template <std::size_t N>
-[[nodiscard]] constexpr auto create_bins(const auto &tags) {
+[[nodiscard]] constexpr auto create_bins(auto const &tags) {
     std::array<bin, N> bins{};
     auto index = std::size_t{};
     auto offset = std::size_t{};

@@ -67,7 +67,7 @@ template <std::size_t NumSteps> struct impl {
     }
 
     template <direction dir>
-    [[nodiscard]] static constexpr auto opposite() -> direction {
+    [[nodiscard]] constexpr static auto opposite() -> direction {
         if constexpr (dir == direction::FORWARD) {
             return direction::BACKWARD;
         } else {
@@ -107,8 +107,8 @@ template <> struct impl<0u> {
     constexpr impl() = default;
     constexpr impl(step_base const *, build_status) noexcept {}
 
-    static constexpr auto forward() -> status { return status::DONE; }
-    static constexpr auto backward() -> status { return status::DONE; }
+    constexpr static auto forward() -> status { return status::DONE; }
+    constexpr static auto backward() -> status { return status::DONE; }
 };
 
 } // namespace seq

@@ -61,7 +61,7 @@ struct CallbackNoArgsWithMultipleExtensions {
 
     static void extension_one() { is_callback_invoked<1> = true; }
 
-    static constexpr auto extension_two = []() {
+    constexpr static auto extension_two = []() {
         is_callback_invoked<2> = true;
     };
 
@@ -122,7 +122,7 @@ struct CallbackWithArgsWithMultipleExtensions {
         callback_args<1, int, bool> = cib::make_tuple(a, b);
     }
 
-    static constexpr auto extension_two = [](int a, bool b) {
+    constexpr static auto extension_two = [](int a, bool b) {
         is_callback_invoked<2> = true;
         callback_args<2, int, bool> = cib::make_tuple(a, b);
     };

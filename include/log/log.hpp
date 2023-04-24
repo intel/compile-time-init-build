@@ -14,7 +14,7 @@ struct config {
         constexpr auto log(Ts &&...) const noexcept -> void {}
     } logger;
 
-    static constexpr auto terminate() noexcept -> void {}
+    constexpr static auto terminate() noexcept -> void {}
 };
 } // namespace null
 

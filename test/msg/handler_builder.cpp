@@ -22,7 +22,7 @@ struct test_service : ::msg::service<test_msg_t> {};
 
 static inline bool callback_success;
 
-static constexpr auto test_callback = msg::callback<test_msg_t>(
+constexpr static auto test_callback = msg::callback<test_msg_t>(
     "TestCallback"_sc, match::always<true>,
     [](test_msg_t const &) { callback_success = true; });
 

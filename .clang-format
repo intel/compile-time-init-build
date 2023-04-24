@@ -11,3 +11,6 @@ IncludeCategories:
     Priority: 3
   - Regex: '<.*'
     Priority: 4
+
+QualifierAlignment: Custom
+QualifierOrder: ['constexpr', 'static', 'inline', 'type', 'const', 'volatile']

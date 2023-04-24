@@ -65,7 +65,7 @@ template <typename ProjectConfig> class top {
     }
 
     template <typename ServiceMeta>
-    static constexpr auto get_service() -> auto & {
+    constexpr static auto get_service() -> auto & {
         return my_nexus.template service<ServiceMeta>;
     }
 };

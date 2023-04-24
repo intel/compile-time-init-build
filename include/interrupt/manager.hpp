@@ -88,7 +88,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      *      See flow::Builder<>.add()
      */
     template <typename... IrqTypes, typename... Ts>
-    auto constexpr add(binding_t<IrqTypes, Ts> const &...bindings) {
+    constexpr auto add(binding_t<IrqTypes, Ts> const &...bindings) {
         cib::for_each(
             [&](auto &irq) {
                 (irq.template add<IrqTypes>(bindings.flow_description), ...);
@@ -109,7 +109,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      * @return The optimized Manager::impl to be used at runtime.
      */
     template <typename BuilderValue>
-    [[nodiscard]] static auto constexpr build() {
+    [[nodiscard]] constexpr static auto build() {
         using irqs_t = decltype(BuilderValue::value.irqs);
         auto const irq_impls = built_irqs<BuilderValue>(
             std::make_index_sequence<irqs_t::size()>{});

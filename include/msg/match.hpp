@@ -10,7 +10,7 @@
 namespace match {
 template <typename NameTypeT, typename MatcherTypeT, typename ActionTypeT>
 struct event_handler {
-    static constexpr bool is_default_handler = false;
+    constexpr static bool is_default_handler = false;
     NameTypeT name;
     MatcherTypeT matcher;
     ActionTypeT action;
@@ -24,7 +24,7 @@ constexpr static auto handle(NameType const &name, MatcherType const &matcher,
 }
 
 template <typename ActionTypeT> struct default_event_handler {
-    static constexpr bool is_default_handler = true;
+    constexpr static bool is_default_handler = true;
     ActionTypeT action;
 };
 
@@ -37,7 +37,7 @@ constexpr static auto otherwise(ActionType const &action)
 template <typename NameType, typename EventType, typename... HandlerTypes>
 constexpr static void process(NameType const &name, EventType const &event,
                               HandlerTypes const &...handlers) {
-    const auto handlers_tuple = cib::make_tuple(handlers...);
+    auto const handlers_tuple = cib::make_tuple(handlers...);
 
     bool event_handled = false;
 
@@ -68,14 +68,14 @@ constexpr static void process(NameType const &name, EventType const &event,
                 },
                 handlers_tuple);
         } else {
-            const auto mismatch_descriptions = cib::transform(
+            auto const mismatch_descriptions = cib::transform(
                 [&](auto handler) {
                     return format("    {} - F:({})\n"_sc, handler.name,
                                   handler.matcher.describe_match(event));
                 },
                 handlers_tuple);
 
-            const auto mismatch_description = mismatch_descriptions.join(
+            auto const mismatch_description = mismatch_descriptions.join(
                 [](auto lhs, auto rhs) { return lhs + rhs; });
 
             CIB_ERROR("{} - Received event that does not match any known "
@@ -109,12 +109,12 @@ template <bool value> constexpr always_t<value> always{};
 
 namespace detail {
 struct any_op : std::logical_or<> {
-    static constexpr auto text = " || "_sc;
-    static constexpr auto unit = false;
+    constexpr static auto text = " || "_sc;
+    constexpr static auto unit = false;
 };
 struct all_op : std::logical_and<> {
-    static constexpr auto text = " && "_sc;
-    static constexpr auto unit = true;
+    constexpr static auto text = " && "_sc;
+    constexpr static auto unit = true;
 };
 
 template <typename TOp, typename... MatcherTypes> struct logical_matcher {
@@ -131,7 +131,7 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        const auto matcher_descriptions = cib::transform(
+        auto const matcher_descriptions = cib::transform(
             [](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
         return matcher_descriptions.join(
             [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
@@ -139,7 +139,7 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
 
     template <typename EventType>
     [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
-        const auto matcher_descriptions = cib::transform(
+        auto const matcher_descriptions = cib::transform(
             [&](auto m) {
                 return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
                               m.describe_match(event));
@@ -223,7 +223,7 @@ template <typename MatcherType>
 
 template <typename EventType, typename DescType, typename PredType>
 struct simple_matcher_t {
-    static constexpr DescType description{};
+    constexpr static DescType description{};
     PredType predicate;
 
     [[nodiscard]] constexpr auto operator()(EventType const &event) const
@@ -244,7 +244,7 @@ struct simple_matcher_t {
 
 template <typename DescType, typename PredType>
 struct simple_matcher_t<void, DescType, PredType> {
-    static constexpr DescType description{};
+    constexpr static DescType description{};
     PredType predicate;
 
     template <typename... Ts>

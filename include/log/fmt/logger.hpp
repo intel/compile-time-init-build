@@ -29,7 +29,7 @@ template <typename TDestinations> struct log_handler {
     template <logging::level L, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
-        const auto currentTime =
+        auto const currentTime =
             std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_time)
                 .count();
@@ -47,7 +47,7 @@ template <typename TDestinations> struct log_handler {
     }
 
   private:
-    inline static const auto start_time = std::chrono::steady_clock::now();
+    static inline auto const start_time = std::chrono::steady_clock::now();
     TDestinations dests;
 };
 
