@@ -9,7 +9,7 @@
 namespace {
 
 TEST_CASE("construct empty sequencer", "[seq]") {
-    seq::impl<0> seq_impl{};
+    seq::impl<void, 0> seq_impl{};
 
     SECTION("forward can be called without issue") {
         REQUIRE(seq_impl.forward() == seq::status::DONE);
@@ -35,7 +35,7 @@ TEST_CASE("construct sequencer with a single step", "[seq]") {
         return seq::status::DONE;
     }};
 
-    seq::impl<1> seq_impl{forward_steps, backward_steps};
+    seq::impl<void, 1> seq_impl{forward_steps, backward_steps};
 
     SECTION("forward can be called") {
         REQUIRE(seq_impl.forward() == seq::status::DONE);
@@ -103,7 +103,7 @@ TEST_CASE("construct sequencer with multiple steps", "[seq]") {
                                           return seq::status::DONE;
                                       }};
 
-    seq::impl<3> seq_impl{forward_steps, backward_steps};
+    seq::impl<void, 3> seq_impl{forward_steps, backward_steps};
 
     SECTION("forward can be called") {
         REQUIRE(seq_impl.forward() == seq::status::DONE);
@@ -160,7 +160,7 @@ TEST_CASE("construct sequencer with a single step that never finishes",
         return seq::status::DONE;
     }};
 
-    seq::impl<1> seq_impl{forward_steps, backward_steps};
+    seq::impl<void, 1> seq_impl{forward_steps, backward_steps};
 
     SECTION("forward can be called") {
         REQUIRE(seq_impl.forward() == seq::status::NOT_DONE);
@@ -211,7 +211,7 @@ TEST_CASE("construct sequencer with a single backward step that never finishes",
         }
     }};
 
-    seq::impl<1> seq_impl{forward_steps, backward_steps};
+    seq::impl<void, 1> seq_impl{forward_steps, backward_steps};
 
     SECTION("backward can be called") {
         REQUIRE(seq_impl.forward() == seq::status::DONE);
@@ -294,7 +294,7 @@ TEST_CASE("run sequencer with multiple steps", "[seq]") {
                                           return b2_step_status;
                                       }};
 
-    seq::impl<3> seq_impl{forward_steps, backward_steps};
+    seq::impl<void, 3> seq_impl{forward_steps, backward_steps};
 
     SECTION("backward can be called after second forward step") {
         f1_step_status = seq::status::NOT_DONE;
@@ -325,7 +325,7 @@ TEST_CASE("run sequencer with multiple steps", "[seq]") {
 
 TEST_CASE("build and run empty seq", "[seq]") {
     seq::builder<> builder;
-    auto seq_impl = builder.internal_build<0>();
+    auto seq_impl = builder.topo_sort<seq::impl, 0>();
     REQUIRE(seq_impl.forward() == seq::status::DONE);
 }
 
@@ -347,7 +347,7 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
 
     builder.add(s1);
 
-    auto seq_impl = builder.internal_build<1>();
+    auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     REQUIRE(seq_impl.forward() == seq::status::DONE);
     REQUIRE(result == "F1");
@@ -397,7 +397,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
 
     builder.add(s1 >> s2 >> s3);
 
-    auto seq_impl = builder.internal_build<3>();
+    auto seq_impl = builder.topo_sort<seq::impl, 3>();
 
     REQUIRE(seq_impl.forward() == seq::status::DONE);
     REQUIRE(result == "F1F2F3");

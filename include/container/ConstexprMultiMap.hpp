@@ -69,6 +69,22 @@ class ConstexprMultiMap {
     /**
      * <b>Runtime complexity:</b> O(1)
      */
+    [[nodiscard]] constexpr auto begin() const ->
+        typename StorageType::Entry const * {
+        return storage.begin();
+    }
+
+    /**
+     * <b>Runtime complexity:</b> O(1)
+     */
+    [[nodiscard]] constexpr auto end() const ->
+        typename StorageType::Entry const * {
+        return storage.end();
+    }
+
+    /**
+     * <b>Runtime complexity:</b> O(1)
+     */
     [[nodiscard]] constexpr auto cbegin() const ->
         typename StorageType::Entry const * {
         return storage.cbegin();

@@ -1,11 +1,10 @@
 #pragma once
 
+#include <flow/common.hpp>
 #include <flow/detail/dependency.hpp>
 #include <flow/detail/parallel.hpp>
 
 namespace flow {
-using FunctionPtr = auto(*)() -> void;
-
 class milestone_base {
   private:
     FunctionPtr run{};

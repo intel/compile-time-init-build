@@ -53,7 +53,7 @@ template <typename ConfigT> struct irq_builder {
                 BuilderValue::value.interrupt_service_routine;
             auto constexpr flow_size = flow_builder.size();
             auto constexpr flow =
-                flow_builder.template internal_build<flow_size>();
+                flow_builder.template topo_sort<flow::impl, flow_size>();
             flow();
         };
 

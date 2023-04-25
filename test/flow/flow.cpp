@@ -20,7 +20,7 @@ constexpr auto d = flow::action("d"_sc, [] { actual += "d"; });
 
 TEST_CASE("build and run empty flow", "[flow]") {
     flow::builder<> builder;
-    auto const flow = builder.internal_build<0>();
+    auto const flow = builder.topo_sort<flow::impl, 0>();
     flow();
 }
 
@@ -30,7 +30,7 @@ TEST_CASE("add single action", "[flow]") {
 
     builder.add(a);
 
-    auto const flow = builder.internal_build<1>();
+    auto const flow = builder.topo_sort<flow::impl, 1>();
     flow();
 
     REQUIRE(flow.getBuildStatus() == flow::build_status::SUCCESS);
@@ -54,7 +54,7 @@ TEST_CASE("two milestone linear before dependency", "[flow]") {
      * 'action' and 'done', the flow knows to execute 'action' before it is
      * finished.
      */
-    auto const flow = builder.internal_build<2>();
+    auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
     REQUIRE(actual == "a");
@@ -68,7 +68,7 @@ TEST_CASE("actions get executed once", "[flow]") {
     builder.add(a >> milestone1);
     builder.add(milestone0 >> milestone1);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual == "a");
@@ -84,7 +84,7 @@ TEST_CASE("two milestone linear after dependency", "[flow]") {
 
     builder.add(milestone0 >> b >> milestone1);
 
-    auto const flow = builder.internal_build<4>();
+    auto const flow = builder.topo_sort<flow::impl, 4>();
     flow();
 
     REQUIRE(actual == "ab");
@@ -96,7 +96,7 @@ TEST_CASE("three milestone linear before and after dependency", "[flow]") {
 
     builder.add(a >> b >> c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual == "abc");
@@ -108,7 +108,7 @@ TEST_CASE("just two actions in order", "[flow]") {
 
     builder.add(a >> b);
 
-    auto const flow = builder.internal_build<2>();
+    auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
     REQUIRE(actual == "ab");
@@ -122,7 +122,7 @@ TEST_CASE("insert action between two actions", "[flow]") {
 
     builder.add(a >> b >> c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual == "abc");
@@ -134,7 +134,7 @@ TEST_CASE("add single parallel 2", "[flow]") {
 
     builder.add(a && b);
 
-    auto const flow = builder.internal_build<2>();
+    auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -148,7 +148,7 @@ TEST_CASE("add single parallel 3", "[flow]") {
 
     builder.add(a && b && c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -164,7 +164,7 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
     builder.add(a && b && c);
     builder.add(c >> a);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -181,7 +181,7 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
     builder.add(a && b && c);
     builder.add(a >> c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -197,7 +197,7 @@ TEST_CASE("add parallel rhs", "[flow]") {
 
     builder.add(a >> (b && c));
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -214,7 +214,7 @@ TEST_CASE("add parallel lhs", "[flow]") {
 
     builder.add((a && b) >> c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -231,7 +231,7 @@ TEST_CASE("add parallel in the middle", "[flow]") {
 
     builder.add(a >> (b && c) >> d);
 
-    auto const flow = builder.internal_build<4>();
+    auto const flow = builder.topo_sort<flow::impl, 4>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -254,7 +254,7 @@ TEST_CASE("add dependency lhs", "[flow]") {
 
     builder.add((a >> b) && c);
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
@@ -272,7 +272,7 @@ TEST_CASE("add dependency rhs", "[flow]") {
 
     builder.add(a && (b >> c));
 
-    auto const flow = builder.internal_build<3>();
+    auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
     REQUIRE(actual.find('a') != std::string::npos);
