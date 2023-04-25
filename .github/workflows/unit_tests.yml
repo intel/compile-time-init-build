@@ -99,6 +99,11 @@ jobs:
 
   sanitize:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [undefined, address, thread]
+
     steps:
       - uses: actions/checkout@v3
 
@@ -112,7 +117,7 @@ jobs:
           CC: "/usr/lib/llvm-15/bin/clang"
           CXX: "/usr/lib/llvm-15/bin/clang++"
           CXX_STANDARD: 20
-          SANITIZERS: "undefined,address"
+          SANITIZERS: ${{matrix.sanitizer}}
         run: cmake -B ${{github.workspace}}/build
 
       - name: Build Unit Tests
