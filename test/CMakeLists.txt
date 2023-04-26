@@ -30,7 +30,7 @@ add_unit_test(
     container/ConstexprMap.cpp
     container/ConstexprMultiMap.cpp
     container/ConstexprSet.cpp
-    container/Vector.cpp
+    container/vector.cpp
     container/queue.cpp
     LIBRARIES
     warnings

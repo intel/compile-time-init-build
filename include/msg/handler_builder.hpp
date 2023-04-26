@@ -3,7 +3,6 @@
 #include <cib/builder_meta.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
-#include <container/Vector.hpp>
 #include <log/log.hpp>
 #include <msg/handler.hpp>
 #include <msg/message.hpp>
