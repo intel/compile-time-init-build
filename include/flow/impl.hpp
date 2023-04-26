@@ -1,6 +1,6 @@
 #pragma once
 
-#include <flow/build_status.hpp>
+#include <flow/common.hpp>
 #include <flow/milestone.hpp>
 
 #include <array>

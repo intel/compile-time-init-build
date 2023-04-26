@@ -17,7 +17,7 @@ class step_base {
     func_ptr _backward_ptr{};
     log_func_ptr log_name{};
 
-    template <std::size_t NumSteps> friend struct impl;
+    template <typename, std::size_t NumSteps> friend struct impl;
 
   public:
     template <typename Name>

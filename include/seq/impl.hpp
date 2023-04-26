@@ -1,6 +1,6 @@
 #pragma once
 
-#include <seq/build_status.hpp>
+#include <flow/common.hpp>
 #include <seq/step.hpp>
 
 #include <array>
@@ -9,7 +9,7 @@
 namespace seq {
 enum class direction { FORWARD = 0, BACKWARD = 1 };
 
-template <std::size_t NumSteps> struct impl {
+template <typename, std::size_t NumSteps> struct impl {
     std::array<func_ptr, NumSteps> _forward_steps{};
     std::array<func_ptr, NumSteps> _backward_steps{};
     std::size_t next_step{};
@@ -25,7 +25,7 @@ template <std::size_t NumSteps> struct impl {
         }
     }
 
-    constexpr impl(step_base const *steps, build_status) {
+    constexpr impl(step_base const *steps, flow::build_status) {
         for (auto i = std::size_t{}; i < NumSteps; i++) {
             _forward_steps[i] = steps[i]._forward_ptr;
             _backward_steps[i] = steps[i]._backward_ptr;
@@ -103,9 +103,9 @@ template <std::size_t NumSteps> struct impl {
     constexpr auto backward() -> status { return go<direction::BACKWARD>(); }
 };
 
-template <> struct impl<0u> {
+template <typename Name> struct impl<Name, 0u> {
     constexpr impl() = default;
-    constexpr impl(step_base const *, build_status) noexcept {}
+    constexpr impl(step_base const *, flow::build_status) noexcept {}
 
     constexpr static auto forward() -> status { return status::DONE; }
     constexpr static auto backward() -> status { return status::DONE; }
