@@ -27,9 +27,9 @@ add_unit_test(
     container_test
     CATCH2
     FILES
-    container/ConstexprMap.cpp
-    container/ConstexprMultiMap.cpp
-    container/ConstexprSet.cpp
+    container/constexpr_map.cpp
+    container/constexpr_multimap.cpp
+    container/constexpr_set.cpp
     container/vector.cpp
     container/queue.cpp
     LIBRARIES

@@ -6,16 +6,16 @@
 
 #include <cstdint>
 
-TEST_CASE("empty", "[queue]") {
-    queue<std::uint32_t, 1> const q({});
+TEST_CASE("empty", "[cib::queue]") {
+    cib::queue<std::uint32_t, 1> const q({});
     CHECK(0u == q.size());
     CHECK(1u == q.capacity());
     CHECK(q.empty());
     CHECK(not q.full());
 }
 
-TEST_CASE("full", "[queue]") {
-    queue<std::uint32_t, 1> q({});
+TEST_CASE("full", "[cib::queue]") {
+    cib::queue<std::uint32_t, 1> q({});
     q.push(1u);
     CHECK(1u == q.size());
     CHECK(1u == q.capacity());
@@ -23,8 +23,8 @@ TEST_CASE("full", "[queue]") {
     CHECK(q.full());
 }
 
-TEST_CASE("push/pop", "[queue]") {
-    queue<std::uint32_t, 6> q;
+TEST_CASE("push/pop", "[cib::queue]") {
+    cib::queue<std::uint32_t, 6> q;
     q.push(1u);
     CHECK(1u == q.size());
     q.push(2u);
@@ -43,15 +43,15 @@ TEST_CASE("push/pop", "[queue]") {
     CHECK(q.empty());
 }
 
-TEST_CASE("push returns reference", "[queue]") {
-    queue<std::uint32_t, 1> q;
+TEST_CASE("push returns reference", "[cib::queue]") {
+    cib::queue<std::uint32_t, 1> q;
     auto &ref = q.push(1u);
     ref = 2u;
     CHECK(2u == q.pop());
 }
 
-TEST_CASE("wraparound", "[queue]") {
-    queue<std::uint32_t, 2> q;
+TEST_CASE("wraparound", "[cib::queue]") {
+    cib::queue<std::uint32_t, 2> q;
 
     q.push(1u);
     CHECK(1u == q.size());
@@ -69,8 +69,8 @@ TEST_CASE("wraparound", "[queue]") {
     CHECK(q.empty());
 }
 
-TEST_CASE("safe over/underflow", "[queue]") {
-    queue<std::uint32_t, 1> q;
+TEST_CASE("safe over/underflow", "[cib::queue]") {
+    cib::queue<std::uint32_t, 1> q;
     q.push(1u);
     CHECK_THROWS_AS(q.push(2u), test_log_config::exception);
     CHECK(1u == q.pop());
@@ -89,14 +89,14 @@ struct move_only {
 };
 } // namespace
 
-TEST_CASE("move only elements", "[queue]") {
-    queue<move_only, 1> q;
+TEST_CASE("move only elements", "[cib::queue]") {
+    cib::queue<move_only, 1> q;
     q.push(move_only{1});
     CHECK(1 == q.pop().value);
 }
 
-TEST_CASE("front/back", "[queue]") {
-    queue<std::uint32_t, 2> q;
+TEST_CASE("front/back", "[cib::queue]") {
+    cib::queue<std::uint32_t, 2> q;
     q.push(1u);
     q.push(2u);
     CHECK(q.front() == 1u);

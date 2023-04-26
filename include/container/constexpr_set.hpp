@@ -1,46 +1,44 @@
 #pragma once
 
-#include <container/ConstexprMap.hpp>
+#include <container/constexpr_map.hpp>
 
+#include <concepts>
 #include <cstddef>
-#include <initializer_list>
 
+namespace cib {
 /**
  * A fully constexpr set implementation.
  *
- * ConstexprSet is perfect for compile-time initialization and configuration,
+ * constexpr_set is perfect for compile-time initialization and configuration,
  * but its performance may not be suitable for run-time operations. in_t
  * particular, the current implementation has linear run-time O(n) for any key
  * lookup operation.
  *
- * ConstexprSet owns the storage for the keys it stores. Carefully consider
+ * constexpr_set owns the storage for the keys it stores. Carefully consider
  * whether the KeyType is an object value or pointer.
  *
- * Consider an appropriate Capacity for the ConstexprSet. It will be able to
+ * Consider an appropriate Capacity for the constexpr_set. It will be able to
  * contain up to "Capacity" number of keys.
  *
  * @tparam KeyType
  * @tparam Capacity
  */
-template <typename KeyType, std::size_t Capacity> class ConstexprSet {
-  private:
-    using StorageType = ConstexprMap<KeyType, bool, Capacity>;
+template <typename KeyType, std::size_t Capacity> class constexpr_set {
+    using StorageType = constexpr_map<KeyType, bool, Capacity>;
     StorageType storage{};
 
   public:
-    constexpr ConstexprSet() = default;
+    using key_type = KeyType;
+    using value_type = KeyType;
+    using reference = value_type &;
+    using const_reference = value_type const &;
 
-    constexpr ConstexprSet(std::initializer_list<KeyType> src) {
-        if (src.size() > Capacity) {
-            CIB_FATAL("Initializer list size {} is bigger than allocated set "
-                      "capacity {}",
-                      src.size(), Capacity);
-        } else {
-            for (auto k : src) {
-                storage.put(k, true);
-            }
-        }
-    }
+    template <typename... Ts>
+        requires((sizeof...(Ts) <= Capacity) and ... and
+                 std::convertible_to<key_type, Ts>)
+    constexpr explicit(true) constexpr_set(Ts const &...ts)
+        : storage{typename StorageType::value_type{static_cast<key_type>(ts),
+                                                   true}...} {}
 
     /**
      * <b>Runtime complexity:</b> O(1)
@@ -48,21 +46,21 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @return
      *      Current number of keys stored in this set.
      */
-    [[nodiscard]] constexpr auto getSize() const -> std::size_t {
-        return storage.getSize();
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
+        return storage.size();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr auto begin() -> typename StorageType::Entry * {
+    [[nodiscard]] constexpr auto begin() -> typename StorageType::iterator {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr auto end() -> typename StorageType::Entry * {
+    [[nodiscard]] constexpr auto end() -> typename StorageType::iterator {
         return storage.end();
     }
 
@@ -70,7 +68,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto begin() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.begin();
     }
 
@@ -78,7 +76,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto end() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.end();
     }
 
@@ -93,7 +91,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @return
      *      True if targetKey is found in the set.
      */
-    [[nodiscard]] constexpr auto contains(KeyType targetKey) const -> bool {
+    [[nodiscard]] constexpr auto contains(key_type targetKey) const -> bool {
         return storage.contains(targetKey);
     }
 
@@ -106,7 +104,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @param k
      *      New key 'k' to add to the set.
      */
-    constexpr void add(KeyType k) { storage.put(k, true); }
+    constexpr void add(key_type k) { storage.put(k, true); }
 
     /**
      * Remove targetKey from the map. If targetKey is not found, do nothing.
@@ -116,7 +114,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr void remove(KeyType targetKey) { storage.remove(targetKey); }
+    constexpr void remove(key_type targetKey) { storage.remove(targetKey); }
 
     /**
      * Add all keys from 'addSet' into this set.
@@ -125,7 +123,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      *
      * @param addSet
      */
-    template <typename RhsSetType> constexpr void addAll(RhsSetType addSet) {
+    template <typename RhsSetType> constexpr void add_all(RhsSetType addSet) {
         for (auto entry : addSet) {
             add(entry.key);
         }
@@ -139,7 +137,7 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @param removeSet
      */
     template <typename RhsSetType>
-    constexpr void removeAll(RhsSetType removeSet) {
+    constexpr void remove_all(RhsSetType removeSet) {
         for (auto entry : removeSet) {
             remove(entry.key);
         }
@@ -151,8 +149,8 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @return
      *      True if the set is empty.
      */
-    [[nodiscard]] constexpr auto isEmpty() const -> bool {
-        return storage.isEmpty();
+    [[nodiscard]] constexpr auto empty() const -> bool {
+        return storage.empty();
     }
 
     /**
@@ -163,8 +161,9 @@ template <typename KeyType, std::size_t Capacity> class ConstexprSet {
      * @return
      *      A key from the set.
      */
-    [[nodiscard]] constexpr auto pop() -> KeyType { return storage.pop().key; }
+    [[nodiscard]] constexpr auto pop() -> key_type { return storage.pop().key; }
 };
 
 template <typename T, typename... Ts>
-ConstexprSet(T, Ts...) -> ConstexprSet<T, 1 + sizeof...(Ts)>;
+constexpr_set(T, Ts...) -> constexpr_set<T, 1 + sizeof...(Ts)>;
+} // namespace cib
