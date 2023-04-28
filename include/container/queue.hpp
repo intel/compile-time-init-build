@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <utility>
 
+namespace cib {
 struct unsafe_overflow_policy {
     constexpr static auto check_push(auto...) {}
     constexpr static auto check_pop(auto...) {}
@@ -89,3 +90,4 @@ class queue {
         return entry;
     }
 };
+} // namespace cib
