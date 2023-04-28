@@ -1,6 +1,6 @@
 #pragma once
 
-#include <container/ConstexprMultiMap.hpp>
+#include <container/constexpr_multimap.hpp>
 #include <flow/common.hpp>
 
 #include <algorithm>
@@ -34,7 +34,8 @@ concept walkable = std::same_as<T, Node> or
 template <typename Node, typename NameT, std::size_t NodeCapacity,
           std::size_t EdgeCapacity, typename Derived>
 class graph_builder {
-    using graph_t = ConstexprMultiMap<Node, Node, NodeCapacity, EdgeCapacity>;
+    using graph_t =
+        cib::constexpr_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
     graph_t graph{};
 
     [[nodiscard]] constexpr static auto is_source_of(Node node,
@@ -45,8 +46,8 @@ class graph_builder {
     }
 
     [[nodiscard]] constexpr auto get_sources() const
-        -> ConstexprSet<Node, NodeCapacity> {
-        ConstexprSet<Node, NodeCapacity> s;
+        -> cib::constexpr_set<Node, NodeCapacity> {
+        cib::constexpr_set<Node, NodeCapacity> s;
         for (auto const &entry : graph) {
             s.add(entry.key);
         }
@@ -136,13 +137,13 @@ class graph_builder {
         std::size_t list_size{};
 
         auto sources = get_sources();
-        while (not sources.isEmpty()) {
+        while (not sources.empty()) {
             auto n = sources.pop();
             ordered_list[list_size++] = n;
 
             if (g.contains(n)) {
                 auto ms = g.get(n);
-                if (ms.isEmpty()) {
+                if (ms.empty()) {
                     g.remove(n);
                 } else {
                     for (auto entry : ms) {
@@ -156,8 +157,8 @@ class graph_builder {
             }
         }
 
-        auto buildStatus = g.isEmpty() ? build_status::SUCCESS
-                                       : build_status::HAS_CIRCULAR_DEPENDENCY;
+        auto buildStatus = g.empty() ? build_status::SUCCESS
+                                     : build_status::HAS_CIRCULAR_DEPENDENCY;
         return Output<Name, Capacity>(ordered_list.data(), buildStatus);
     }
 
@@ -165,12 +166,12 @@ class graph_builder {
      * @return The capacity necessary to fit the built graph.
      */
     [[nodiscard]] constexpr auto size() const -> std::size_t {
-        ConstexprSet<Node, NodeCapacity> all_nodes{};
+        cib::constexpr_set<Node, NodeCapacity> all_nodes{};
         for (auto entry : graph) {
             all_nodes.add(entry.key);
-            all_nodes.addAll(entry.value);
+            all_nodes.add_all(entry.value);
         }
-        return all_nodes.getSize();
+        return all_nodes.size();
     }
 
     template <typename BuilderValue>

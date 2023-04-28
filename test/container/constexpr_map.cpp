@@ -1,24 +1,24 @@
 #include "log.hpp"
 
-#include <container/ConstexprMap.hpp>
+#include <container/constexpr_map.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 namespace {
-TEST_CASE("EmptyAndSize", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("EmptyAndSize", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
 
-    CHECK(t.getSize() == 0);
-    CHECK(t.isEmpty() == true);
+    CHECK(t.size() == 0);
+    CHECK(t.empty() == true);
 
     t.put(10, 50);
 
-    CHECK(t.getSize() == 1);
-    CHECK(t.isEmpty() == false);
+    CHECK(t.size() == 1);
+    CHECK(t.empty() == false);
 }
 
-TEST_CASE("ContainsAndGet", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("ContainsAndGet", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
     t.put(10, 50);
     t.put(11, 100);
 
@@ -30,9 +30,9 @@ TEST_CASE("ContainsAndGet", "[constexpr_map]") {
     CHECK_THROWS_AS(t.get(12), test_log_config::exception);
 }
 
-TEST_CASE("ConstGet", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> const t = [] {
-        ConstexprMap<int, int, 64> m;
+TEST_CASE("ConstGet", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> const t = [] {
+        cib::constexpr_map<int, int, 64> m;
         m.put(10, 50);
         m.put(11, 100);
         return m;
@@ -46,8 +46,8 @@ TEST_CASE("ConstGet", "[constexpr_map]") {
     CHECK_THROWS_AS(t.get(12), test_log_config::exception);
 }
 
-TEST_CASE("UpdateExistingKey", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("UpdateExistingKey", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
     t.put(13, 500);
     t.put(13, 700);
 
@@ -55,60 +55,60 @@ TEST_CASE("UpdateExistingKey", "[constexpr_map]") {
     CHECK(t.get(13) == 700);
 }
 
-TEST_CASE("PutWhenFull", "[constexpr_map]") {
-    ConstexprMap<int, int, 1> t;
+TEST_CASE("PutWhenFull", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 1> t;
     t.put(13, 500);
     CHECK_THROWS_AS(t.put(12, 700), test_log_config::exception);
 }
 
-TEST_CASE("Pop", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("Pop", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
     t.put(13, 500);
 
     auto entry = t.pop();
 
-    CHECK(t.getSize() == 0);
-    CHECK(t.isEmpty() == true);
+    CHECK(t.size() == 0);
+    CHECK(t.empty() == true);
     CHECK(entry.key == 13);
     CHECK(entry.value == 500);
     CHECK_THROWS_AS(t.pop(), test_log_config::exception);
 }
 
-TEST_CASE("Remove", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("Remove", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
     t.put(13, 500);
     t.put(18, 600);
     t.put(19, 700);
 
     t.remove(18);
 
-    CHECK(t.getSize() == 2);
+    CHECK(t.size() == 2);
     CHECK(t.contains(18) == false);
     CHECK(t.get(13) == 500);
     CHECK(t.get(19) == 700);
 }
 
-TEST_CASE("RemoveNonExistantKey", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("RemoveNonExistantKey", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
     t.put(13, 500);
     t.put(18, 600);
 
     t.remove(50);
 
-    CHECK(t.getSize() == 2);
+    CHECK(t.size() == 2);
     CHECK(t.contains(50) == false);
     CHECK(t.get(13) == 500);
     CHECK(t.get(18) == 600);
 }
 
-TEST_CASE("EmptyIterators", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("EmptyIterators", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
 
     CHECK(t.begin() == t.end());
 }
 
-TEST_CASE("NonEmptyIterators", "[constexpr_map]") {
-    ConstexprMap<int, int, 64> t;
+TEST_CASE("NonEmptyIterators", "[cib::constexpr_map]") {
+    cib::constexpr_map<int, int, 64> t;
 
     t.put(18, 600);
 
@@ -116,21 +116,21 @@ TEST_CASE("NonEmptyIterators", "[constexpr_map]") {
 }
 
 constexpr auto emptyMapTest = [] {
-    ConstexprMap<int, int, 64> t;
+    cib::constexpr_map<int, int, 64> t;
     return t;
 }();
 
-static_assert(emptyMapTest.isEmpty());
+static_assert(emptyMapTest.empty());
 static_assert(!emptyMapTest.contains(10));
 
 constexpr auto populatedMapTest = [] {
-    ConstexprMap<int, int, 64> t;
+    cib::constexpr_map<int, int, 64> t;
     t.put(10, 50);
     t.put(11, 100);
     return t;
 }();
 
-static_assert(!populatedMapTest.isEmpty());
+static_assert(!populatedMapTest.empty());
 static_assert(populatedMapTest.contains(10));
 static_assert(populatedMapTest.get(10) == 50);
 static_assert(populatedMapTest.contains(11));
@@ -138,7 +138,7 @@ static_assert(populatedMapTest.get(11) == 100);
 static_assert(!populatedMapTest.contains(12));
 
 constexpr auto testMapRemove = [] {
-    ConstexprMap<int, int, 64> t;
+    cib::constexpr_map<int, int, 64> t;
     t.put(10, 50);
     t.put(11, 100);
     t.remove(11);
@@ -146,31 +146,31 @@ constexpr auto testMapRemove = [] {
     return t;
 }();
 
-static_assert(!testMapRemove.isEmpty());
+static_assert(!testMapRemove.empty());
 static_assert(testMapRemove.contains(10));
 static_assert(testMapRemove.get(10) == 50);
 static_assert(!testMapRemove.contains(11));
 
 constexpr auto testSetUpdateValue = [] {
-    ConstexprMap<int, int, 64> t;
+    cib::constexpr_map<int, int, 64> t;
     t.put(10, 50);
     t.put(10, 100);
     return t;
 }();
 
-static_assert(!testSetUpdateValue.isEmpty());
+static_assert(!testSetUpdateValue.empty());
 static_assert(testSetUpdateValue.contains(10));
 static_assert(testSetUpdateValue.get(10) == 100);
 
 constexpr auto testMapRemoveFirst = [] {
-    ConstexprMap<int, int, 64> t;
+    cib::constexpr_map<int, int, 64> t;
     t.put(10, 50);
     t.put(11, 100);
     t.remove(10);
     return t;
 }();
 
-static_assert(!testMapRemoveFirst.isEmpty());
+static_assert(!testMapRemoveFirst.empty());
 static_assert(testMapRemoveFirst.contains(11));
 static_assert(testMapRemoveFirst.get(11) == 100);
 static_assert(!testMapRemoveFirst.contains(10));

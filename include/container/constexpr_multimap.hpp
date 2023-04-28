@@ -1,28 +1,29 @@
 #pragma once
 
-#include <container/ConstexprMap.hpp>
-#include <container/ConstexprSet.hpp>
+#include <container/constexpr_map.hpp>
+#include <container/constexpr_set.hpp>
 
 #include <cstddef>
 
+namespace cib {
 /**
  * A fully constexpr multi-map implementation.
  *
  * A multi-map contains one or more values per key.
  *
- * ConstexprMultiMap is perfect for compile-time initialization and
+ * constexpr_multimap is perfect for compile-time initialization and
  * configuration, but its performance may not be suitable for run-time
  * operations. in_t particular, the current implementation has linear run-time
  * O(n) for any key lookup operation.
  *
- * ConstexprMultiMap owns the storage for the keys and values it stores.
+ * constexpr_multimap owns the storage for the keys and values it stores.
  * Carefully consider whether the KeyType and ValueType are object values or
  * pointers.
  *
- * ConstexprMultiMap has very high storage requirements. Storage scales
+ * constexpr_multimap has very high storage requirements. Storage scales
  * quadratically, or O(n^2).
  *
- * Consider an appropriate Capacity for the ConstexprMultiMap. It will be
+ * Consider an appropriate Capacity for the constexpr_multimap. It will be
  * able to contain up to "KeyCapacity" number of keys, and each key will be
  * able to contain up to "ValueCapacity" number of values.
  *
@@ -33,36 +34,38 @@
  */
 template <typename KeyType, typename ValueType, std::size_t KeyCapacity,
           std::size_t ValueCapacity = KeyCapacity>
-class ConstexprMultiMap {
-  private:
+class constexpr_multimap {
     using StorageType =
-        ConstexprMap<KeyType, ConstexprSet<ValueType, ValueCapacity>,
-                     KeyCapacity>;
+        constexpr_map<KeyType, constexpr_set<ValueType, ValueCapacity>,
+                      KeyCapacity>;
 
     StorageType storage{};
 
   public:
+    using key_type = KeyType;
+    using mapped_type = ValueType;
+
     /**
      * <b>Runtime complexity:</b> O(1)
      *
      * @return
      *      Current number of keys stored in this multi-map.
      */
-    [[nodiscard]] constexpr auto getSize() const -> std::size_t {
-        return storage.getSize();
+    [[nodiscard]] constexpr auto size() const -> std::size_t {
+        return storage.size();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr auto begin() -> typename StorageType::Entry * {
+    [[nodiscard]] constexpr auto begin() -> typename StorageType::iterator {
         return storage.begin();
     }
 
     /**
      * <b>Runtime complexity:</b> O(1)
      */
-    [[nodiscard]] constexpr auto end() -> typename StorageType::Entry * {
+    [[nodiscard]] constexpr auto end() -> typename StorageType::iterator {
         return storage.end();
     }
 
@@ -70,7 +73,7 @@ class ConstexprMultiMap {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto begin() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.begin();
     }
 
@@ -78,7 +81,7 @@ class ConstexprMultiMap {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto end() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.end();
     }
 
@@ -86,7 +89,7 @@ class ConstexprMultiMap {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto cbegin() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.cbegin();
     }
 
@@ -94,7 +97,7 @@ class ConstexprMultiMap {
      * <b>Runtime complexity:</b> O(1)
      */
     [[nodiscard]] constexpr auto cend() const ->
-        typename StorageType::Entry const * {
+        typename StorageType::const_iterator {
         return storage.cend();
     }
 
@@ -113,12 +116,12 @@ class ConstexprMultiMap {
      * @param v
      *      New value 'v' for key 'k'.
      */
-    constexpr auto put(KeyType k, ValueType v) -> void {
+    constexpr auto put(key_type k, mapped_type v) -> void {
         if (storage.contains(k)) {
             storage.get(k).add(v);
 
         } else {
-            ConstexprSet<ValueType, ValueCapacity> set;
+            constexpr_set<mapped_type, ValueCapacity> set;
             set.add(v);
             storage.put(k, set);
         }
@@ -135,9 +138,9 @@ class ConstexprMultiMap {
      * @param k
      *      New key 'k'.
      */
-    constexpr auto put(KeyType k) -> void {
+    constexpr auto put(key_type k) -> void {
         if (!storage.contains(k)) {
-            ConstexprSet<ValueType, ValueCapacity> set;
+            constexpr_set<mapped_type, ValueCapacity> set;
             storage.put(k, set);
         }
     }
@@ -151,7 +154,7 @@ class ConstexprMultiMap {
      * @param targetKey
      *      The key to search for and remove.
      */
-    constexpr auto remove(KeyType targetKey) -> void {
+    constexpr auto remove(key_type targetKey) -> void {
         storage.remove(targetKey);
     }
 
@@ -167,18 +170,18 @@ class ConstexprMultiMap {
      * @param targetValue
      *      The value to search for and remove.
      */
-    constexpr auto remove(KeyType targetKey, ValueType targetValue) -> void {
+    constexpr auto remove(key_type targetKey, mapped_type targetValue) -> void {
         if (storage.contains(targetKey)) {
             storage.get(targetKey).remove(targetValue);
 
-            if (storage.get(targetKey).isEmpty()) {
+            if (storage.get(targetKey).empty()) {
                 storage.remove(targetKey);
             }
         }
     }
 
     /**
-     * Get a mutable reference to the ConstexprSet for the given targetKey.
+     * Get a mutable reference to the constexpr_set for the given targetKey.
      *
      * <b>Runtime complexity:</b> O(n)
      *
@@ -186,16 +189,16 @@ class ConstexprMultiMap {
      *      Key to search for.
      *
      * @return
-     *      Reference to the ConstexprSet if the targetKey is found. Undefined
+     *      Reference to the constexpr_set if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr auto get(KeyType k)
-        -> ConstexprSet<ValueType, ValueCapacity> & {
+    [[nodiscard]] constexpr auto get(key_type k)
+        -> constexpr_set<mapped_type, ValueCapacity> & {
         return storage.get(k);
     }
 
     /**
-     * Get a const reference to the ConstexprSet for the given targetKey.
+     * Get a const reference to the constexpr_set for the given targetKey.
      *
      * <b>Runtime complexity:</b> O(n)
      *
@@ -203,11 +206,11 @@ class ConstexprMultiMap {
      *      Key to search for.
      *
      * @return
-     *      Reference to the ConstexprSet if the targetKey is found. Undefined
+     *      Reference to the constexpr_set if the targetKey is found. Undefined
      *      behavior otherwise.
      */
-    [[nodiscard]] constexpr auto get(KeyType k) const
-        -> ConstexprSet<ValueType, ValueCapacity> const & {
+    [[nodiscard]] constexpr auto get(key_type k) const
+        -> constexpr_set<mapped_type, ValueCapacity> const & {
         return storage.get(k);
     }
 
@@ -217,8 +220,8 @@ class ConstexprMultiMap {
      * @return
      *      True if the multi-map is empty.
      */
-    [[nodiscard]] constexpr auto isEmpty() const -> bool {
-        return storage.isEmpty();
+    [[nodiscard]] constexpr auto empty() const -> bool {
+        return storage.empty();
     }
 
     /**
@@ -232,7 +235,7 @@ class ConstexprMultiMap {
      * @return
      *      True if targetKey is found in the multi-map.
      */
-    [[nodiscard]] constexpr auto contains(KeyType targetKey) const -> bool {
+    [[nodiscard]] constexpr auto contains(key_type targetKey) const -> bool {
         return storage.contains(targetKey);
     }
 
@@ -250,8 +253,9 @@ class ConstexprMultiMap {
      * @return
      *      True if key 'k' and value 'v' is found in the multi-map.
      */
-    [[nodiscard]] constexpr auto contains(KeyType k, ValueType v) const
+    [[nodiscard]] constexpr auto contains(key_type k, mapped_type v) const
         -> bool {
         return contains(k) and get(k).contains(v);
     }
 };
+} // namespace cib
