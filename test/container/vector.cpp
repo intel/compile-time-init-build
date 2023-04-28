@@ -189,4 +189,14 @@ TEST_CASE("ConcatenateOverCapacity", "[vector]") {
     CHECK(vector.full());
     CHECK(vector == cib::vector{1, 2, 3, 4, 5});
 }
+
+TEST_CASE("CapacityZeroVector", "[vector]") {
+    cib::vector<int, 0> const vector{};
+    CHECK(0u == vector.size());
+    CHECK(0u == vector.capacity());
+    CHECK(vector.empty());
+    CHECK(vector.full());
+    CHECK(vector.begin() == vector.end());
+    CHECK(vector == cib::vector<int, 0>{});
+}
 } // namespace
