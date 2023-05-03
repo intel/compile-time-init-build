@@ -104,12 +104,45 @@ operator==(string_constant<CharT, chars...>,
     return true;
 }
 
+#if __cpp_lib_three_way_comparison < 201907L
+template <class CharT, CharT... charsLhs, CharT... charsRhs>
+[[nodiscard]] constexpr auto
+operator!=(string_constant<CharT, charsLhs...> lhs,
+           string_constant<CharT, charsRhs...> rhs) noexcept -> bool {
+    return not(lhs == rhs);
+}
+template <class CharT, CharT... charsLhs, CharT... charsRhs>
+[[nodiscard]] constexpr auto
+operator<(string_constant<CharT, charsLhs...> lhs,
+          string_constant<CharT, charsRhs...> rhs) noexcept -> bool {
+    return lhs.value < rhs.value;
+}
+template <class CharT, CharT... charsLhs, CharT... charsRhs>
+[[nodiscard]] constexpr auto
+operator>(string_constant<CharT, charsLhs...> lhs,
+          string_constant<CharT, charsRhs...> rhs) noexcept -> bool {
+    return lhs.value > rhs.value;
+}
+template <class CharT, CharT... charsLhs, CharT... charsRhs>
+[[nodiscard]] constexpr auto
+operator<=(string_constant<CharT, charsLhs...> lhs,
+           string_constant<CharT, charsRhs...> rhs) noexcept -> bool {
+    return lhs.value <= rhs.value;
+}
+template <class CharT, CharT... charsLhs, CharT... charsRhs>
+[[nodiscard]] constexpr auto
+operator>=(string_constant<CharT, charsLhs...> lhs,
+           string_constant<CharT, charsRhs...> rhs) noexcept -> bool {
+    return lhs.value >= rhs.value;
+}
+#else
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
 operator<=>(string_constant<CharT, charsLhs...> lhs,
             string_constant<CharT, charsRhs...> rhs) noexcept {
     return lhs.value <=> rhs.value;
 }
+#endif
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
 [[nodiscard]] constexpr auto
