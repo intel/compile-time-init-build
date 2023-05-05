@@ -14,9 +14,9 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
         list(APPEND CMAKE_PROGRAM_PATH $ENV{CLANG_TOOLS_PATH})
     endif()
 
-    include(cmake/sanitizers.cmake)
-    include(cmake/test.cmake)
-    include(cmake/warnings.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/sanitizers.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/test.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/warnings.cmake)
 
     add_versioned_package(
         NAME
@@ -35,7 +35,7 @@ if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
         find_program(CLANG_TIDY_PROGRAM "clang-tidy")
         if(CLANG_TIDY_PROGRAM)
             add_custom_target(clang-tidy)
-            include(cmake/clang-tidy.cmake)
+            include(${CMAKE_CURRENT_LIST_DIR}/clang-tidy.cmake)
         else()
             message(STATUS "clang-tidy not found. Adding dummy target.")
             set(CLANG_TIDY_NOT_FOUND_COMMAND_ARGS

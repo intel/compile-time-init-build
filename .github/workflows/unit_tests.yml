@@ -65,7 +65,7 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t unit_tests
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t build_unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
@@ -123,9 +123,60 @@ jobs:
       - name: Build Unit Tests
         run: cmake --build ${{github.workspace}}/build -t unit_tests
 
+  valgrind:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install build tools
+        run: sudo apt update && sudo apt install -y gcc-12 ninja-build valgrind
+
+      - name: Configure CMake
+        env:
+          CC: "/usr/bin/gcc-12"
+          CXX: "/usr/bin/g++-12"
+          CXX_STANDARD: 20
+        run: cmake -B ${{github.workspace}}/build
+
+      - name: Build Unit Tests
+        run: cmake --build ${{github.workspace}}/build -t build_unit_tests
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: |
+          ctest -T memcheck
+
+          LOGFILE=$(ls ./Testing/Temporary/LastDynamicAnalysis_*.log)
+          FAILSIZE=$(du -c ./Testing/Temporary/MemoryChecker.* | tail -1 | cut -f1)
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+
+          echo "<summary>" >> $GITHUB_STEP_SUMMARY
+          if [ $FAILSIZE != "0" ]; then
+            echo "Failing tests:" | tee -a $GITHUB_STEP_SUMMARY
+          else
+            echo "No failing tests" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "</summary>" >> $GITHUB_STEP_SUMMARY
+
+          for f in ./Testing/Temporary/MemoryChecker.*
+          do
+            if [ -s $f ]; then
+              FILENAME=$(cd $(dirname $f) && pwd)/$(basename $f)
+              TEST_COMMAND=$(grep $FILENAME $LOGFILE)
+              echo "" | tee -a $GITHUB_STEP_SUMMARY
+              echo "========================================"
+              echo $TEST_COMMAND | tee -a $GITHUB_STEP_SUMMARY
+              echo "--------------------"
+              cat $f
+            fi
+          done
+
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          test $FAILSIZE = "0"
+
   merge_ok:
     runs-on: ubuntu-22.04
-    needs: [build_and_test, quality_checks_pass, sanitize]
+    needs: [build_and_test, quality_checks_pass, sanitize, valgrind]
     steps:
       - name: Enable merge
         run: echo "OK to merge!"
@@ -150,4 +201,3 @@ jobs:
         with:
           name: cib.hpp
           path: ${{github.workspace}}/build/include/cib/cib.hpp
-
