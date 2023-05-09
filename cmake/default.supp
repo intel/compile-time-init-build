@@ -1,0 +1,7 @@
+{
+   gmock_uninteresting_call_reaction
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZN7testing12_GLOBAL__N_128UninterestingCallReactionMapEv
+}

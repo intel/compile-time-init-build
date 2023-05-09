@@ -1,5 +1,10 @@
+set(MEMORYCHECK_SUPPRESSIONS_FILE
+    "${CMAKE_CURRENT_LIST_DIR}/default.supp"
+    CACHE FILEPATH "File that contains suppressions for the memory checker")
 include(CTest)
+
 add_custom_target(unit_tests)
+add_custom_target(build_unit_tests)
 
 if(DEFINED ENV{CXX_STANDARD})
     set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
@@ -66,6 +71,7 @@ function(add_unit_test name)
     target_link_libraries(${name} PRIVATE ${UNIT_LIBRARIES})
     target_link_libraries_system(${name} PRIVATE ${UNIT_SYSTEM_LIBRARIES})
     target_link_libraries(${name} PRIVATE sanitizers)
+    add_dependencies(build_unit_tests "${name}")
 
     if(UNIT_CATCH2)
         get_catch2()

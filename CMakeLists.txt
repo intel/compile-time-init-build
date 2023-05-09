@@ -41,7 +41,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     clang_tidy_interface(cib)
 
     # Enable functional and performance test suites.
-    enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)

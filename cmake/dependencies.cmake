@@ -2,7 +2,7 @@ if(COMMAND add_versioned_package)
     return()
 endif()
 
-include(cmake/CPM.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
 
 if(NOT DEFINED ENV{CPM_SOURCE_CACHE})
     message(
