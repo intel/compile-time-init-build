@@ -1,10 +1,17 @@
+option(BUILD_TESTING "" OFF)
+include(CTest)
+add_custom_target(unit_tests)
+add_custom_target(build_unit_tests)
+set(CMAKE_TESTING_ENABLED
+    1
+    CACHE INTERNAL "")
+
+find_program(MEMORYCHECK_COMMAND NAMES valgrind)
 set(MEMORYCHECK_SUPPRESSIONS_FILE
     "${CMAKE_CURRENT_LIST_DIR}/default.supp"
     CACHE FILEPATH "File that contains suppressions for the memory checker")
-include(CTest)
-
-add_custom_target(unit_tests)
-add_custom_target(build_unit_tests)
+configure_file(${CMAKE_ROOT}/Modules/DartConfiguration.tcl.in
+               ${PROJECT_BINARY_DIR}/DartConfiguration.tcl)
 
 if(DEFINED ENV{CXX_STANDARD})
     set(CMAKE_CXX_STANDARD $ENV{CXX_STANDARD})
@@ -71,7 +78,7 @@ function(add_unit_test name)
     target_link_libraries(${name} PRIVATE ${UNIT_LIBRARIES})
     target_link_libraries_system(${name} PRIVATE ${UNIT_SYSTEM_LIBRARIES})
     target_link_libraries(${name} PRIVATE sanitizers)
-    add_dependencies(build_unit_tests "${name}")
+    add_dependencies(build_unit_tests ${name})
 
     if(UNIT_CATCH2)
         get_catch2()
@@ -121,18 +128,18 @@ function(add_feature_test name)
     target_link_libraries(${name} PRIVATE ${FEAT_LIBRARIES})
     target_link_libraries_system(${name} PRIVATE ${FEAT_SYSTEM_LIBRARIES})
     target_link_libraries(${name} PRIVATE sanitizers)
+    add_dependencies(build_unit_tests ${name})
 
     get_gunit()
     add_gherkin()
     add_boost_di()
-    gtest_discover_tests(${name})
     target_include_directories(
         ${name} SYSTEM
         PRIVATE ${gunit_SOURCE_DIR}/include
                 ${gunit_SOURCE_DIR}/libs/json/single_include/nlohmann)
     target_link_libraries_system(${name} PRIVATE gtest_main gmock_main
                                  gherkin-cpp Boost.DI)
-    set(target_test_command $<TARGET_FILE:${name}>)
+    set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
 
     add_custom_target(all_${name} ALL DEPENDS run_${name})
     add_custom_target(run_${name} DEPENDS ${name}.passed ${FEAT_FEATURE})
@@ -144,5 +151,7 @@ function(add_feature_test name)
         COMMAND ${CMAKE_COMMAND} "-E" "touch" "${name}.passed"
         DEPENDS ${name})
 
+    add_test(NAME ${name} COMMAND ${target_test_command})
+    set_property(TEST ${name} PROPERTY ENVIRONMENT "SCENARIO=${FEATURE_FILE}")
     add_dependencies(unit_tests "run_${name}")
 endfunction()
