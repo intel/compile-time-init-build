@@ -1,6 +1,7 @@
 #include "special_members.hpp"
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_destructure.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -68,6 +69,24 @@ TEST_CASE("free get", "[tuple]") {
     static_assert(cib::get<long>(t) == 10);
 }
 
+TEST_CASE("free get (ADL)", "[tuple]") {
+    constexpr auto t = cib::tuple{5, true, 10l};
+
+    REQUIRE(get<0>(t) == 5);
+    REQUIRE(get<1>(t) == true);
+    REQUIRE(get<2>(t) == 10);
+    static_assert(get<0>(t) == 5);
+    static_assert(get<1>(t) == true);
+    static_assert(get<2>(t) == 10);
+
+    REQUIRE(get<int>(t) == 5);
+    REQUIRE(get<bool>(t) == true);
+    REQUIRE(get<long>(t) == 10);
+    static_assert(get<int>(t) == 5);
+    static_assert(get<bool>(t) == true);
+    static_assert(get<long>(t) == 10);
+}
+
 TEST_CASE("free get value categories", "[tuple]") {
     {
         auto const t = cib::tuple{42};
@@ -127,6 +146,13 @@ TEST_CASE("tuple size/elements", "[tuple]") {
     static_assert(std::is_same_v<cib::tuple_element_t<0, B>, int const &>);
     using C = cib::tuple<int &&>;
     static_assert(std::is_same_v<cib::tuple_element_t<0, C>, int &&>);
+}
+
+TEST_CASE("destructuring", "[tuple]") {
+    auto const t = cib::tuple{1, 3.14f};
+    auto const [i, f] = t;
+    CHECK(i == 1);
+    CHECK(f == 3.14f);
 }
 
 namespace {
@@ -342,6 +368,13 @@ TEST_CASE("make_indexed_tuple", "[tuple]") {
     static_assert(cib::make_indexed_tuple<>(1, 2, 3) == cib::tuple{1, 2, 3});
 }
 
+TEST_CASE("indexed_tuple destructuring", "[tuple]") {
+    auto const t = cib::make_indexed_tuple<>(1, 3.14f);
+    auto const [i, f] = t;
+    CHECK(i == 1);
+    CHECK(f == 3.14f);
+}
+
 TEST_CASE("tuple with user index", "[tuple]") {
     struct X;
     struct Y;
@@ -356,6 +389,15 @@ TEST_CASE("tuple with user index", "[tuple]") {
                                   map_entry<X, int>, map_entry<Y, int>>>);
     static_assert(cib::tuple_size_v<T> == 2);
     static_assert(T::size() == 2);
+}
+
+TEST_CASE("indexed_tuple ADL get", "[tuple]") {
+    struct X;
+    struct Y;
+    constexpr auto t = cib::make_indexed_tuple<key_for>(map_entry<X, int>{42},
+                                                        map_entry<Y, int>{17});
+    static_assert(get<X>(t).value == 42);
+    static_assert(get<Y>(t).value == 17);
 }
 
 namespace {

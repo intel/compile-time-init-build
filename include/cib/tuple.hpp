@@ -372,6 +372,20 @@ using tuple = detail::tuple_impl<std::index_sequence_for<Ts...>,
 template <typename IndexList, typename... Ts>
 using indexed_tuple =
     detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...>;
+
+namespace detail {
+template <std::size_t I, typename Tuple>
+[[nodiscard]] constexpr auto get(Tuple &&t)
+    -> decltype(std::forward<Tuple>(t)[index<I>]) {
+    return std::forward<Tuple>(t)[index<I>];
+}
+
+template <typename T, typename Tuple>
+[[nodiscard]] constexpr auto get(Tuple &&t)
+    -> decltype(std::forward<Tuple>(t).get(tag<T>)) {
+    return std::forward<Tuple>(t).get(tag<T>);
+}
+} // namespace detail
 #endif
 
 template <std::size_t I, typename Tuple>
