@@ -29,6 +29,18 @@ struct func_args<void(DataIterableT, ArgTs...) const> {
     using type = cib::tuple<ArgTs...>;
 };
 
+template <typename DataIterableT, typename... ArgTs>
+struct func_args<void(DataIterableT, ArgTs...) noexcept> {
+    using msg_type = remove_cvref_t<DataIterableT>;
+    using type = cib::tuple<ArgTs...>;
+};
+
+template <typename DataIterableT, typename... ArgTs>
+struct func_args<void(DataIterableT, ArgTs...) const noexcept> {
+    using msg_type = remove_cvref_t<DataIterableT>;
+    using type = cib::tuple<ArgTs...>;
+};
+
 template <typename DataIterableT, typename T, typename... ArgTs>
 struct func_args<void (T::*)(DataIterableT, ArgTs...)> {
     using msg_type = remove_cvref_t<DataIterableT>;
@@ -37,6 +49,18 @@ struct func_args<void (T::*)(DataIterableT, ArgTs...)> {
 
 template <typename DataIterableT, typename T, typename... ArgTs>
 struct func_args<void (T::*)(DataIterableT, ArgTs...) const> {
+    using msg_type = remove_cvref_t<DataIterableT>;
+    using type = cib::tuple<ArgTs...>;
+};
+
+template <typename DataIterableT, typename T, typename... ArgTs>
+struct func_args<void (T::*)(DataIterableT, ArgTs...) noexcept> {
+    using msg_type = remove_cvref_t<DataIterableT>;
+    using type = cib::tuple<ArgTs...>;
+};
+
+template <typename DataIterableT, typename T, typename... ArgTs>
+struct func_args<void (T::*)(DataIterableT, ArgTs...) const noexcept> {
     using msg_type = remove_cvref_t<DataIterableT>;
     using type = cib::tuple<ArgTs...>;
 };
