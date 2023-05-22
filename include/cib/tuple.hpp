@@ -352,41 +352,30 @@ template <typename T> constexpr auto tuple_size_v = T::size();
 template <std::size_t I, typename T>
 using tuple_element_t = decltype(T::ugly_Value(index<I>));
 
-#if __cpp_deduction_guides < 201907L
 template <typename... Ts>
 struct tuple : detail::tuple_impl<std::index_sequence_for<Ts...>,
-                                  detail::index_function_list<>, Ts...> {};
+                                  detail::index_function_list<>, Ts...> {
+  private:
+    [[nodiscard]] friend constexpr auto operator==(tuple const &, tuple const &)
+        -> bool = default;
+    [[nodiscard]] friend constexpr auto operator<=>(tuple const &,
+                                                    tuple const &) = default;
+};
 template <typename... Ts> tuple(Ts...) -> tuple<Ts...>;
 
 template <typename IndexList, typename... Ts>
 struct indexed_tuple
-    : detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...> {};
+    : detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...> {
+  private:
+    [[nodiscard]] friend constexpr auto operator==(indexed_tuple const &,
+                                                   indexed_tuple const &)
+        -> bool = default;
+    [[nodiscard]] friend constexpr auto
+    operator<=>(indexed_tuple const &, indexed_tuple const &) = default;
+};
 
 template <typename... Ts>
 indexed_tuple(Ts...) -> indexed_tuple<detail::index_function_list<>, Ts...>;
-#else
-template <typename... Ts>
-using tuple = detail::tuple_impl<std::index_sequence_for<Ts...>,
-                                 detail::index_function_list<>, Ts...>;
-
-template <typename IndexList, typename... Ts>
-using indexed_tuple =
-    detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...>;
-
-namespace detail {
-template <std::size_t I, typename Tuple>
-[[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t)[index<I>]) {
-    return std::forward<Tuple>(t)[index<I>];
-}
-
-template <typename T, typename Tuple>
-[[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t).get(tag<T>)) {
-    return std::forward<Tuple>(t).get(tag<T>);
-}
-} // namespace detail
-#endif
 
 template <std::size_t I, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t)

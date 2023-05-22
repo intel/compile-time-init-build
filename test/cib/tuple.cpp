@@ -432,3 +432,25 @@ TEST_CASE("apply indices", "[tuple]") {
     constexpr auto u = cib::apply_indices<key_for>(t);
     static_assert(cib::get<X>(u).value == 42);
 }
+
+namespace detail {
+template <typename, typename> struct concat;
+
+template <template <typename...> typename L, typename... Ts>
+struct concat<L<Ts...>, L<>> {
+    using type = L<Ts...>;
+};
+
+template <template <typename...> typename L, typename... Ts, typename U,
+          typename... Us>
+struct concat<L<Ts...>, L<U, Us...>> {
+    using type = typename concat<L<Ts..., U>, L<Us...>>::type;
+};
+} // namespace detail
+
+TEST_CASE("tuple type-based concat", "[tuple]") {
+    using T = cib::tuple<int>;
+    using U = cib::tuple<float>;
+    static_assert(std::is_same_v<typename detail::concat<T, U>::type,
+                                 cib::tuple<int, float>>);
+}
