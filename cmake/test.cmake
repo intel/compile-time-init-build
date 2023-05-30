@@ -20,25 +20,23 @@ else()
 endif()
 
 macro(get_catch2)
-    if(NOT DEFINED CPM_GOT_CATCH)
+    if(NOT TARGET Catch2::Catch2WithMain)
         add_versioned_package("gh:catchorg/Catch2@3.3.2")
         list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
         include(Catch)
-        set(CPM_GOT_CATCH 1)
     endif()
 endmacro()
 
 macro(get_gtest)
-    if(NOT DEFINED CPM_GOT_GTEST)
+    if(NOT TARGET gtest)
         add_versioned_package("gh:google/googletest@1.13.0")
         include(GoogleTest)
-        set(CPM_GOT_GTEST 1)
     endif()
 endmacro()
 
 macro(get_gunit)
     get_gtest()
-    if(NOT DEFINED CPM_GOT_GUNIT)
+    if(NOT DEFINED gunit_SOURCE_DIR)
         add_versioned_package(
             NAME
             gunit
@@ -48,23 +46,36 @@ macro(get_gunit)
             cpp-testing/GUnit
             DOWNLOAD_ONLY
             YES)
-        set(CPM_GOT_GUNIT 1)
     endif()
 endmacro()
 
 macro(add_boost_di)
-    if(NOT DEFINED CPM_GOT_BOOST_DI)
+    if(NOT TARGET Boost.DI)
         add_versioned_package("gh:boost-ext/di#9866a4a")
-        set(CPM_GOT_BOOST_DI 1)
     endif()
 endmacro()
 
 macro(add_gherkin)
-    if(NOT DEFINED CPM_GOT_GHERKIN)
+    if(NOT TARGET gherkin-cpp)
         add_subdirectory(
             ${gunit_SOURCE_DIR}/libs/gherkin-cpp
             ${gunit_BINARY_DIR}/libs/gherkin-cpp EXCLUDE_FROM_ALL SYSTEM)
-        set(CPM_GOT_GHERKIN 1)
+    endif()
+endmacro()
+
+macro(add_rapidcheck)
+    if(NOT TARGET rapidcheck)
+        add_versioned_package(NAME rapidcheck GIT_TAG a5724ea GITHUB_REPOSITORY
+                              emil-e/rapidcheck)
+        add_subdirectory(
+            ${rapidcheck_SOURCE_DIR}/extras/catch
+            ${rapidcheck_BINARY_DIR}/extras/catch EXCLUDE_FROM_ALL SYSTEM)
+        add_subdirectory(
+            ${rapidcheck_SOURCE_DIR}/extras/gtest
+            ${rapidcheck_BINARY_DIR}/extras/gtest EXCLUDE_FROM_ALL SYSTEM)
+        add_subdirectory(
+            ${rapidcheck_SOURCE_DIR}/extras/gmock
+            ${rapidcheck_BINARY_DIR}/extras/gmock EXCLUDE_FROM_ALL SYSTEM)
     endif()
 endmacro()
 
@@ -82,25 +93,42 @@ function(add_unit_test name)
 
     if(UNIT_CATCH2)
         get_catch2()
+        add_rapidcheck()
         catch_discover_tests(${name})
-        target_link_libraries_system(${name} PRIVATE Catch2::Catch2WithMain)
+        target_link_libraries_system(${name} PRIVATE Catch2::Catch2WithMain
+                                     rapidcheck_catch)
         set(target_test_command $<TARGET_FILE:${name}> "--order" "rand")
     elseif(UNIT_GTEST)
         get_gtest()
+        add_rapidcheck()
         gtest_discover_tests(${name})
-        target_link_libraries_system(${name} PRIVATE gmock gtest gmock_main)
+        target_link_libraries_system(
+            ${name}
+            PRIVATE
+            gmock
+            gtest
+            gmock_main
+            rapidcheck_gtest
+            rapidcheck_gmock)
         set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
     elseif(UNIT_GUNIT)
         get_gunit()
         add_boost_di()
-        gtest_discover_tests(${name})
+        add_rapidcheck()
         target_include_directories(
             ${name} SYSTEM
             PRIVATE ${gunit_SOURCE_DIR}/include
                     ${gunit_SOURCE_DIR}/libs/json/single_include/nlohmann)
-        target_link_libraries_system(${name} PRIVATE gtest_main gmock_main
-                                     Boost.DI)
+        target_link_libraries_system(
+            ${name}
+            PRIVATE
+            gtest_main
+            gmock_main
+            Boost.DI
+            rapidcheck_gtest
+            rapidcheck_gmock)
         set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
+        add_test(NAME ${name} COMMAND ${target_test_command})
     else()
         set(target_test_command $<TARGET_FILE:${name}>)
         add_test(NAME ${name} COMMAND ${target_test_command})
@@ -133,12 +161,21 @@ function(add_feature_test name)
     get_gunit()
     add_gherkin()
     add_boost_di()
+    add_rapidcheck()
     target_include_directories(
         ${name} SYSTEM
         PRIVATE ${gunit_SOURCE_DIR}/include
-                ${gunit_SOURCE_DIR}/libs/json/single_include/nlohmann)
-    target_link_libraries_system(${name} PRIVATE gtest_main gmock_main
-                                 gherkin-cpp Boost.DI)
+                ${gunit_SOURCE_DIR}/libs/json/single_include/nlohmann
+                ${rapidcheck_SOURCE_DIR}/extras/gmock/include)
+    target_link_libraries_system(
+        ${name}
+        PRIVATE
+        gtest_main
+        gmock_main
+        gherkin-cpp
+        Boost.DI
+        rapidcheck_gtest
+        rapidcheck_gmock)
     set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
 
     add_custom_target(all_${name} ALL DEPENDS run_${name})
