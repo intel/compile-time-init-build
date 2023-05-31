@@ -2,69 +2,28 @@
 
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
+#include <container/vector.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
 #include <sc/fwd.hpp>
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
-#include <optional>
+#include <initializer_list>
+#include <iterator>
 #include <type_traits>
 
 namespace msg {
 namespace detail {
-// https://en.cppreference.com/w/cpp/types/void_t
-// https://en.cppreference.com/w/Cppreference:FAQ
-template <typename, typename = void> constexpr bool is_iterable{};
-
 template <typename T>
-constexpr bool is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),
-                                          decltype(std::declval<T>().end())>> =
-    true;
+concept range = requires(T &t) {
+                    std::begin(t);
+                    std::end(t);
+                };
 } // namespace detail
 
-template <std::uint32_t MaxNumDWordsT> struct message_data {
-    constexpr static auto MaxNumDWords = MaxNumDWordsT;
-    std::uint32_t num_dwords{};
-    std::array<std::uint32_t, MaxNumDWords> data{};
-
-    constexpr message_data() = default;
-
-    constexpr message_data(std::initializer_list<std::uint32_t> src)
-        : num_dwords{static_cast<std::uint32_t>(src.size())} {
-        std::copy(src.begin(), src.end(), data.begin());
-    }
-
-    [[nodiscard]] constexpr auto operator[](std::size_t index) const
-        -> std::uint32_t const & {
-        return data[index];
-    }
-
-    [[nodiscard]] constexpr auto operator[](std::size_t index)
-        -> std::uint32_t & {
-        return data[index];
-    }
-
-    template <std::size_t Index>
-    [[nodiscard]] constexpr auto get() const -> std::uint32_t const & {
-        return data.template get<Index>();
-    }
-
-    [[nodiscard]] constexpr auto operator==(message_data const &rhs) const
-        -> bool {
-        return this->num_dwords == rhs.num_dwords && this->data == rhs.data;
-    }
-
-    [[nodiscard]] constexpr auto operator!=(message_data const &rhs) const
-        -> bool {
-        return !(*this == rhs);
-    }
-
-    [[nodiscard]] constexpr auto size() const -> std::size_t {
-        return num_dwords;
-    }
-};
+template <std::uint32_t MaxNumDWords>
+using message_data = cib::vector<std::uint32_t, MaxNumDWords>;
 
 template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
     constexpr static auto matcher =
@@ -73,8 +32,7 @@ template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
     template <typename BaseMsgType>
     [[nodiscard]] constexpr auto operator()(BaseMsgType const &base_msg) const
         -> bool {
-        MsgType const msg{base_msg.data};
-        return matcher(msg);
+        return matcher(MsgType{base_msg});
     }
 
     [[nodiscard]] constexpr auto describe() const { return matcher.describe(); }
@@ -82,8 +40,7 @@ template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
     template <typename BaseMsgType>
     [[nodiscard]] constexpr auto
     describe_match(BaseMsgType const &base_msg) const {
-        MsgType const msg{base_msg.data};
-        return matcher.describe_match(msg);
+        return matcher.describe_match(MsgType{base_msg});
     }
 };
 
@@ -136,20 +93,20 @@ struct message_base : public message_data<MaxNumDWords> {
         return match_valid_encoding(*this);
     }
 
-    constexpr message_base(std::initializer_list<std::uint32_t> src)
-        : message_data<MaxNumDWords>{src} {
-        this->num_dwords = NumDWordsT;
+    constexpr message_base(std::initializer_list<std::uint32_t> src) {
+        this->current_size = NumDWordsT;
 
         if (src.size() == 0) {
             // default constructor, set default values
             cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
+        } else {
+            std::copy(std::begin(src), std::end(src), std::begin(*this));
         }
     }
 
     template <typename... ArgFields>
-    explicit constexpr message_base(ArgFields... argFields)
-        : message_data<MaxNumDWords>{} {
-        this->num_dwords = NumDWordsT;
+    explicit constexpr message_base(ArgFields... argFields) {
+        this->current_size = NumDWordsT;
 
         if constexpr (sizeof...(argFields) == 0) {
             // default constructor, set default values
@@ -158,9 +115,9 @@ struct message_base : public message_data<MaxNumDWords> {
             auto const arg_field_tuple = cib::make_tuple(argFields...);
             auto const first_arg = cib::get<0>(arg_field_tuple);
 
-            if constexpr (detail::is_iterable<decltype(first_arg)>) {
+            if constexpr (detail::range<decltype(first_arg)>) {
                 std::copy(std::begin(first_arg), std::end(first_arg),
-                          std::begin(this->data));
+                          std::begin(*this));
 
             } else {
                 // TODO: ensure all required fields are set
@@ -179,13 +136,13 @@ struct message_base : public message_data<MaxNumDWords> {
     template <typename FieldType> constexpr void set(FieldType field) {
         static_assert(is_valid_field<FieldType>());
         FieldType::fits_inside(*this);
-        field.insert(this->data);
+        field.insert(*this);
     }
 
     template <typename FieldType> [[nodiscard]] constexpr auto get() const {
         static_assert(is_valid_field<FieldType>());
         FieldType::fits_inside(*this);
-        return FieldType::extract(this->data);
+        return FieldType::extract(*this);
     }
 
     [[nodiscard]] constexpr auto describe() const {

@@ -93,7 +93,7 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
                      "callback",
                      name, match_handler.describe());
 
-            dispatch(msg.data, args...);
+            dispatch(msg, args...);
 
             return true;
         }

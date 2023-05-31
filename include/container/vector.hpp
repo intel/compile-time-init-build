@@ -16,7 +16,10 @@ namespace cib {
  * @tparam Capacity  Maximum amount of elements the vector can hold.
  */
 template <typename ValueType, std::size_t Capacity> class vector {
+  protected:
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     std::array<ValueType, Capacity> storage{};
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     std::size_t current_size{};
 
   public:
@@ -81,6 +84,16 @@ template <typename ValueType, std::size_t Capacity> class vector {
         return storage[index];
     }
 
+    template <std::size_t Index>
+    [[nodiscard]] constexpr auto get() const -> ValueType const & {
+        return std::get<Index>(storage);
+    }
+
+    template <std::size_t Index>
+    [[nodiscard]] constexpr auto get() -> ValueType & {
+        return std::get<Index>(storage);
+    }
+
     [[nodiscard]] constexpr auto full() const -> bool {
         return current_size == Capacity;
     }
@@ -122,4 +135,15 @@ template <typename ValueType, std::size_t Capacity> class vector {
 
 template <typename T, typename... Ts>
 vector(T, Ts...) -> vector<T, 1 + sizeof...(Ts)>;
+
+template <std::size_t I, typename T, std::size_t N>
+auto get(vector<T, N> &v) -> decltype(auto) {
+    return v.template get<I>();
+}
+
+template <std::size_t I, typename T, std::size_t N>
+auto get(vector<T, N> const &v) -> decltype(auto) {
+    return v.template get<I>();
+}
+
 } // namespace cib

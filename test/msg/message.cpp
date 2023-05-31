@@ -22,8 +22,8 @@ TEST_CASE("TestMessageDataFieldConstruction", "[message]") {
     REQUIRE(0x42 == msg.get<TestField2>());
     REQUIRE(0xd00d == msg.get<TestField3>());
 
-    REQUIRE(0x8000ba11 == msg.data[0]);
-    REQUIRE(0x0042d00d == msg.data[1]);
+    REQUIRE(0x8000ba11 == msg[0]);
+    REQUIRE(0x0042d00d == msg[1]);
 }
 
 TEST_CASE("TestMessageDataFieldDefaultConstruction", "[message]") {
@@ -34,8 +34,8 @@ TEST_CASE("TestMessageDataFieldDefaultConstruction", "[message]") {
     REQUIRE(0x0 == msg.get<TestField2>());
     REQUIRE(0x0 == msg.get<TestField3>());
 
-    REQUIRE(0x80000000 == msg.data[0]);
-    REQUIRE(0x0 == msg.data[1]);
+    REQUIRE(0x80000000 == msg[0]);
+    REQUIRE(0x0 == msg[1]);
 }
 
 TEST_CASE("TestMessageDataFieldInitializerConstruction", "[message]") {
@@ -46,8 +46,8 @@ TEST_CASE("TestMessageDataFieldInitializerConstruction", "[message]") {
     REQUIRE(0x42 == msg.get<TestField2>());
     REQUIRE(0xd00d == msg.get<TestField3>());
 
-    REQUIRE(0x8000ba11 == msg.data[0]);
-    REQUIRE(0x0042d00d == msg.data[1]);
+    REQUIRE(0x8000ba11 == msg[0]);
+    REQUIRE(0x0042d00d == msg[1]);
 }
 
 TEST_CASE("TestMessageDataDWordConstruction", "[message]") {
@@ -57,8 +57,8 @@ TEST_CASE("TestMessageDataDWordConstruction", "[message]") {
     REQUIRE(0x42 == msg.get<TestField2>());
     REQUIRE(0xd00d == msg.get<TestField3>());
 
-    REQUIRE(0x8000ba11 == msg.data[0]);
-    REQUIRE(0x0042d00d == msg.data[1]);
+    REQUIRE(0x8000ba11 == msg[0]);
+    REQUIRE(0x0042d00d == msg[1]);
 }
 
 TEST_CASE("EqualToMatcher", "[message]") {
