@@ -48,7 +48,7 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
-    handler.handle({0x8000ba11, 0x0042d00d});
+    handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d});
 
     REQUIRE(correctDispatch);
 }
@@ -77,7 +77,7 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
-    handler.handle({0x4400ba11, 0x0042d00d});
+    handler.handle(TestBaseMsg{0x4400ba11, 0x0042d00d});
 
     REQUIRE(correctDispatch);
 }
@@ -96,7 +96,7 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg, int>{callbacks};
 
-    handler.handle({0x8000ba11, 0x0042d00d}, 0xcafe);
+    handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d}, 0xcafe);
 
     REQUIRE(correctDispatch);
 }
@@ -111,7 +111,7 @@ TEST_CASE("TestMsgWithinEnum", "[handler]") {
     auto const handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
-    handler.handle({0x0800ba11, 0x0042d00d});
+    handler.handle(TestBaseMsg{0x0800ba11, 0x0042d00d});
     REQUIRE(handled);
 }
 
@@ -126,7 +126,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         auto const handler =
             msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
-        handler.handle({0x8000ba11, 0x0042d00d});
+        handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d});
         REQUIRE(correct);
     }
     {
@@ -138,7 +138,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         auto const handler =
             msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
-        handler.handle({0x8100ba11, 0x0042d00d});
+        handler.handle(TestBaseMsg{0x8100ba11, 0x0042d00d});
         REQUIRE(correct);
     }
 }

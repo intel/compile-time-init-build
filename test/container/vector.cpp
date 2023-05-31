@@ -32,6 +32,7 @@ TEST_CASE("NonConstVector", "[vector]") {
 
     vector[2] = 0x55;
     CHECK(0x55 == vector[2]);
+    CHECK(0x55 == get<2>(vector));
 }
 
 TEST_CASE("ConstVector", "[vector]") {
@@ -41,6 +42,7 @@ TEST_CASE("ConstVector", "[vector]") {
     CHECK(0xFF0F == vector[0]);
     CHECK(0x1420 == vector[1]);
     CHECK(0x5530 == vector[2]);
+    CHECK(0x5530 == get<2>(vector));
 }
 
 TEST_CASE("OutOfBounds", "[vector]") {
