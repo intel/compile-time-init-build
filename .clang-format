@@ -7,7 +7,7 @@ IncludeCategories:
     Priority: 1
   - Regex: '^<(container|cib|flow|interrupt|log|msg|sc|seq)/.*'
     Priority: 2
-  - Regex: '^<(boost|catch2|fmt|gmock|gtest)/.*'
+  - Regex: '^<(boost|catch2|fmt|gmock|gtest|rapidcheck)/.*'
     Priority: 3
   - Regex: '<.*'
     Priority: 4
