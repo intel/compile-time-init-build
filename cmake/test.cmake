@@ -96,7 +96,7 @@ function(add_unit_test name)
         add_rapidcheck()
         catch_discover_tests(${name})
         target_link_libraries_system(${name} PRIVATE Catch2::Catch2WithMain
-                                     rapidcheck_catch)
+                                     rapidcheck rapidcheck_catch)
         set(target_test_command $<TARGET_FILE:${name}> "--order" "rand")
     elseif(UNIT_GTEST)
         get_gtest()
@@ -108,6 +108,7 @@ function(add_unit_test name)
             gmock
             gtest
             gmock_main
+            rapidcheck
             rapidcheck_gtest
             rapidcheck_gmock)
         set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
@@ -125,6 +126,7 @@ function(add_unit_test name)
             gtest_main
             gmock_main
             Boost.DI
+            rapidcheck
             rapidcheck_gtest
             rapidcheck_gmock)
         set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
@@ -174,6 +176,7 @@ function(add_feature_test name)
         gmock_main
         gherkin-cpp
         Boost.DI
+        rapidcheck
         rapidcheck_gtest
         rapidcheck_gmock)
     set(target_test_command $<TARGET_FILE:${name}> "--gtest_shuffle")
