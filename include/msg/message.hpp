@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <initializer_list>
 #include <iterator>
 #include <type_traits>
 
@@ -52,24 +51,22 @@ template <typename MsgType, typename AdditionalMatcher>
 template <typename NameType, std::uint32_t MaxNumDWords,
           std::uint32_t NumDWordsT, typename... FieldsT>
 struct message_base : public message_data<MaxNumDWords> {
-    using This = message_base<NameType, MaxNumDWords, NumDWordsT, FieldsT...>;
     constexpr static NameType name{};
     constexpr static auto NumDWords = NumDWordsT;
     using FieldTupleType = cib::tuple<FieldsT...>;
 
     template <typename additional_matcherType>
     [[nodiscard]] constexpr static auto match(additional_matcherType) {
-        return is_valid_msg_t<This, additional_matcherType>{};
+        return is_valid_msg_t<message_base, additional_matcherType>{};
     }
 
     // TODO: need a static_assert to check that fields are not overlapping
 
     template <typename FieldType>
     [[nodiscard]] constexpr static auto is_valid_field() -> bool {
-        return FieldTupleType{}.fold_right(false, [](auto field, bool isValid) {
-            return isValid || std::is_same_v<typename FieldType::FieldId,
-                                             typename decltype(field)::FieldId>;
-        });
+        return (std::is_same_v<typename FieldType::FieldId,
+                               typename FieldsT::FieldId> or
+                ...);
     }
 
     template <typename T>
@@ -93,43 +90,37 @@ struct message_base : public message_data<MaxNumDWords> {
         return match_valid_encoding(*this);
     }
 
-    constexpr message_base(std::initializer_list<std::uint32_t> src) {
-        this->current_size = NumDWordsT;
+    constexpr message_base() {
+        resize_and_overwrite(
+            *this, [](std::uint32_t *, std::size_t) { return NumDWordsT; });
+        (set(FieldsT{}), ...);
+    }
 
-        if (src.size() == 0) {
-            // default constructor, set default values
-            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
-        } else {
-            std::copy(std::begin(src), std::end(src), std::begin(*this));
-        }
+    template <detail::range R> explicit constexpr message_base(R const &r) {
+        static_assert(std::is_same_v<typename R::value_type, std::uint32_t>);
+        resize_and_overwrite(*this, [&](std::uint32_t *dest,
+                                        std::size_t max_size) {
+            std::copy_n(std::begin(r), std::min(std::size(r), max_size), dest);
+            return NumDWordsT;
+        });
     }
 
     template <typename... ArgFields>
     explicit constexpr message_base(ArgFields... argFields) {
-        this->current_size = NumDWordsT;
-
-        if constexpr (sizeof...(argFields) == 0) {
-            // default constructor, set default values
-            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
+        if constexpr ((std::is_integral_v<std::remove_cvref_t<ArgFields>> and
+                       ...)) {
+            static_assert(sizeof...(ArgFields) == NumDWordsT);
+            resize_and_overwrite(*this, [&](std::uint32_t *dest, std::size_t) {
+                ((*dest++ = static_cast<std::uint32_t>(argFields)), ...);
+                return NumDWordsT;
+            });
         } else {
-            auto const arg_field_tuple = cib::make_tuple(argFields...);
-            auto const first_arg = cib::get<0>(arg_field_tuple);
-
-            if constexpr (detail::range<decltype(first_arg)>) {
-                std::copy(std::begin(first_arg), std::end(first_arg),
-                          std::begin(*this));
-
-            } else {
-                // TODO: ensure all required fields are set
-                // TODO: ensure fields aren't set more than once
-
-                // set default values
-                cib::for_each([&](auto field) { set(field); },
-                              FieldTupleType{});
-
-                // set specified field values
-                cib::for_each([&](auto field) { set(field); }, arg_field_tuple);
-            }
+            resize_and_overwrite(
+                *this, [](std::uint32_t *, std::size_t) { return NumDWordsT; });
+            // TODO: ensure all required fields are set
+            // TODO: ensure fields aren't set more than once
+            (set(FieldsT{}), ...);
+            (set(argFields), ...);
         }
     }
 

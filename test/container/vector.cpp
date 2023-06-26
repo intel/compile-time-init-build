@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace {
 TEST_CASE("EmptyVector", "[vector]") {
     cib::vector<uint32_t, 3> const vector{};
     CHECK(0u == vector.size());
@@ -201,4 +200,14 @@ TEST_CASE("CapacityZeroVector", "[vector]") {
     CHECK(vector.begin() == vector.end());
     CHECK(vector == cib::vector<int, 0>{});
 }
-} // namespace
+
+TEST_CASE("Overwrite", "[vector]") {
+    cib::vector<int, 5> v{1, 2, 3, 4, 5};
+    resize_and_overwrite(v, [](int *dest, std::size_t max_size) {
+        CHECK(max_size == 5);
+        *dest = 42;
+        return 1u;
+    });
+    REQUIRE(v.size() == 1u);
+    CHECK(v[0] == 42);
+}
