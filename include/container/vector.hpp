@@ -16,10 +16,7 @@ namespace cib {
  * @tparam Capacity  Maximum amount of elements the vector can hold.
  */
 template <typename ValueType, std::size_t Capacity> class vector {
-  protected:
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     std::array<ValueType, Capacity> storage{};
-    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     std::size_t current_size{};
 
   public:
@@ -116,6 +113,12 @@ template <typename ValueType, std::size_t Capacity> class vector {
             return {};
         }
         return storage[--current_size];
+    }
+
+    template <typename F>
+    friend constexpr auto resize_and_overwrite(vector &v, F &&f) -> void {
+        v.current_size =
+            std::forward<F>(f)(std::data(v.storage), std::size(v.storage));
     }
 
   private:
