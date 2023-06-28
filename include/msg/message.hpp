@@ -19,6 +19,13 @@ concept range = requires(T &t) {
                     std::begin(t);
                     std::end(t);
                 };
+
+template <typename T>
+using iterator_t = decltype(std::begin(std::declval<T &>()));
+
+template <typename T, typename V>
+concept convertible_range_of =
+    range<T> and std::convertible_to<std::iter_value_t<iterator_t<T>>, V>;
 } // namespace detail
 
 template <std::uint32_t MaxNumDWords>
@@ -96,8 +103,8 @@ struct message_base : public message_data<MaxNumDWords> {
         (set(FieldsT{}), ...);
     }
 
-    template <detail::range R> explicit constexpr message_base(R const &r) {
-        static_assert(std::is_same_v<typename R::value_type, std::uint32_t>);
+    template <detail::convertible_range_of<std::uint32_t> R>
+    explicit constexpr message_base(R const &r) {
         resize_and_overwrite(*this, [&](std::uint32_t *dest,
                                         std::size_t max_size) {
             std::copy_n(std::begin(r), std::min(std::size(r), max_size), dest);
