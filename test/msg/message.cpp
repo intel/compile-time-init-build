@@ -75,6 +75,18 @@ TEST_CASE("TestMessageDataPartialRangeConstruction", "[message]") {
     CHECK(0x0042d00d == msg[1]);
 }
 
+TEST_CASE("TestMessageDataConvertibleRangeConstruction", "[message]") {
+    TestMsg msg{std::array<std::uint16_t, 2>{0xba11, 0xd00d}};
+
+    CHECK(0xba11 == msg.get<TestField1>());
+    CHECK(0x0 == msg.get<TestField2>());
+    CHECK(0xd00d == msg.get<TestField3>());
+
+    REQUIRE(msg.size() == 2u);
+    CHECK(0x0000ba11 == msg[0]);
+    CHECK(0x0000d00d == msg[1]);
+}
+
 TEST_CASE("EqualToMatcher", "[message]") {
     TestMsg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
