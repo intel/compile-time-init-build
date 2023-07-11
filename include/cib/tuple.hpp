@@ -222,6 +222,8 @@ struct index_pair {
     std::size_t inner;
 };
 
+template <typename...> constexpr auto always_false_v = false;
+
 template <std::size_t... Is, template <typename> typename... Fs, typename... Ts>
 struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     : element_helper<Fs...>::template element_t<Is, Ts>... {
@@ -269,17 +271,33 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> *i) const & -> decltype(auto) {
+        static_assert(I < sizeof...(Ts), "Tuple index out of bounds!");
         return this->ugly_iGet_clvr(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> *i) & -> decltype(auto) {
+        static_assert(I < sizeof...(Ts), "Tuple index out of bounds!");
         return this->ugly_iGet_lvr(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> *i) && -> decltype(auto) {
+        static_assert(I < sizeof...(Ts), "Tuple index out of bounds!");
         return std::move(*this).ugly_iGet_rvr(i);
+    }
+
+    constexpr auto ugly_tGet_clvr(auto idx) const & -> void {
+        static_assert(always_false_v<decltype(idx), Ts...>,
+                      "Type not found in tuple!");
+    }
+    constexpr auto ugly_tGet_lvr(auto idx) & -> void {
+        static_assert(always_false_v<decltype(idx), Ts...>,
+                      "Type not found in tuple!");
+    }
+    constexpr auto ugly_tGet_rvr(auto idx) && -> void {
+        static_assert(always_false_v<decltype(idx), Ts...>,
+                      "Type not found in tuple!");
     }
 
     [[nodiscard]] constexpr auto get(auto idx) const & -> decltype(auto) {
