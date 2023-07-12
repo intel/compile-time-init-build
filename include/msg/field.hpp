@@ -15,7 +15,7 @@ namespace msg {
  * @tparam MsbT  most significant bit position for the field
  * @tparam LsbT  least significant bit position for the field
  */
-template <typename NameTypeT, std::uint32_t DWordIndexT, std::uint32_t MsbT,
+template <typename NameTypeT, std::uint32_t DWordIndex, std::uint32_t MsbT,
           std::uint32_t LsbT, typename T = std::uint32_t, T DefaultValue = T{},
           typename MatchRequirementsType = match::always_t<true>>
 class field {
@@ -29,17 +29,17 @@ class field {
     constexpr static size_t size = (MsbT - LsbT) + 1;
     static_assert(size <= 64, "field must be 64 bits or smaller");
 
-    using FieldId = field<NameTypeT, DWordIndexT, MsbT, LsbT, T>;
-    using This = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue,
+    using FieldId = field<NameTypeT, DWordIndex, MsbT, LsbT, T>;
+    using This = field<NameTypeT, DWordIndex, MsbT, LsbT, T, DefaultValue,
                        MatchRequirementsType>;
     using ValueType = T;
 
-    template <typename MsgType> constexpr static void fits_inside(MsgType) {
-        static_assert(DWordIndex < MsgType::NumDWords);
-    }
-
     using NameType = NameTypeT;
-    constexpr static auto DWordIndex = DWordIndexT;
+    constexpr static auto MaxDWordExtent = DWordIndex + (MsbT / 32);
+
+    template <typename MsgType> constexpr static void fits_inside(MsgType) {
+        static_assert(MaxDWordExtent < MsgType::max_num_dwords);
+    }
 
     constexpr static NameType name{};
     constexpr static uint64_t bit_mask = [] {
@@ -80,34 +80,34 @@ class field {
 
     template <T NewGreaterValue>
     using WithGreaterThan =
-        field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue,
+        field<NameTypeT, DWordIndex, MsbT, LsbT, T, NewGreaterValue,
               msg::greater_than_t<This, T, NewGreaterValue>>;
 
     template <T NewDefaultValue>
     using WithDefault =
-        field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewDefaultValue>;
+        field<NameTypeT, DWordIndex, MsbT, LsbT, T, NewDefaultValue>;
 
     template <T NewRequiredValue>
     using WithRequired =
-        field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewRequiredValue,
+        field<NameTypeT, DWordIndex, MsbT, LsbT, T, NewRequiredValue,
               msg::equal_to_t<This, T, NewRequiredValue>>;
 
     template <T... PotentialValues>
-    using WithIn = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, T{},
+    using WithIn = field<NameTypeT, DWordIndex, MsbT, LsbT, T, T{},
                          msg::in_t<This, T, PotentialValues...>>;
 
     template <typename NewRequiredMatcher>
-    using WithMatch = field<NameTypeT, DWordIndexT, MsbT, LsbT, T, DefaultValue,
+    using WithMatch = field<NameTypeT, DWordIndex, MsbT, LsbT, T, DefaultValue,
                             NewRequiredMatcher>;
 
     template <T NewGreaterValue>
     using WithGreaterThanOrEqualTo =
-        field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewGreaterValue,
+        field<NameTypeT, DWordIndex, MsbT, LsbT, T, NewGreaterValue,
               msg::greater_than_or_equal_to_t<This, T, NewGreaterValue>>;
 
     template <T NewLesserValue>
     using WithLessThanOrEqualTo =
-        field<NameTypeT, DWordIndexT, MsbT, LsbT, T, NewLesserValue,
+        field<NameTypeT, DWordIndex, MsbT, LsbT, T, NewLesserValue,
               msg::less_than_or_equal_to_t<This, T, NewLesserValue>>;
 
     constexpr explicit field(T const &new_value) : value{new_value} {}

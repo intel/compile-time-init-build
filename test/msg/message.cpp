@@ -12,7 +12,7 @@ using TestField2 = field<decltype("TestField2"_sc), 1, 23, 16, std::uint32_t>;
 using TestField3 = field<decltype("TestField3"_sc), 1, 15, 0, std::uint32_t>;
 
 using TestMsg =
-    message_base<decltype("TestMsg"_sc), 4, 2, TestIdField::WithRequired<0x80>,
+    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
                  TestField1, TestField2, TestField3>;
 
 TEST_CASE("TestMessageDataFieldConstruction", "[message]") {
