@@ -14,9 +14,9 @@ using test_field_2 =
 using test_field_3 =
     field<decltype("test_field_3"_sc), 1, 15, 0, std::uint32_t>;
 
-using test_msg_t = message_base<decltype("test_msg"_sc), 4, 2,
-                                test_id_field::WithRequired<0x80>, test_field_1,
-                                test_field_2, test_field_3>;
+using test_msg_t =
+    message_base<decltype("test_msg"_sc), 2, test_id_field::WithRequired<0x80>,
+                 test_field_1, test_field_2, test_field_3>;
 
 struct test_service : ::msg::service<test_msg_t> {};
 

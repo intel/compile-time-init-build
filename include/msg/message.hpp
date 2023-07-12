@@ -55,11 +55,11 @@ template <typename MsgType, typename AdditionalMatcher>
     return is_valid_msg_t<MsgType, AdditionalMatcher>{};
 }
 
-template <typename NameType, std::uint32_t MaxNumDWords,
-          std::uint32_t NumDWordsT, typename... FieldsT>
+template <typename NameType, std::uint32_t MaxNumDWords, typename... FieldsT>
 struct message_base : public message_data<MaxNumDWords> {
     constexpr static NameType name{};
-    constexpr static auto NumDWords = NumDWordsT;
+    constexpr static auto max_num_dwords = MaxNumDWords;
+    static_assert((... and (FieldsT::MaxDWordExtent < MaxNumDWords)));
     using FieldTupleType = cib::tuple<FieldsT...>;
 
     template <typename additional_matcherType>
@@ -99,31 +99,33 @@ struct message_base : public message_data<MaxNumDWords> {
 
     constexpr message_base() {
         resize_and_overwrite(
-            *this, [](std::uint32_t *, std::size_t) { return NumDWordsT; });
+            *this, [](std::uint32_t *, std::size_t) { return MaxNumDWords; });
         (set(FieldsT{}), ...);
     }
 
     template <detail::convertible_range_of<std::uint32_t> R>
     explicit constexpr message_base(R const &r) {
-        resize_and_overwrite(*this, [&](std::uint32_t *dest,
-                                        std::size_t max_size) {
-            std::copy_n(std::begin(r), std::min(std::size(r), max_size), dest);
-            return NumDWordsT;
-        });
+        resize_and_overwrite(
+            *this, [&](std::uint32_t *dest, std::size_t max_size) {
+                auto const size = std::min(std::size(r), max_size);
+                std::copy_n(std::begin(r), size, dest);
+                return size;
+            });
     }
 
     template <typename... ArgFields>
     explicit constexpr message_base(ArgFields... argFields) {
         if constexpr ((std::is_integral_v<std::remove_cvref_t<ArgFields>> and
                        ...)) {
-            static_assert(sizeof...(ArgFields) == NumDWordsT);
+            static_assert(sizeof...(ArgFields) <= MaxNumDWords);
             resize_and_overwrite(*this, [&](std::uint32_t *dest, std::size_t) {
                 ((*dest++ = static_cast<std::uint32_t>(argFields)), ...);
-                return NumDWordsT;
+                return sizeof...(ArgFields);
             });
         } else {
-            resize_and_overwrite(
-                *this, [](std::uint32_t *, std::size_t) { return NumDWordsT; });
+            resize_and_overwrite(*this, [](std::uint32_t *, std::size_t) {
+                return MaxNumDWords;
+            });
             // TODO: ensure all required fields are set
             // TODO: ensure fields aren't set more than once
             (set(FieldsT{}), ...);
