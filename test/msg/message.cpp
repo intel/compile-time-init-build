@@ -1,3 +1,4 @@
+#include <msg/disjoint_field.hpp>
 #include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -9,7 +10,14 @@ using TestField1 = field<decltype("TestField1"_sc), 0, 15, 0, std::uint32_t>;
 
 using TestField2 = field<decltype("TestField2"_sc), 1, 23, 16, std::uint32_t>;
 
-using TestField3 = field<decltype("TestField3"_sc), 1, 15, 0, std::uint32_t>;
+using TestFieldLower =
+    field<decltype("TestFieldLower"_sc), 1, 15, 8, std::uint32_t>;
+
+using TestFieldUpper =
+    field<decltype("TestFieldUpper"_sc), 1, 7, 0, std::uint32_t>;
+
+using TestField3 = disjoint_field<decltype("TestField4"_sc),
+                                  cib::tuple<TestFieldLower, TestFieldUpper>>;
 
 using TestMsg =
     message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,

@@ -28,6 +28,12 @@ class disjoint_field {
                                 MatchRequirementsType>;
 
     using NameType = NameTypeT;
+    using ValueType = T;
+    constexpr static size_t MaxDWordExtent =
+        fields.fold_right(size_t{}, [](auto f, size_t maxExtent) {
+            using FieldType = decltype(f);
+            return std::max(size_t{FieldType::MaxDWordExtent}, maxExtent);
+        });
 
     template <typename MsgType> constexpr static void fits_inside(MsgType msg) {
         cib::for_each([&](auto field) { field.fits_inside(msg); }, fields);
@@ -98,10 +104,10 @@ class disjoint_field {
         (void)fields.fold_right(static_cast<uint64_t>(value),
                                 [&](auto fieldPrototype, uint64_t remaining) {
                                     using FieldType = decltype(fieldPrototype);
-                                    using ValueType =
+                                    using FieldValueType =
                                         typename FieldType::ValueType;
                                     decltype(fieldPrototype) const f{
-                                        static_cast<ValueType>(remaining)};
+                                        static_cast<FieldValueType>(remaining)};
                                     f.insert(data);
                                     return remaining >> f.size;
                                 });
