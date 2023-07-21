@@ -1,0 +1,18 @@
+set(TOOLCHAIN_ROOT "/usr")
+if(DEFINED ENV{TOOLCHAIN_ROOT})
+    set(TOOLCHAIN_ROOT $ENV{TOOLCHAIN_ROOT})
+endif()
+
+set(CMAKE_C_COMPILER "${TOOLCHAIN_ROOT}/bin/clang")
+set(CMAKE_CXX_COMPILER "${TOOLCHAIN_ROOT}/bin/clang++")
+
+if(DEFINED ENV{CC})
+    set(CMAKE_C_COMPILER $ENV{CC})
+endif()
+if(DEFINED ENV{CXX})
+    set(CMAKE_CXX_COMPILER $ENV{CXX})
+endif()
+
+if(DEFINED ENV{CXX_STDLIB})
+    set(CMAKE_CXX_FLAGS_INIT "-stdlib=$ENV{CXX_STDLIB}")
+endif()

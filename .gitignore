@@ -3,8 +3,6 @@
 /venv
 /examples/hello_world/build
 /.vscode
-/toolchains
-CMakePresets.json
 # clion
 .idea/
 cmake-build-*
