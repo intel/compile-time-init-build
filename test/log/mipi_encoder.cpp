@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <conc/concurrency.hpp>
+#include <cstdint>
 
 namespace {
 [[maybe_unused]] constexpr auto expected_header(logging::level level)
