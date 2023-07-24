@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 
 project(
     cib
@@ -37,7 +37,7 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>
         $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-braces>)
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+if(PROJECT_IS_TOP_LEVEL)
     clang_tidy_interface(cib)
 
     # Enable functional and performance test suites.

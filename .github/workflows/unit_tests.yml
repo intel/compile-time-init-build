@@ -24,23 +24,31 @@ jobs:
         compiler: [clang, gcc]
         version: [12, 14, 15]
         cxx_standard: [20]
+        stdlib: [libstdc++, libc++]
         build_type: [Debug]
         include:
           - version: 15
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
-            cc: "/usr/lib/llvm-15/bin/clang"
-            cxx: "/usr/lib/llvm-15/bin/clang++"
+            toolchain_root: "/usr/lib/llvm-15"
+            cc: "clang"
+            cxx: "clang++"
+          - version: 15
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15 && sudo apt install -y libc++-15-dev libc++abi-15-dev
           - version: 14
             compiler: clang
             install: sudo apt update && sudo apt install -y clang-14
-            cc: "/usr/lib/llvm-14/bin/clang"
-            cxx: "/usr/lib/llvm-14/bin/clang++"
+            toolchain_root: "/usr/lib/llvm-14"
+            cc: "clang"
+            cxx: "clang++"
           - version: 12
             compiler: gcc
             install: sudo apt update && sudo apt install -y gcc-12
-            cc: "/usr/bin/gcc-12"
-            cxx: "/usr/bin/g++-12"
+            toolchain_root: "/usr"
+            cc: "gcc-12"
+            cxx: "g++-12"
         exclude:
           - compiler: gcc
             version: 15
@@ -48,6 +56,8 @@ jobs:
             version: 14
           - compiler: clang
             version: 12
+          - compiler: gcc
+            stdlib: libc++
 
     steps:
       - uses: actions/checkout@v3
@@ -59,13 +69,14 @@ jobs:
 
       - name: Configure CMake
         env:
-          CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
-          CXX_STANDARD: ${{ matrix.cxx_standard }}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+          CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
+          CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
+          CXX_STANDARD: ${{matrix.cxx_standard}}
+          CXX_STDLIB: ${{matrix.stdlib}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchains/${{matrix.compiler}}.cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
 
       - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -t build_unit_tests
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
