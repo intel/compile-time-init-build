@@ -2,7 +2,7 @@
 
 #include <log/level.hpp>
 
-#include <string_view>
+#include <cstdint>
 
 template <logging::level level, typename MessageString> struct message {};
 
