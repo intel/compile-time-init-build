@@ -11,5 +11,10 @@ struct components : public detail::config_item {
     [[nodiscard]] constexpr auto extends_tuple(Args const &...args) const {
         return cib::tuple_cat(Components::config.extends_tuple(args...)...);
     }
+
+    template <typename... Args>
+    [[nodiscard]] constexpr auto exports_tuple(Args const &...args) const {
+        return cib::tuple_cat(Components::config.exports_tuple(args...)...);
+    }
 };
 } // namespace cib::detail

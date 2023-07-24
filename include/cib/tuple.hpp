@@ -165,7 +165,7 @@ struct element<Index, T, Ts...> : T {
 };
 
 template <typename Op, typename Value> struct fold_helper {
-    Op &op;
+    Op op;
     Value value;
 
   private:
@@ -191,7 +191,7 @@ template <typename Op, typename Value>
 fold_helper(Op, Value) -> fold_helper<Op, std::remove_cvref_t<Value>>;
 
 template <typename Op, typename Value> struct join_helper {
-    Op &op;
+    Op op;
     Value value;
 };
 template <typename Op, typename Value>
@@ -202,11 +202,9 @@ join_helper(Op, Value) -> join_helper<Op, std::remove_cvref_t<Value>>;
 template <typename Op, typename T, typename U>
 [[nodiscard]] constexpr auto operator+(join_helper<Op, T> &&lhs,
                                        join_helper<Op, U> &&rhs) {
-    using R = decltype(lhs.op(std::forward<join_helper<Op, T>>(lhs).value,
-                              std::forward<join_helper<Op, U>>(rhs).value));
+    using R = decltype(lhs.op(std::move(lhs).value, std::move(rhs).value));
     return join_helper<Op, std::remove_cvref_t<R>>{
-        lhs.op, lhs.op(std::forward<join_helper<Op, T>>(lhs).value,
-                       std::forward<join_helper<Op, U>>(rhs).value)};
+        lhs.op, lhs.op(std::move(lhs).value, std::move(rhs).value)};
 }
 
 template <template <typename> typename...> struct index_function_list;

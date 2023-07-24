@@ -94,7 +94,7 @@ template <typename CharT, CharT... chars, typename ArgsTupleT>
 }
 
 template <typename EnumTypeT, EnumTypeT ValueT,
-          std::enable_if_t<std::is_enum<EnumTypeT>::value, bool> = true>
+          std::enable_if_t<std::is_enum_v<EnumTypeT>, bool> = true>
 [[nodiscard]] constexpr auto
 format_field([[maybe_unused]] std::string_view field,
              std::integral_constant<EnumTypeT, ValueT>, char *out) -> char * {
@@ -111,7 +111,7 @@ format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out)
 }
 
 template <typename IntegralTypeT, IntegralTypeT ValueT,
-          std::enable_if_t<!std::is_enum<IntegralTypeT>::value, bool> = true>
+          std::enable_if_t<!std::is_enum_v<IntegralTypeT>, bool> = true>
 [[nodiscard]] constexpr auto
 format_field(std::string_view field,
              std::integral_constant<IntegralTypeT, ValueT> const &, char *out)

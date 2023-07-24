@@ -8,7 +8,7 @@ namespace msg::detail {
 
 template <typename T>
 using remove_cvref_t =
-    typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+    typename std::remove_cv_t<typename std::remove_reference_t<T>>;
 
 template <typename CallableT> struct func_args {
     using msg_type = typename func_args<

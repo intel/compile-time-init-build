@@ -160,5 +160,4 @@ constexpr auto contains_type =
     return (... or std::is_same_v<T, cib::tuple_element_t<Is, Tuple>>);
 }
 (std::make_index_sequence<cib::tuple_size_v<Tuple>>{});
-
 } // namespace cib

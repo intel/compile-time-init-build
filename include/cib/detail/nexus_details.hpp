@@ -4,6 +4,7 @@
 #include <cib/detail/meta.hpp>
 #include <cib/set.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -22,8 +23,13 @@ template <typename Config>
 constexpr static auto initialized_builders = transform<extract_service_tag>(
     [](auto extensions) {
         using namespace cib::tuple_literals;
-        constexpr auto initial_builder = extensions[0_idx].builder;
+
+        using exports_tuple = decltype(Config::config.exports_tuple());
         using service = get_service_from_tuple<decltype(extensions)>;
+        static_assert(contains_type<exports_tuple, service>);
+
+        constexpr auto initial_builder = extensions[0_idx].builder;
+
         auto built_service = extensions.fold_right(
             initial_builder, [](auto extension, auto outer_builder) {
                 return extension.args_tuple.apply(
