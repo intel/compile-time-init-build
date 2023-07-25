@@ -22,27 +22,38 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 14, 15]
+        version: [12, 14, 15, 16]
         cxx_standard: [20]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
         include:
-          - version: 15
-            compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
-            toolchain_root: "/usr/lib/llvm-15"
+          - compiler: clang
             cc: "clang"
             cxx: "clang++"
+          - version: 16
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
+            toolchain_root: "/usr/lib/llvm-16"
+          - version: 16
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo apt install -y libc++-16-dev libc++abi-16-dev
+          - version: 15
+            compiler: clang
+            install: sudo apt update && sudo apt install -y clang-15
+            toolchain_root: "/usr/lib/llvm-15"
           - version: 15
             compiler: clang
             stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15 && sudo apt install -y libc++-15-dev libc++abi-15-dev
+            install: sudo apt update && sudo apt install -y clang-15 libc++-15-dev libc++abi-15-dev
           - version: 14
             compiler: clang
             install: sudo apt update && sudo apt install -y clang-14
             toolchain_root: "/usr/lib/llvm-14"
-            cc: "clang"
-            cxx: "clang++"
+          - version: 14
+            compiler: clang
+            stdlib: libc++
+            install: sudo apt update && sudo apt install -y clang-14 libc++-14-dev libc++abi-14-dev
           - version: 12
             compiler: gcc
             install: sudo apt update && sudo apt install -y gcc-12
@@ -50,6 +61,8 @@ jobs:
             cc: "gcc-12"
             cxx: "g++-12"
         exclude:
+          - compiler: gcc
+            version: 16
           - compiler: gcc
             version: 15
           - compiler: gcc
@@ -89,8 +102,8 @@ jobs:
 
       - name: Install build tools
         run: |
-          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
-          sudo apt install -y ninja-build clang-tidy-15 clang-format-15
+          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
+          sudo apt install -y ninja-build clang-tidy-16 clang-format-16
 
       - name: Install cmake-format
         run: |
@@ -99,10 +112,10 @@ jobs:
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-15/bin/clang"
-          CXX: "/usr/lib/llvm-15/bin/clang++"
+          CC: "/usr/lib/llvm-16/bin/clang"
+          CXX: "/usr/lib/llvm-16/bin/clang++"
           CXX_STANDARD: 20
-          CLANG_TOOLS_PATH: "/usr/lib/llvm-15/bin"
+          CLANG_TOOLS_PATH: "/usr/lib/llvm-16/bin"
         run: cmake -B ${{github.workspace}}/build
 
       - name: Run quality checks
@@ -120,13 +133,13 @@ jobs:
 
       - name: Install build tools
         run: |
-          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 15
+          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
           sudo apt install -y ninja-build
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-15/bin/clang"
-          CXX: "/usr/lib/llvm-15/bin/clang++"
+          CC: "/usr/lib/llvm-16/bin/clang"
+          CXX: "/usr/lib/llvm-16/bin/clang++"
           CXX_STANDARD: 20
           SANITIZERS: ${{matrix.sanitizer}}
         run: cmake -B ${{github.workspace}}/build

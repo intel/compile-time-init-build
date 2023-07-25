@@ -16,9 +16,9 @@ namespace msg {
 namespace detail {
 template <typename T>
 concept range = requires(T &t) {
-                    std::begin(t);
-                    std::end(t);
-                };
+    std::begin(t);
+    std::end(t);
+};
 
 template <typename T>
 using iterator_t = decltype(std::begin(std::declval<T &>()));

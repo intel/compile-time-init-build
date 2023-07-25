@@ -56,8 +56,7 @@ template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
             return T{std::move(outer_tuple)
                          .ugly_iGet_rvr(index<element_indices[Is].outer>)
                              [index<element_indices[Is].inner>]...};
-        }
-        (std::make_index_sequence<total_num_elements>{});
+        }(std::make_index_sequence<total_num_elements>{});
     }
 }
 
@@ -87,10 +86,8 @@ template <template <typename T> typename Pred, typename T>
         return [&]<std::size_t... Js>(std::index_sequence<Js...>) {
             using R = cib::tuple<cib::tuple_element_t<indices[Js], tuple_t>...>;
             return R{std::forward<T>(t)[index<indices[Js]>]...};
-        }
-        (std::make_index_sequence<num_matches>{});
-    }
-    (std::make_index_sequence<cib::tuple_size_v<tuple_t>>{});
+        }(std::make_index_sequence<num_matches>{});
+    }(std::make_index_sequence<cib::tuple_size_v<tuple_t>>{});
 }
 
 namespace detail {
@@ -113,8 +110,7 @@ constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
                 detail::invoke_at<Is>(std::forward<Op>(op), std::forward<T>(t),
                                       std::forward<Ts>(ts)...)...);
         }
-    }
-    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename Op, typename T>
@@ -127,8 +123,7 @@ constexpr auto for_each(Op &&op, T &&t, Ts &&...ts) -> Op {
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         (detail::invoke_at<Is>(op, std::forward<T>(t), std::forward<Ts>(ts)...),
          ...);
-    }
-    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
     return op;
 }
 
@@ -137,8 +132,7 @@ constexpr auto all_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... and detail::invoke_at<Is>(f, std::forward<T>(t),
                                               std::forward<Ts>(ts)...));
-    }
-    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename F, typename T, typename... Ts>
@@ -146,8 +140,7 @@ constexpr auto any_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... or detail::invoke_at<Is>(f, std::forward<T>(t),
                                              std::forward<Ts>(ts)...));
-    }
-    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
@@ -157,7 +150,6 @@ template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
 template <typename Tuple, typename T>
 constexpr auto contains_type =
     []<std::size_t... Is>(std::index_sequence<Is...>) {
-    return (... or std::is_same_v<T, cib::tuple_element_t<Is, Tuple>>);
-}
-(std::make_index_sequence<cib::tuple_size_v<Tuple>>{});
+        return (... or std::is_same_v<T, cib::tuple_element_t<Is, Tuple>>);
+    }(std::make_index_sequence<cib::tuple_size_v<Tuple>>{});
 } // namespace cib

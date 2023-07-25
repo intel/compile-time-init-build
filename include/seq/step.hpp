@@ -8,8 +8,8 @@
 namespace seq {
 enum class status { NOT_DONE = 0, DONE = 1 };
 
-using func_ptr = auto(*)() -> status;
-using log_func_ptr = auto(*)() -> void;
+using func_ptr = auto (*)() -> status;
+using log_func_ptr = auto (*)() -> void;
 
 class step_base {
   private:

@@ -173,8 +173,8 @@ to_int(string_constant<CharT, chars...> strc) noexcept -> int {
 
 template <typename CharT, CharT firstchar, CharT... chars>
     requires(firstchar == '-')
-[[nodiscard]] constexpr auto to_int(
-    string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
+[[nodiscard]] constexpr auto
+to_int(string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
     return detail::to_int(std::next(strc.value.cbegin()), strc.value.cend(),
                           [](auto v, auto c) { return v * 10 + '0' - c; });
 }

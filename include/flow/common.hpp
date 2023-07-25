@@ -1,7 +1,7 @@
 #pragma once
 
 namespace flow {
-using FunctionPtr = auto(*)() -> void;
+using FunctionPtr = auto (*)() -> void;
 
 /**
  * While a graph is being built, it is possible for a set of dependencies

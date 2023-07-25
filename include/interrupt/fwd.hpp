@@ -1,5 +1,5 @@
 #pragma once
 
 namespace interrupt {
-using FunctionPtr = auto(*)() -> void;
+using FunctionPtr = auto (*)() -> void;
 } // namespace interrupt

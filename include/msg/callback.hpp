@@ -35,8 +35,7 @@ template <typename...> struct extra_callback_args {};
 
 namespace detail {
 template <typename T>
-concept not_nullptr = not
-std::is_null_pointer_v<T>;
+concept not_nullptr = not std::is_null_pointer_v<T>;
 } // namespace detail
 
 /**

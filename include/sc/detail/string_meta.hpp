@@ -46,7 +46,7 @@ template <typename StringViewConstant>
     using value_type = typename decltype(StringViewConstant::value)::value_type;
     return [&]<size_type... Is>(std::integer_sequence<size_type, Is...>) {
         return string_constant<value_type, StringViewConstant::value[Is]...>{};
-    }
-    (std::make_integer_sequence<size_type, StringViewConstant::value.size()>{});
+    }(std::make_integer_sequence<size_type,
+                                 StringViewConstant::value.size()>{});
 }
 } // namespace sc::detail
