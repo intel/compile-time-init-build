@@ -46,8 +46,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             return callback<NumFuncs + sizeof...(Fs), ArgTypes...>{
                 {funcs[Is]..., std::forward<Fs>(fs)...}};
-        }
-        (std::make_index_sequence<NumFuncs>{});
+        }(std::make_index_sequence<NumFuncs>{});
     }
 
     /**

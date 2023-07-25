@@ -62,39 +62,38 @@ template <std::size_t, typename...> struct element;
 template <typename T>
 concept derivable = std::is_class_v<T>;
 template <typename T>
-concept nonderivable = not
-std::is_class_v<T>;
+concept nonderivable = not std::is_class_v<T>;
 
 template <std::size_t Index, nonderivable T, typename... Ts>
 struct element<Index, T, Ts...> {
     [[nodiscard]] constexpr auto
-    ugly_iGet_clvr(index_constant<Index> *) const &noexcept -> T const & {
+    ugly_iGet_clvr(index_constant<Index> *) const & noexcept -> T const & {
         return value;
     }
     [[nodiscard]] constexpr auto
-    ugly_iGet_lvr(index_constant<Index> *) &noexcept -> T & {
+    ugly_iGet_lvr(index_constant<Index> *) & noexcept -> T & {
         return value;
     }
     [[nodiscard]] constexpr auto
-    ugly_iGet_rvr(index_constant<Index> *) &&noexcept -> T && {
+    ugly_iGet_rvr(index_constant<Index> *) && noexcept -> T && {
         return std::forward<T>(value);
     }
 
     template <typename U>
         requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_clvr(
-        tag_constant<U> *) const &noexcept -> T const & {
+    [[nodiscard]] constexpr auto
+    ugly_tGet_clvr(tag_constant<U> *) const & noexcept -> T const & {
         return value;
     }
     template <typename U>
         requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U> *) &noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U> *) & noexcept
         -> T & {
         return value;
     }
     template <typename U>
         requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U> *) &&noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U> *) && noexcept
         -> T && {
         return std::forward<T>(value);
     }
@@ -127,33 +126,33 @@ struct element<Index, T, Ts...> : T {
     constexpr static auto ugly_Index = Index;
 
     [[nodiscard]] constexpr auto
-    ugly_iGet_clvr(index_constant<Index> *) const &noexcept -> T const & {
+    ugly_iGet_clvr(index_constant<Index> *) const & noexcept -> T const & {
         return *this;
     }
     [[nodiscard]] constexpr auto
-    ugly_iGet_lvr(index_constant<Index> *) &noexcept -> T & {
+    ugly_iGet_lvr(index_constant<Index> *) & noexcept -> T & {
         return *this;
     }
     [[nodiscard]] constexpr auto
-    ugly_iGet_rvr(index_constant<Index> *) &&noexcept -> T && {
+    ugly_iGet_rvr(index_constant<Index> *) && noexcept -> T && {
         return std::move(*this);
     }
 
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_clvr(
-        tag_constant<U> *) const &noexcept -> T const & {
+    [[nodiscard]] constexpr auto
+    ugly_tGet_clvr(tag_constant<U> *) const & noexcept -> T const & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U> *) &noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U> *) & noexcept
         -> T & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U> *) &&noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U> *) && noexcept
         -> T && {
         return std::move(*this);
     }
@@ -422,8 +421,7 @@ constexpr auto apply_indices(T &&t) {
         return indexed_tuple<detail::index_function_list<Fs...>,
                              tuple_element_t<Is, tuple_t>...>{
             std::forward<T>(t)[index<Is>]...};
-    }
-    (std::make_index_sequence<tuple_size_v<tuple_t>>{});
+    }(std::make_index_sequence<tuple_size_v<tuple_t>>{});
 }
 
 } // namespace cib

@@ -15,9 +15,8 @@ class milestone_base {
   public:
     template <typename Name>
     constexpr milestone_base([[maybe_unused]] Name name, FunctionPtr run_ptr)
-        : run{run_ptr}, log_name{[]() {
-              CIB_TRACE("flow.milestone({})", Name{});
-          }} {}
+        : run{run_ptr},
+          log_name{[]() { CIB_TRACE("flow.milestone({})", Name{}); }} {}
 
     constexpr milestone_base() = default;
 
