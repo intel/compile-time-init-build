@@ -2,11 +2,11 @@
 
 #include <cib/builder_meta.hpp>
 #include <cib/detail/compiler.hpp>
-#include <cib/detail/meta.hpp>
 
 #include <array>
 #include <concepts>
-#include <type_traits>
+#include <cstddef>
+#include <utility>
 
 namespace cib {
 /**
@@ -91,12 +91,9 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      */
     template <typename BuilderValue> static void run(ArgTypes... args) {
         constexpr auto handler_builder = BuilderValue::value;
-        constexpr auto num_funcs = std::integral_constant<int, NumFuncs>{};
-
-        detail::for_each(num_funcs, [&](auto i) {
-            constexpr auto func = handler_builder.funcs[i];
-            func(args...);
-        });
+        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            (handler_builder.funcs[Is](args...), ...);
+        }(std::make_index_sequence<NumFuncs>{});
     }
 };
 

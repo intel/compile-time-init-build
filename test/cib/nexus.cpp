@@ -2,8 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-using cib::detail::int_;
-
 struct EmptyConfig {
     constexpr static auto config = cib::config<>();
 };
