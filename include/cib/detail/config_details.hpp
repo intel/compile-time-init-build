@@ -2,7 +2,6 @@
 
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/config_item.hpp>
-#include <cib/detail/meta.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
 

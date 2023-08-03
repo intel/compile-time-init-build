@@ -9,7 +9,6 @@
 #include <cib/detail/config_item.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/extend.hpp>
-#include <cib/detail/meta.hpp>
 
 namespace cib {
 /**

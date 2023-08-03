@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cib/detail/exports.hpp>
-#include <cib/detail/meta.hpp>
 #include <cib/set.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>

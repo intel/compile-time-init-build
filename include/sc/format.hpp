@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cib/detail/meta.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
 #include <sc/detail/conversions.hpp>
