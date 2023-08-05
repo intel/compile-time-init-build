@@ -115,7 +115,6 @@ jobs:
           CC: "/usr/lib/llvm-16/bin/clang"
           CXX: "/usr/lib/llvm-16/bin/clang++"
           CXX_STANDARD: 20
-          CLANG_TOOLS_PATH: "/usr/lib/llvm-16/bin"
         run: cmake -B ${{github.workspace}}/build
 
       - name: Run quality checks
