@@ -23,7 +23,7 @@ include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
 include(cmake/quality.cmake)
 
-add_versioned_package("gh:fmtlib/fmt#9.1.0")
+add_versioned_package("gh:fmtlib/fmt#10.0.0")
 
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
