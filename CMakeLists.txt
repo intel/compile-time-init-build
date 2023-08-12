@@ -46,7 +46,10 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(examples)
 
     # Build single-header release.
-    find_package(PythonInterp 3 REQUIRED)
+    find_package(
+        Python3
+        COMPONENTS Interpreter
+        REQUIRED)
 
     file(GLOB_RECURSE include_files
          "${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*.hpp")
