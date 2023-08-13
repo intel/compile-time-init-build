@@ -78,7 +78,7 @@ template <typename CharT, CharT... chars> struct string_constant {
     template <size_type pos = 0, size_type count = npos>
     [[nodiscard]] constexpr static auto
     substr(std::integral_constant<size_type, pos>,
-           std::integral_constant<size_type, count>) {
+           std::integral_constant<size_type, count> = {}) {
         return detail::create<detail::SubStr<This, pos, count>>();
     }
 

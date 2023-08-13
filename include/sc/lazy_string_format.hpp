@@ -9,7 +9,6 @@ namespace sc {
 template <typename StringConstantT, typename ArgTupleT>
 struct lazy_string_format {
     constexpr static StringConstantT str{};
-    constexpr static bool has_args = ArgTupleT::size() > 0;
     ArgTupleT args{};
 
     constexpr lazy_string_format() = default;
