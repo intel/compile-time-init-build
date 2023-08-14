@@ -35,12 +35,6 @@ TEST_CASE("join", "[sc::string_constant]") {
     static_assert("Computer"_sc + ""_sc == "Computer"_sc);
 }
 
-TEST_CASE("replace", "[sc::string_constant]") {
-    auto str = "Hello George, my name is Luke."_sc;
-    auto str2 = str.replace(sc::int_<6>, sc::int_<6>, "Frank"_sc);
-    static_assert(str2 == "Hello Frank, my name is Luke."_sc);
-}
-
 TEST_CASE("conversion to int", "[sc::string_constant]") {
     static_assert(sc::to_int("0"_sc) == 0);
 

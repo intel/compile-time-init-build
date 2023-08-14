@@ -81,13 +81,6 @@ template <typename CharT, CharT... chars> struct string_constant {
            std::integral_constant<size_type, count> = {}) {
         return detail::create<detail::SubStr<This, pos, count>>();
     }
-
-    template <size_type pos, size_type count, typename StrT>
-    [[nodiscard]] constexpr static auto
-    replace(std::integral_constant<size_type, pos>,
-            std::integral_constant<size_type, count>, StrT) noexcept {
-        return detail::create<detail::Replace<This, pos, count, StrT>>();
-    }
 };
 
 template <class CharT, CharT... charsLhs, CharT... charsRhs>
@@ -173,8 +166,8 @@ to_int(string_constant<CharT, chars...> strc) noexcept -> int {
 
 template <typename CharT, CharT firstchar, CharT... chars>
     requires(firstchar == '-')
-[[nodiscard]] constexpr auto
-to_int(string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
+[[nodiscard]] constexpr auto to_int(
+    string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
     return detail::to_int(std::next(strc.value.cbegin()), strc.value.cend(),
                           [](auto v, auto c) { return v * 10 + '0' - c; });
 }
