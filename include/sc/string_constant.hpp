@@ -1,6 +1,5 @@
 #pragma once
 
-#include <sc/detail/string_meta.hpp>
 #include <sc/fwd.hpp>
 
 #include <array>
@@ -12,7 +11,6 @@
 namespace sc {
 template <typename CharT, CharT... chars> struct string_constant {
   private:
-    using This = string_constant<CharT, chars...>;
     using StringView = std::basic_string_view<CharT>;
 
     constexpr static std::array<CharT, sizeof...(chars)> storage{chars...};
