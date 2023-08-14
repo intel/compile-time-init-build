@@ -1,252 +1,101 @@
 #pragma once
 
+#include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
 #include <sc/detail/conversions.hpp>
-#include <sc/detail/format_spec.hpp>
+#include <sc/fwd.hpp>
 #include <sc/lazy_string_format.hpp>
 #include <sc/string_constant.hpp>
 
+#include <fmt/compile.h>
+#include <fmt/format.h>
+
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <iterator>
-#include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace sc {
-struct repl_field_iter {
-    std::string_view fmt_;
-    std::string_view::const_iterator i;
-
-    constexpr auto operator++() -> repl_field_iter {
-        while (i != fmt_.cend() && *i != '{') {
-            i++;
-        }
-
-        // advance just after the '{'
-        if (i != fmt_.cend()) {
-            i++;
-        }
-
-        return *this;
-    }
-
-    [[nodiscard]] constexpr auto operator*() const -> std::string_view {
-        auto end = i;
-        while (*end != '}' && end != fmt_.cend()) {
-            end++;
-        }
-
-        return {
-            i, static_cast<std::string_view::size_type>(std::distance(i, end))};
-    }
-
-  private:
-    [[nodiscard]] friend constexpr auto operator==(repl_field_iter lhs,
-                                                   repl_field_iter rhs)
-        -> bool {
-        return lhs.i == rhs.i;
-    }
-};
-
-struct repl_fields {
-    std::string_view fmt;
-
-    [[nodiscard]] constexpr auto begin() const -> repl_field_iter {
-        return ++repl_field_iter{fmt, fmt.begin()};
-    }
-    [[nodiscard]] constexpr auto end() const -> repl_field_iter {
-        return repl_field_iter{fmt, fmt.end()};
-    }
-};
-
-template <typename CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-format_field([[maybe_unused]] std::string_view field,
-             string_constant<CharT, chars...> arg, char *out) -> char * {
-    return std::copy(arg.begin(), arg.end(), out);
-}
-
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-constexpr auto to_integral(T t) -> T {
-    return t;
-}
-
-template <typename, typename = void> constexpr auto is_integral_v = false;
+namespace detail {
 template <typename T>
-constexpr auto
-    is_integral_v<T, std::void_t<decltype(to_integral(std::declval<T>()))>> =
-        true;
+concept compile_time_field = requires { T::value; };
 
-template <typename T, std::enable_if_t<is_integral_v<T>, bool> = true>
-[[nodiscard]] constexpr auto format_field(std::string_view field, T, char *out)
-    -> char * {
-    return std::copy(field.begin() - 1, field.end() + 1, out);
-}
-
-template <typename CharT, CharT... chars, typename ArgsTupleT>
-[[nodiscard]] constexpr auto format_field(
-    [[maybe_unused]] std::string_view field,
-    lazy_string_format<string_constant<CharT, chars...>, ArgsTupleT> lazy,
-    char *out) -> char * {
-    return std::copy(lazy.str.begin(), lazy.str.end(), out);
-}
-
-template <typename EnumTypeT, EnumTypeT ValueT,
-          std::enable_if_t<std::is_enum_v<EnumTypeT>, bool> = true>
-[[nodiscard]] constexpr auto
-format_field([[maybe_unused]] std::string_view field,
-             std::integral_constant<EnumTypeT, ValueT>, char *out) -> char * {
-    auto const &enum_sv = detail::EnumToString<EnumTypeT, ValueT>::value;
-    return std::copy(enum_sv.begin(), enum_sv.end(), out);
-}
-
-template <typename T>
-[[nodiscard]] constexpr auto
-format_field([[maybe_unused]] std::string_view field, type_name<T>, char *out)
-    -> char * {
-    auto const &type_name_sv = detail::TypeNameToString<T>::value;
-    return std::copy(type_name_sv.begin(), type_name_sv.end(), out);
-}
-
-template <typename IntegralTypeT, IntegralTypeT ValueT,
-          std::enable_if_t<!std::is_enum_v<IntegralTypeT>, bool> = true>
-[[nodiscard]] constexpr auto
-format_field(std::string_view field,
-             std::integral_constant<IntegralTypeT, ValueT> const &, char *out)
-    -> char * {
-    detail::fast_format_spec spec{field, 0};
-
-    auto const base = [&]() {
-        switch (spec.type) {
-        case 'b':
-            return 2;
-        case 'o':
-            return 8;
-        case 'x':
-            [[fallthrough]];
-        case 'X':
-            return 16;
-        default:
-            return 10;
-        }
-    }();
-
-    bool const uppercase = spec.type == 'X';
-
-    auto const int_static_string =
-        detail::integral_to_string(ValueT, base, uppercase);
-
-    auto const pad_char = spec.zero_pad ? '0' : ' ';
-    for (auto i = int_static_string.size; i < spec.padding_width; ++i) {
-        *out++ = pad_char;
-    }
-
-    auto const int_sv = static_cast<std::string_view>(int_static_string);
-    return std::copy(int_sv.begin(), int_sv.end(), out);
-}
-
-struct format_buf_result {
-    std::array<char, 2000> data;
-    std::size_t size;
-};
-
-template <typename FmtStringConstant, typename... ArgTs> struct format_t {
-    // FIXME: calculate buffer size based on input
-    constexpr static format_buf_result buf = []() {
-        format_buf_result tmp_buf{};
-
-        auto const fmt = FmtStringConstant::value;
-        repl_fields fields{fmt};
-
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-        auto out = tmp_buf.data.begin();
-        auto in = fmt.begin();
-        [[maybe_unused]] auto field_iter = fields.begin();
-
-        (([&](auto arg) {
-             auto const f = *field_iter;
-             ++field_iter;
-
-             out = std::copy(in, f.begin() - 1, out); // copy before the field
-             out = format_field(f, arg, out);
-             in = f.end() + 1;
-         }(ArgTs{})),
-         ...);
-
-        out = std::copy(in, fmt.end(), out);
-
-        tmp_buf.size =
-            static_cast<std::size_t>(std::distance(tmp_buf.data.begin(), out));
-
-        return tmp_buf;
-    }();
-
-    constexpr static std::string_view value{buf.data.begin(), buf.size};
-};
-
-template <typename T>
-struct is_lazy_format_string : public std::integral_constant<bool, false> {};
-
-template <typename CharT, CharT... chars, typename ArgsTupleT>
-struct is_lazy_format_string<
-    lazy_string_format<string_constant<CharT, chars...>, ArgsTupleT>>
-    : public std::integral_constant<bool, true> {};
-
-template <typename T>
-constexpr is_lazy_format_string<T> is_lazy_format_string_v{};
-
-template <typename T>
-constexpr bool is_lazy_format_string_with_args_v = []() {
-    if constexpr (is_lazy_format_string_v<T>) {
-        return T::has_args;
+template <compile_time_field T>
+[[nodiscard]] CIB_CONSTEVAL auto field_value(T) {
+    if constexpr (std::is_enum_v<decltype(T::value)>) {
+        return detail::enum_as_string<T::value>();
     } else {
-        return false;
+        return T::value;
     }
-}();
+}
 
-template <typename CharT, CharT... chars, typename... ArgTs>
-[[nodiscard]] constexpr auto format(string_constant<CharT, chars...>,
-                                    ArgTs... args) {
-    auto const runtime_args = [&]() {
-        constexpr bool has_runtime_args = []() {
-            constexpr bool has_integral_args = (is_integral_v<ArgTs> || ...);
+template <typename T>
+[[nodiscard]] CIB_CONSTEVAL auto field_value(sc::type_name<T>) {
+    return detail::type_as_string<T>();
+}
 
-            if constexpr (has_integral_args) {
-                return true;
-            } else {
-                constexpr bool has_lazy_args =
-                    (is_lazy_format_string_v<ArgTs> || ...);
-
-                if constexpr (has_lazy_args) {
-                    return (is_lazy_format_string_with_args_v<ArgTs> || ...);
-                } else {
-                    return false;
-                }
-            }
-        }();
-
-        if constexpr (has_runtime_args) {
-            return cib::make_tuple(args...).fold_right(
-                cib::make_tuple(), [](auto arg, auto state) {
-                    if constexpr (is_integral_v<decltype(arg)>) {
-                        return cib::tuple_cat(cib::make_tuple(to_integral(arg)),
-                                              state);
-                    } else if constexpr (is_lazy_format_string_v<
-                                             decltype(arg)>) {
-                        return cib::tuple_cat(arg.args, state);
-                    } else {
-                        return state;
-                    }
-                });
-        } else {
-            return cib::make_tuple();
-        }
+template <typename Fmt, typename Arg> constexpr auto format1(Fmt, Arg arg) {
+    // TODO: use constexpr fmt::formatted_size
+    // see https://github.com/fmtlib/fmt/issues/3586
+    constexpr auto r = [&] {
+        constexpr auto fmtstr = FMT_COMPILE(Fmt::value);
+        constexpr auto sz = 2000u;
+        std::array<char, sz> buf{};
+        auto i = fmt::format_to(std::begin(buf), fmtstr, field_value(arg));
+        return std::pair{std::distance(std::begin(buf), i), buf};
     }();
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        return string_constant<char, r.second[Is]...>{};
+    }(std::make_index_sequence<r.first>{});
+}
 
-    return lazy_string_format{
-        detail::create<format_t<string_constant<CharT, chars...>, ArgTs...>>(),
-        runtime_args};
+template <typename Fmt> constexpr auto split_format_spec() {
+    constexpr Fmt fmt{};
+    constexpr auto spec_start = std::adjacent_find(
+        std::begin(fmt), std::end(fmt),
+        [](auto c1, auto c2) { return c1 == '{' and c2 != '{'; });
+    if constexpr (spec_start == std::end(fmt)) {
+        return std::pair{fmt, ""_sc};
+    } else {
+        constexpr auto spec_end = std::find_if(spec_start, std::end(fmt),
+                                               [](auto c) { return c == '}'; });
+        constexpr auto len = std::distance(std::begin(fmt), spec_end) + 1;
+        return std::pair{fmt.substr(int_<0>, int_<len>), fmt.substr(int_<len>)};
+    }
+}
+
+template <typename Str, typename Fmt, typename RuntimeTuple, typename Arg>
+constexpr auto process_arg(cib::tuple<Str, Fmt, RuntimeTuple> t, Arg arg) {
+    using namespace cib::tuple_literals;
+    constexpr auto p = split_format_spec<Fmt>();
+    if constexpr (requires { field_value(arg); }) {
+        return cib::make_tuple(t[0_idx] + format1(p.first, arg), p.second,
+                               t[2_idx]);
+    } else if constexpr (requires { arg.args; }) {
+        return cib::make_tuple(t[0_idx] + format1(p.first, arg.str), p.second,
+                               cib::tuple_cat(t[2_idx], arg.args));
+    } else {
+        return cib::make_tuple(t[0_idx] + p.first, p.second,
+                               cib::tuple_cat(t[2_idx], cib::make_tuple(arg)));
+    }
+}
+} // namespace detail
+
+template <typename Fmt, typename... Args>
+constexpr auto format(Fmt, Args... args) {
+    using namespace cib::tuple_literals;
+    auto t = cib::make_tuple(args...);
+    auto r =
+        t.fold_left(cib::make_tuple(""_sc, Fmt{}, cib::tuple{}),
+                    [](auto x, auto y) { return detail::process_arg(x, y); });
+    if constexpr (r[2_idx].size() == 0) {
+        return r[0_idx] + r[1_idx];
+    } else {
+        return lazy_string_format{r[0_idx] + r[1_idx], r[2_idx]};
+    }
 }
 
 template <typename T> struct formatter {
