@@ -38,13 +38,10 @@ template <typename TDestinations> struct log_handler {
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {}: ", currentTime,
                                  level_constant<L>{});
-                if constexpr (requires { msg.args; }) {
-                    msg.args.apply([&](auto const &...args) {
-                        ::fmt::format_to(out, MsgType::str.value, args...);
+                msg.apply(
+                    [&]<typename StringType>(StringType, auto const &...args) {
+                        ::fmt::format_to(out, StringType::value, args...);
                     });
-                } else {
-                    ::fmt::format_to(out, MsgType::value);
-                }
                 *out = '\n';
             },
             dests);

@@ -80,8 +80,11 @@ template <typename CharT, CharT... chars> struct string_constant {
         constexpr size_type sz = count == npos ? size() - pos : count;
         return [&]<size_type... Is>(std::integer_sequence<size_type, Is...>) {
             return string_constant<CharT, storage[pos + Is]...>{};
-        }
-        (std::make_integer_sequence<size_type, sz>{});
+        }(std::make_integer_sequence<size_type, sz>{});
+    }
+
+    template <typename F> constexpr auto apply(F &&f) const {
+        return std::forward<F>(f)(*this);
     }
 };
 

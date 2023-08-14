@@ -2,117 +2,55 @@
 
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
-#include <sc/fwd.hpp>
 #include <sc/string_constant.hpp>
 
 namespace sc {
-template <typename StringConstantT, typename ArgTupleT>
+template <typename StringConstant, typename ArgTuple>
 struct lazy_string_format {
-    constexpr static StringConstantT str{};
-    ArgTupleT args{};
+    constexpr static StringConstant str{};
+    ArgTuple args{};
 
     constexpr lazy_string_format() = default;
-
-    constexpr lazy_string_format(StringConstantT, ArgTupleT newArgs)
+    constexpr lazy_string_format(StringConstant, ArgTuple newArgs)
         : args{newArgs} {}
+
+    template <typename F> constexpr auto apply(F &&f) const {
+        return args.apply(
+            [&](auto const &...as) { return std::forward<F>(f)(str, as...); });
+    }
 };
 
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
+template <class CharT, CharT... charsLhs, typename ArgsTupleLhs,
+          CharT... charsRhs, typename ArgsTupleRhs>
 [[nodiscard]] constexpr auto operator==(
-    lazy_string_format<string_constant<CharT, charsLhs...>, cib::tuple<>>,
-    string_constant<CharT, charsRhs...>) noexcept {
-    return bool_<false>;
-}
-
-template <class CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-operator==(lazy_string_format<string_constant<CharT, chars...>, cib::tuple<>>,
-           string_constant<CharT, chars...>) noexcept {
-    return bool_<true>;
-}
-
-template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
-          CharT... charsRhs>
-[[nodiscard]] constexpr auto operator==(
-    lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT>,
-    string_constant<CharT, charsRhs...>) noexcept {
-    return bool_<false>;
-}
-
-template <class CharT, CharT... charsLhs, CharT... charsRhs>
-[[nodiscard]] constexpr auto operator!=(
-    lazy_string_format<string_constant<CharT, charsLhs...>, cib::tuple<>>,
-    string_constant<CharT, charsRhs...>) noexcept {
-    return bool_<true>;
-}
-
-template <class CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-operator!=(lazy_string_format<string_constant<CharT, chars...>, cib::tuple<>>,
-           string_constant<CharT, chars...>) noexcept {
-    return bool_<false>;
-}
-
-template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
-          CharT... charsRhs>
-[[nodiscard]] constexpr auto operator!=(
-    lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT>,
-    string_constant<CharT, charsRhs...>) noexcept {
-    return bool_<true>;
-}
-
-template <class CharT, CharT... charsLhs, typename ArgsTupleLhsT,
-          CharT... charsRhs, typename ArgsTupleRhsT>
-[[nodiscard]] constexpr auto operator==(
-    lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhsT> lhs,
-    lazy_string_format<string_constant<CharT, charsRhs...>, ArgsTupleRhsT>
+    lazy_string_format<string_constant<CharT, charsLhs...>, ArgsTupleLhs> lhs,
+    lazy_string_format<string_constant<CharT, charsRhs...>, ArgsTupleRhs>
         rhs) noexcept -> bool {
     return (lhs.str == rhs.str) && (lhs.args == rhs.args);
 }
 
-template <typename StringConstantLhsT, typename TupleArgsLhsT,
-          typename StringConstantRhsT, typename TupleArgsRhsT>
+template <typename StringConstantLhs, typename TupleArgsLhs,
+          typename StringConstantRhs, typename TupleArgsRhs>
 [[nodiscard]] constexpr auto
-operator+(lazy_string_format<StringConstantLhsT, TupleArgsLhsT> lhs,
-          lazy_string_format<StringConstantRhsT, TupleArgsRhsT> rhs) noexcept {
+operator+(lazy_string_format<StringConstantLhs, TupleArgsLhs> lhs,
+          lazy_string_format<StringConstantRhs, TupleArgsRhs> rhs) noexcept {
     return lazy_string_format{lhs.str + rhs.str,
                               cib::tuple_cat(lhs.args, rhs.args)};
 }
 
-template <typename StringConstantLhsT, typename TupleArgsLhsT, typename CharT,
+template <typename StringConstantLhs, typename TupleArgsLhs, typename CharT,
           CharT... chars>
 [[nodiscard]] constexpr auto
-operator+(lazy_string_format<StringConstantLhsT, TupleArgsLhsT> lhs,
+operator+(lazy_string_format<StringConstantLhs, TupleArgsLhs> lhs,
           string_constant<CharT, chars...> rhs) noexcept {
     return lazy_string_format{lhs.str + rhs, lhs.args};
 }
 
-template <typename CharT, CharT... chars, typename StringConstantRhsT,
-          typename TupleArgsRhsT>
+template <typename CharT, CharT... chars, typename StringConstantRhs,
+          typename TupleArgsRhs>
 [[nodiscard]] constexpr auto
 operator+(string_constant<CharT, chars...> lhs,
-          lazy_string_format<StringConstantRhsT, TupleArgsRhsT> rhs) noexcept {
+          lazy_string_format<StringConstantRhs, TupleArgsRhs> rhs) noexcept {
     return lazy_string_format{lhs + rhs.str, rhs.args};
-}
-
-template <typename StringConstantLhsT, typename StringConstantRhsT>
-[[nodiscard]] constexpr auto
-operator+(lazy_string_format<StringConstantLhsT, cib::tuple<>> lhs,
-          lazy_string_format<StringConstantRhsT, cib::tuple<>> rhs) noexcept {
-    return lhs.str + rhs.str;
-}
-
-template <typename StringConstantLhsT, typename CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-operator+(lazy_string_format<StringConstantLhsT, cib::tuple<>> lhs,
-          string_constant<CharT, chars...> rhs) noexcept {
-    return lhs.str + rhs;
-}
-
-template <typename CharT, CharT... chars, typename StringConstantRhsT>
-[[nodiscard]] constexpr auto
-operator+(string_constant<CharT, chars...> lhs,
-          lazy_string_format<StringConstantRhsT, cib::tuple<>> rhs) noexcept {
-    return lhs + rhs.str;
 }
 } // namespace sc

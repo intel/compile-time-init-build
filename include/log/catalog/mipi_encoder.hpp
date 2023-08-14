@@ -25,17 +25,13 @@ struct log_handler {
         dispatch_message<logging::level::TRACE>(id);
     }
 
-    template <logging::level Level, typename StringType>
-    CIB_ALWAYS_INLINE auto log_msg(StringType msg) -> void {
-        using Message = message<Level, StringType>;
-        if constexpr (requires { msg.args; }) {
-            msg.args.apply([&](auto... args) {
-                dispatch_message<Level>(catalog<Message>(),
-                                        static_cast<std::uint32_t>(args)...);
-            });
-        } else {
-            dispatch_message<Level>(catalog<Message>());
-        }
+    template <logging::level Level, typename Msg>
+    CIB_ALWAYS_INLINE auto log_msg(Msg msg) -> void {
+        msg.apply([&]<typename StringType>(StringType, auto... args) {
+            using Message = message<Level, StringType>;
+            dispatch_message<Level>(catalog<Message>(),
+                                    static_cast<std::uint32_t>(args)...);
+        });
     }
 
   private:
