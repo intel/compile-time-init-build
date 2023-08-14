@@ -79,7 +79,11 @@ template <typename CharT, CharT... chars> struct string_constant {
     [[nodiscard]] constexpr static auto
     substr(std::integral_constant<size_type, pos>,
            std::integral_constant<size_type, count> = {}) {
-        return detail::create<detail::SubStr<This, pos, count>>();
+        constexpr size_type sz = count == npos ? size() - pos : count;
+        return [&]<size_type... Is>(std::integer_sequence<size_type, Is...>) {
+            return string_constant<CharT, storage[pos + Is]...>{};
+        }
+        (std::make_integer_sequence<size_type, sz>{});
     }
 };
 
@@ -143,32 +147,5 @@ operator+(string_constant<CharT, charsLhs...>,
           string_constant<CharT, charsRhs...>) noexcept
     -> string_constant<CharT, charsLhs..., charsRhs...> {
     return {};
-}
-
-namespace detail {
-[[nodiscard]] constexpr auto to_int(auto first, auto last, auto op) noexcept
-    -> int {
-    auto value = 0;
-    while (first != last) {
-        value = op(value, *first);
-        ++first;
-    }
-    return value;
-}
-} // namespace detail
-
-template <typename CharT, CharT... chars>
-[[nodiscard]] constexpr auto
-to_int(string_constant<CharT, chars...> strc) noexcept -> int {
-    return detail::to_int(strc.value.cbegin(), strc.value.cend(),
-                          [](auto v, auto c) { return v * 10 - '0' + c; });
-}
-
-template <typename CharT, CharT firstchar, CharT... chars>
-    requires(firstchar == '-')
-[[nodiscard]] constexpr auto to_int(
-    string_constant<CharT, firstchar, chars...> strc) noexcept -> int {
-    return detail::to_int(std::next(strc.value.cbegin()), strc.value.cend(),
-                          [](auto v, auto c) { return v * 10 + '0' - c; });
 }
 } // namespace sc
