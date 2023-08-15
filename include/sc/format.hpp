@@ -38,18 +38,16 @@ template <typename T>
 }
 
 template <typename Fmt, typename Arg> constexpr auto format1(Fmt, Arg arg) {
-    // TODO: use constexpr fmt::formatted_size
-    // see https://github.com/fmtlib/fmt/issues/3586
-    constexpr auto r = [&] {
+    constexpr auto str = [&] {
         constexpr auto fmtstr = FMT_COMPILE(Fmt::value);
-        constexpr auto sz = 2000u;
+        constexpr auto sz = fmt::formatted_size(fmtstr, field_value(arg));
         std::array<char, sz> buf{};
-        auto i = fmt::format_to(std::begin(buf), fmtstr, field_value(arg));
-        return std::pair{std::distance(std::begin(buf), i), buf};
+        fmt::format_to(std::begin(buf), fmtstr, field_value(arg));
+        return buf;
     }();
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        return string_constant<char, r.second[Is]...>{};
-    }(std::make_index_sequence<r.first>{});
+        return string_constant<char, str[Is]...>{};
+    }(std::make_index_sequence<std::size(str)>{});
 }
 
 template <typename Fmt> constexpr auto split_format_spec() {
