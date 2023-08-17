@@ -18,14 +18,7 @@ constexpr static auto type_as_string() -> std::string_view {
     static_assert(false, "Unknown compiler, can't build type name.");
 #endif
 
-    constexpr auto lhs = [&]() -> std::string_view::size_type {
-        for (auto i = std::size_t{}; i < function_name.size(); i++) {
-            if (function_name[i] == '=') {
-                return i + 2;
-            }
-        }
-        return 0;
-    }();
+    constexpr auto lhs = function_name.rfind('=', rhs) + 2;
 
     return function_name.substr(lhs, rhs - lhs + 1);
 }
