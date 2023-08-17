@@ -1,34 +1,31 @@
 #pragma once
 
+#include <container/vector.hpp>
 #include <flow/common.hpp>
+#include <log/log.hpp>
 #include <seq/step.hpp>
 
 #include <array>
 #include <cstddef>
+#include <iterator>
+#include <span>
 
 namespace seq {
 enum class direction { FORWARD = 0, BACKWARD = 1 };
 
 template <typename, std::size_t NumSteps> struct impl {
-    std::array<func_ptr, NumSteps> _forward_steps{};
-    std::array<func_ptr, NumSteps> _backward_steps{};
+    cib::vector<func_ptr, NumSteps> _forward_steps{};
+    cib::vector<func_ptr, NumSteps> _backward_steps{};
     std::size_t next_step{};
 
     status prev_status{status::DONE};
     direction prev_direction{direction::BACKWARD};
 
-    constexpr explicit impl(func_ptr const *forward_steps = nullptr,
-                            func_ptr const *backward_steps = nullptr) {
-        for (auto i = std::size_t{}; i < NumSteps; i++) {
-            _forward_steps[i] = forward_steps[i];
-            _backward_steps[i] = backward_steps[i];
-        }
-    }
-
-    constexpr impl(step_base const *steps, flow::build_status) {
-        for (auto i = std::size_t{}; i < NumSteps; i++) {
-            _forward_steps[i] = steps[i]._forward_ptr;
-            _backward_steps[i] = steps[i]._backward_ptr;
+    constexpr impl(std::span<step_base const> steps, flow::build_status) {
+        CIB_ASSERT(NumSteps >= std::size(steps));
+        for (auto const &step : steps) {
+            _forward_steps.push_back(step._forward_ptr);
+            _backward_steps.push_back(step._backward_ptr);
         }
     }
 
@@ -102,13 +99,4 @@ template <typename, std::size_t NumSteps> struct impl {
     constexpr auto forward() -> status { return go<direction::FORWARD>(); }
     constexpr auto backward() -> status { return go<direction::BACKWARD>(); }
 };
-
-template <typename Name> struct impl<Name, 0u> {
-    constexpr impl() = default;
-    constexpr impl(step_base const *, flow::build_status) noexcept {}
-
-    constexpr static auto forward() -> status { return status::DONE; }
-    constexpr static auto backward() -> status { return status::DONE; }
-};
-
 } // namespace seq
