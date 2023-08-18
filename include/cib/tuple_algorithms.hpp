@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <sc/detail/conversions.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iterator>
@@ -156,4 +158,96 @@ constexpr auto contains_type(cib::tuple<Us...> const &)
 template <typename Tuple, typename T>
 constexpr auto contains_type =
     decltype(detail::contains_type<T>(std::declval<Tuple>()))::value;
+
+template <template <typename> typename Proj = std::type_identity_t,
+          typename... Ts>
+[[nodiscard]] constexpr auto sort(cib::tuple<Ts...> t) {
+    using P = std::pair<std::string_view, std::size_t>;
+    constexpr auto indices = []<std::size_t... Is>(std::index_sequence<Is...>) {
+        auto a = std::array<P, sizeof...(Is)>{
+            P{sc::detail::type_as_string<Proj<Ts>>(), Is}...};
+        std::sort(
+            std::begin(a), std::end(a),
+            [](auto const &p1, auto const &p2) { return p1.first < p2.first; });
+        return a;
+    }(std::make_index_sequence<sizeof...(Ts)>{});
+
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        return cib::tuple{t[index<indices[Is].second>]...};
+    }(std::make_index_sequence<sizeof...(Ts)>{});
+}
+
+namespace detail {
+template <typename T, template <typename> typename Proj, std::size_t I>
+[[nodiscard]] constexpr auto test_adjacent() -> bool {
+    return sc::detail::type_as_string<Proj<cib::tuple_element_t<I, T>>>() ==
+           sc::detail::type_as_string<Proj<cib::tuple_element_t<I + 1, T>>>();
+}
+
+template <typename T, template <typename> typename Proj = std::type_identity_t>
+    requires(tuple_size_v<T> > 1)
+[[nodiscard]] constexpr auto count_chunks() {
+    auto count = std::size_t{1};
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        ((count +=
+          static_cast<std::size_t>(not detail::test_adjacent<T, Proj, Is>())),
+         ...);
+    }(std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
+    return count;
+}
+
+struct chunk {
+    std::size_t offset{};
+    std::size_t size{};
+    friend constexpr auto operator==(chunk const &, chunk const &)
+        -> bool = default;
+};
+
+template <typename T, template <typename> typename Proj = std::type_identity_t>
+    requires(tuple_size_v<T> > 1)
+[[nodiscard]] constexpr auto create_chunks() {
+    auto index = std::size_t{};
+    std::array<chunk, count_chunks<T, Proj>()> chunks{};
+    ++chunks[index].size;
+    auto check_next_chunk = [&]<std::size_t I>() {
+        if (not detail::test_adjacent<T, Proj, I>()) {
+            chunks[++index].offset = I + 1;
+        }
+        ++chunks[index].size;
+    };
+
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        (check_next_chunk.template operator()<Is>(), ...);
+    }(std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
+
+    return chunks;
+}
+} // namespace detail
+
+template <typename, auto> constexpr bool always_false_v = false;
+
+template <template <typename> typename Proj = std::type_identity_t,
+          typename Tuple>
+[[nodiscard]] constexpr auto chunk_by(Tuple &&t) {
+    using tuple_t = std::remove_cvref_t<Tuple>;
+    if constexpr (tuple_size_v<tuple_t> == 0) {
+        return cib::tuple{};
+    } else if constexpr (tuple_size_v<tuple_t> == 1) {
+        return cib::make_tuple(std::forward<Tuple>(t));
+    } else {
+        constexpr auto chunks = detail::create_chunks<tuple_t, Proj>();
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return cib::make_tuple(
+                [&]<std::size_t... Js>(std::index_sequence<Js...>) {
+                    constexpr auto offset = chunks[Is].offset;
+                    return cib::make_tuple(
+                        std::forward<Tuple>(t)[index<offset + Js>]...);
+                }(std::make_index_sequence<chunks[Is].size>{})...);
+        }(std::make_index_sequence<std::size(chunks)>{});
+    }
+}
+
+template <typename Tuple> [[nodiscard]] constexpr auto chunk(Tuple &&t) {
+    return chunk_by(std::forward<Tuple>(t));
+}
 } // namespace cib

@@ -1,6 +1,7 @@
 #include "special_members.hpp"
 
 #include <cib/tuple_algorithms.hpp>
+#include <sc/detail/conversions.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -316,4 +317,67 @@ TEST_CASE("contains_type", "[tuple_algorithms]") {
     static_assert(cib::contains_type<T, bool>);
     static_assert(cib::contains_type<T, int &>);
     static_assert(not cib::contains_type<T, float>);
+}
+
+TEST_CASE("sort (empty tuple)", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{};
+    [[maybe_unused]] constexpr auto sorted = cib::sort(t);
+    static_assert(std::is_same_v<decltype(sorted), cib::tuple<> const>);
+}
+
+TEST_CASE("sort", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1, 1.0, true};
+    static_assert(
+        std::is_same_v<decltype(t), cib::tuple<int, double, bool> const>);
+    constexpr auto sorted = cib::sort(t);
+    static_assert(
+        std::is_same_v<decltype(sorted), cib::tuple<bool, double, int> const>);
+    CHECK(sorted == cib::tuple{true, 1.0, 1});
+}
+
+TEST_CASE("chunk (empty tuple)", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{};
+    [[maybe_unused]] constexpr auto chunked = cib::chunk(t);
+    static_assert(std::is_same_v<decltype(chunked), cib::tuple<> const>);
+}
+
+TEST_CASE("chunk (1-element tuple)", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1};
+    constexpr auto chunked = cib::chunk(t);
+    static_assert(
+        std::is_same_v<decltype(chunked), cib::tuple<cib::tuple<int>> const>);
+    CHECK(chunked == cib::tuple{cib::tuple{1}});
+}
+
+TEST_CASE("count chunks", "[tuple_algorithms]") {
+    static_assert(cib::detail::count_chunks<cib::tuple<int, int>>() == 1);
+    static_assert(cib::detail::count_chunks<cib::tuple<int, float>>() == 2);
+    static_assert(cib::detail::count_chunks<cib::tuple<int, int, float>>() ==
+                  2);
+    static_assert(cib::detail::count_chunks<cib::tuple<int, float, float>>() ==
+                  2);
+}
+
+TEST_CASE("create chunks", "[tuple_algorithms]") {
+    static_assert(cib::detail::create_chunks<cib::tuple<int, int>>() ==
+                  std::array{cib::detail::chunk{0, 2}});
+    static_assert(
+        cib::detail::create_chunks<cib::tuple<int, int, float>>() ==
+        std::array{cib::detail::chunk{0, 2}, cib::detail::chunk{2, 1}});
+    static_assert(cib::detail::create_chunks<
+                      cib::tuple<int, int, float, int, int, float>>() ==
+                  std::array{cib::detail::chunk{0, 2}, cib::detail::chunk{2, 1},
+                             cib::detail::chunk{3, 2},
+                             cib::detail::chunk{5, 1}});
+}
+
+TEST_CASE("chunk (general case)", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1, 2, 3, 1.0, 2.0, true};
+    constexpr auto chunked = cib::chunk(t);
+    static_assert(
+        std::is_same_v<decltype(chunked), cib::tuple<cib::tuple<int, int, int>,
+                                                     cib::tuple<double, double>,
+                                                     cib::tuple<bool>> const>);
+    CHECK(chunked == cib::tuple{cib::tuple{1, 2, 3}, cib::tuple{1.0, 2.0},
+                                cib::tuple{true}});
 }
