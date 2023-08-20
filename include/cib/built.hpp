@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/detail/builder_traits.hpp>
+#include <cib/builder_meta.hpp>
 
 namespace cib {
 /**
@@ -11,5 +11,5 @@ namespace cib {
  *
  * @see cib::builder_meta
  */
-template <typename ServiceMeta> traits::interface_t<ServiceMeta> service;
+template <typename ServiceMeta> interface_t<ServiceMeta> service;
 } // namespace cib

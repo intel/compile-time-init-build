@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cib/builder_meta.hpp>
-#include <cib/detail/builder_traits.hpp>
 #include <cib/detail/compiler.hpp>
 #include <cib/detail/components.hpp>
 #include <cib/detail/conditional.hpp>

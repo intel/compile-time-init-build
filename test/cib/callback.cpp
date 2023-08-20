@@ -10,13 +10,13 @@ template <typename BuilderValue> constexpr static auto build() {
 
 template <typename BuilderMeta, typename BuiltCallback>
 constexpr static bool built_is_convertable_to_interface(BuiltCallback) {
-    using interface_type = cib::traits::interface_t<BuilderMeta>;
+    using interface_type = cib::interface_t<BuilderMeta>;
     return std::is_convertible_v<BuiltCallback, interface_type>;
 }
 
 struct EmptyCallbackNoArgs {
     using meta = cib::callback_meta<>;
-    constexpr static auto value = cib::traits::builder_t<meta>{};
+    constexpr static auto value = cib::builder_t<meta>{};
 };
 
 TEST_CASE("empty callback with no args", "[callback]") {
@@ -35,7 +35,7 @@ template <int Id> static bool is_callback_invoked = false;
 struct CallbackNoArgsWithSingleExtension {
     using meta = cib::callback_meta<>;
     constexpr static auto value = []() {
-        auto const builder = cib::traits::builder_t<meta>{};
+        auto const builder = cib::builder_t<meta>{};
         return builder.add([]() { is_callback_invoked<0> = true; });
     }();
 };
@@ -66,7 +66,7 @@ struct CallbackNoArgsWithMultipleExtensions {
     };
 
     constexpr static auto value = []() {
-        auto const builder = cib::traits::builder_t<meta>{};
+        auto const builder = cib::builder_t<meta>{};
 
         return builder.add([]() { is_callback_invoked<0> = true; })
             .add(extension_one)
@@ -97,7 +97,7 @@ TEST_CASE("callback with no args with multiple extensions", "[callback]") {
 
 struct CallbackWithArgsWithNoExtensions {
     using meta = cib::callback_meta<int, bool>;
-    constexpr static auto value = cib::traits::builder_t<meta>{};
+    constexpr static auto value = cib::builder_t<meta>{};
 };
 
 TEST_CASE("callback with args with no extensions", "[callback]") {
@@ -128,7 +128,7 @@ struct CallbackWithArgsWithMultipleExtensions {
     };
 
     constexpr static auto value = []() {
-        auto const builder = cib::traits::builder_t<meta>{};
+        auto const builder = cib::builder_t<meta>{};
 
         return builder
             .add([](int a, bool b) {

@@ -4,12 +4,12 @@ namespace cib {
 /**
  * Describe a builder to cib.
  *
- * @tparam BuilderType
+ * @tparam Builder
  *      The initial builder type cib should use when creating a builder.
- *      This is only the initial type, the BuilderType::add(...) function
+ *      This is only the initial type, the Builder::add(...) function
  *      may return a different type and cib will track that correctly.
  *
- * @tparam InterfaceType
+ * @tparam Interface
  *      The type-erased interface services built with this builder
  *      will implement. For example, cib::callback allows many other
  *      callables to get executed when its service gets invoked. The
@@ -19,8 +19,14 @@ namespace cib {
  *
  * @example cib::callback_meta
  */
-template <typename BuilderType, typename InterfaceType> struct builder_meta {
-    auto builder() -> BuilderType;
-    auto interface() -> InterfaceType;
+template <typename Builder, typename Interface> struct builder_meta {
+    using builder_t = Builder;
+    using interface_t = Interface;
 };
+
+template <typename BuilderMeta>
+using builder_t = typename BuilderMeta::builder_t;
+
+template <typename BuilderMeta>
+using interface_t = typename BuilderMeta::interface_t;
 } // namespace cib
