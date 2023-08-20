@@ -12,7 +12,6 @@ add_unit_test(
     cib_test
     CATCH2
     FILES
-    cib/detail/type_to_string_view.cpp
     cib/builder_meta.cpp
     cib/callback.cpp
     cib/nexus.cpp
