@@ -24,7 +24,7 @@ namespace flow {
 
 template <typename Name = void, std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
-struct builder : graph_builder<milestone_base, Name, NodeCapacity, EdgeCapacity,
+struct builder : graph_builder<node, Name, NodeCapacity, EdgeCapacity,
                                builder<Name, NodeCapacity, EdgeCapacity>> {
     template <typename N, std::size_t Capacity>
     using impl_t = flow::impl<N, Capacity>;

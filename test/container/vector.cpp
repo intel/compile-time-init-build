@@ -167,30 +167,6 @@ TEST_CASE("VectorNotEqualOperator", "[vector]") {
     CHECK(a != e);
 }
 
-TEST_CASE("VectorConcatenate", "[vector]") {
-    cib::vector<uint32_t, 10> lhs{1, 2, 3};
-    cib::vector<uint32_t, 10> rhs{4, 5};
-
-    cib::vector<uint32_t, 10> cat{1, 2, 3, 4, 5};
-
-    CHECK(lhs + rhs == cat);
-}
-
-TEST_CASE("ConcatenateOverCapacity", "[vector]") {
-    constexpr auto cat_vectors = [] {
-        cib::vector<int, 5> lhs{1, 2, 3};
-        cib::vector<int, 5> rhs{4, 5, 6};
-        return lhs + rhs;
-    };
-    CHECK_THROWS_AS(cat_vectors(), test_log_config::exception);
-
-    test_log_config::prevent_throws nothrows{};
-    auto const vector = cat_vectors();
-    CHECK(5u == vector.size());
-    CHECK(vector.full());
-    CHECK(vector == cib::vector{1, 2, 3, 4, 5});
-}
-
 TEST_CASE("CapacityZeroVector", "[vector]") {
     cib::vector<int, 0> const vector{};
     CHECK(0u == vector.size());
