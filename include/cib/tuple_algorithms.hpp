@@ -5,7 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
-#include <numeric>
+#include <type_traits>
 #include <utility>
 
 namespace cib {
@@ -147,9 +147,13 @@ template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
     return not any_of(std::forward<Ts>(ts)...);
 }
 
+namespace detail {
+template <typename T, typename... Us>
+constexpr auto contains_type(cib::tuple<Us...> const &)
+    -> std::bool_constant<(std::is_same_v<T, Us> or ...)>;
+} // namespace detail
+
 template <typename Tuple, typename T>
 constexpr auto contains_type =
-    []<std::size_t... Is>(std::index_sequence<Is...>) {
-        return (... or std::is_same_v<T, cib::tuple_element_t<Is, Tuple>>);
-    }(std::make_index_sequence<cib::tuple_size_v<Tuple>>{});
+    decltype(detail::contains_type<T>(std::declval<Tuple>()))::value;
 } // namespace cib
