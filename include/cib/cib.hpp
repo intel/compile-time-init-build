@@ -39,7 +39,6 @@
 #include <cib/callback.hpp>
 #include <cib/config.hpp>
 #include <cib/nexus.hpp>
-#include <cib/set.hpp>
 #include <cib/top.hpp>
 #include <cib/tuple.hpp>
 #include <interrupt/manager.hpp>

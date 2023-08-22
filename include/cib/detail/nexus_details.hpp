@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cib/detail/exports.hpp>
-#include <cib/set.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
 
@@ -38,7 +37,7 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
         return detail::service_entry<service, decltype(built_service)>{
             built_service};
     },
-    demux<get_service>(Config::config.extends_tuple()));
+    chunk_by<get_service>(sort<get_service>(Config::config.extends_tuple())));
 
 template <typename Config, typename Tag> struct initialized {
     constexpr static auto value =
