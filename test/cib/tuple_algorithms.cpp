@@ -319,6 +319,17 @@ TEST_CASE("contains_type", "[tuple_algorithms]") {
     static_assert(not cib::contains_type<T, float>);
 }
 
+TEST_CASE("contains_type (indexed)", "[tuple_algorithms]") {
+    struct X;
+    struct Y;
+    using T = cib::indexed_tuple<cib::detail::index_function_list<key_for>,
+                                 map_entry<X, int>, map_entry<Y, int>>;
+
+    static_assert(cib::contains_type<T, map_entry<X, int>>);
+    static_assert(cib::contains_type<T, X>);
+    static_assert(not cib::contains_type<T, float>);
+}
+
 TEST_CASE("sort (empty tuple)", "[tuple_algorithms]") {
     constexpr auto t = cib::tuple{};
     [[maybe_unused]] constexpr auto sorted = cib::sort(t);
