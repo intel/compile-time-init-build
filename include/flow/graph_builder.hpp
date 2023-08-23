@@ -1,12 +1,14 @@
 #pragma once
 
 #include <container/constexpr_multimap.hpp>
+#include <container/vector.hpp>
 #include <flow/common.hpp>
 
 #include <algorithm>
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <span>
 
 namespace flow {
 namespace detail {
@@ -133,13 +135,12 @@ class graph_builder {
               std::size_t Capacity>
     [[nodiscard]] constexpr auto topo_sort() const -> Output<Name, Capacity> {
         graph_t g = graph;
-        std::array<Node, NodeCapacity> ordered_list{};
-        std::size_t list_size{};
+        cib::vector<Node, NodeCapacity> ordered_list{};
 
         auto sources = get_sources();
         while (not sources.empty()) {
             auto n = sources.pop();
-            ordered_list[list_size++] = n;
+            ordered_list.push_back(n);
 
             if (g.contains(n)) {
                 auto ms = g.get(n);
@@ -159,7 +160,9 @@ class graph_builder {
 
         auto buildStatus = g.empty() ? build_status::SUCCESS
                                      : build_status::HAS_CIRCULAR_DEPENDENCY;
-        return Output<Name, Capacity>(ordered_list.data(), buildStatus);
+        return Output<Name, Capacity>(
+            std::span{std::cbegin(ordered_list), std::size(ordered_list)},
+            buildStatus);
     }
 
     /**

@@ -33,8 +33,8 @@ TEST_CASE("add single action", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 1>();
     flow();
 
-    REQUIRE(flow.getBuildStatus() == flow::build_status::SUCCESS);
-    REQUIRE(actual == "a");
+    CHECK(flow.getBuildStatus() == flow::build_status::SUCCESS);
+    CHECK(actual == "a");
 }
 
 TEST_CASE("two milestone linear before dependency", "[flow]") {
@@ -57,7 +57,7 @@ TEST_CASE("two milestone linear before dependency", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
-    REQUIRE(actual == "a");
+    CHECK(actual == "a");
 }
 
 TEST_CASE("actions get executed once", "[flow]") {
@@ -71,7 +71,7 @@ TEST_CASE("actions get executed once", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual == "a");
+    CHECK(actual == "a");
 }
 
 TEST_CASE("two milestone linear after dependency", "[flow]") {
@@ -87,7 +87,7 @@ TEST_CASE("two milestone linear after dependency", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 4>();
     flow();
 
-    REQUIRE(actual == "ab");
+    CHECK(actual == "ab");
 }
 
 TEST_CASE("three milestone linear before and after dependency", "[flow]") {
@@ -99,7 +99,7 @@ TEST_CASE("three milestone linear before and after dependency", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual == "abc");
+    CHECK(actual == "abc");
 }
 
 TEST_CASE("just two actions in order", "[flow]") {
@@ -111,7 +111,7 @@ TEST_CASE("just two actions in order", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
-    REQUIRE(actual == "ab");
+    CHECK(actual == "ab");
 }
 
 TEST_CASE("insert action between two actions", "[flow]") {
@@ -125,7 +125,7 @@ TEST_CASE("insert action between two actions", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual == "abc");
+    CHECK(actual == "abc");
 }
 
 TEST_CASE("add single parallel 2", "[flow]") {
@@ -137,9 +137,9 @@ TEST_CASE("add single parallel 2", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.size() == 2);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.size() == 2);
 }
 
 TEST_CASE("add single parallel 3", "[flow]") {
@@ -151,10 +151,10 @@ TEST_CASE("add single parallel 3", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
@@ -167,11 +167,11 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('c') < actual.find('a'));
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.find('c') < actual.find('a'));
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
@@ -184,11 +184,11 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.find('a') < actual.find('c'));
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add parallel rhs", "[flow]") {
@@ -200,12 +200,12 @@ TEST_CASE("add parallel rhs", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('b'));
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.find('a') < actual.find('b'));
+    CHECK(actual.find('a') < actual.find('c'));
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add parallel lhs", "[flow]") {
@@ -217,12 +217,12 @@ TEST_CASE("add parallel lhs", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('a') < actual.find('c'));
-    REQUIRE(actual.find('b') < actual.find('c'));
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.find('a') < actual.find('c'));
+    CHECK(actual.find('b') < actual.find('c'));
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add parallel in the middle", "[flow]") {
@@ -234,18 +234,18 @@ TEST_CASE("add parallel in the middle", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 4>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
-    REQUIRE(actual.find('d') != std::string::npos);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.find('d') != std::string::npos);
 
-    REQUIRE(actual.find('a') < actual.find('b'));
-    REQUIRE(actual.find('a') < actual.find('c'));
+    CHECK(actual.find('a') < actual.find('b'));
+    CHECK(actual.find('a') < actual.find('c'));
 
-    REQUIRE(actual.find('b') < actual.find('d'));
-    REQUIRE(actual.find('c') < actual.find('d'));
+    CHECK(actual.find('b') < actual.find('d'));
+    CHECK(actual.find('c') < actual.find('d'));
 
-    REQUIRE(actual.size() == 4);
+    CHECK(actual.size() == 4);
 }
 
 TEST_CASE("add dependency lhs", "[flow]") {
@@ -257,13 +257,13 @@ TEST_CASE("add dependency lhs", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
 
-    REQUIRE(actual.find('a') < actual.find('b'));
+    CHECK(actual.find('a') < actual.find('b'));
 
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.size() == 3);
 }
 
 TEST_CASE("add dependency rhs", "[flow]") {
@@ -275,13 +275,13 @@ TEST_CASE("add dependency rhs", "[flow]") {
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow();
 
-    REQUIRE(actual.find('a') != std::string::npos);
-    REQUIRE(actual.find('b') != std::string::npos);
-    REQUIRE(actual.find('c') != std::string::npos);
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
 
-    REQUIRE(actual.find('b') < actual.find('c'));
+    CHECK(actual.find('b') < actual.find('c'));
 
-    REQUIRE(actual.size() == 3);
+    CHECK(actual.size() == 3);
 }
 
 struct TestFlowAlpha : public flow::service<> {};
@@ -298,7 +298,7 @@ TEST_CASE("add single action through cib::nexus", "[flow]") {
 
     nexus.service<TestFlowAlpha>();
 
-    REQUIRE(actual == "a");
+    CHECK(actual == "a");
 }
 
 struct MultiFlowMultiActionConfig {
@@ -317,7 +317,7 @@ TEST_CASE("add multi action through cib::nexus", "[flow]") {
     nexus.service<TestFlowAlpha>();
     nexus.service<TestFlowBeta>();
 
-    REQUIRE(actual == "abcd");
+    CHECK(actual == "abcd");
 }
 
 TEST_CASE("add multi action through cib::nexus, run through cib::service",
@@ -330,6 +330,6 @@ TEST_CASE("add multi action through cib::nexus, run through cib::service",
     cib::service<TestFlowAlpha>();
     cib::service<TestFlowBeta>();
 
-    REQUIRE(actual == "abcd");
+    CHECK(actual == "abcd");
 }
 } // namespace

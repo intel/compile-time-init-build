@@ -1,10 +1,14 @@
 #pragma once
 
+#include <container/vector.hpp>
 #include <flow/common.hpp>
 #include <flow/milestone.hpp>
+#include <log/log.hpp>
 
-#include <array>
+#include <algorithm>
 #include <cstddef>
+#include <iterator>
+#include <span>
 #include <type_traits>
 
 namespace flow {
@@ -42,7 +46,7 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
         }
     }();
 
-    std::array<FunctionPtr, capacity> functionPtrs{};
+    cib::vector<FunctionPtr, capacity> functionPtrs{};
     build_status buildStatus;
 
   public:
@@ -64,17 +68,19 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
      *
      * @see flow::builder
      */
-    constexpr impl(milestone_base *newMilestones, build_status newBuildStatus)
-        : functionPtrs(), buildStatus(newBuildStatus) {
+    constexpr impl(std::span<milestone_base const> newMilestones,
+                   build_status newBuildStatus)
+        : buildStatus(newBuildStatus) {
+        CIB_ASSERT(NumSteps >= std::size(newMilestones));
         if constexpr (loggingEnabled) {
-            for (auto i = std::size_t{}; i < NumSteps; i++) {
-                functionPtrs[(i * 2)] = newMilestones[i].log_name;
-                functionPtrs[(i * 2) + 1] = newMilestones[i].run;
+            for (auto const &milestone : newMilestones) {
+                functionPtrs.push_back(milestone.log_name);
+                functionPtrs.push_back(milestone.run);
             }
         } else {
-            for (auto i = std::size_t{}; i < NumSteps; i++) {
-                functionPtrs[i] = newMilestones[i].run;
-            }
+            std::transform(std::cbegin(newMilestones), std::cend(newMilestones),
+                           std::back_inserter(functionPtrs),
+                           [](auto const &milestone) { return milestone.run; });
         }
     }
 
@@ -99,25 +105,6 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
      * @return
      *      Error status of the flow::impl building process.
      */
-    [[nodiscard]] constexpr auto getBuildStatus() const -> build_status {
-        return buildStatus;
-    }
-};
-
-template <typename Name> class impl<Name, 0> {
-  private:
-    build_status buildStatus;
-
-  public:
-    constexpr static bool active = false;
-
-    constexpr impl(milestone_base *, build_status newBuildStatus)
-        : buildStatus(newBuildStatus) {}
-
-    constexpr void operator()() const {
-        // pass
-    }
-
     [[nodiscard]] constexpr auto getBuildStatus() const -> build_status {
         return buildStatus;
     }
