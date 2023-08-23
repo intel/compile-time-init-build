@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lookup/detail/select.hpp>
+#include <lookup/strategy_failed.hpp>
 
 #include <algorithm>
 #include <bit>

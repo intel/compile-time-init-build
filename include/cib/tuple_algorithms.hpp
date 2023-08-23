@@ -58,7 +58,8 @@ template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
             return T{std::move(outer_tuple)
                          .ugly_iGet_rvr(index<element_indices[Is].outer>)
                              [index<element_indices[Is].inner>]...};
-        }(std::make_index_sequence<total_num_elements>{});
+        }
+        (std::make_index_sequence<total_num_elements>{});
     }
 }
 
@@ -88,8 +89,10 @@ template <template <typename T> typename Pred, typename T>
         return [&]<std::size_t... Js>(std::index_sequence<Js...>) {
             using R = cib::tuple<cib::tuple_element_t<indices[Js], tuple_t>...>;
             return R{std::forward<T>(t)[index<indices[Js]>]...};
-        }(std::make_index_sequence<num_matches>{});
-    }(std::make_index_sequence<cib::tuple_size_v<tuple_t>>{});
+        }
+        (std::make_index_sequence<num_matches>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<tuple_t>>{});
 }
 
 namespace detail {
@@ -112,7 +115,8 @@ constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
                 detail::invoke_at<Is>(std::forward<Op>(op), std::forward<T>(t),
                                       std::forward<Ts>(ts)...)...);
         }
-    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename Op, typename T>
@@ -125,7 +129,8 @@ constexpr auto for_each(Op &&op, T &&t, Ts &&...ts) -> Op {
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         (detail::invoke_at<Is>(op, std::forward<T>(t), std::forward<Ts>(ts)...),
          ...);
-    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
     return op;
 }
 
@@ -134,7 +139,8 @@ constexpr auto all_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... and detail::invoke_at<Is>(f, std::forward<T>(t),
                                               std::forward<Ts>(ts)...));
-    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename F, typename T, typename... Ts>
@@ -142,7 +148,8 @@ constexpr auto any_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... or detail::invoke_at<Is>(f, std::forward<T>(t),
                                              std::forward<Ts>(ts)...));
-    }(std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
@@ -176,11 +183,13 @@ template <template <typename> typename Proj = std::type_identity_t,
             std::begin(a), std::end(a),
             [](auto const &p1, auto const &p2) { return p1.first < p2.first; });
         return a;
-    }(std::make_index_sequence<sizeof...(Ts)>{});
+    }
+    (std::make_index_sequence<sizeof...(Ts)>{});
 
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return cib::tuple{t[index<indices[Is].second>]...};
-    }(std::make_index_sequence<sizeof...(Ts)>{});
+    }
+    (std::make_index_sequence<sizeof...(Ts)>{});
 }
 
 namespace detail {
@@ -198,7 +207,8 @@ template <typename T, template <typename> typename Proj = std::type_identity_t>
         ((count +=
           static_cast<std::size_t>(not detail::test_adjacent<T, Proj, Is>())),
          ...);
-    }(std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
     return count;
 }
 
@@ -224,7 +234,8 @@ template <typename T, template <typename> typename Proj = std::type_identity_t>
 
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         (check_next_chunk.template operator()<Is>(), ...);
-    }(std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
+    }
+    (std::make_index_sequence<cib::tuple_size_v<T> - 1>{});
 
     return chunks;
 }
@@ -243,13 +254,14 @@ template <template <typename> typename Proj = std::type_identity_t,
     } else {
         constexpr auto chunks = detail::create_chunks<tuple_t, Proj>();
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return cib::make_tuple(
-                [&]<std::size_t... Js>(std::index_sequence<Js...>) {
-                    constexpr auto offset = chunks[Is].offset;
-                    return cib::make_tuple(
-                        std::forward<Tuple>(t)[index<offset + Js>]...);
-                }(std::make_index_sequence<chunks[Is].size>{})...);
-        }(std::make_index_sequence<std::size(chunks)>{});
+            return cib::make_tuple([&]<std::size_t... Js>(
+                std::index_sequence<Js...>) {
+                constexpr auto offset = chunks[Is].offset;
+                return cib::make_tuple(
+                    std::forward<Tuple>(t)[index<offset + Js>]...);
+            }(std::make_index_sequence<chunks[Is].size>{})...);
+        }
+        (std::make_index_sequence<std::size(chunks)>{});
     }
 }
 
