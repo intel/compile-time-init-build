@@ -67,9 +67,7 @@ TEST_CASE("for_each", "[bitset]") {
     auto s = bitset<32>{16, 8, 1};
     auto result = bitset<32>{};
 
-    s.for_each([&](auto i){
-        result.add(i);
-    });
+    s.for_each([&](auto i) { result.add(i); });
 
     REQUIRE(result == s);
 }
@@ -78,9 +76,7 @@ TEST_CASE("long for_each", "[bitset]") {
     auto s = bitset<64>{47, 32, 16, 8, 1};
     auto result = bitset<64>{};
 
-    s.for_each([&](auto i){
-        result.add(i);
-    });
+    s.for_each([&](auto i) { result.add(i); });
 
     REQUIRE(result == s);
 }
@@ -91,4 +87,4 @@ TEST_CASE("count", "[bitset]") {
     REQUIRE(bitset<64>{45, 0}.count() == 2);
 }
 
-}
+} // namespace msg::detail
