@@ -150,9 +150,15 @@ template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
 }
 
 namespace detail {
-template <typename T, typename... Us>
-constexpr auto contains_type(cib::tuple<Us...> const &)
-    -> std::bool_constant<(std::is_same_v<T, Us> or ...)>;
+template <typename T, template <typename> typename F, typename... Us>
+constexpr auto is_index_for = (std::is_same_v<F<Us>, T> or ...);
+
+template <typename T, typename IndexSeq, template <typename> typename... Fs,
+          typename... Us>
+constexpr auto contains_type(
+    cib::detail::tuple_impl<IndexSeq, index_function_list<Fs...>, Us...> const
+        &) -> std::bool_constant<(is_index_for<T, Fs, Us...> or ...) or
+                                 (std::is_same_v<T, Us> or ...)>;
 } // namespace detail
 
 template <typename Tuple, typename T>
