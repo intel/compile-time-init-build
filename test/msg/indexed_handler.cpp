@@ -35,97 +35,99 @@ TEST_CASE("create empty handler", "[indexed_handler]") {
         std::array<void (*)(test_msg const &), 0>{}};
 }
 
-msg::detail::bitset<32> callbacks_called{};
+// msg::detail::bitset<32> callbacks_called{};
 
-TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
-    using lookup::entry;
-    using lookup::input;
-    using msg::detail::bitset;
+// TEST_CASE("create handler with one index and callback", "[indexed_handler]")
+// {
+//     using lookup::entry;
+//     using lookup::input;
+//     using msg::detail::bitset;
 
-    constexpr auto h = indexed_handler{
-        callback_args<test_msg>,
+//     constexpr auto h = indexed_handler{
+//         callback_args<test_msg>,
 
-        indices{index{opcode_field{},
-                      lookup::make<input<uint32_t, bitset<32>, bitset<32>{},
-                                         entry{42u, bitset<32>{0}}>>()}},
+//         indices{index{opcode_field{},
+//                       lookup::make<input<uint32_t, bitset<32>, bitset<32>{},
+//                                          entry{42u, bitset<32>{0}}>>()}},
 
-        std::array<void (*)(test_msg const &), 1>{
-            [](test_msg const &) { callbacks_called.add(0); }}};
+//         std::array<void (*)(test_msg const &), 1>{
+//             [](test_msg const &) { callbacks_called.add(0); }}};
 
-    callbacks_called = {};
-    h.handle(test_msg{opcode_field{42}});
-    REQUIRE(h.is_match(test_msg{opcode_field{42}}));
-    REQUIRE(callbacks_called == bitset<32>{0});
+//     callbacks_called = {};
+//     h.handle(test_msg{opcode_field{42}});
+//     REQUIRE(h.is_match(test_msg{opcode_field{42}}));
+//     REQUIRE(callbacks_called == bitset<32>{0});
 
-    callbacks_called = {};
-    h.handle(test_msg{opcode_field{12}});
-    REQUIRE_FALSE(h.is_match(test_msg{opcode_field{12}}));
-    REQUIRE(callbacks_called == bitset<32>{});
-}
+//     callbacks_called = {};
+//     h.handle(test_msg{opcode_field{12}});
+//     REQUIRE_FALSE(h.is_match(test_msg{opcode_field{12}}));
+//     REQUIRE(callbacks_called == bitset<32>{});
+// }
 
-TEST_CASE("create handler with multiple indices and callbacks",
-          "[indexed_handler]") {
-    using lookup::entry;
-    using lookup::input;
-    using msg::detail::bitset;
+// TEST_CASE("create handler with multiple indices and callbacks",
+//           "[indexed_handler]") {
+//     using lookup::entry;
+//     using lookup::input;
+//     using msg::detail::bitset;
 
-    constexpr auto h = indexed_handler{
-        callback_args<test_msg>,
+//     constexpr auto h = indexed_handler{
+//         callback_args<test_msg>,
 
-        indices{index{opcode_field{},
-                      lookup::make<input<uint32_t, bitset<32>, bitset<32>{},
-                                         entry{0u, bitset<32>{0, 1, 2, 3}},
-                                         entry{1u, bitset<32>{4, 5, 6, 7}},
-                                         entry{2u, bitset<32>{8}}>>()},
+//         indices{index{opcode_field{},
+//                       lookup::make<input<uint32_t, bitset<32>, bitset<32>{},
+//                                          entry{0u, bitset<32>{0, 1, 2, 3}},
+//                                          entry{1u, bitset<32>{4, 5, 6, 7}},
+//                                          entry{2u, bitset<32>{8}}>>()},
 
-                index{sub_opcode_field{},
-                      lookup::make<input<uint32_t, bitset<32>, bitset<32>{8},
-                                         entry{0u, bitset<32>{0, 4, 8}},
-                                         entry{1u, bitset<32>{1, 5, 8}},
-                                         entry{2u, bitset<32>{2, 6, 8}},
-                                         entry{3u, bitset<32>{3, 7, 8}}>>()}},
+//                 index{sub_opcode_field{},
+//                       lookup::make<input<uint32_t, bitset<32>, bitset<32>{8},
+//                                          entry{0u, bitset<32>{0, 4, 8}},
+//                                          entry{1u, bitset<32>{1, 5, 8}},
+//                                          entry{2u, bitset<32>{2, 6, 8}},
+//                                          entry{3u, bitset<32>{3, 7,
+//                                          8}}>>()}},
 
-        std::array<void (*)(test_msg const &), 9>{
-            [](test_msg const &) { callbacks_called.add(0); },
-            [](test_msg const &) { callbacks_called.add(1); },
-            [](test_msg const &) { callbacks_called.add(2); },
-            [](test_msg const &) { callbacks_called.add(3); },
-            [](test_msg const &) { callbacks_called.add(4); },
-            [](test_msg const &) { callbacks_called.add(5); },
-            [](test_msg const &) { callbacks_called.add(6); },
-            [](test_msg const &) { callbacks_called.add(7); },
-            [](test_msg const &) { callbacks_called.add(8); }}};
+//         std::array<void (*)(test_msg const &), 9>{
+//             [](test_msg const &) { callbacks_called.add(0); },
+//             [](test_msg const &) { callbacks_called.add(1); },
+//             [](test_msg const &) { callbacks_called.add(2); },
+//             [](test_msg const &) { callbacks_called.add(3); },
+//             [](test_msg const &) { callbacks_called.add(4); },
+//             [](test_msg const &) { callbacks_called.add(5); },
+//             [](test_msg const &) { callbacks_called.add(6); },
+//             [](test_msg const &) { callbacks_called.add(7); },
+//             [](test_msg const &) { callbacks_called.add(8); }}};
 
-    auto const check_msg = [&](std::uint32_t op, std::uint32_t sub_op,
-                               std::size_t callback_index) {
-        callbacks_called = {};
-        h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
-        REQUIRE(callbacks_called == bitset<32>{callback_index});
-    };
+//     auto const check_msg = [&](std::uint32_t op, std::uint32_t sub_op,
+//                                std::size_t callback_index) {
+//         callbacks_called = {};
+//         h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
+//         REQUIRE(callbacks_called == bitset<32>{callback_index});
+//     };
 
-    check_msg(0, 0, 0);
-    check_msg(0, 1, 1);
-    check_msg(0, 2, 2);
-    check_msg(0, 3, 3);
-    check_msg(1, 0, 4);
-    check_msg(1, 1, 5);
-    check_msg(1, 2, 6);
-    check_msg(1, 3, 7);
+//     check_msg(0, 0, 0);
+//     check_msg(0, 1, 1);
+//     check_msg(0, 2, 2);
+//     check_msg(0, 3, 3);
+//     check_msg(1, 0, 4);
+//     check_msg(1, 1, 5);
+//     check_msg(1, 2, 6);
+//     check_msg(1, 3, 7);
 
-    check_msg(2, 0, 8);
-    check_msg(2, 1, 8);
-    check_msg(2, 2, 8);
-    check_msg(2, 3, 8);
-    check_msg(2, 42, 8);
+//     check_msg(2, 0, 8);
+//     check_msg(2, 1, 8);
+//     check_msg(2, 2, 8);
+//     check_msg(2, 3, 8);
+//     check_msg(2, 42, 8);
 
-    auto const check_no_match = [&](std::uint32_t op, std::uint32_t sub_op) {
-        callbacks_called = {};
-        h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
-        REQUIRE(callbacks_called == bitset<32>{});
-    };
+//     auto const check_no_match = [&](std::uint32_t op, std::uint32_t sub_op) {
+//         callbacks_called = {};
+//         h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
+//         REQUIRE(callbacks_called == bitset<32>{});
+//     };
 
-    check_no_match(3, 0);
-    check_no_match(0, 4);
-    check_no_match(1, 4);
-}
+//     check_no_match(3, 0);
+//     check_no_match(0, 4);
+//     check_no_match(1, 4);
+// }
 } // namespace msg

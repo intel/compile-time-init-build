@@ -26,26 +26,26 @@ struct test_service : ::msg::indexed_service<index_spec, test_msg_t> {};
 
 static inline bool callback_success;
 
-[[maybe_unused]] constexpr static auto test_callback = msg::indexed_callback_t(
+constexpr static auto test_callback = msg::indexed_callback_t(
     "TestCallback"_sc, match::all(test_id_field::in<0x80>),
     [](test_msg_t const &) { callback_success = true; });
 
 struct test_project {
-    [[maybe_unused]] constexpr static auto config = cib::config(
+    constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
 
 TEST_CASE("build handler", "[handler_builder]") {
-    [[maybe_unused]] cib::nexus<test_project> test_nexus{};
+    cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    // callback_success = false;
-    // cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
-    // REQUIRE(callback_success);
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    CHECK(callback_success);
 
-    // callback_success = false;
-    // cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
-    // REQUIRE_FALSE(callback_success);
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    CHECK(not callback_success);
 }
 
 // constexpr static auto test_callback_equals = msg::indexed_callback_t(
