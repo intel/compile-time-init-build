@@ -23,10 +23,9 @@ namespace detail {
 template <typename BuilderValue>
 consteval auto for_each_callback(auto fn) -> void {
     constexpr auto t = BuilderValue::value.callbacks;
-    [&]<std::size_t... i>(std::index_sequence<i...>)->void {
+    [&]<std::size_t... i>(std::index_sequence<i...>) -> void {
         (fn(t[cib::index<i>], i), ...);
-    }
-    (std::make_index_sequence<t.size()>{});
+    }(std::make_index_sequence<t.size()>{});
 }
 
 consteval auto with_field_index(auto t) {

@@ -1,30 +1,28 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
-#include <cstdint>
 #include <bit>
 #include <concepts>
+#include <cstdint>
 #include <numeric>
-#include <algorithm>
 
 namespace msg::detail {
 
 // NOTE: std has a bitset, however std::bitset does not have a way
 //       to efficiently iterate over its set bits; see `for_each` below.
-template<std::size_t NumBits>
-struct bitset {
-    static constexpr std::size_t size = (NumBits + 31) / 32;
+template <std::size_t NumBits> struct bitset {
+    constexpr static std::size_t size = (NumBits + 31) / 32;
     std::array<uint32_t, size> data{};
-
 
     constexpr bitset(std::integral auto... args) {
         (add(static_cast<std::size_t>(args)), ...);
     }
 
-    template<auto RhsNumBits>
-    constexpr inline bool operator==(bitset<RhsNumBits> const & rhs) const {
-        auto constexpr rhs_size = bitset<RhsNumBits>::size;
-        auto constexpr min_size = std::min(size, rhs_size);
+    template <auto RhsNumBits>
+    constexpr inline bool operator==(bitset<RhsNumBits> const &rhs) const {
+        constexpr auto rhs_size = bitset<RhsNumBits>::size;
+        constexpr auto min_size = std::min(size, rhs_size);
 
         bool match = true;
         for (auto i = std::size_t{}; i < min_size; i++) {
@@ -44,8 +42,8 @@ struct bitset {
         return match;
     }
 
-    template<std::size_t RhsNumBits>
-    constexpr inline bool operator!=(bitset<RhsNumBits> const & rhs) const {
+    template <std::size_t RhsNumBits>
+    constexpr inline bool operator!=(bitset<RhsNumBits> const &rhs) const {
         return !(*this == rhs);
     }
 
@@ -61,22 +59,22 @@ struct bitset {
         return data[i / 32] & (1 << (i % 32));
     }
 
-    template<typename T>
-    constexpr void for_each(T const & action) const {
+    template <typename T> constexpr void for_each(T const &action) const {
         for (auto i = std::size_t{}; i < size; i++) {
             auto const bit_index_base = i * 32;
 
             auto current_bits = data[i];
             while (current_bits != 0u) {
                 auto const bit_index_offset = std::countr_zero(current_bits);
-                auto const bit_index = bit_index_base + static_cast<std::size_t>(bit_index_offset);
+                auto const bit_index =
+                    bit_index_base + static_cast<std::size_t>(bit_index_offset);
                 current_bits &= ~(1 << bit_index_offset);
                 action(bit_index);
             }
         }
     }
 
-    constexpr inline bitset & operator&=(bitset const & rhs) {
+    constexpr inline bitset &operator&=(bitset const &rhs) {
         for (auto i = std::size_t{}; i < size; i++) {
             data[i] &= rhs.data[i];
         }
@@ -84,13 +82,13 @@ struct bitset {
         return *this;
     }
 
-    constexpr inline bitset operator&(bitset const & rhs) const {
+    constexpr inline bitset operator&(bitset const &rhs) const {
         auto result = *this;
         result &= rhs;
         return result;
     }
 
-    constexpr inline bitset & operator|=(bitset const & rhs) {
+    constexpr inline bitset &operator|=(bitset const &rhs) {
         for (auto i = std::size_t{}; i < size; i++) {
             data[i] |= rhs.data[i];
         }
@@ -98,7 +96,7 @@ struct bitset {
         return *this;
     }
 
-    constexpr inline bitset operator|(bitset const & rhs) const {
+    constexpr inline bitset operator|(bitset const &rhs) const {
         auto result = *this;
         result |= rhs;
         return result;
@@ -107,17 +105,17 @@ struct bitset {
     [[nodiscard]] constexpr inline bool empty() const {
         // NOTE: bitwise-OR all values together to avoid logical-OR
         // short-circuit branching.
-        uint32_t const merged =
-            std::accumulate(data.begin(), data.end(), uint32_t{}, std::bit_or<uint32_t>());
+        uint32_t const merged = std::accumulate(
+            data.begin(), data.end(), uint32_t{}, std::bit_or<uint32_t>());
 
         return merged == 0;
     }
 
     [[nodiscard]] constexpr inline int count() const {
-        return std::accumulate(data.begin(), data.end(), 0, [](int val, uint32_t elem){
-            return val + std::popcount(elem);
-        });
+        return std::accumulate(
+            data.begin(), data.end(), 0,
+            [](int val, uint32_t elem) { return val + std::popcount(elem); });
     }
 };
 
-}
+} // namespace msg::detail
