@@ -1,10 +1,12 @@
 #pragma once
 
+#include <lookup/detail/select.hpp>
 #include <lookup/entry.hpp>
 #include <lookup/strategy_failed.hpp>
 
 #include <array>
 #include <bit>
+#include <cstddef>
 
 namespace lookup {
 template <int MaxLoadFactor, int SearchLen, typename HashFunc>
@@ -22,7 +24,7 @@ struct fast_hash_lookup {
         std::array<entry<key_type, value_type>, storage_size + SearchLen>
             storage;
 
-        [[nodiscard]] constexpr auto index(key_type key) const -> size_t {
+        [[nodiscard]] constexpr auto index(key_type key) const -> std::size_t {
             auto const hash_value = HashFunc::calc(key);
             return hash_value % storage_size;
         }

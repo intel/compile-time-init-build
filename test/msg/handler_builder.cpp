@@ -26,10 +26,12 @@ constexpr static auto test_callback = msg::callback<test_msg_t>(
     "TestCallback"_sc, match::always<true>,
     [](test_msg_t const &) { callback_success = true; });
 
+namespace {
 struct test_project {
     constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
+} // namespace
 
 TEST_CASE("build handler", "[indexed_builder]") {
     cib::nexus<test_project> test_nexus{};
@@ -41,5 +43,4 @@ TEST_CASE("build handler", "[indexed_builder]") {
 
     REQUIRE(callback_success);
 }
-
 } // namespace msg

@@ -26,97 +26,99 @@ struct test_service : ::msg::indexed_service<index_spec, test_msg_t> {};
 
 static inline bool callback_success;
 
-[[maybe_unused]] constexpr static auto test_callback = msg::indexed_callback_t(
+constexpr static auto test_callback = msg::indexed_callback_t(
     "TestCallback"_sc, match::all(test_id_field::in<0x80>),
     [](test_msg_t const &) { callback_success = true; });
 
+namespace {
 struct test_project {
-    [[maybe_unused]] constexpr static auto config = cib::config(
+    constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
+} // namespace
 
 TEST_CASE("build handler", "[handler_builder]") {
-    [[maybe_unused]] cib::nexus<test_project> test_nexus{};
+    cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    // callback_success = false;
-    // cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
-    // REQUIRE(callback_success);
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    CHECK(callback_success);
 
-    // callback_success = false;
-    // cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
-    // REQUIRE_FALSE(callback_success);
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    CHECK(not callback_success);
 }
 
-// constexpr static auto test_callback_equals = msg::indexed_callback_t(
-//     "TestCallback"_sc, test_id_field::equal_to<0x80>,
-//     [](test_msg_t const &) { callback_success = true; });
+constexpr static auto test_callback_equals = msg::indexed_callback_t(
+    "TestCallback"_sc, test_id_field::equal_to<0x80>,
+    [](test_msg_t const &) { callback_success = true; });
 
-// struct test_project_equals {
-//     constexpr static auto config =
-//         cib::config(cib::exports<test_service>,
-//                     cib::extend<test_service>(test_callback_equals));
-// };
+struct test_project_equals {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_equals));
+};
 
-// TEST_CASE("build handler field equal_to", "[handler_builder]") {
-//     cib::nexus<test_project_equals> test_nexus{};
-//     test_nexus.init();
+TEST_CASE("build handler field equal_to", "[handler_builder]") {
+    cib::nexus<test_project_equals> test_nexus{};
+    test_nexus.init();
 
-//     callback_success = false;
-//     cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
-//     REQUIRE(callback_success);
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    REQUIRE(callback_success);
 
-//     callback_success = false;
-//     cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
-//     REQUIRE_FALSE(callback_success);
-// }
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    REQUIRE_FALSE(callback_success);
+}
 
-// constexpr static auto test_callback_multi_field = msg::indexed_callback_t(
-//     "test_callback_multi_field"_sc,
+constexpr static auto test_callback_multi_field = msg::indexed_callback_t(
+    "test_callback_multi_field"_sc,
 
-//     match::all(test_id_field::in<0x80, 0x42>,
-//     test_opcode_field::equal_to<1>),
+    match::all(test_id_field::in<0x80, 0x42>, test_opcode_field::equal_to<1>),
 
-//     [](test_msg_t const &) { callback_success = true; });
+    [](test_msg_t const &) { callback_success = true; });
 
-// static inline bool callback_success_single_field;
+static inline bool callback_success_single_field;
 
-// constexpr static auto test_callback_single_field = msg::indexed_callback_t(
-//     "test_callback_single_field"_sc,
+constexpr static auto test_callback_single_field = msg::indexed_callback_t(
+    "test_callback_single_field"_sc,
 
-//     match::all(test_id_field::equal_to<0x50>),
+    match::all(test_id_field::equal_to<0x50>),
 
-//     [](test_msg_t const &) { callback_success_single_field = true; });
+    [](test_msg_t const &) { callback_success_single_field = true; });
 
-// struct test_project_multi_field {
-//     constexpr static auto config =
-//         cib::config(cib::exports<test_service>,
-//                     cib::extend<test_service>(test_callback_multi_field,
-//                                               test_callback_single_field));
-// };
+struct test_project_multi_field {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_multi_field,
+                                              test_callback_single_field));
+};
 
-// TEST_CASE("build handler multi fields", "[handler_builder]") {
-//     cib::nexus<test_project_multi_field> test_nexus{};
-//     test_nexus.init();
+TEST_CASE("build handler multi fields", "[handler_builder]") {
+    cib::nexus<test_project_multi_field> test_nexus{};
+    test_nexus.init();
 
-//     callback_success = false;
-//     callback_success_single_field = false;
-//     cib::service<test_service>->handle(
-//         test_msg_t{test_id_field{0x80}, test_opcode_field{1}});
-//     REQUIRE(callback_success);
-//     REQUIRE_FALSE(callback_success_single_field);
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x80}, test_opcode_field{1}});
+    REQUIRE(callback_success);
+    REQUIRE_FALSE(callback_success_single_field);
 
-//     callback_success = false;
-//     callback_success_single_field = false;
-//     cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
-//     REQUIRE_FALSE(callback_success);
-//     REQUIRE_FALSE(callback_success_single_field);
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    REQUIRE_FALSE(callback_success);
+    REQUIRE_FALSE(callback_success_single_field);
 
-//     // make sure an unconstrained field in a callback doesn't cause a
-//     mismatch callback_success = false; callback_success_single_field = false;
-//     cib::service<test_service>->handle(
-//         test_msg_t{test_id_field{0x50}, test_opcode_field{1}});
-//     REQUIRE_FALSE(callback_success);
-//     REQUIRE(callback_success_single_field);
-// }
+    // make sure an unconstrained field in a callback doesn't cause a mismatch
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x50}, test_opcode_field{1}});
+    REQUIRE_FALSE(callback_success);
+    REQUIRE(callback_success_single_field);
+}
 } // namespace msg

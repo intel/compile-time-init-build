@@ -25,7 +25,8 @@ template <typename Field, typename Lookup> struct index {
 };
 
 template <typename... IndicesT> struct indices : IndicesT... {
-    consteval indices(IndicesT... index_args) : IndicesT{index_args}... {}
+    consteval explicit indices(IndicesT... index_args)
+        : IndicesT{index_args}... {}
 
     constexpr auto operator()(auto const &data) const {
         return (this->IndicesT::operator()(data) & ...);

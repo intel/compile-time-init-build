@@ -38,14 +38,13 @@ template <typename FieldType, std::size_t EntryCapacity,
 struct temp_index {
     using field_type = FieldType;
 
-    cib::constexpr_map<uint32_t, detail::bitset<CallbackCapacity>,
-                       EntryCapacity>
-        entries{};
+    using value_t = detail::bitset<CallbackCapacity>;
+    cib::constexpr_map<uint32_t, value_t, EntryCapacity> entries{};
     detail::bitset<CallbackCapacity> default_value{};
 
-    constexpr auto &operator[](auto key) {
+    constexpr auto operator[](auto key) -> auto & {
         if (!entries.contains(key)) {
-            entries.put(key, {});
+            entries.put(key, value_t{});
         }
 
         return entries.get(key);
