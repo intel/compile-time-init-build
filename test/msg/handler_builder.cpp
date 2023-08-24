@@ -4,6 +4,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 namespace msg {
+// Need an anonymous namespace to prevent collisions with the indexed_builder.cpp
+namespace {
 
 using test_id_field =
     field<decltype("test_id_field"_sc), 0, 31, 24, std::uint32_t>;
@@ -20,9 +22,9 @@ using test_msg_t =
 
 struct test_service : ::msg::service<test_msg_t> {};
 
-static inline bool callback_success;
+bool callback_success;
 
-constexpr static auto test_callback = msg::callback<test_msg_t>(
+constexpr auto test_callback = msg::callback<test_msg_t>(
     "TestCallback"_sc, match::always<true>,
     [](test_msg_t const &) { callback_success = true; });
 
@@ -31,7 +33,9 @@ struct test_project {
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
 
-TEST_CASE("build handler", "[indexed_builder]") {
+} // anonymous namespace
+
+TEST_CASE("build handler", "[handler_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
