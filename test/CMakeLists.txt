@@ -101,11 +101,23 @@ add_unit_test(
     CATCH2
     FILES
     msg/match.cpp
+    msg/detail/bitset.cpp
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
     msg/handler_builder.cpp
+    msg/indexed_handler.cpp
+    msg/indexed_builder.cpp
     msg/message.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    lookup_test
+    CATCH2
+    FILES
+    lookup/lookup.cpp
     LIBRARIES
     warnings
     cib)
