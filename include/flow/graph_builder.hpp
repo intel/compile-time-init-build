@@ -8,6 +8,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <optional>
 #include <span>
 
 namespace flow {
@@ -80,8 +81,8 @@ class graph_builder {
         constexpr auto builder = BuilderValue::value;
         constexpr auto size = builder.size();
         constexpr auto built = builder.template topo_sort<Output, size>();
-        static_assert(built.getBuildStatus() == flow::build_status::SUCCESS);
-        built();
+        static_assert(built.has_value());
+        built.value()();
     }
 
   public:
@@ -133,7 +134,8 @@ class graph_builder {
      */
     template <template <typename, std::size_t> typename Output,
               std::size_t Capacity>
-    [[nodiscard]] constexpr auto topo_sort() const -> Output<Name, Capacity> {
+    [[nodiscard]] constexpr auto topo_sort() const
+        -> std::optional<Output<Name, Capacity>> {
         graph_t g = graph;
         cib::vector<Node, NodeCapacity> ordered_list{};
 
@@ -158,11 +160,12 @@ class graph_builder {
             }
         }
 
-        auto buildStatus = g.empty() ? build_status::SUCCESS
-                                     : build_status::HAS_CIRCULAR_DEPENDENCY;
-        return Output<Name, Capacity>(
-            std::span{std::cbegin(ordered_list), std::size(ordered_list)},
-            buildStatus);
+        if (not g.empty()) {
+            return {};
+        }
+        return std::optional<Output<Name, Capacity>>{
+            std::in_place,
+            std::span{std::cbegin(ordered_list), std::size(ordered_list)}};
     }
 
     /**

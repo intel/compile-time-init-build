@@ -1,3 +1,4 @@
+#include <flow/flow.hpp>
 #include <seq/builder.hpp>
 #include <seq/impl.hpp>
 
@@ -13,8 +14,8 @@ std::string result;
 TEST_CASE("build and run empty seq", "[seq]") {
     seq::builder<> builder;
     auto seq_impl = builder.topo_sort<seq::impl, 0>();
-    CHECK(seq_impl.forward() == seq::status::DONE);
-    CHECK(seq_impl.backward() == seq::status::DONE);
+    CHECK(seq_impl->forward() == seq::status::DONE);
+    CHECK(seq_impl->backward() == seq::status::DONE);
 }
 
 TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
@@ -36,10 +37,10 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
 
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
-    CHECK(seq_impl.forward() == seq::status::DONE);
+    CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F");
 
-    CHECK(seq_impl.backward() == seq::status::DONE);
+    CHECK(seq_impl->backward() == seq::status::DONE);
     CHECK(result == "FB");
 }
 
@@ -69,24 +70,24 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     SECTION("forward can be called") {
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "F");
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "FF");
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "FFF");
-        CHECK(seq_impl.forward() == seq::status::DONE);
+        CHECK(seq_impl->forward() == seq::status::DONE);
         CHECK(result == "FFF");
     }
     SECTION(
         "backward can be called, but will not proceed until forward is done") {
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "F");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FF");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FFF");
-        CHECK(seq_impl.backward() == seq::status::DONE);
+        CHECK(seq_impl->backward() == seq::status::DONE);
         CHECK(result == "FFFB");
     }
 }
@@ -117,28 +118,28 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     SECTION("backward can be called") {
-        CHECK(seq_impl.forward() == seq::status::DONE);
+        CHECK(seq_impl->forward() == seq::status::DONE);
         CHECK(result == "F");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FB");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FBB");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FBBB");
-        CHECK(seq_impl.backward() == seq::status::DONE);
+        CHECK(seq_impl->backward() == seq::status::DONE);
         CHECK(result == "FBBB");
     }
     SECTION(
         "forward can be called, but will not proceed until backward is done") {
-        CHECK(seq_impl.forward() == seq::status::DONE);
+        CHECK(seq_impl->forward() == seq::status::DONE);
         CHECK(result == "F");
-        CHECK(seq_impl.backward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->backward() == seq::status::NOT_DONE);
         CHECK(result == "FB");
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "FBB");
-        CHECK(seq_impl.forward() == seq::status::NOT_DONE);
+        CHECK(seq_impl->forward() == seq::status::NOT_DONE);
         CHECK(result == "FBBB");
-        CHECK(seq_impl.forward() == seq::status::DONE);
+        CHECK(seq_impl->forward() == seq::status::DONE);
         CHECK(result == "FBBBF");
     }
 }
@@ -185,8 +186,8 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
 
     auto seq_impl = builder.topo_sort<seq::impl, 3>();
 
-    CHECK(seq_impl.forward() == seq::status::DONE);
+    CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F1F2F3");
-    CHECK(seq_impl.backward() == seq::status::DONE);
+    CHECK(seq_impl->backward() == seq::status::DONE);
     CHECK(result == "F1F2F3B3B2B1");
 }

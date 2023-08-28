@@ -127,13 +127,6 @@ template <typename ValueType, std::size_t Capacity> class vector {
         return std::equal(std::begin(lhs), std::end(lhs), std::begin(rhs),
                           std::end(rhs));
     }
-
-    [[nodiscard]] friend constexpr auto operator+(vector const &lhs,
-                                                  vector const &rhs) -> vector {
-        auto result = lhs;
-        std::copy(std::begin(rhs), std::end(rhs), std::back_inserter(result));
-        return result;
-    }
 };
 
 template <typename T, typename... Ts>

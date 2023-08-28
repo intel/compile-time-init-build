@@ -1,7 +1,6 @@
 #pragma once
 
 #include <container/vector.hpp>
-#include <flow/common.hpp>
 #include <log/log.hpp>
 #include <seq/step.hpp>
 
@@ -11,7 +10,7 @@
 #include <span>
 
 namespace seq {
-enum class direction { FORWARD = 0, BACKWARD = 1 };
+enum struct direction { FORWARD = 0, BACKWARD = 1 };
 
 template <typename, std::size_t NumSteps> struct impl {
     cib::vector<func_ptr, NumSteps> _forward_steps{};
@@ -21,11 +20,11 @@ template <typename, std::size_t NumSteps> struct impl {
     status prev_status{status::DONE};
     direction prev_direction{direction::BACKWARD};
 
-    constexpr impl(std::span<step_base const> steps, flow::build_status) {
+    constexpr explicit(true) impl(std::span<step_base const> steps) {
         CIB_ASSERT(NumSteps >= std::size(steps));
         for (auto const &step : steps) {
-            _forward_steps.push_back(step._forward_ptr);
-            _backward_steps.push_back(step._backward_ptr);
+            _forward_steps.push_back(step.forward_ptr);
+            _backward_steps.push_back(step.backward_ptr);
         }
     }
 

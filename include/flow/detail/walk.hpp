@@ -1,36 +1,32 @@
 #pragma once
 
-#include <container/vector.hpp>
+#include <array>
 
-#include <type_traits>
+namespace flow::dsl {
+template <typename T>
+concept node = requires { typename T::is_node; };
 
-namespace flow::detail {
-template <typename NodeType> using FlowComboVector = cib::vector<NodeType, 8>;
-
-template <typename NodeType, typename T>
-[[nodiscard]] constexpr auto get_heads(T const &ref) {
-    if constexpr (std::is_same_v<NodeType, T>) {
-        return FlowComboVector<NodeType>{ref};
+[[nodiscard]] constexpr auto initials(node auto const &n) {
+    if constexpr (requires { n.initials(); }) {
+        return n.initials();
     } else {
-        return ref.get_heads();
+        return std::array{n};
     }
 }
 
-template <typename NodeType, typename T>
-[[nodiscard]] constexpr auto get_tails(T const &ref) {
-    if constexpr (std::is_same_v<NodeType, T>) {
-        return FlowComboVector<NodeType>{ref};
+[[nodiscard]] constexpr auto finals(node auto const &n) {
+    if constexpr (requires { n.finals(); }) {
+        return n.finals();
     } else {
-        return ref.get_tails();
+        return std::array{n};
     }
 }
 
-template <typename NodeType, typename Callable, typename T>
-constexpr void node_walk(Callable c, T const &node) {
-    if constexpr (std::is_same_v<NodeType, T>) {
-        c(node, {});
+constexpr auto walk(auto c, node auto const &n) -> void {
+    if constexpr (requires { n.walk(c); }) {
+        n.walk(c);
     } else {
-        node.walk(c);
+        c(n, {});
     }
 }
-} // namespace flow::detail
+} // namespace flow::dsl

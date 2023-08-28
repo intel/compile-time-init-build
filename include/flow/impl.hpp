@@ -47,7 +47,6 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
     }();
 
     cib::vector<FunctionPtr, capacity> functionPtrs{};
-    build_status buildStatus;
 
   public:
     constexpr static bool active = capacity > 0;
@@ -60,17 +59,9 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
      * @param newMilestones
      *      Array of Milestones to execute in the flow.
      *
-     * @param buildStatus
-     *      flow::builder will report whether the flow::impl can be built
-     * successfully, or if there was some other error while building the
-     * flow::impl. This can be used along with static_assert to ensure the flow
-     * is built correctly.
-     *
      * @see flow::builder
      */
-    constexpr impl(std::span<milestone_base const> newMilestones,
-                   build_status newBuildStatus)
-        : buildStatus(newBuildStatus) {
+    constexpr explicit(true) impl(std::span<node const> newMilestones) {
         CIB_ASSERT(NumSteps >= std::size(newMilestones));
         if constexpr (loggingEnabled) {
             for (auto const &milestone : newMilestones) {
@@ -99,14 +90,6 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.end({})", Name{});
         }
-    }
-
-    /**
-     * @return
-     *      Error status of the flow::impl building process.
-     */
-    [[nodiscard]] constexpr auto getBuildStatus() const -> build_status {
-        return buildStatus;
     }
 };
 } // namespace flow

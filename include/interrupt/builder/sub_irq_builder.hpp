@@ -47,7 +47,7 @@ template <typename ConfigT> struct sub_irq_builder {
             auto constexpr flow_size = flow_builder.size();
             auto constexpr flow =
                 flow_builder.template topo_sort<flow::impl, flow_size>();
-            flow();
+            flow.value()();
         };
 
         constexpr auto flow_builder =
