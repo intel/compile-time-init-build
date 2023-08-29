@@ -11,66 +11,21 @@
 namespace sc {
 template <typename CharT, CharT... chars> struct string_constant {
   private:
-    using StringView = std::basic_string_view<CharT>;
-
+    using view_t = std::basic_string_view<CharT>;
     constexpr static std::array<CharT, sizeof...(chars)> storage{chars...};
 
-  public:
-    using char_type = CharT;
-    using traits_type = typename StringView::traits_type;
-    using value_type = typename StringView::value_type;
-    using pointer = typename StringView::pointer;
-    using const_pointer = typename StringView::const_pointer;
-    using reference = typename StringView::reference;
-    using const_reference = typename StringView::const_reference;
-    using const_iterator = typename StringView::const_iterator;
-    using iterator = typename StringView::const_iterator;
-    using const_reverse_iterator = typename StringView::const_reverse_iterator;
-    using reverse_iterator = typename StringView::const_reverse_iterator;
     using size_type = int;
-    using difference_type = int;
-
-    constexpr static StringView value{storage.data(), sizeof...(chars)};
+    using const_iterator = typename view_t::const_iterator;
     constexpr static size_type npos = std::numeric_limits<size_type>::max();
 
-    // NOLINTNEXTLINE(google-explicit-constructor)
-    [[nodiscard]] constexpr operator StringView() const noexcept {
-        return value;
-    }
+  public:
+    constexpr static view_t value{storage.data(), sizeof...(chars)};
 
-    [[nodiscard]] constexpr auto operator()() const noexcept -> StringView {
-        return value;
-    }
+    constexpr static auto begin() noexcept { return std::cbegin(storage); }
+    constexpr static auto end() noexcept { return std::cend(storage); }
 
-    constexpr static auto begin() noexcept -> const_iterator {
-        return value.begin();
-    }
-
-    constexpr static auto end() noexcept -> const_iterator {
-        return value.end();
-    }
-
-    [[nodiscard]] constexpr auto operator[](size_type pos) const noexcept
-        -> const_reference {
-        static_assert(sizeof...(chars) > 0);
-        return value[pos];
-    }
-
-    template <typename T, T pos>
-    [[nodiscard]] constexpr auto
-    operator[](std::integral_constant<T, pos>) const noexcept {
-        static_assert(pos < sizeof...(chars));
-        return value[pos];
-    }
-
-    [[nodiscard]] constexpr static auto size() noexcept { return value.size(); }
-
-    [[nodiscard]] constexpr static auto length() noexcept {
-        return value.length();
-    }
-
-    [[nodiscard]] constexpr static auto empty() noexcept {
-        return value.empty();
+    [[nodiscard]] constexpr static auto size() noexcept {
+        return std::size(storage);
     }
 
     template <size_type pos = 0, size_type count = npos>
