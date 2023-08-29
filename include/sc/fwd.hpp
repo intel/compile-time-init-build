@@ -27,6 +27,7 @@ template <typename T> constexpr static type_name<T> type_{};
 template <typename CharT, CharT... chars> struct string_constant;
 } // namespace sc
 
-template <class T, T... chars> constexpr auto operator""_sc() {
-    return sc::string_constant<T, chars...>{};
+template <class T, T... chars>
+constexpr auto operator""_sc() -> sc::string_constant<T, chars...> {
+    return {};
 }

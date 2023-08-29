@@ -230,8 +230,6 @@ template <typename T, template <typename> typename Proj = std::type_identity_t>
 }
 } // namespace detail
 
-template <typename, auto> constexpr bool always_false_v = false;
-
 template <template <typename> typename Proj = std::type_identity_t,
           typename Tuple>
 [[nodiscard]] constexpr auto chunk_by(Tuple &&t) {

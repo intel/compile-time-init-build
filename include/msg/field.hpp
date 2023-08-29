@@ -2,7 +2,7 @@
 
 #include <msg/field_matchers.hpp>
 #include <msg/match.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/format.hpp>
 
 #include <concepts>
 #include <cstdint>
