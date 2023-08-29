@@ -2,7 +2,7 @@
 
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/fwd.hpp>
 
 namespace sc {
 template <typename StringConstant, typename ArgTuple>

@@ -2,7 +2,7 @@
 
 #include <log/level.hpp>
 #include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/fwd.hpp>
 
 #include <utility>
 

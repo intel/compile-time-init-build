@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/format.hpp>
 
 #include <cstdint>
 #include <type_traits>

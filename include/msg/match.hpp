@@ -2,7 +2,7 @@
 
 #include <cib/tuple.hpp>
 #include <log/log.hpp>
-#include <sc/string_constant.hpp>
+#include <sc/format.hpp>
 
 #include <functional>
 #include <type_traits>

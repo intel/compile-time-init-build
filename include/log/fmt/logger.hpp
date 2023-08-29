@@ -1,14 +1,13 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <log/log.hpp>
 
 #include <fmt/format.h>
 
 #include <chrono>
 #include <exception>
-#include <iostream>
-#include <iterator>
 #include <utility>
 
 template <auto L> struct fmt::formatter<logging::level_constant<L>> {
