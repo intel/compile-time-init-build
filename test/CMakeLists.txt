@@ -1,14 +1,4 @@
 add_unit_test(
-    tuple_test
-    CATCH2
-    FILES
-    cib/tuple.cpp
-    cib/tuple_algorithms.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
     cib_test
     CATCH2
     FILES
@@ -74,6 +64,35 @@ add_unit_test(
     warnings
     cib)
 
+add_library(catalog_lib log/catalog_lib.cpp)
+target_include_directories(catalog_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
+target_link_libraries(catalog_lib PRIVATE warnings cib)
+gen_str_catalog(
+    GEN_STR_CATALOG
+    ${CMAKE_SOURCE_DIR}/tools/gen_str_catalog.py
+    OUTPUT_CPP
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp
+    OUTPUT_JSON
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.json
+    OUTPUT_XML
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.xml
+    OUTPUT_LIB
+    catalog_strings
+    INPUT_LIBS
+    catalog_lib)
+
+add_unit_test(
+    log_catalog_test
+    CATCH2
+    FILES
+    log/catalog_app.cpp
+    INCLUDE_DIRECTORIES
+    ${CMAKE_SOURCE_DIR}/test/
+    LIBRARIES
+    warnings
+    catalog_lib
+    catalog_strings)
+
 add_unit_test(
     log_fmt_test
     CATCH2
@@ -137,6 +156,16 @@ add_unit_test(
     CATCH2
     FILES
     seq/sequencer.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    tuple_test
+    CATCH2
+    FILES
+    cib/tuple.cpp
+    cib/tuple_algorithms.cpp
     LIBRARIES
     warnings
     cib)

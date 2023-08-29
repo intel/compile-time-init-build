@@ -69,7 +69,7 @@ TEST_CASE("log zero arguments", "[mipi]") {
     test::concurrency_policy::test_critical_section::count = 0;
     auto cfg = logging::mipi::under<test::concurrency_policy>::config{
         test_log_args_destination<logging::level::TRACE>{}};
-    cfg.logger.log_msg<logging::level::TRACE>(format("Hello"_sc));
+    cfg.logger.log_msg<logging::level::TRACE>("Hello"_sc);
     REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
 }
 
