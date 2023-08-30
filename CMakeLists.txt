@@ -19,9 +19,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS
     ON
     CACHE BOOL "Export compile commands to compile_commands.json." FORCE)
 
+find_package(
+    Python3
+    COMPONENTS Interpreter
+    REQUIRED)
+
 include(cmake/dependencies.cmake)
 include(cmake/libraries.cmake)
 include(cmake/quality.cmake)
+include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:fmtlib/fmt#6c845f5")
 
@@ -46,11 +52,6 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(examples)
 
     # Build single-header release.
-    find_package(
-        Python3
-        COMPONENTS Interpreter
-        REQUIRED)
-
     file(GLOB_RECURSE include_files
          "${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*.hpp")
     add_custom_command(
@@ -59,7 +60,8 @@ if(PROJECT_IS_TOP_LEVEL)
         COMMAND ${CMAKE_COMMAND} -E make_directory
                 ${CMAKE_CURRENT_BINARY_DIR}/include/cib
         COMMAND
-            python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
+            ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
             ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp >
             ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
@@ -79,34 +81,3 @@ else()
         cib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
 endif()
-
-function(gen_str_catalog)
-    set(options "")
-
-    set(oneValueArgs OUTPUT_CPP OUTPUT_XML OUTPUT_JSON GEN_STR_CATALOG)
-
-    set(multiValueArgs INPUT_LIBS)
-
-    cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}"
-                          ${ARGN})
-
-    foreach(X IN LISTS SC_INPUT_LIBS)
-        add_custom_command(
-            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-            DEPENDS ${X}
-            COMMAND ${CMAKE_NM} -uC ${X} >>
-                    ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt)
-    endforeach()
-
-    add_custom_command(
-        OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
-        COMMAND
-            python3 ${SC_GEN_STR_CATALOG}
-            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt ${SC_OUTPUT_CPP}
-            ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
-                ${SC_GEN_STR_CATALOG})
-
-    add_library(log_strings STATIC strings.cpp)
-    target_link_libraries(log_strings PUBLIC cib)
-endfunction()
