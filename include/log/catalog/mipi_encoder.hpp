@@ -9,6 +9,27 @@
 #include <exception>
 #include <utility>
 
+namespace {
+template <logging::level L, typename S, typename T>
+constexpr auto to_message() {
+    constexpr auto s = S::value;
+    using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
+    return [&]<template <typename...> typename Tuple, typename... Args,
+               std::size_t... Is>(Tuple<Args...> const &,
+                                  std::integer_sequence<std::size_t, Is...>) {
+        return message<L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+    }(T{}, std::make_integer_sequence<std::size_t, std::size(s)>{});
+}
+
+template <logging::level L, typename Msg> constexpr auto to_message(Msg msg) {
+    if constexpr (requires { msg.args; }) {
+        return to_message<L, decltype(msg.str), decltype(msg.args)>();
+    } else {
+        return to_message<L, Msg, cib::tuple<>>();
+    }
+}
+} // namespace
+
 namespace logging::mipi {
 template <typename ConcurrencyPolicy, typename TDestinations>
 struct log_handler {
@@ -28,7 +49,7 @@ struct log_handler {
     template <logging::level Level, typename Msg>
     CIB_ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename StringType>(StringType, auto... args) {
-            using Message = message<Level, Msg>;
+            using Message = decltype(to_message<Level>(msg));
             dispatch_message<Level>(catalog<Message>(),
                                     static_cast<std::uint32_t>(args)...);
         });
