@@ -16,13 +16,8 @@ xml_file = sys.argv[4]
 
 catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))\s*$")
 
-# unsigned int catalog<message<(logging::level)7, sc::string_constant<char, (char)102, (char)108, (char)111, (char)119, (char)46, (char)115, (char)116, (char)97, (char)114, (char)116, (char)40, (char)77, (char)101, (char)109, (char)111, (char)114, (char)121, (char)69, (char)114, (char)114, (char)111, (char)114, (char)41> > >()
-string_constant_re = re.compile(
-    "message<\(logging::level\)(\d+), sc::string_constant<char, (.*)>\s*(?:const)?\s*>"
-)
-# unsigned int catalog<message<(logging::level)7, sc::lazy_string_format<sc::string_constant<char, (char)102, (char)108, (char)111, (char)119, (char)46, (char)115, (char)116, (char)97, (char)114, (char)116, (char)40, (char)77, (char)101, (char)109, (char)111, (char)114, (char)121, (char)69, (char)114, (char)114, (char)111, (char)114, (char)41>, cib::tuple<> > > >()
-lazy_string_re = re.compile(
-    "message<\(logging::level\)(\d+), sc::lazy_string_format<sc::string_constant<char, (.*)>\s*(?:const)?, cib::(?:[a-zA-Z0-9_]+::)*tuple<(.*)>\s*>\s*>"
+string_re = re.compile(
+    "message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
 )
 
 string_id = 0
@@ -34,10 +29,7 @@ messages = []
 
 out.write(
     """
-#include <cib/tuple.hpp>
 #include <log/catalog/catalog.hpp>
-#include <sc/lazy_string_format.hpp>
-#include <sc/string_constant.hpp>
 
 """
 )
@@ -136,16 +128,11 @@ with open(input_file, "r") as f:
         catalog_m = catalog_re.match(line)
 
         if catalog_m:
-            string_m = lazy_string_re.match(catalog_m.group(2))
-            if string_m:
-                arg_tuple = string_m.group(3)
-            else:
-                string_m = string_constant_re.match(catalog_m.group(2))
-                arg_tuple = ""
-
+            string_m = string_re.match(catalog_m.group(2))
             catalog_type = catalog_m.group(1)
             log_level = string_m.group(1)
-            string_tuple = string_m.group(2).replace("(char)", "")
+            arg_tuple = string_m.group(2)
+            string_tuple = string_m.group(3).replace("(char)", "")
             string_value = "".join(
                 [chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)]
             )
