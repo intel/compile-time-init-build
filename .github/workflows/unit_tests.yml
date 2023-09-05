@@ -82,7 +82,7 @@ jobs:
             stdlib: libc++
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
@@ -107,7 +107,7 @@ jobs:
   quality_checks_pass:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
@@ -137,7 +137,7 @@ jobs:
         sanitizer: [undefined, address, thread]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
@@ -158,7 +158,7 @@ jobs:
   valgrind:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: sudo apt update && sudo apt install -y gcc-12 ninja-build valgrind
@@ -216,7 +216,7 @@ jobs:
   build_single_header:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
