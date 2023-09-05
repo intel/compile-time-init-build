@@ -1,6 +1,6 @@
+#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
-#include <conc/concurrency.hpp>
 #include <cstdint>
 
 int log_calls{};

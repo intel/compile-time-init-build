@@ -1,8 +1,8 @@
+#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <conc/concurrency.hpp>
 #include <cstdint>
 
 namespace {
