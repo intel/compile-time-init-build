@@ -126,7 +126,8 @@ template <std::uint32_t DWordIndex, std::uint32_t Lsb> struct field_locator_t {
 
     template <field_spec Spec, typename MsgType>
     constexpr static auto fits_inside() -> bool {
-        constexpr auto max_dword_index = DWordIndex + (Lsb + Spec::size) / 32;
+        constexpr auto max_dword_index =
+            DWordIndex + (Lsb + Spec::size - 1) / 32;
         return max_dword_index < MsgType::max_num_dwords;
     }
 };
