@@ -8,25 +8,14 @@ project(
         "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
-if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
-    message(
-        FATAL_ERROR
-            "In-source builds are a bad idea. Please make a build directory instead."
-    )
-endif()
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS
-    ON
-    CACHE BOOL "Export compile commands to compile_commands.json." FORCE)
+include(cmake/get_cpm.cmake)
+cpmaddpackage("gh:intel/cicd-repo-infrastructure#main")
 
 find_package(
     Python3
     COMPONENTS Interpreter
     REQUIRED)
 
-include(cmake/dependencies.cmake)
-include(cmake/libraries.cmake)
-include(cmake/quality.cmake)
 include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:fmtlib/fmt#6c845f5")
