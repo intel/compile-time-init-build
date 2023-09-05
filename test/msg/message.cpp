@@ -19,9 +19,15 @@ using TestFieldUpper =
 using TestField3 = disjoint_field<decltype("TestField4"_sc),
                                   cib::tuple<TestFieldLower, TestFieldUpper>>;
 
+using TestField4 = field<decltype("TestField4"_sc), 1, 31, 24, std::uint8_t>;
+
 using TestMsg =
     message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
                  TestField1, TestField2, TestField3>;
+
+using TestLastBitField = 
+    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
+                TestField1, TestField2, TestField3, TestField4>;
 
 TEST_CASE("TestMessageDataFieldConstruction", "[message]") {
     TestMsg msg{TestField1{0xba11}, TestField2{0x42}, TestField3{0xd00d}};
@@ -81,6 +87,20 @@ TEST_CASE("TestMessageDataPartialRangeConstruction", "[message]") {
     REQUIRE(msg.size() == 2u);
     CHECK(0x8000ba11 == msg[0]);
     CHECK(0x0042d00d == msg[1]);
+}
+
+TEST_CASE("TestMessageDataPartialRangeConstructionLastBit", "[message]") {
+    TestLastBitField msg{std::array<uint32_t, 4>{0x8000ba11, 0x2442d00d, 0xffffffff,
+                                        0xffffffff}};
+
+    CHECK(0xba11 == msg.get<TestField1>());
+    CHECK(0x42 == msg.get<TestField2>());
+    CHECK(0xd00d == msg.get<TestField3>());
+    CHECK(0x24 == msg.get<TestField4>());
+
+    REQUIRE(msg.size() == 2u);
+    CHECK(0x8000ba11 == msg[0]);
+    CHECK(0x2442d00d == msg[1]);
 }
 
 TEST_CASE("TestMessageDataConvertibleRangeConstruction", "[message]") {
