@@ -33,6 +33,7 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-braces>)
 
 if(PROJECT_IS_TOP_LEVEL)
+    add_docs(docs)
     clang_tidy_interface(cib)
 
     # Enable functional and performance test suites.

@@ -25,8 +25,8 @@ jobs:
       - name: Build documentation
         run: |
           mkdir -p ./generated-html
-          asciidoctor -r asciidoctor-diagram doc/index.adoc -D ./generated-html
-          if [ -e doc/static ]; then cp -rf doc/static ./generated-html; fi
+          asciidoctor -r asciidoctor-diagram docs/index.adoc -D ./generated-html
+          if [ -e docs/static ]; then cp -rf docs/static ./generated-html; fi
           touch ./generated-html/.nojekyll
           ls -la ./generated-html
           cat ./generated-html/index.html
