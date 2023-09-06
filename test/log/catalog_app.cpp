@@ -1,6 +1,6 @@
-#include <catch2/catch_test_macros.hpp>
-
 #include <conc/concurrency.hpp>
+
+#include <catch2/catch_test_macros.hpp>
 
 extern int log_calls;
 extern auto log_zero_args() -> void;
