@@ -1,40 +1,49 @@
+#include <msg/callback.hpp>
+#include <msg/field.hpp>
 #include <msg/handler.hpp>
+#include <msg/match.hpp>
+#include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace msg {
-
+namespace {
 bool correctDispatch = false;
 
-using TestIdField = field<decltype("TestIdField"_sc), 0, 31, 24, std::uint32_t>;
+using TestIdField =
+    msg::field<decltype("TestIdField"_sc), 0, 31, 24, std::uint32_t>;
 
-using TestField1 = field<decltype("TestField1"_sc), 0, 15, 0, std::uint32_t>;
+using TestField1 =
+    msg::field<decltype("TestField1"_sc), 0, 15, 0, std::uint32_t>;
 
-using TestField2 = field<decltype("TestField2"_sc), 1, 23, 16, std::uint32_t>;
+using TestField2 =
+    msg::field<decltype("TestField2"_sc), 1, 23, 16, std::uint32_t>;
 
-using TestField3 = field<decltype("TestField3"_sc), 1, 15, 0, std::uint32_t>;
+using TestField3 =
+    msg::field<decltype("TestField3"_sc), 1, 15, 0, std::uint32_t>;
 
-using TestBaseMsg = message_data<2>;
+using TestBaseMsg = msg::message_data<2>;
 
-using TestMsg =
-    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
-                 TestField1, TestField2, TestField3>;
+using TestMsg = msg::message_base<decltype("TestMsg"_sc), 2,
+                                  TestIdField::WithRequired<0x80>, TestField1,
+                                  TestField2, TestField3>;
 
-using TestMsgMultiCb =
-    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x81>,
-                 TestField1, TestField2, TestField3>;
+using TestMsgMultiCb = msg::message_base<decltype("TestMsg"_sc), 2,
+                                         TestIdField::WithRequired<0x81>,
+                                         TestField1, TestField2, TestField3>;
 
-using TestMsgFieldRequired = message_base<decltype("TestMsgFieldRequired"_sc),
-                                          2, TestIdField::WithRequired<0x44>,
-                                          TestField1, TestField2, TestField3>;
+using TestMsgFieldRequired =
+    msg::message_base<decltype("TestMsgFieldRequired"_sc), 2,
+                      TestIdField::WithRequired<0x44>, TestField1, TestField2,
+                      TestField3>;
 
 enum class Opcode { A = 0x8, B = 0x9, C = 0xA };
 
-using TestOpField = field<decltype("TestOpField"_sc), 0, 27, 24, Opcode>;
+using TestOpField = msg::field<decltype("TestOpField"_sc), 0, 27, 24, Opcode>;
 
-using TestMsgOp = message_base<decltype("TestMsg"_sc), 2,
-                               TestOpField::WithIn<Opcode::A, Opcode::B>,
-                               TestField1, TestField2>;
+using TestMsgOp = msg::message_base<decltype("TestMsg"_sc), 2,
+                                    TestOpField::WithIn<Opcode::A, Opcode::B>,
+                                    TestField1, TestField2>;
+} // namespace
 
 TEST_CASE("TestMsgDispatch1", "[handler]") {
     correctDispatch = false;
@@ -142,5 +151,3 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         REQUIRE(correct);
     }
 }
-
-} // namespace msg

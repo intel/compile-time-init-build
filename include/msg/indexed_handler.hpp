@@ -1,15 +1,7 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
-#include <cib/tuple.hpp>
-#include <container/vector.hpp>
 #include <log/log.hpp>
-#include <msg/callback.hpp>
 #include <msg/handler_interface.hpp>
-
-#include <array>
-#include <cstddef>
-#include <type_traits>
 
 namespace msg {
 

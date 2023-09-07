@@ -1,8 +1,12 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
+
+#include <type_traits>
+#include <utility>
 
 namespace msg {
 

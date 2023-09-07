@@ -1,14 +1,8 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <cib/tuple_algorithms.hpp>
 #include <log/log.hpp>
-#include <msg/callback.hpp>
 #include <msg/handler_interface.hpp>
-
-#include <array>
-#include <cstddef>
-#include <type_traits>
 
 namespace msg {
 

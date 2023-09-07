@@ -15,6 +15,7 @@ template <std::size_t NumBits> struct bitset {
     constexpr static std::size_t size = (NumBits + 31) / 32;
     std::array<uint32_t, size> data{};
 
+    constexpr bitset() = default;
     constexpr explicit bitset(std::integral auto... args) {
         (add(static_cast<std::size_t>(args)), ...);
     }
