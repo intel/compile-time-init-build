@@ -1,36 +1,38 @@
 #include <cib/cib.hpp>
+#include <msg/field.hpp>
 #include <msg/indexed_callback.hpp>
 #include <msg/indexed_service.hpp>
+#include <msg/match.hpp>
+#include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace msg {
-
+namespace {
 using test_id_field =
-    field<decltype("test_id_field"_sc), 0, 31, 24, std::uint32_t>;
+    msg::field<decltype("test_id_field"_sc), 0, 31, 24, std::uint32_t>;
 using test_opcode_field =
-    field<decltype("test_opcode_field"_sc), 0, 15, 0, std::uint32_t>;
+    msg::field<decltype("test_opcode_field"_sc), 0, 15, 0, std::uint32_t>;
 using test_field_2 =
-    field<decltype("test_field_2"_sc), 1, 23, 16, std::uint32_t>;
+    msg::field<decltype("test_field_2"_sc), 1, 23, 16, std::uint32_t>;
 using test_field_3 =
-    field<decltype("test_field_3"_sc), 1, 15, 0, std::uint32_t>;
+    msg::field<decltype("test_field_3"_sc), 1, 15, 0, std::uint32_t>;
 
-using test_msg_t = message_base<decltype("test_msg"_sc), 2, test_id_field,
-                                test_opcode_field, test_field_2, test_field_3>;
+using test_msg_t =
+    msg::message_base<decltype("test_msg"_sc), 2, test_id_field,
+                      test_opcode_field, test_field_2, test_field_3>;
 
-using index_spec = decltype(cib::make_indexed_tuple<get_field_type>(
-    temp_index<test_id_field, 256, 32>{},
-    temp_index<test_opcode_field, 256, 32>{}));
+using index_spec = decltype(cib::make_indexed_tuple<msg::get_field_type>(
+    msg::temp_index<test_id_field, 256, 32>{},
+    msg::temp_index<test_opcode_field, 256, 32>{}));
 
-struct test_service : ::msg::indexed_service<index_spec, test_msg_t> {};
+struct test_service : msg::indexed_service<index_spec, test_msg_t> {};
 
-static inline bool callback_success;
+bool callback_success;
 
-constexpr static auto test_callback = msg::indexed_callback_t(
+constexpr auto test_callback = msg::indexed_callback_t(
     "TestCallback"_sc, match::all(test_id_field::in<0x80>),
     [](test_msg_t const &) { callback_success = true; });
 
-namespace {
 struct test_project {
     constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
@@ -121,4 +123,3 @@ TEST_CASE("build handler multi fields", "[handler_builder]") {
     REQUIRE_FALSE(callback_success);
     REQUIRE(callback_success_single_field);
 }
-} // namespace msg

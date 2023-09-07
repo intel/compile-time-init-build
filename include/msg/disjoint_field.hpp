@@ -4,8 +4,8 @@
 #include <msg/match.hpp>
 #include <sc/format.hpp>
 
+#include <algorithm>
 #include <cstdint>
-#include <type_traits>
 
 namespace msg {
 /**

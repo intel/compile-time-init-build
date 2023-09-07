@@ -1,15 +1,8 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <cib/tuple.hpp>
 #include <cib/tuple_algorithms.hpp>
-#include <log/log.hpp>
 #include <msg/handler.hpp>
-#include <msg/message.hpp>
-
-#include <array>
-#include <cstddef>
-#include <type_traits>
 
 namespace msg {
 template <typename CallbacksT, typename BaseMsgT,

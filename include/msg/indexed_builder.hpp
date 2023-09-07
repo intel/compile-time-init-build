@@ -1,19 +1,17 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <container/constexpr_map.hpp>
-#include <container/vector.hpp>
-#include <log/log.hpp>
 #include <lookup/lookup.hpp>
 #include <msg/detail/bitset.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_handler.hpp>
 #include <msg/match.hpp>
-#include <msg/message.hpp>
 
 #include <array>
 #include <cstddef>
+#include <iterator>
 #include <type_traits>
 
 namespace msg {
