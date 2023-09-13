@@ -49,9 +49,10 @@ template <int MinLoadFactor> struct direct_array_lookup {
         [[nodiscard]] constexpr auto operator[](key_type key) const
             -> value_type {
             auto const index = key - min_key;
-            return *detail::select_lt(
-                index, static_cast<std::uint32_t>(storage.size()),
-                std::next(storage.begin(), index), &default_value);
+            auto const idx = detail::select_lt(
+                index, static_cast<std::uint32_t>(storage.size()), index,
+                static_cast<std::uint32_t>(storage.size()) - 1);
+            return storage[idx];
         }
     };
 
