@@ -3,6 +3,8 @@
 #include <lookup/detail/select.hpp>
 #include <lookup/strategy_failed.hpp>
 
+#include <stdx/compiler.hpp>
+
 namespace lookup {
 template <int MaxSize> struct linear_search_lookup {
   private:
@@ -23,7 +25,7 @@ template <int MaxSize> struct linear_search_lookup {
     };
 
   public:
-    template <typename InputValues> [[nodiscard]] consteval static auto make() {
+    template <typename InputValues> [[nodiscard]] CONSTEVAL static auto make() {
         if constexpr (InputValues::entries.size() <= MaxSize) {
             return impl<InputValues>();
         } else {

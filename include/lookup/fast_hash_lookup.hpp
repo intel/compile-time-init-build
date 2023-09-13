@@ -1,8 +1,9 @@
 #pragma once
-
 #include <lookup/detail/select.hpp>
 #include <lookup/entry.hpp>
 #include <lookup/strategy_failed.hpp>
+
+#include <stdx/compiler.hpp>
 
 #include <array>
 #include <bit>
@@ -29,7 +30,7 @@ struct fast_hash_lookup {
             return hash_value % storage_size;
         }
 
-        consteval impl() {
+        CONSTEVAL impl() {
             storage.fill(entry{key_type{}, default_value});
 
             for (auto const e : InputValues::entries) {
@@ -68,7 +69,7 @@ struct fast_hash_lookup {
     };
 
   public:
-    template <typename InputValues> [[nodiscard]] consteval static auto make() {
+    template <typename InputValues> [[nodiscard]] CONSTEVAL static auto make() {
         constexpr auto candidate = impl<InputValues>();
 
         constexpr bool candidate_is_valid = [&]() {

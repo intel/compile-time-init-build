@@ -1,7 +1,8 @@
 #pragma once
-
 #include <lookup/detail/select.hpp>
 #include <lookup/strategy_failed.hpp>
+
+#include <stdx/compiler.hpp>
 
 #include <algorithm>
 #include <array>
@@ -20,7 +21,7 @@ template <int MinLoadFactor> struct direct_array_lookup {
         constexpr static auto max_key =
             std::max_element(InputValues::entries.begin(),
                              InputValues::entries.end(), key_lt) -> key_;
-        constexpr static auto storage_size = max_key - min_key + 1;
+        constexpr static auto storage_size = max_key - min_key + 2;
         constexpr static auto num_keys = InputValues::entries.size();
         constexpr static auto load_factor = (num_keys * 100) / storage_size;
     };
@@ -55,7 +56,7 @@ template <int MinLoadFactor> struct direct_array_lookup {
     };
 
   public:
-    template <typename InputValues> [[nodiscard]] consteval static auto make() {
+    template <typename InputValues> [[nodiscard]] CONSTEVAL static auto make() {
         constexpr auto load_factor = details<InputValues>::load_factor;
 
         if constexpr (load_factor >= MinLoadFactor) {
