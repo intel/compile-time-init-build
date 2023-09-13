@@ -1,13 +1,14 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
-#include <container/constexpr_map.hpp>
 #include <lookup/lookup.hpp>
 #include <msg/detail/bitset.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_handler.hpp>
 #include <msg/match.hpp>
+
+#include <stdx/cx_map.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <array>
 #include <cstddef>
@@ -22,12 +23,13 @@ template <typename BuilderValue>
 consteval auto for_each_callback(auto fn) -> void {
     constexpr auto t = BuilderValue::value.callbacks;
     [&]<std::size_t... i>(std::index_sequence<i...>) -> void {
-        (fn(t[cib::index<i>], i), ...);
+        (fn(t[stdx::index<i>], i), ...);
     }(std::make_index_sequence<t.size()>{});
 }
 
 consteval auto with_field_index(auto t) {
-    return cib::transform<get_field_type>([](auto x, auto) { return x; }, t, t);
+    return stdx::transform<get_field_type>([](auto x, auto) { return x; }, t,
+                                           t);
 }
 } // namespace detail
 
@@ -37,7 +39,7 @@ struct temp_index {
     using field_type = FieldType;
 
     using value_t = detail::bitset<CallbackCapacity>;
-    cib::constexpr_map<uint32_t, value_t, EntryCapacity> entries{};
+    stdx::cx_map<uint32_t, value_t, EntryCapacity> entries{};
     detail::bitset<CallbackCapacity> default_value{};
 
     constexpr auto operator[](auto key) -> auto & {
@@ -56,7 +58,8 @@ struct indexed_builder {
     CallbacksT callbacks;
 
     template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
-        auto new_callbacks = cib::tuple_cat(callbacks, cib::make_tuple(ts...));
+        auto new_callbacks =
+            stdx::tuple_cat(callbacks, stdx::make_tuple(ts...));
         using new_callbacks_t = decltype(new_callbacks);
         return indexed_builder<IndexSpec, new_callbacks_t, BaseMsgT,
                                ExtraCallbackArgsT...>{new_callbacks};
@@ -65,13 +68,13 @@ struct indexed_builder {
     template <typename FieldType, typename T, T... ExpectedValues>
     static consteval auto
     get_matchers(in_t<FieldType, T, ExpectedValues...> m) {
-        return cib::make_tuple(m);
+        return stdx::make_tuple(m);
     }
 
     template <typename FieldType, typename T, T ExpectedValue>
     static consteval auto
     get_matchers(equal_to_t<FieldType, T, ExpectedValue> m) {
-        return cib::make_tuple(m);
+        return stdx::make_tuple(m);
     }
 
     template <typename... T>
@@ -89,7 +92,7 @@ struct indexed_builder {
                 //        1) bit_cast message argument
                 //        2) log message match
                 //        3) unindexed fields checking
-                BuilderValue::value.callbacks[cib::index<i>].callable...};
+                BuilderValue::value.callbacks[stdx::index<i>].callable...};
     }
 
     template <typename BuilderValue>
@@ -107,20 +110,20 @@ struct indexed_builder {
 
                     // if this callback specifies a constraint on an indexed
                     // field...
-                    if constexpr (cib::contains_type<decltype(matchers),
-                                                     field_type>) {
+                    if constexpr (stdx::contains_type<decltype(matchers),
+                                                      field_type>) {
                         // ...then add that constraint to the index
-                        auto const field = matchers.get(cib::tag<field_type>);
+                        auto const field = matchers.get(stdx::tag<field_type>);
                         for_each(
                             [&](auto field_value) -> void {
-                                indices.get(cib::tag<field_type>)[field_value]
+                                indices.get(stdx::tag<field_type>)[field_value]
                                     .add(callback_num);
                             },
                             field.expected_values);
                     } else {
                         // ...otherwise add this callback to the index's default
                         // value
-                        indices.get(cib::tag<field_type>)
+                        indices.get(stdx::tag<field_type>)
                             .default_value.add(callback_num);
                     }
                 },
@@ -134,11 +137,11 @@ struct indexed_builder {
         constexpr IndexSpec temp_indices = create_temp_indices<BuilderValue>();
 
         return lookup::entry{
-            std::next(temp_indices.get(cib::tag<I>).entries.begin(), entry_num)
+            std::next(temp_indices.get(stdx::tag<I>).entries.begin(), entry_num)
                 ->key,
-            std::next(temp_indices.get(cib::tag<I>).entries.begin(), entry_num)
+            std::next(temp_indices.get(stdx::tag<I>).entries.begin(), entry_num)
                     ->value |
-                temp_indices.get(cib::tag<I>).default_value};
+                temp_indices.get(stdx::tag<I>).default_value};
     }
 
     template <typename BuilderValue> static consteval auto build() {
@@ -152,27 +155,27 @@ struct indexed_builder {
         // build temporary indices for each field
         constexpr IndexSpec temp_indices = create_temp_indices<BuilderValue>();
 
-        auto const make_index_lookup = [&]<typename I,
-                                           std::size_t... entry_num>(
-                                           cib::tag_constant<I> *,
-                                           std::index_sequence<entry_num...>) {
-            return lookup::make<lookup::input<
-                uint32_t, decltype(temp_indices.get(cib::tag<I>).default_value),
-                temp_indices.get(cib::tag<I>).default_value,
-                make_entry<BuilderValue, I, entry_num>()...>>();
-        };
+        auto const make_index_lookup =
+            [&]<typename I, std::size_t... entry_num>(
+                stdx::tag_constant<I> *, std::index_sequence<entry_num...>) {
+                return lookup::make<lookup::input<
+                    uint32_t,
+                    decltype(temp_indices.get(stdx::tag<I>).default_value),
+                    temp_indices.get(stdx::tag<I>).default_value,
+                    make_entry<BuilderValue, I, entry_num>()...>>();
+            };
 
-        auto const entry_index_seq = [&]<typename I>(cib::tag_constant<I> *) {
+        auto const entry_index_seq = [&]<typename I>(stdx::tag_constant<I> *) {
             return std::make_index_sequence<
-                temp_indices.get(cib::tag<I>).entries.size()>{};
+                temp_indices.get(stdx::tag<I>).entries.size()>{};
         };
 
         constexpr auto baked_indices =
             temp_indices.apply([&]<typename... I>(I...) {
                 return indices{
                     index{typename I::field_type{},
-                          make_index_lookup(cib::tag<I>,
-                                            entry_index_seq(cib::tag<I>))}...};
+                          make_index_lookup(stdx::tag<I>,
+                                            entry_index_seq(stdx::tag<I>))}...};
             });
 
         return indexed_handler{

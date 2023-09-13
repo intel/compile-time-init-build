@@ -1,6 +1,7 @@
-#include <cib/tuple.hpp>
 #include <msg/disjoint_field.hpp>
 #include <msg/field.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -11,7 +12,7 @@ namespace msg {
 using SubField1 = field<decltype("SubField1"_sc), 0, 15, 0, std::uint32_t>;
 
 using SingularTestField =
-    disjoint_field<decltype("TestField"_sc), cib::tuple<SubField1>>;
+    disjoint_field<decltype("TestField"_sc), stdx::tuple<SubField1>>;
 
 TEST_CASE("Singulardisjoint_fieldExtract", "[disjoint_field]") {
     std::array<std::uint32_t, 1> data{0xCAFEF00D};
@@ -32,7 +33,7 @@ using LowerSubField =
     field<decltype("LowerSubField"_sc), 1, 7, 0, std::uint32_t>;
 
 using DualTestField = disjoint_field<decltype("DualTestField"_sc),
-                                     cib::tuple<UpperSubField, LowerSubField>>;
+                                     stdx::tuple<UpperSubField, LowerSubField>>;
 
 TEST_CASE("Dualdisjoint_fieldExtract", "[disjoint_field]") {
     std::array<std::uint32_t, 2> data{0x00000012, 0x00000034};

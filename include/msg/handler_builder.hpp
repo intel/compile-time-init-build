@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <msg/handler.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 namespace msg {
 template <typename CallbacksT, typename BaseMsgT,
@@ -11,7 +12,8 @@ struct handler_builder {
     CallbacksT callbacks;
 
     template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
-        auto new_callbacks = cib::tuple_cat(callbacks, cib::make_tuple(ts...));
+        auto new_callbacks =
+            stdx::tuple_cat(callbacks, stdx::make_tuple(ts...));
         using new_callbacks_t = decltype(new_callbacks);
         return handler_builder<new_callbacks_t, BaseMsgT,
                                ExtraCallbackArgsT...>{new_callbacks};

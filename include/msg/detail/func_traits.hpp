@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/tuple.hpp>
+#include <stdx/tuple.hpp>
 
 #include <functional>
 #include <type_traits>
@@ -12,7 +12,7 @@ template <typename...> struct function_type;
 template <typename R, typename Msg, typename... Args>
 struct function_type<std::function<R(Msg, Args...)>> {
     using msg_type = std::remove_cvref_t<Msg>;
-    using args_type = cib::tuple<Args...>;
+    using args_type = stdx::tuple<Args...>;
 };
 
 template <typename F>

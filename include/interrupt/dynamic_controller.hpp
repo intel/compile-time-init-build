@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
+#include <stdx/compiler.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <limits>
 #include <type_traits>
@@ -24,14 +24,14 @@ struct dynamic_controller {
      *      The croo::Register this mask corresponds to.
      */
     template <typename RegType>
-    CIB_CONSTINIT static inline typename RegType::DataType allowed_enables =
+    CONSTINIT static inline typename RegType::DataType allowed_enables =
         std::numeric_limits<typename RegType::DataType>::max();
 
     template <typename ResourceType> struct doesnt_require_resource {
         template <typename Irq>
         using fn = std::bool_constant<
             has_enable_field<Irq> and
-            not cib::contains_type<decltype(Irq::resources), ResourceType>>;
+            not stdx::contains_type<decltype(Irq::resources), ResourceType>>;
     };
 
     template <typename RegType> struct in_register {
@@ -46,7 +46,7 @@ struct dynamic_controller {
      * Each bit in this mask corresponds to an interrupt enable field in
      * RegType. If the bit is '1', that means the corresponding interrupt can be
      * enabled when the resource is not available. If the bit is '0', that means
-     * the corresonding interrupt must be disabled when the resource is not
+     * the corresponding interrupt must be disabled when the resource is not
      * available.
      *
      * @tparam ResourceType
@@ -59,14 +59,14 @@ struct dynamic_controller {
     constexpr static typename RegType::DataType irqs_allowed = []() {
         // get all interrupt enable fields that don't require the given resource
         auto const matching_irqs =
-            cib::filter<doesnt_require_resource<ResourceType>::template fn>(
+            stdx::filter<doesnt_require_resource<ResourceType>::template fn>(
                 RootT::all_irqs);
-        auto const interrupt_enables_tuple = cib::transform(
+        auto const interrupt_enables_tuple = stdx::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
         // filter fields that aren't in RegType
         auto const fields_in_reg =
-            cib::filter<in_register<RegType>::template fn>(
+            stdx::filter<in_register<RegType>::template fn>(
                 interrupt_enables_tuple);
 
         // set the bits in the mask for interrupts that don't require the
@@ -79,11 +79,11 @@ struct dynamic_controller {
     }();
 
     template <typename ResourceType>
-    CIB_CONSTINIT static inline bool is_resource_on = true;
+    CONSTINIT static inline bool is_resource_on = true;
 
     template <typename RegTypeTuple>
     static inline void reprogram_interrupt_enables(RegTypeTuple regs) {
-        cib::for_each(
+        stdx::for_each(
             [](auto reg) {
                 using RegType = decltype(reg);
 
@@ -100,35 +100,35 @@ struct dynamic_controller {
 
     template <typename RegFieldTuple>
     constexpr static auto get_unique_regs(RegFieldTuple fields) {
-        return fields.fold_left(cib::make_tuple(), [](auto regs, auto field) {
+        return fields.fold_left(stdx::make_tuple(), [](auto regs, auto field) {
             constexpr bool reg_has_been_seen_already =
-                cib::contains_type<decltype(regs),
-                                   typename decltype(field)::RegisterType>;
+                stdx::contains_type<decltype(regs),
+                                    typename decltype(field)::RegisterType>;
             if constexpr (reg_has_been_seen_already) {
                 return regs;
             } else {
-                return cib::tuple_cat(regs,
-                                      cib::make_tuple(field.get_register()));
+                return stdx::tuple_cat(regs,
+                                       stdx::make_tuple(field.get_register()));
             }
         });
     }
 
     template <typename ResourceTuple> struct not_in {
         template <typename Resource>
-        using fn =
-            std::bool_constant<not cib::contains_type<ResourceTuple, Resource>>;
+        using fn = std::bool_constant<
+            not stdx::contains_type<ResourceTuple, Resource>>;
     };
 
     /**
      * tuple of every resource mentioned in the interrupt configuration
      */
     constexpr static auto all_resources = RootT::all_irqs.fold_left(
-        cib::make_tuple(), [](auto resources, auto irq) {
+        stdx::make_tuple(), [](auto resources, auto irq) {
             // TODO: check that an IRQ doesn't list a resource more than once
             auto const additional_resources =
-                cib::filter<not_in<decltype(resources)>::template fn>(
+                stdx::filter<not_in<decltype(resources)>::template fn>(
                     irq.resources);
-            return cib::tuple_cat(resources, additional_resources);
+            return stdx::tuple_cat(resources, additional_resources);
         });
 
     /**
@@ -136,14 +136,14 @@ struct dynamic_controller {
      */
     constexpr static auto all_resource_affected_regs =
         get_unique_regs(RootT::all_irqs.fold_left(
-            cib::make_tuple(), [](auto registers, auto irq) {
+            stdx::make_tuple(), [](auto registers, auto irq) {
                 using irq_t = decltype(irq);
                 constexpr bool depends_on_resources =
                     irq_t::resources.size() > 0u;
                 if constexpr (has_enable_field<irq_t> && depends_on_resources) {
-                    return cib::tuple_cat(
+                    return stdx::tuple_cat(
                         registers,
-                        cib::make_tuple(irq.enable_field.get_register()));
+                        stdx::make_tuple(irq.enable_field.get_register()));
                 } else {
                     return registers;
                 }
@@ -154,7 +154,7 @@ struct dynamic_controller {
      */
     static inline auto recalculate_allowed_enables() {
         // set allowed_enables mask for each resource affected register
-        cib::for_each(
+        stdx::for_each(
             [](auto reg) {
                 using RegType = decltype(reg);
                 using DataType = typename RegType::DataType;
@@ -163,11 +163,11 @@ struct dynamic_controller {
             all_resource_affected_regs);
 
         // for each resource, if it is not on, mask out unavailable interrupts
-        cib::for_each(
+        stdx::for_each(
             [=](auto resource) {
                 using ResourceType = decltype(resource);
                 if (not is_resource_on<ResourceType>) {
-                    cib::for_each(
+                    stdx::for_each(
                         [](auto reg) {
                             using RegType = decltype(reg);
                             allowed_enables<RegType> &=
@@ -190,7 +190,7 @@ struct dynamic_controller {
      *      The croo::Register this value corresponds to.
      */
     template <typename RegType>
-    CIB_CONSTINIT static inline typename RegType::DataType dynamic_enables{};
+    CONSTINIT static inline typename RegType::DataType dynamic_enables{};
 
     template <typename... Callbacks> struct match_callback {
         template <typename Irq>
@@ -209,10 +209,10 @@ struct dynamic_controller {
         //       registers. once that goes in, then enable_by_field should be
         //       removed or made private.
         auto const matching_irqs =
-            cib::filter<match_callback<CallbacksToFind...>::template fn>(
+            stdx::filter<match_callback<CallbacksToFind...>::template fn>(
                 RootT::all_irqs);
 
-        auto const interrupt_enables_tuple = cib::transform(
+        auto const interrupt_enables_tuple = stdx::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
         interrupt_enables_tuple.apply([]<typename... Fields>(Fields...) {
@@ -240,19 +240,19 @@ struct dynamic_controller {
 
     template <bool en, typename... FieldsToSet>
     static inline void enable_by_field() {
-        auto const interrupt_enables_tuple = cib::tuple<FieldsToSet...>{};
+        auto const interrupt_enables_tuple = stdx::tuple<FieldsToSet...>{};
 
         ConcurrencyPolicyT::call_in_critical_section([&] {
             // update the dynamic enables
             if constexpr (en) {
-                cib::for_each(
+                stdx::for_each(
                     [](auto f) {
                         using RegType = decltype(f.get_register());
                         dynamic_enables<RegType> |= f.get_mask();
                     },
                     interrupt_enables_tuple);
             } else {
-                cib::for_each(
+                stdx::for_each(
                     [](auto f) {
                         using RegType = decltype(f.get_register());
                         dynamic_enables<RegType> &= ~f.get_mask();

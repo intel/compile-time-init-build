@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
-#include <container/vector.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
 #include <sc/fwd.hpp>
+
+#include <stdx/cx_vector.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -29,7 +30,7 @@ concept convertible_range_of =
 } // namespace detail
 
 template <std::uint32_t MaxNumDWords>
-using message_data = cib::vector<std::uint32_t, MaxNumDWords>;
+using message_data = stdx::cx_vector<std::uint32_t, MaxNumDWords>;
 
 template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
     constexpr static auto matcher =
@@ -60,7 +61,7 @@ struct message_base : public message_data<MaxNumDWords> {
     constexpr static NameType name{};
     constexpr static auto max_num_dwords = MaxNumDWords;
     static_assert((... and (FieldsT::MaxDWordExtent < MaxNumDWords)));
-    using FieldTupleType = cib::tuple<FieldsT...>;
+    using FieldTupleType = stdx::tuple<FieldsT...>;
 
     template <typename additional_matcherType>
     [[nodiscard]] constexpr static auto match(additional_matcherType) {
@@ -82,7 +83,7 @@ struct message_base : public message_data<MaxNumDWords> {
 
     constexpr static auto match_valid_encoding = []() {
         constexpr auto required_fields =
-            cib::filter<not_required>(FieldTupleType{});
+            stdx::filter<not_required>(FieldTupleType{});
         if constexpr (required_fields.size() == 0) {
             return match::always<true>;
         } else {
@@ -146,7 +147,7 @@ struct message_base : public message_data<MaxNumDWords> {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        auto const field_descriptions = cib::transform(
+        auto const field_descriptions = stdx::transform(
             [&](auto field) {
                 using FieldType = decltype(field);
                 return FieldType{FieldType::extract(this->data)}.describe();

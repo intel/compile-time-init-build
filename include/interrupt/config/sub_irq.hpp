@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
+
+#include <stdx/tuple.hpp>
 
 namespace interrupt {
 /**
@@ -33,6 +34,6 @@ struct sub_irq {
                                 required_resources<>>()
             .resources;
     using IrqCallbackType = IrqCallbackT;
-    constexpr static cib::tuple<> children{};
+    constexpr static stdx::tuple<> children{};
 };
 } // namespace interrupt

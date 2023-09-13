@@ -1,12 +1,13 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
-#include <sc/detail/conversions.hpp>
 #include <sc/fwd.hpp>
 #include <sc/lazy_string_format.hpp>
 #include <sc/string_constant.hpp>
+
+#include <stdx/compiler.hpp>
+#include <stdx/ct_conversions.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <fmt/compile.h>
 #include <fmt/format.h>
@@ -23,18 +24,17 @@ namespace detail {
 template <typename T>
 concept compile_time_field = requires { T::value; };
 
-template <compile_time_field T>
-[[nodiscard]] CIB_CONSTEVAL auto field_value(T) {
+template <compile_time_field T> [[nodiscard]] CONSTEVAL auto field_value(T) {
     if constexpr (std::is_enum_v<decltype(T::value)>) {
-        return detail::enum_as_string<T::value>();
+        return stdx::enum_as_string<T::value>();
     } else {
         return T::value;
     }
 }
 
 template <typename T>
-[[nodiscard]] CIB_CONSTEVAL auto field_value(sc::type_name<T>) {
-    return detail::type_as_string<T>();
+[[nodiscard]] CONSTEVAL auto field_value(sc::type_name<T>) {
+    return stdx::type_as_string<T>();
 }
 
 template <typename Fmt, typename Arg> constexpr auto format1(Fmt, Arg arg) {
@@ -66,28 +66,29 @@ template <typename Fmt> constexpr auto split_format_spec() {
 }
 
 template <typename Str, typename Fmt, typename RuntimeTuple, typename Arg>
-constexpr auto process_arg(cib::tuple<Str, Fmt, RuntimeTuple> t, Arg arg) {
-    using namespace cib::tuple_literals;
+constexpr auto process_arg(stdx::tuple<Str, Fmt, RuntimeTuple> t, Arg arg) {
+    using namespace stdx::literals;
     constexpr auto p = split_format_spec<Fmt>();
     if constexpr (requires { field_value(arg); }) {
-        return cib::make_tuple(t[0_idx] + format1(p.first, arg), p.second,
-                               t[2_idx]);
+        return stdx::make_tuple(t[0_idx] + format1(p.first, arg), p.second,
+                                t[2_idx]);
     } else if constexpr (requires { arg.args; }) {
-        return cib::make_tuple(t[0_idx] + format1(p.first, arg.str), p.second,
-                               cib::tuple_cat(t[2_idx], arg.args));
+        return stdx::make_tuple(t[0_idx] + format1(p.first, arg.str), p.second,
+                                stdx::tuple_cat(t[2_idx], arg.args));
     } else {
-        return cib::make_tuple(t[0_idx] + p.first, p.second,
-                               cib::tuple_cat(t[2_idx], cib::make_tuple(arg)));
+        return stdx::make_tuple(
+            t[0_idx] + p.first, p.second,
+            stdx::tuple_cat(t[2_idx], stdx::make_tuple(arg)));
     }
 }
 } // namespace detail
 
 template <typename Fmt, typename... Args>
 constexpr auto format(Fmt, Args... args) {
-    using namespace cib::tuple_literals;
-    auto t = cib::make_tuple(args...);
+    using namespace stdx::literals;
+    auto t = stdx::make_tuple(args...);
     auto r =
-        t.fold_left(cib::make_tuple(""_sc, Fmt{}, cib::tuple{}),
+        t.fold_left(stdx::make_tuple(""_sc, Fmt{}, stdx::tuple{}),
                     [](auto x, auto y) { return detail::process_arg(x, y); });
     if constexpr (r[2_idx].size() == 0) {
         return r[0_idx] + r[1_idx];

@@ -17,7 +17,7 @@ using TestFieldUpper =
     field<decltype("TestFieldUpper"_sc), 1, 7, 0, std::uint32_t>;
 
 using TestField3 = disjoint_field<decltype("TestField4"_sc),
-                                  cib::tuple<TestFieldLower, TestFieldUpper>>;
+                                  stdx::tuple<TestFieldLower, TestFieldUpper>>;
 
 using TestField4 = field<decltype("TestField4"_sc), 1, 31, 24, std::uint8_t>;
 

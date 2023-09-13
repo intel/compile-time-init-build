@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
 #include <cib/detail/config_details.hpp>
 #include <cib/detail/config_item.hpp>
-#include <cib/tuple.hpp>
+
+#include <stdx/compiler.hpp>
+#include <stdx/tuple.hpp>
 
 namespace cib::detail {
 template <typename Pred, typename... Configs>
@@ -11,7 +12,7 @@ template <typename Pred, typename... Configs>
 struct conditional : config_item {
     detail::config<detail::args<>, Configs...> body;
 
-    CIB_CONSTEVAL explicit conditional(Configs const &...configs)
+    CONSTEVAL explicit conditional(Configs const &...configs)
         : body{{}, configs...} {}
 
     template <typename... Args>
@@ -19,7 +20,7 @@ struct conditional : config_item {
         if constexpr (Pred{}(Args{}...)) {
             return body.extends_tuple(Args{}...);
         } else {
-            return cib::tuple<>{};
+            return stdx::tuple<>{};
         }
     }
 
@@ -28,7 +29,7 @@ struct conditional : config_item {
         if constexpr (Pred{}(Args{}...)) {
             return body.exports_tuple(Args{}...);
         } else {
-            return cib::tuple<>{};
+            return stdx::tuple<>{};
         }
     }
 };

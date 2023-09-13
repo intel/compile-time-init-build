@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <sc/fwd.hpp>
+
+#include <stdx/tuple_algorithms.hpp>
 
 namespace sc {
 template <typename StringConstant, typename ArgTuple>
@@ -35,7 +35,7 @@ template <typename StringConstantLhs, typename TupleArgsLhs,
 operator+(lazy_string_format<StringConstantLhs, TupleArgsLhs> lhs,
           lazy_string_format<StringConstantRhs, TupleArgsRhs> rhs) noexcept {
     return lazy_string_format{lhs.str + rhs.str,
-                              cib::tuple_cat(lhs.args, rhs.args)};
+                              stdx::tuple_cat(lhs.args, rhs.args)};
 }
 
 template <typename StringConstantLhs, typename TupleArgsLhs, typename CharT,

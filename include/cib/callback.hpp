@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cib/builder_meta.hpp>
-#include <cib/detail/compiler.hpp>
+
+#include <stdx/compiler.hpp>
 
 #include <array>
 #include <concepts>
@@ -64,7 +65,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      *      Function pointer to the implemented callback service.
      */
     template <typename BuilderValue>
-    [[nodiscard]] CIB_CONSTEVAL static auto build() {
+    [[nodiscard]] CONSTEVAL static auto build() {
         return run<BuilderValue>;
     }
 
