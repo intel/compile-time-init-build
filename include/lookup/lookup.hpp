@@ -1,7 +1,4 @@
 #pragma once
-
-#include <lookup/entry.hpp>
-#include <lookup/input.hpp>
 #include <lookup/strategy/arc_cpu.hpp>
 
 namespace lookup {
