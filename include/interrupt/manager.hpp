@@ -2,8 +2,6 @@
 
 #include <cib/builder_meta.hpp>
 #include <cib/config.hpp>
-#include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
 #include <flow/builder.hpp>
 #include <interrupt/builder/irq_builder.hpp>
 #include <interrupt/builder/shared_irq_builder.hpp>
@@ -14,6 +12,9 @@
 #include <interrupt/impl/manager_impl.hpp>
 #include <interrupt/manager_interface.hpp>
 #include <interrupt/policies.hpp>
+
+#include <stdx/compiler.hpp>
+#include <stdx/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -27,13 +28,13 @@ template <typename FlowT, typename FlowDescriptionT> struct binding_t {
 };
 
 template <typename FlowT, typename T>
-CIB_CONSTEVAL auto binding(T flow_description)
+CONSTEVAL auto binding(T flow_description)
     -> binding_t<FlowT, decltype(flow_description)> {
     return {flow_description};
 }
 
 template <typename ServiceT, typename FlowT, typename T>
-CIB_CONSTEVAL auto extend(T flow_description) {
+CONSTEVAL auto extend(T flow_description) {
     return cib::extend<ServiceT>(binding<FlowT>(flow_description));
 }
 
@@ -50,20 +51,20 @@ CIB_CONSTEVAL auto extend(T flow_description) {
 template <typename RootT, typename ConcurrencyPolicyT> class manager {
     template <typename BuilderValue, std::size_t Index> struct sub_value {
         constexpr static auto const &value =
-            cib::get<Index>(BuilderValue::value.irqs);
+            get<Index>(BuilderValue::value.irqs);
     };
 
     template <typename BuilderValue, auto... Is>
     constexpr static auto built_irqs(std::index_sequence<Is...>) {
-        return cib::make_tuple(
-            cib::get<Is>(BuilderValue::value.irqs)
+        return stdx::make_tuple(
+            get<Is>(BuilderValue::value.irqs)
                 .template build<sub_value<BuilderValue, Is>>()...);
     }
 
   public:
     using InterruptHal = typename RootT::InterruptHal;
 
-    constexpr static auto irqs_type = cib::transform(
+    constexpr static auto irqs_type = stdx::transform(
         [](auto child) {
             if constexpr (decltype(child.children)::size() > 0u) {
                 return shared_irq_builder<decltype(child)>{};
@@ -89,7 +90,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      */
     template <typename... IrqTypes, typename... Ts>
     constexpr auto add(binding_t<IrqTypes, Ts> const &...bindings) {
-        cib::for_each(
+        stdx::for_each(
             [&](auto &irq) {
                 (irq.template add<IrqTypes>(bindings.flow_description), ...);
             },

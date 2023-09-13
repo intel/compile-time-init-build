@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cib/detail/compiler.hpp>
-#include <cib/tuple.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
+
+#include <stdx/compiler.hpp>
+#include <stdx/tuple.hpp>
 
 #include <cstdint>
 #include <exception>
@@ -25,7 +26,7 @@ template <logging::level L, typename Msg> constexpr auto to_message(Msg msg) {
     if constexpr (requires { msg.args; }) {
         return to_message<L, decltype(msg.str), decltype(msg.args)>();
     } else {
-        return to_message<L, Msg, cib::tuple<>>();
+        return to_message<L, Msg, stdx::tuple<>>();
     }
 }
 } // namespace
@@ -37,17 +38,17 @@ struct log_handler {
 
     template <logging::level Level, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
-    CIB_ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
-                               MsgType const &msg) -> void {
+    ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
+                           MsgType const &msg) -> void {
         log_msg<Level>(msg);
     }
 
-    CIB_ALWAYS_INLINE auto log_id(string_id id) -> void {
+    ALWAYS_INLINE auto log_id(string_id id) -> void {
         dispatch_message<logging::level::TRACE>(id);
     }
 
     template <logging::level Level, typename Msg>
-    CIB_ALWAYS_INLINE auto log_msg(Msg msg) -> void {
+    ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename StringType>(StringType, auto... args) {
             using Message = decltype(to_message<Level>(msg));
             dispatch_message<Level>(catalog<Message>(),
@@ -56,7 +57,7 @@ struct log_handler {
     }
 
   private:
-    CIB_CONSTEVAL static auto make_catalog32_header(logging::level level)
+    CONSTEVAL static auto make_catalog32_header(logging::level level)
         -> std::uint32_t {
         return (0x1u << 24u) | // mipi sys-t subtype: id32_p32
                (static_cast<std::uint32_t>(level) << 4u) |
@@ -68,10 +69,10 @@ struct log_handler {
     }
 
     template <typename... MsgDataTypes>
-    CIB_NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes &&...msg_data)
+    NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes &&...msg_data)
         -> void {
         ConcurrencyPolicy::call_in_critical_section([&] {
-            cib::for_each(
+            stdx::for_each(
                 [&](auto &dest) {
                     dest.log_by_args(std::forward<MsgDataTypes>(msg_data)...);
                 },
@@ -79,19 +80,17 @@ struct log_handler {
         });
     }
 
-    CIB_NEVER_INLINE auto dispatch_pass_by_buffer(std::uint32_t *msg,
-                                                  std::uint32_t msg_size)
-        -> void {
+    NEVER_INLINE auto dispatch_pass_by_buffer(std::uint32_t *msg,
+                                              std::uint32_t msg_size) -> void {
         ConcurrencyPolicy::call_in_critical_section([&] {
-            cib::for_each([&](auto &dest) { dest.log_by_buf(msg, msg_size); },
-                          dests);
+            stdx::for_each([&](auto &dest) { dest.log_by_buf(msg, msg_size); },
+                           dests);
         });
     }
 
     template <logging::level Level, typename... MsgDataTypes>
-    CIB_ALWAYS_INLINE auto dispatch_message(string_id id,
-                                            MsgDataTypes &&...msg_data)
-        -> void {
+    ALWAYS_INLINE auto dispatch_message(string_id id,
+                                        MsgDataTypes &&...msg_data) -> void {
         if constexpr (sizeof...(msg_data) == 0u) {
             dispatch_pass_by_args(make_short32_header(id));
         } else if constexpr (sizeof...(msg_data) <= 2u) {
@@ -109,9 +108,9 @@ struct log_handler {
 
 template <typename ConcurrencyPolicy> struct under {
     template <typename... TDestinations> struct config {
-        using destinations_tuple_t = cib::tuple<TDestinations...>;
+        using destinations_tuple_t = stdx::tuple<TDestinations...>;
         constexpr explicit config(TDestinations... dests)
-            : logger{cib::tuple{std::move(dests)...}} {}
+            : logger{stdx::tuple{std::move(dests)...}} {}
 
         log_handler<ConcurrencyPolicy, destinations_tuple_t> logger;
 

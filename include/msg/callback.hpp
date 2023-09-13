@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -15,11 +16,11 @@ template <typename CallableT, typename DataIterableT,
 void dispatch_single_callable(CallableT const &callable,
                               DataIterableT const &data,
                               ExtraCallbackArgsT const &...args) {
-    auto const provided_args_tuple = cib::make_tuple(args...);
-    auto const required_args_tuple = cib::transform(
+    auto const provided_args_tuple = stdx::make_tuple(args...);
+    auto const required_args_tuple = stdx::transform(
         [&](auto requiredArg) {
             using RequiredArgType = decltype(requiredArg);
-            return cib::get<RequiredArgType>(provided_args_tuple);
+            return get<RequiredArgType>(provided_args_tuple);
         },
         detail::func_args_v<CallableT>);
 
@@ -54,12 +55,12 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     constexpr static NameTypeT name{};
 
     MatchMsgTypeT match_msg;
-    cib::tuple<CallableTypesT...> callbacks;
+    stdx::tuple<CallableTypesT...> callbacks;
 
     template <typename DataIterableType>
     void dispatch(DataIterableType const &data,
                   ExtraCallbackArgsT const &...args) const {
-        cib::for_each(
+        stdx::for_each(
             [&](auto const &callback) {
                 dispatch_single_callable(callback, data, args...);
             },
@@ -67,7 +68,7 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
     [[nodiscard]] constexpr auto match_any_callback() const {
-        auto const matchers = cib::transform(
+        auto const matchers = stdx::transform(
             [&](auto callback) {
                 using MsgType = detail::msg_type_t<decltype(callback)>;
                 return is_valid_msg<MsgType>(match::always<true>);

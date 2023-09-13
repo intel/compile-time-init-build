@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
+
+#include <stdx/tuple.hpp>
 
 namespace interrupt {
 /**
@@ -39,7 +40,7 @@ struct shared_irq {
                                 required_resources<>>()
             .resources;
     using IrqCallbackType = void;
-    constexpr static cib::tuple<SubIrqs...> children{};
+    constexpr static stdx::tuple<SubIrqs...> children{};
 
     constexpr static auto irq_number = IrqNumberT;
 };

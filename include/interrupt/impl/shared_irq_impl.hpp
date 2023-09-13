@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <interrupt/config/fwd.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <type_traits>
 
@@ -26,7 +27,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     constexpr static bool active = (SubIrqImpls::active or ...);
 
   private:
-    cib::tuple<SubIrqImpls...> sub_irq_impls;
+    stdx::tuple<SubIrqImpls...> sub_irq_impls;
 
     template <typename Irq> using is_active = std::bool_constant<Irq::active>;
 
@@ -53,13 +54,13 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     auto get_interrupt_enables() const {
         if constexpr (active) {
             auto const active_sub_irq_impls =
-                cib::filter<is_active>(sub_irq_impls);
+                stdx::filter<is_active>(sub_irq_impls);
 
             return active_sub_irq_impls.apply([](auto &&...irqs) {
-                return cib::tuple_cat(irqs.get_interrupt_enables()...);
+                return stdx::tuple_cat(irqs.get_interrupt_enables()...);
             });
         } else {
-            return cib::make_tuple();
+            return stdx::make_tuple();
         }
     }
 
@@ -77,7 +78,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
     template <typename InterruptHal> inline void run() const {
         if constexpr (active) {
             InterruptHal::template run<StatusPolicy>(irq_number, [&] {
-                cib::for_each([](auto irq) { irq.run(); }, sub_irq_impls);
+                stdx::for_each([](auto irq) { irq.run(); }, sub_irq_impls);
             });
         }
     }

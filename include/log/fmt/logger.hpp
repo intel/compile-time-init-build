@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <log/log.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <fmt/format.h>
 
@@ -33,7 +34,7 @@ template <typename TDestinations> struct log_handler {
                 std::chrono::steady_clock::now() - start_time)
                 .count();
 
-        cib::for_each(
+        stdx::for_each(
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {}: ", currentTime,
                                  level_constant<L>{});
@@ -52,9 +53,9 @@ template <typename TDestinations> struct log_handler {
 };
 
 template <typename... TDestinations> struct config {
-    using destinations_tuple_t = cib::tuple<TDestinations...>;
+    using destinations_tuple_t = stdx::tuple<TDestinations...>;
     constexpr explicit config(TDestinations... dests)
-        : logger{cib::tuple{std::move(dests)...}} {}
+        : logger{stdx::tuple{std::move(dests)...}} {}
 
     log_handler<destinations_tuple_t> logger;
 

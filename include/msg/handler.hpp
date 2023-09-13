@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple_algorithms.hpp>
 #include <log/log.hpp>
 #include <msg/handler_interface.hpp>
+
+#include <stdx/tuple_algorithms.hpp>
 
 namespace msg {
 
@@ -21,13 +22,13 @@ struct handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
     }
 
     void handle(BaseMsgT const &msg, ExtraCallbackArgsT... args) const final {
-        bool const found_valid_callback = cib::any_of(
+        bool const found_valid_callback = stdx::any_of(
             [&](auto &callback) { return callback.handle(msg, args...); },
             callbacks);
         if (!found_valid_callback) {
             CIB_ERROR("None of the registered callbacks claimed this message:");
-            cib::for_each([&](auto &callback) { callback.log_mismatch(msg); },
-                          callbacks);
+            stdx::for_each([&](auto &callback) { callback.log_mismatch(msg); },
+                           callbacks);
         }
     }
 };

@@ -83,27 +83,27 @@ TEST_CASE("int formatting options", "[sc::format]") {
 
 TEST_CASE("runtime integral values", "[sc::format]") {
     static_assert(sc::format("{}"_sc, 0) ==
-                  (sc::lazy_string_format{"{}"_sc, cib::make_tuple(0)}));
+                  (sc::lazy_string_format{"{}"_sc, stdx::make_tuple(0)}));
     static_assert(sc::format("{}"_sc, 1) ==
-                  (sc::lazy_string_format{"{}"_sc, cib::make_tuple(1)}));
+                  (sc::lazy_string_format{"{}"_sc, stdx::make_tuple(1)}));
     static_assert(sc::format("I am {} and my sister is {}"_sc, 6, 8) ==
                   (sc::lazy_string_format{"I am {} and my sister is {}"_sc,
-                                          cib::make_tuple(6, 8)}));
+                                          stdx::make_tuple(6, 8)}));
     static_assert(sc::format("{}"_sc, 100) !=
-                  (sc::lazy_string_format{"{}"_sc, cib::make_tuple(99)}));
+                  (sc::lazy_string_format{"{}"_sc, stdx::make_tuple(99)}));
     static_assert(sc::format("{}"_sc, true) ==
-                  (sc::lazy_string_format{"{}"_sc, cib::make_tuple(true)}));
+                  (sc::lazy_string_format{"{}"_sc, stdx::make_tuple(true)}));
 }
 
 TEST_CASE("mixed runtime and compile time values", "[sc::format]") {
     static_assert(
         sc::format("ct value {} and rt value {} mixed"_sc, "ctval"_sc, 1) ==
         (sc::lazy_string_format{"ct value ctval and rt value {} mixed"_sc,
-                                cib::make_tuple(1)}));
+                                stdx::make_tuple(1)}));
     static_assert(
         sc::format("rt value {} and ct value {} mixed"_sc, 1, "ctval"_sc) ==
         (sc::lazy_string_format{"rt value {} and ct value ctval mixed"_sc,
-                                cib::make_tuple(1)}));
+                                stdx::make_tuple(1)}));
 }
 
 TEST_CASE("format a formatted string", "[sc::format]") {
@@ -113,10 +113,10 @@ TEST_CASE("format a formatted string", "[sc::format]") {
     static_assert(
         sc::format("The value is {}."_sc, sc::format("(year={})"_sc, 2022)) ==
         (sc::lazy_string_format{"The value is (year={})."_sc,
-                                cib::make_tuple(2022)}));
+                                stdx::make_tuple(2022)}));
 
     static_assert(sc::format("a{}b{}c"_sc, sc::format("1{}2{}3"_sc, 10, 20),
                              sc::format("4{}5{}6"_sc, 30, 40)) ==
                   (sc::lazy_string_format{"a1{}2{}3b4{}5{}6c"_sc,
-                                          cib::make_tuple(10, 20, 30, 40)}));
+                                          stdx::make_tuple(10, 20, 30, 40)}));
 }

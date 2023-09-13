@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <cstddef>
 
@@ -33,7 +34,7 @@ struct irq {
                                 required_resources<>>()
             .resources;
     using IrqCallbackType = IrqCallbackT;
-    constexpr static cib::tuple<> children{};
+    constexpr static stdx::tuple<> children{};
 
     constexpr static auto irq_number = IrqNumberT;
 };

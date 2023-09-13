@@ -52,7 +52,7 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
         "TestCallback"_sc, match::always<true>,
         [](TestMsg const &) { correctDispatch = true; });
 
-    auto callbacks = cib::make_tuple(callback);
+    auto callbacks = stdx::make_tuple(callback);
 
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
@@ -81,7 +81,7 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
         // TestMsgFieldRequired, execute this
         [](TestMsgFieldRequired const &) { correctDispatch = true; });
 
-    auto callbacks = cib::make_tuple(callback1, callback2);
+    auto callbacks = stdx::make_tuple(callback1, callback2);
 
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
@@ -100,7 +100,7 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
             REQUIRE(value == 0xcafe);
         });
 
-    auto callbacks = cib::make_tuple(callback);
+    auto callbacks = stdx::make_tuple(callback);
 
     static auto handler =
         msg::handler<decltype(callbacks), TestBaseMsg, int>{callbacks};
@@ -116,7 +116,7 @@ TEST_CASE("TestMsgWithinEnum", "[handler]") {
         msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
                                    [&](TestMsgOp const &) { handled = true; });
 
-    auto callbacks = cib::make_tuple(callback);
+    auto callbacks = stdx::make_tuple(callback);
     auto const handler =
         msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
@@ -131,7 +131,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
             "TestCallback"_sc, match::always<true>,
             [](TestMsgMultiCb const &) {},
             [&](TestMsg const &) { correct = true; });
-        auto callbacks = cib::make_tuple(callback);
+        auto callbacks = stdx::make_tuple(callback);
         auto const handler =
             msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 
@@ -143,7 +143,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
         auto const callback = msg::callback<TestBaseMsg>(
             "TestCallback"_sc, match::always<true>, [](TestMsg const &) {},
             [&](TestMsgMultiCb const &) { correct = true; });
-        auto callbacks = cib::make_tuple(callback);
+        auto callbacks = stdx::make_tuple(callback);
         auto const handler =
             msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
 

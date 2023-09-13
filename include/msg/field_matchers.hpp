@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <sc/format.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <cstdint>
 #include <type_traits>
@@ -9,7 +10,7 @@
 namespace msg {
 template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     using field_type = FieldType;
-    constexpr static auto expected_values = cib::make_tuple(ExpectedValue);
+    constexpr static auto expected_values = stdx::make_tuple(ExpectedValue);
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
@@ -56,7 +57,7 @@ template <typename FieldType, typename T, T... ExpectedValues> struct in_t {
     }
 
     constexpr static auto expected_value_strings_tuple =
-        cib::make_tuple(format_value<ExpectedValues>()...);
+        stdx::make_tuple(format_value<ExpectedValues>()...);
 
     constexpr static auto expected_values_string =
         expected_value_strings_tuple.fold_right(
@@ -64,7 +65,7 @@ template <typename FieldType, typename T, T... ExpectedValues> struct in_t {
 
   public:
     using field_type = FieldType;
-    constexpr static auto expected_values = cib::make_tuple(ExpectedValues...);
+    constexpr static auto expected_values = stdx::make_tuple(ExpectedValues...);
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <log/log.hpp>
 #include <sc/format.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <functional>
 #include <type_traits>
@@ -37,11 +38,11 @@ constexpr static auto otherwise(ActionType const &action)
 template <typename NameType, typename EventType, typename... HandlerTypes>
 constexpr static void process(NameType const &name, EventType const &event,
                               HandlerTypes const &...handlers) {
-    auto const handlers_tuple = cib::make_tuple(handlers...);
+    auto const handlers_tuple = stdx::make_tuple(handlers...);
 
     bool event_handled = false;
 
-    cib::for_each(
+    stdx::for_each(
         [&](auto handler) {
             if constexpr (!decltype(handler)::is_default_handler) {
                 if (handler.matcher(event)) {
@@ -58,7 +59,7 @@ constexpr static void process(NameType const &name, EventType const &event,
 
     if (!event_handled) {
         if constexpr (hasDefault) {
-            cib::for_each(
+            stdx::for_each(
                 [&](auto handler) {
                     if constexpr (decltype(handler)::is_default_handler) {
                         CIB_INFO("{} - Processing [default]", name);
@@ -68,7 +69,7 @@ constexpr static void process(NameType const &name, EventType const &event,
                 },
                 handlers_tuple);
         } else {
-            auto const mismatch_descriptions = cib::transform(
+            auto const mismatch_descriptions = stdx::transform(
                 [&](auto handler) {
                     return format("    {} - F:({})\n"_sc, handler.name,
                                   handler.matcher.describe_match(event));
@@ -118,7 +119,7 @@ struct all_op : std::logical_and<> {
 };
 
 template <typename TOp, typename... MatcherTypes> struct logical_matcher {
-    using MatchersType = cib::tuple<MatcherTypes...>;
+    using MatchersType = stdx::tuple<MatcherTypes...>;
     MatchersType matchers{};
 
     template <typename EventType>
@@ -131,7 +132,7 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        auto const matcher_descriptions = cib::transform(
+        auto const matcher_descriptions = stdx::transform(
             [](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
         return matcher_descriptions.join(
             [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
@@ -139,7 +140,7 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
 
     template <typename EventType>
     [[nodiscard]] constexpr auto describe_match(EventType const &event) const {
-        auto const matcher_descriptions = cib::transform(
+        auto const matcher_descriptions = stdx::transform(
             [&](auto m) {
                 return format("{:c}:({})"_sc, m(event) ? 'T' : 'F',
                               m.describe_match(event));
@@ -163,12 +164,12 @@ make_logical_matcher(MatcherTypes const &...matchers) {
         return always<not TOp::unit>;
     } else {
         auto const remaining_matcher_tuple =
-            cib::filter<match_op<TOp>::template fn>(
-                cib::make_tuple(matchers...));
+            stdx::filter<match_op<TOp>::template fn>(
+                stdx::make_tuple(matchers...));
         if constexpr (remaining_matcher_tuple.size() == 0) {
             return always<TOp::unit>;
         } else if constexpr (remaining_matcher_tuple.size() == 1) {
-            return remaining_matcher_tuple[cib::index<0>];
+            return remaining_matcher_tuple[stdx::index<0>];
         } else {
             return remaining_matcher_tuple.apply(
                 [&](auto... remaining_matchers) {

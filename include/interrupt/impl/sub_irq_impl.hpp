@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <interrupt/fwd.hpp>
+
+#include <stdx/tuple.hpp>
 
 namespace interrupt {
 /**
@@ -36,7 +37,7 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
         : interrupt_service_routine(flow) {}
 
     [[nodiscard]] auto get_interrupt_enables() const {
-        return cib::make_tuple(enable_field);
+        return stdx::make_tuple(enable_field);
     }
 
     /**

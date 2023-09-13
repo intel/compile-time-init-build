@@ -2,7 +2,8 @@
 
 #include <cib/detail/config_item.hpp>
 #include <cib/detail/extend.hpp>
-#include <cib/tuple.hpp>
+
+#include <stdx/tuple.hpp>
 
 namespace cib::detail {
 template <typename ServiceT, typename BuilderT> struct service_entry {
@@ -13,12 +14,12 @@ template <typename ServiceT, typename BuilderT> struct service_entry {
 template <typename... Services> struct exports : public detail::config_item {
     template <typename... InitArgs>
     [[nodiscard]] constexpr auto extends_tuple(InitArgs const &...) const {
-        return cib::make_tuple(extend<Services>{}...);
+        return stdx::make_tuple(extend<Services>{}...);
     }
 
     template <typename... InitArgs>
     [[nodiscard]] constexpr auto exports_tuple(InitArgs const &...) const {
-        return cib::make_tuple(Services{}...);
+        return stdx::make_tuple(Services{}...);
     }
 };
 } // namespace cib::detail

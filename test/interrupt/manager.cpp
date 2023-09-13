@@ -118,22 +118,22 @@ template <typename FieldType> constexpr auto read(FieldType field) {
 }
 
 template <typename... ValueTypes> struct write_op_t {
-    cib::tuple<ValueTypes...> values;
+    stdx::tuple<ValueTypes...> values;
 
     void operator()() const {
-        cib::for_each(
+        stdx::for_each(
             [](auto value) { callbackPtr->write(value.id, value.value); },
             values);
     }
 };
 
 template <typename... ValueTypes> constexpr auto write(ValueTypes... values) {
-    return write_op_t<ValueTypes...>{cib::make_tuple(values...)};
+    return write_op_t<ValueTypes...>{stdx::make_tuple(values...)};
 }
 
 template <typename... FieldTypes> constexpr auto clear(FieldTypes...) {
     return write_op_t<field_value_t<FieldTypes>...>{
-        cib::make_tuple(field_value_t<FieldTypes>{0}...)};
+        stdx::make_tuple(field_value_t<FieldTypes>{0}...)};
 }
 
 template <typename... OpTypes> constexpr void apply(OpTypes... ops) {
@@ -190,9 +190,8 @@ struct BasicBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CIB_CONSTINIT static inline auto &manager =
-        test_nexus.service<test_service>;
+    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
+    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, BasicManagerInit) {
@@ -280,9 +279,8 @@ struct NoIsrBuilder {
         constexpr static auto config = cib::config(cib::exports<test_service>);
     };
 
-    CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CIB_CONSTINIT static inline auto &manager =
-        test_nexus.service<test_service>;
+    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
+    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, NoIsrInit) {
@@ -319,9 +317,8 @@ struct ClearStatusFirstBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CIB_CONSTINIT static inline auto &manager =
-        test_nexus.service<test_service>;
+    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
+    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, ClearStatusFirstTest) {
@@ -354,9 +351,8 @@ struct DontClearStatusBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CIB_CONSTINIT static inline auto &manager =
-        test_nexus.service<test_service>;
+    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
+    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, DontClearStatusTest) {
@@ -504,9 +500,8 @@ struct SharedSubIrqTest {
             interrupt::extend<test_service, i2c_handler_irq>(bscan));
     };
 
-    CIB_CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CIB_CONSTINIT static inline auto &manager =
-        test_nexus.service<test_service>;
+    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
+    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, BasicManagerSharedSubIrqRun) {

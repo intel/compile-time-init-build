@@ -159,13 +159,3 @@ add_unit_test(
     LIBRARIES
     warnings
     cib)
-
-add_unit_test(
-    tuple_test
-    CATCH2
-    FILES
-    cib/tuple.cpp
-    cib/tuple_algorithms.cpp
-    LIBRARIES
-    warnings
-    cib)

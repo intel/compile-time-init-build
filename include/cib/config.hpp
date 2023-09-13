@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cib/builder_meta.hpp>
-#include <cib/detail/compiler.hpp>
 #include <cib/detail/components.hpp>
 #include <cib/detail/conditional.hpp>
 #include <cib/detail/config_details.hpp>
 #include <cib/detail/config_item.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/extend.hpp>
+
+#include <stdx/compiler.hpp>
 
 namespace cib {
 /**
@@ -30,13 +31,13 @@ template <auto... Args> constexpr static detail::args<Args...> args{};
  * @see cib::conditional
  */
 template <typename... Configs>
-[[nodiscard]] CIB_CONSTEVAL auto config(Configs const &...configs) {
+[[nodiscard]] CONSTEVAL auto config(Configs const &...configs) {
     return detail::config{args<>, configs...};
 }
 
 template <auto... Args, typename... Configs>
-[[nodiscard]] CIB_CONSTEVAL auto config(detail::args<Args...> config_args,
-                                        Configs const &...configs) {
+[[nodiscard]] CONSTEVAL auto config(detail::args<Args...> config_args,
+                                    Configs const &...configs) {
     return detail::config{config_args, configs...};
 }
 
@@ -77,7 +78,7 @@ constexpr static detail::exports<Services...> exports{};
  *      Value arguments to be passed to the service's builder add function.
  */
 template <typename Service, typename... Args>
-[[nodiscard]] CIB_CONSTEVAL auto extend(Args const &...args) {
+[[nodiscard]] CONSTEVAL auto extend(Args const &...args) {
     return detail::extend<Service, Args...>{args...};
 }
 
@@ -90,8 +91,8 @@ template <typename Service, typename... Args>
  */
 template <typename Predicate, typename... Configs>
     requires std::is_default_constructible_v<Predicate>
-[[nodiscard]] CIB_CONSTEVAL auto conditional(Predicate const &,
-                                             Configs const &...configs) {
+[[nodiscard]] CONSTEVAL auto conditional(Predicate const &,
+                                         Configs const &...configs) {
     return detail::conditional<Predicate, Configs...>{configs...};
 }
 } // namespace cib

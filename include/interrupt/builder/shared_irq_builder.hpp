@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cib/tuple.hpp>
 #include <interrupt/builder/shared_sub_irq_builder.hpp>
 #include <interrupt/builder/sub_irq_builder.hpp>
 #include <interrupt/impl/shared_irq_impl.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -24,20 +25,20 @@ namespace interrupt {
 template <typename ConfigT> class shared_irq_builder {
     template <typename BuilderValue, std::size_t Index> struct sub_value {
         constexpr static auto const &value =
-            cib::get<Index>(BuilderValue::value.irqs);
+            get<Index>(BuilderValue::value.irqs);
     };
 
     template <typename BuilderValue, auto... Is>
     constexpr static auto built_irqs(std::index_sequence<Is...>) {
-        return cib::make_tuple(
-            cib::get<Is>(BuilderValue::value.irqs)
+        return stdx::make_tuple(
+            get<Is>(BuilderValue::value.irqs)
                 .template build<sub_value<BuilderValue, Is>>()...);
     }
 
   public:
     constexpr static auto children = ConfigT::children;
 
-    constexpr static auto irqs_type = cib::transform(
+    constexpr static auto irqs_type = stdx::transform(
         [](auto child) {
             if constexpr (decltype(child.children)::size() > 0u) {
                 return shared_sub_irq_builder<decltype(child)>{};
@@ -51,7 +52,7 @@ template <typename ConfigT> class shared_irq_builder {
 
     template <typename IrqType, typename T>
     constexpr void add(T const &flow_description) {
-        cib::for_each(
+        stdx::for_each(
             [&](auto &irq) { irq.template add<IrqType>(flow_description); },
             irqs);
     }

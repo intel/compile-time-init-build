@@ -40,6 +40,5 @@
 #include <cib/config.hpp>
 #include <cib/nexus.hpp>
 #include <cib/top.hpp>
-#include <cib/tuple.hpp>
 #include <interrupt/manager.hpp>
 #include <log/log.hpp>

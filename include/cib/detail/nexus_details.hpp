@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cib/detail/exports.hpp>
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -15,18 +16,16 @@ using get_service = typename std::remove_cvref_t<T>::service_type;
 
 template <typename T>
 using get_service_from_tuple = typename std::remove_cvref_t<
-    decltype(std::declval<T>()[index<0>])>::service_type;
+    decltype(std::declval<T>()[stdx::index<0>])>::service_type;
 
 template <typename Config>
 constexpr static auto initialized_builders = transform<extract_service_tag>(
     [](auto extensions) {
-        using namespace cib::tuple_literals;
-
         using exports_tuple = decltype(Config::config.exports_tuple());
         using service = get_service_from_tuple<decltype(extensions)>;
-        static_assert(contains_type<exports_tuple, service>);
+        static_assert(stdx::contains_type<exports_tuple, service>);
 
-        constexpr auto initial_builder = extensions[0_idx].builder;
+        constexpr auto initial_builder = extensions[stdx::index<0>].builder;
 
         auto built_service = extensions.fold_right(
             initial_builder, [](auto extension, auto outer_builder) {
@@ -41,6 +40,6 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
 
 template <typename Config, typename Tag> struct initialized {
     constexpr static auto value =
-        initialized_builders<Config>.get(tag<Tag>).builder;
+        initialized_builders<Config>.get(stdx::tag<Tag>).builder;
 };
 } // namespace cib

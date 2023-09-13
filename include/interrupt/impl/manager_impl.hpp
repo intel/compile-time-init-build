@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cib/tuple.hpp>
-#include <cib/tuple_algorithms.hpp>
 #include <interrupt/manager_interface.hpp>
+
+#include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -27,7 +28,7 @@ namespace interrupt {
 template <typename InterruptHal, typename Dynamic, typename... IrqImplTypes>
 class manager_impl : public manager_interface {
   private:
-    cib::tuple<IrqImplTypes...> irq_impls;
+    stdx::tuple<IrqImplTypes...> irq_impls;
 
     template <std::size_t Key, typename Value> struct irq_pair {};
     template <typename... Ts> struct irq_map : Ts... {};
@@ -56,7 +57,7 @@ class manager_impl : public manager_interface {
      */
     void init_mcu_interrupts() const final {
         InterruptHal::init();
-        cib::for_each(
+        stdx::for_each(
             [](auto irq) { irq.template init_mcu_interrupts<InterruptHal>(); },
             irq_impls);
     }
@@ -67,7 +68,7 @@ class manager_impl : public manager_interface {
     void init_sub_interrupts() const final {
         auto const interrupt_enables_tuple =
             irq_impls.apply([](auto... irqs_pack) {
-                return cib::tuple_cat(irqs_pack.get_interrupt_enables()...);
+                return stdx::tuple_cat(irqs_pack.get_interrupt_enables()...);
             });
 
         interrupt_enables_tuple.apply([]<typename... Enables>(Enables...) {
@@ -89,7 +90,7 @@ class manager_impl : public manager_interface {
         using irq_t = decltype(lookup<IrqNumber, void>(std::declval<M>()));
 
         if constexpr (not std::is_void_v<irq_t>) {
-            cib::get<irq_t>(irq_impls).template run<InterruptHal>();
+            get<irq_t>(irq_impls).template run<InterruptHal>();
         }
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/tuple.hpp>
+#include <stdx/tuple.hpp>
 
 #include <utility>
 
@@ -43,7 +43,7 @@ struct required_resources_policy {};
 template <typename... ResourcesT> struct required_resources {
     using PolicyType = required_resources_policy;
 
-    constexpr static cib::tuple<ResourcesT...> resources{};
+    constexpr static stdx::tuple<ResourcesT...> resources{};
 };
 
 template <typename... PoliciesT> class policies {
