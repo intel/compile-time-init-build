@@ -11,19 +11,6 @@ add_unit_test(
     cib)
 
 add_unit_test(
-    container_test
-    CATCH2
-    FILES
-    container/constexpr_map.cpp
-    container/constexpr_multimap.cpp
-    container/constexpr_set.cpp
-    container/vector.cpp
-    container/queue.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
     flow_test
     CATCH2
     FILES

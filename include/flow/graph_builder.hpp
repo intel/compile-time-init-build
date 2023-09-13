@@ -1,8 +1,9 @@
 #pragma once
 
-#include <container/constexpr_multimap.hpp>
-#include <container/vector.hpp>
 #include <flow/common.hpp>
+
+#include <stdx/cx_multimap.hpp>
+#include <stdx/cx_vector.hpp>
 
 #include <algorithm>
 #include <array>
@@ -37,8 +38,7 @@ concept walkable = std::same_as<T, Node> or
 template <typename Node, typename NameT, std::size_t NodeCapacity,
           std::size_t EdgeCapacity, typename Derived>
 class graph_builder {
-    using graph_t =
-        cib::constexpr_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
+    using graph_t = stdx::cx_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
     graph_t graph{};
 
     [[nodiscard]] constexpr static auto is_source_of(Node node,
@@ -49,14 +49,14 @@ class graph_builder {
     }
 
     [[nodiscard]] constexpr auto get_sources() const
-        -> cib::constexpr_set<Node, NodeCapacity> {
-        cib::constexpr_set<Node, NodeCapacity> s;
+        -> stdx::cx_set<Node, NodeCapacity> {
+        stdx::cx_set<Node, NodeCapacity> s;
         for (auto const &entry : graph) {
-            s.add(entry.key);
+            s.insert(entry.key);
         }
         for (auto const &entry : graph) {
             for (auto const &dst : entry.value) {
-                s.remove(dst.key);
+                s.erase(dst);
             }
         }
         return s;
@@ -137,23 +137,22 @@ class graph_builder {
     [[nodiscard]] constexpr auto topo_sort() const
         -> std::optional<Output<Name, Capacity>> {
         graph_t g = graph;
-        cib::vector<Node, NodeCapacity> ordered_list{};
+        stdx::cx_vector<Node, NodeCapacity> ordered_list{};
 
         auto sources = get_sources();
         while (not sources.empty()) {
-            auto n = sources.pop();
+            auto n = sources.pop_back();
             ordered_list.push_back(n);
 
             if (g.contains(n)) {
                 auto ms = g.get(n);
                 if (ms.empty()) {
-                    g.remove(n);
+                    g.erase(n);
                 } else {
                     for (auto entry : ms) {
-                        auto m = entry.key;
-                        g.remove(n, m);
-                        if (is_source_of(m, g)) {
-                            sources.add(m);
+                        g.erase(n, entry);
+                        if (is_source_of(entry, g)) {
+                            sources.insert(entry);
                         }
                     }
                 }
@@ -172,10 +171,10 @@ class graph_builder {
      * @return The capacity necessary to fit the built graph.
      */
     [[nodiscard]] constexpr auto size() const -> std::size_t {
-        cib::constexpr_set<Node, NodeCapacity> all_nodes{};
+        stdx::cx_set<Node, NodeCapacity> all_nodes{};
         for (auto entry : graph) {
-            all_nodes.add(entry.key);
-            all_nodes.add_all(entry.value);
+            all_nodes.insert(entry.key);
+            all_nodes.merge(entry.value);
         }
         return all_nodes.size();
     }

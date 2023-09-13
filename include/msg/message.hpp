@@ -1,10 +1,10 @@
 #pragma once
 
-#include <container/vector.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/cx_vector.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
@@ -30,7 +30,7 @@ concept convertible_range_of =
 } // namespace detail
 
 template <std::uint32_t MaxNumDWords>
-using message_data = cib::vector<std::uint32_t, MaxNumDWords>;
+using message_data = stdx::cx_vector<std::uint32_t, MaxNumDWords>;
 
 template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
     constexpr static auto matcher =

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <container/constexpr_map.hpp>
 #include <lookup/lookup.hpp>
 #include <msg/detail/bitset.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_handler.hpp>
 #include <msg/match.hpp>
 
+#include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
@@ -39,7 +39,7 @@ struct temp_index {
     using field_type = FieldType;
 
     using value_t = detail::bitset<CallbackCapacity>;
-    cib::constexpr_map<uint32_t, value_t, EntryCapacity> entries{};
+    stdx::cx_map<uint32_t, value_t, EntryCapacity> entries{};
     detail::bitset<CallbackCapacity> default_value{};
 
     constexpr auto operator[](auto key) -> auto & {

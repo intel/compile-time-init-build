@@ -1,9 +1,10 @@
 #pragma once
 
-#include <container/vector.hpp>
 #include <flow/common.hpp>
 #include <flow/milestone.hpp>
 #include <log/log.hpp>
+
+#include <stdx/cx_vector.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -46,7 +47,7 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
         }
     }();
 
-    cib::vector<FunctionPtr, capacity> functionPtrs{};
+    stdx::cx_vector<FunctionPtr, capacity> functionPtrs{};
 
   public:
     constexpr static bool active = capacity > 0;
