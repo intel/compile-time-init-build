@@ -73,8 +73,8 @@ struct fast_hash_lookup {
         constexpr auto candidate = impl<InputValues>();
 
         constexpr bool candidate_is_valid = [&]() {
-            for (auto const entry : InputValues::entries) {
-                if (candidate[entry.key_] != entry.value_) {
+            for (auto const [k, v] : InputValues::entries) {
+                if (candidate[k] != v) {
                     return false;
                 }
             }

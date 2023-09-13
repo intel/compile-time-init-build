@@ -16,9 +16,9 @@ template <> struct strategies<> {
 
 template <typename T, typename... Ts> struct strategies<T, Ts...> {
     template <typename InputValues> [[nodiscard]] CONSTEVAL static auto make() {
-        if constexpr (constexpr auto candidate =
-                          T::template make<InputValues>();
-                      strategy_failed(candidate)) {
+        constexpr auto candidate = T::template make<InputValues>();
+
+        if constexpr (strategy_failed(candidate)) {
             return strategies<Ts...>::template make<InputValues>();
         } else {
             return candidate;

@@ -40,9 +40,9 @@ template <int MinLoadFactor> struct direct_array_lookup {
         constexpr impl() {
             storage.fill(default_value);
 
-            for (auto e : InputValues::entries) {
-                auto const index = e.key_ - min_key;
-                storage[index] = e.value_;
+            for (auto [k, v] : InputValues::entries) {
+                auto const index = k - min_key;
+                storage[index] = v;
             }
         }
 
