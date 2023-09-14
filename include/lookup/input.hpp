@@ -5,14 +5,12 @@
 #include <array>
 
 namespace lookup {
-template <typename K, typename V, V default_value_param,
-          entry<K, V>... entries_pack>
+template <typename K, typename V, V DefaultValue, entry<K, V>... Entries>
 struct input {
     using key_type = K;
     using value_type = V;
-    constexpr static V default_value = default_value_param;
-    constexpr static std::array<entry<K, V>, sizeof...(entries_pack)> const
-        entries{entries_pack...};
-    constexpr static auto size = entries.size();
+    constexpr static auto default_value = DefaultValue;
+    constexpr static auto size = sizeof...(Entries);
+    constexpr static auto entries = std::array<entry<K, V>, size>{Entries...};
 };
 } // namespace lookup

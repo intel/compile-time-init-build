@@ -1,11 +1,13 @@
 #pragma once
 
+#include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
 #include <msg/detail/bitset.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_handler.hpp>
 #include <msg/match.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -20,14 +22,14 @@ template <typename T> using get_field_type = typename T::field_type;
 
 namespace detail {
 template <typename BuilderValue>
-consteval auto for_each_callback(auto fn) -> void {
+CONSTEVAL auto for_each_callback(auto fn) -> void {
     constexpr auto t = BuilderValue::value.callbacks;
     [&]<std::size_t... i>(std::index_sequence<i...>) -> void {
         (fn(t[stdx::index<i>], i), ...);
     }(std::make_index_sequence<t.size()>{});
 }
 
-consteval auto with_field_index(auto t) {
+CONSTEVAL auto with_field_index(auto t) {
     return stdx::transform<get_field_type>([](auto x, auto) { return x; }, t,
                                            t);
 }
@@ -66,19 +68,19 @@ struct indexed_builder {
     }
 
     template <typename FieldType, typename T, T... ExpectedValues>
-    static consteval auto
+    static CONSTEVAL auto
     get_matchers(in_t<FieldType, T, ExpectedValues...> m) {
         return stdx::make_tuple(m);
     }
 
     template <typename FieldType, typename T, T ExpectedValue>
-    static consteval auto
+    static CONSTEVAL auto
     get_matchers(equal_to_t<FieldType, T, ExpectedValue> m) {
         return stdx::make_tuple(m);
     }
 
     template <typename... T>
-    static consteval auto get_matchers(match::all_t<T...> m) {
+    static CONSTEVAL auto get_matchers(match::all_t<T...> m) {
         return m.matchers;
     }
 
@@ -86,7 +88,7 @@ struct indexed_builder {
                                      ExtraCallbackArgsT... args);
 
     template <typename BuilderValue, std::size_t... i>
-    static consteval auto create_callback_array(std::index_sequence<i...>)
+    static CONSTEVAL auto create_callback_array(std::index_sequence<i...>)
         -> std::array<callback_func_t, BuilderValue::value.callbacks.size()> {
         return {// FIXME: incomplete message callback invocation...
                 //        1) bit_cast message argument
@@ -96,7 +98,7 @@ struct indexed_builder {
     }
 
     template <typename BuilderValue>
-    static consteval auto create_temp_indices() {
+    static CONSTEVAL auto create_temp_indices() {
         IndexSpec indices{};
         detail::for_each_callback<BuilderValue>([&](auto callback,
                                                     auto callback_num) {
@@ -133,7 +135,7 @@ struct indexed_builder {
     }
 
     template <typename BuilderValue, typename I, auto entry_num>
-    static consteval auto make_entry() {
+    static CONSTEVAL auto make_entry() {
         constexpr IndexSpec temp_indices = create_temp_indices<BuilderValue>();
 
         return lookup::entry{
@@ -144,7 +146,7 @@ struct indexed_builder {
                 temp_indices.get(stdx::tag<I>).default_value};
     }
 
-    template <typename BuilderValue> static consteval auto build() {
+    template <typename BuilderValue> static CONSTEVAL auto build() {
         // build callback array
         constexpr auto num_callbacks = BuilderValue::value.callbacks.size();
 

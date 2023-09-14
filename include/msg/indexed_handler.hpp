@@ -3,12 +3,14 @@
 #include <log/log.hpp>
 #include <msg/handler_interface.hpp>
 
+#include <stdx/compiler.hpp>
+
 namespace msg {
 
 template <typename Field, typename Lookup> struct index {
     Lookup field_lookup;
 
-    consteval index(Field, Lookup field_lookup_arg)
+    CONSTEVAL index(Field, Lookup field_lookup_arg)
         : field_lookup{field_lookup_arg} {}
 
     constexpr auto operator()(auto const &data) const {
@@ -17,7 +19,7 @@ template <typename Field, typename Lookup> struct index {
 };
 
 template <typename... IndicesT> struct indices : IndicesT... {
-    consteval explicit indices(IndicesT... index_args)
+    CONSTEVAL explicit indices(IndicesT... index_args)
         : IndicesT{index_args}... {}
 
     constexpr auto operator()(auto const &data) const {

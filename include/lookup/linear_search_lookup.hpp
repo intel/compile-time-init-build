@@ -3,8 +3,12 @@
 #include <lookup/detail/select.hpp>
 #include <lookup/strategy_failed.hpp>
 
+#include <stdx/compiler.hpp>
+
+#include <cstddef>
+
 namespace lookup {
-template <int MaxSize> struct linear_search_lookup {
+template <std::size_t MaxSize> struct linear_search_lookup {
   private:
     template <typename InputValues> struct impl {
         using key_type = typename InputValues::key_type;
@@ -14,8 +18,8 @@ template <int MaxSize> struct linear_search_lookup {
             -> value_type {
             value_type result = InputValues::default_value;
 
-            for (auto e : InputValues::entries) {
-                result = detail::select(key, e.key_, e.value_, result);
+            for (auto [k, v] : InputValues::entries) {
+                result = detail::select(key, k, v, result);
             }
 
             return result;
@@ -23,7 +27,7 @@ template <int MaxSize> struct linear_search_lookup {
     };
 
   public:
-    template <typename InputValues> [[nodiscard]] consteval static auto make() {
+    template <typename InputValues> [[nodiscard]] CONSTEVAL static auto make() {
         if constexpr (InputValues::entries.size() <= MaxSize) {
             return impl<InputValues>();
         } else {

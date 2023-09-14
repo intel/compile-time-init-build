@@ -1,5 +1,5 @@
-#include "lookup/lookup.hpp"
-
+#include <lookup/input.hpp>
+#include <lookup/lookup.hpp>
 #include <msg/detail/bitset.hpp>
 
 #include <catch2/benchmark/catch_benchmark.hpp>

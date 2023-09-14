@@ -1,3 +1,4 @@
+#include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
 #include <msg/callback.hpp>
 #include <msg/detail/bitset.hpp>
