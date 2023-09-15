@@ -48,16 +48,16 @@ struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
         : index{new_index}, callback_entries{new_callbacks} {}
 
     auto is_match(BaseMsgT const &msg) const -> bool final {
-        return !index(msg).empty();
+        return not index(msg).none();
     }
 
     void handle(BaseMsgT const &msg, ExtraCallbackArgsT... args) const final {
         auto const callback_candidates = index(msg);
 
-        callback_candidates.for_each(
-            [&](auto i) { callback_entries[i](msg, args...); });
+        for_each([&](auto i) { callback_entries[i](msg, args...); },
+                 callback_candidates);
 
-        if (callback_candidates.empty()) {
+        if (callback_candidates.none()) {
             CIB_ERROR("None of the registered callbacks claimed this message.");
         }
     }

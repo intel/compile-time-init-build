@@ -4,18 +4,16 @@
 #include <type_traits>
 
 namespace lookup::detail {
-template <typename T>
-constexpr inline auto fallback_select(std::uint32_t lhs, std::uint32_t rhs,
-                                      T first, T second) -> T {
+template <typename K, typename T>
+constexpr inline auto fallback_select(K lhs, K rhs, T first, T second) -> T {
     if (lhs == rhs) {
         return first;
     }
     return second;
 }
 
-template <typename T>
-constexpr inline auto fallback_select_lt(std::uint32_t lhs, std::uint32_t rhs,
-                                         T first, T second) -> T {
+template <typename K, typename T>
+constexpr inline auto fallback_select_lt(K lhs, K rhs, T first, T second) -> T {
     if (lhs < rhs) {
         return first;
     }
@@ -97,32 +95,28 @@ static inline auto optimized_select_lt(std::uint32_t lhs, std::uint32_t rhs,
 }
 
 #else
-template <typename T>
-static inline auto optimized_select(std::uint32_t lhs, std::uint32_t rhs,
-                                    T first, T second) -> T {
+template <typename K, typename T>
+static inline auto optimized_select(K lhs, K rhs, T first, T second) -> T {
     return fallback_select(lhs, rhs, first, second);
 }
 
-template <typename T>
-static inline auto optimized_select_lt(std::uint32_t lhs, std::uint32_t rhs,
-                                       T first, T second) -> T {
+template <typename K, typename T>
+static inline auto optimized_select_lt(K lhs, K rhs, T first, T second) -> T {
     return fallback_select_lt(lhs, rhs, first, second);
 }
 
 #endif
 
-template <typename T>
-constexpr inline auto select(std::uint32_t lhs, std::uint32_t rhs, T first,
-                             T second) -> T {
+template <typename K, typename T>
+constexpr inline auto select(K lhs, K rhs, T first, T second) -> T {
     if (std::is_constant_evaluated()) {
         return fallback_select(lhs, rhs, first, second);
     }
     return optimized_select(lhs, rhs, first, second);
 }
 
-template <typename T>
-constexpr inline auto select_lt(std::uint32_t lhs, std::uint32_t rhs, T first,
-                                T second) -> T {
+template <typename K, typename T>
+constexpr inline auto select_lt(K lhs, K rhs, T first, T second) -> T {
     if (std::is_constant_evaluated()) {
         return fallback_select_lt(lhs, rhs, first, second);
     }

@@ -107,7 +107,6 @@ add_unit_test(
     CATCH2
     FILES
     msg/match.cpp
-    msg/detail/bitset.cpp
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
@@ -123,7 +122,12 @@ add_unit_test(
     lookup_test
     CATCH2
     FILES
+    lookup/direct_array.cpp
+    lookup/input.cpp
+    lookup/fast_hash.cpp
+    lookup/linear_search.cpp
     lookup/lookup.cpp
+    lookup/strategies.cpp
     LIBRARIES
     warnings
     cib)
