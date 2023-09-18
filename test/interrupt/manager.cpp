@@ -177,10 +177,9 @@ struct BasicBuilder {
                                                        test_resource_beta>>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
+    using Dynamic = dynamic_controller<Config>;
 
-    struct test_service : interrupt::service<Config, test::concurrency_policy> {
-    };
+    struct test_service : interrupt::service<Config> {};
 
     struct test_project {
         constexpr static auto config = cib::config(
@@ -270,10 +269,9 @@ struct NoIsrBuilder {
                            rsp_handler_irq, policies<>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
+    using Dynamic = dynamic_controller<Config>;
 
-    struct test_service : interrupt::service<Config, test::concurrency_policy> {
-    };
+    struct test_service : interrupt::service<Config> {};
 
     struct test_project {
         constexpr static auto config = cib::config(cib::exports<test_service>);
@@ -306,10 +304,9 @@ struct ClearStatusFirstBuilder {
     using Config =
         root<MockIrqImpl, irq<38, 0, timer_irq, policies<clear_status_first>>>;
 
-    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
+    using Dynamic = dynamic_controller<Config>;
 
-    struct test_service : interrupt::service<Config, test::concurrency_policy> {
-    };
+    struct test_service : interrupt::service<Config> {};
 
     struct test_project {
         constexpr static auto config = cib::config(
@@ -340,10 +337,9 @@ struct DontClearStatusBuilder {
     using Config =
         root<MockIrqImpl, irq<38, 0, timer_irq, policies<dont_clear_status>>>;
 
-    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
+    using Dynamic = dynamic_controller<Config>;
 
-    struct test_service : interrupt::service<Config, test::concurrency_policy> {
-    };
+    struct test_service : interrupt::service<Config> {};
 
     struct test_project {
         constexpr static auto config = cib::config(
@@ -489,10 +485,9 @@ struct SharedSubIrqTest {
                                can_handler_irq, policies<dont_clear_status>>>>,
         irq<38, 0, timer_irq, policies<>>>;
 
-    using Dynamic = dynamic_controller<Config, test::concurrency_policy>;
+    using Dynamic = dynamic_controller<Config>;
 
-    struct test_service : interrupt::service<Config, test::concurrency_policy> {
-    };
+    struct test_service : interrupt::service<Config> {};
 
     struct test_project {
         constexpr static auto config = cib::config(

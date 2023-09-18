@@ -48,7 +48,7 @@ CONSTEVAL auto extend(T flow_description) {
  *
  * @tparam IRQs
  */
-template <typename RootT, typename ConcurrencyPolicyT> class manager {
+template <typename RootT> class manager {
     template <typename BuilderValue, std::size_t Index> struct sub_value {
         constexpr static auto const &value =
             get<Index>(BuilderValue::value.irqs);
@@ -76,7 +76,7 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
 
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
-    using Dynamic = dynamic_controller<RootT, ConcurrencyPolicyT>;
+    using Dynamic = dynamic_controller<RootT>;
 
     /**
      * Add interrupt service routine(s) to be executed when this IRQ is
@@ -122,8 +122,8 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
     }
 };
 
-template <typename Config, typename ConcurrencyPolicy>
-struct service : cib::builder_meta<manager<Config, ConcurrencyPolicy>,
-                                   manager_interface const *> {};
+template <typename Config>
+struct service : cib::builder_meta<manager<Config>, manager_interface const *> {
+};
 
 } // namespace interrupt

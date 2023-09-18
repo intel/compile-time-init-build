@@ -20,11 +20,13 @@ include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:fmtlib/fmt#6c845f5")
 add_versioned_package("gh:intel/cpp-std-extensions#01b5d27")
+add_versioned_package("gh:intel/cpp-baremetal-concurrency#8d49b6d")
 
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
 target_include_directories(cib INTERFACE include)
-target_link_libraries_system(cib INTERFACE fmt::fmt-header-only stdx)
+target_link_libraries_system(cib INTERFACE concurrency fmt::fmt-header-only
+                             stdx)
 
 target_compile_options(
     cib

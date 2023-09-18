@@ -34,8 +34,6 @@ add_unit_test(
     GTEST
     FILES
     interrupt/manager.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     cib)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <conc/concurrency.hpp>
+
 #include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -13,8 +15,7 @@ enum class resource_status { OFF = 0, ON = 1 };
 template <typename Irq>
 constexpr static auto has_enable_field = requires { Irq::enable_field; };
 
-template <typename RootT, typename ConcurrencyPolicyT>
-struct dynamic_controller {
+template <typename RootT> struct dynamic_controller {
   private:
     /**
      * Store the interrupt enable values that are allowed given the current set
@@ -223,7 +224,7 @@ struct dynamic_controller {
   public:
     template <typename ResourceType>
     static inline void update_resource(resource_status status) {
-        ConcurrencyPolicyT::call_in_critical_section([&] {
+        conc::call_in_critical_section<dynamic_controller>([&] {
             is_resource_on<ResourceType> = (status == resource_status::ON);
             recalculate_allowed_enables();
             reprogram_interrupt_enables(all_resource_affected_regs);
@@ -242,23 +243,17 @@ struct dynamic_controller {
     static inline void enable_by_field() {
         auto const interrupt_enables_tuple = stdx::tuple<FieldsToSet...>{};
 
-        ConcurrencyPolicyT::call_in_critical_section([&] {
-            // update the dynamic enables
-            if constexpr (en) {
-                stdx::for_each(
-                    [](auto f) {
-                        using RegType = decltype(f.get_register());
+        conc::call_in_critical_section<dynamic_controller>([&] {
+            stdx::for_each(
+                [](auto f) {
+                    using RegType = decltype(f.get_register());
+                    if constexpr (en) {
                         dynamic_enables<RegType> |= f.get_mask();
-                    },
-                    interrupt_enables_tuple);
-            } else {
-                stdx::for_each(
-                    [](auto f) {
-                        using RegType = decltype(f.get_register());
+                    } else {
                         dynamic_enables<RegType> &= ~f.get_mask();
-                    },
-                    interrupt_enables_tuple);
-            }
+                    }
+                },
+                interrupt_enables_tuple);
 
             auto const unique_regs = get_unique_regs(interrupt_enables_tuple);
             reprogram_interrupt_enables(unique_regs);
