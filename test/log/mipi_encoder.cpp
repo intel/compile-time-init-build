@@ -1,11 +1,35 @@
 #include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
+#include <stdx/concepts.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 namespace {
+struct [[nodiscard]] test_critical_section {
+    test_critical_section() { ++count; }
+    ~test_critical_section() { ++count; }
+    static inline int count = 0;
+};
+
+struct test_conc_policy {
+    template <typename = void, stdx::invocable F, stdx::predicate... Pred>
+        requires(sizeof...(Pred) < 2)
+    static inline auto call_in_critical_section(F &&f, Pred &&...pred)
+        -> decltype(std::forward<F>(f)()) {
+        while (true) {
+            [[maybe_unused]] test_critical_section cs{};
+            if ((... and pred())) {
+                return std::forward<F>(f)();
+            }
+        }
+    }
+};
+
 constexpr string_id test_string_id = 42u;
 
 [[maybe_unused]] constexpr auto expected_short32_header() -> std::uint32_t {
@@ -25,7 +49,7 @@ constexpr string_id test_string_id = 42u;
 
 template <auto ExpectedId> struct test_log_id_destination {
     template <typename Id> static auto log_by_args(Id id) {
-        REQUIRE(id == ((ExpectedId << 4u) | 1u));
+        CHECK(id == ((ExpectedId << 4u) | 1u));
     }
 };
 
@@ -35,8 +59,8 @@ template <logging::level Level, auto... ExpectedArgs>
 struct test_log_args_destination {
     template <typename... Args>
     auto log_by_args(std::uint32_t header, Args... args) {
-        REQUIRE(header == expected_header(Level, sizeof...(Args)));
-        REQUIRE(((ExpectedArgs == args) and ...));
+        CHECK(header == expected_header(Level, sizeof...(Args)));
+        CHECK(((ExpectedArgs == args) and ...));
         ++num_log_args_calls;
     }
 };
@@ -45,9 +69,9 @@ template <logging::level Level, auto... ExpectedArgs>
 struct test_log_buf_destination {
     template <typename... Args>
     auto log_by_buf(std::uint32_t *buf, std::uint32_t size) const {
-        REQUIRE(size == 1 + sizeof...(ExpectedArgs));
-        REQUIRE(*buf++ == expected_header(Level, sizeof...(ExpectedArgs)));
-        REQUIRE(((ExpectedArgs == *buf++) and ...));
+        CHECK(size == 1 + sizeof...(ExpectedArgs));
+        CHECK(*buf++ == expected_header(Level, sizeof...(ExpectedArgs)));
+        CHECK(((ExpectedArgs == *buf++) and ...));
     }
 };
 } // namespace
@@ -56,67 +80,68 @@ template <typename StringType> auto catalog() -> string_id {
     return test_string_id;
 }
 
+template <> inline auto conc::injected_policy<> = test_conc_policy{};
+
 TEST_CASE("log id", "[mipi]") {
-    test::concurrency_policy::test_critical_section::count = 0;
+    test_critical_section::count = 0;
     constexpr string_id id{3u};
-    auto cfg = logging::mipi::under<test::concurrency_policy>::config{
-        test_log_id_destination<id>{}};
+    auto cfg = logging::mipi::config{test_log_id_destination<id>{}};
     cfg.logger.log_id(id);
-    REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+    CHECK(test_critical_section::count == 2);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {
-    test::concurrency_policy::test_critical_section::count = 0;
-    auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+    test_critical_section::count = 0;
+    auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE>{}};
     cfg.logger.log_msg<logging::level::TRACE>("Hello"_sc);
-    REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+    CHECK(test_critical_section::count == 2);
 }
 
 TEST_CASE("log one argument", "[mipi]") {
-    test::concurrency_policy::test_critical_section::count = 0;
-    auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+    test_critical_section::count = 0;
+    auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<logging::level::TRACE>(format("{}"_sc, 17u));
-    REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+    CHECK(test_critical_section::count == 2);
 }
 
 TEST_CASE("log two arguments", "[mipi]") {
-    test::concurrency_policy::test_critical_section::count = 0;
-    auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+    test_critical_section::count = 0;
+    auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<logging::level::TRACE>(format("{} {}"_sc, 17u, 18u));
-    REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+    CHECK(test_critical_section::count == 2);
 }
 
 TEST_CASE("log more than two arguments", "[mipi]") {
     {
-        test::concurrency_policy::test_critical_section::count = 0;
-        auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+        test_critical_section::count = 0;
+        auto cfg = logging::mipi::config{
             test_log_buf_destination<logging::level::TRACE, 42u, 17u, 18u,
                                      19u>{}};
         cfg.logger.log_msg<logging::level::TRACE>(
             format("{} {} {}"_sc, 17u, 18u, 19u));
-        REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+        CHECK(test_critical_section::count == 2);
     }
     {
-        test::concurrency_policy::test_critical_section::count = 0;
-        auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+        test_critical_section::count = 0;
+        auto cfg = logging::mipi::config{
             test_log_buf_destination<logging::level::TRACE, 42u, 17u, 18u, 19u,
                                      20u>{}};
         cfg.logger.log_msg<logging::level::TRACE>(
             format("{} {} {} {}"_sc, 17u, 18u, 19u, 20u));
-        REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
+        CHECK(test_critical_section::count == 2);
     }
 }
 
 TEST_CASE("log to multiple destinations", "[mipi]") {
-    test::concurrency_policy::test_critical_section::count = 0;
+    test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::mipi::under<test::concurrency_policy>::config{
+    auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{},
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<logging::level::TRACE>(format("{} {}"_sc, 17u, 18u));
-    REQUIRE(test::concurrency_policy::test_critical_section::count == 2);
-    REQUIRE(num_log_args_calls == 2);
+    CHECK(test_critical_section::count == 4);
+    CHECK(num_log_args_calls == 2);
 }
