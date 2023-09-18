@@ -4,6 +4,8 @@
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/panic.hpp>
+
 #include <utility>
 
 namespace logging {
@@ -13,8 +15,6 @@ struct config {
         template <level L, typename... Ts>
         constexpr auto log(Ts &&...) const noexcept -> void {}
     } logger;
-
-    constexpr static auto terminate() noexcept -> void {}
 };
 } // namespace null
 
@@ -24,11 +24,6 @@ template <level L, typename... Ts, typename... TArgs>
 static auto log(TArgs &&...args) -> void {
     auto &cfg = config<Ts...>;
     cfg.logger.template log<L>(std::forward<TArgs>(args)...);
-}
-
-template <typename... Ts> static auto terminate() -> void {
-    auto &cfg = config<Ts...>;
-    cfg.terminate();
 }
 } // namespace logging
 
@@ -41,7 +36,7 @@ template <typename... Ts> static auto terminate() -> void {
 #define CIB_WARN(...) CIB_LOG(logging::level::WARN, __VA_ARGS__)
 #define CIB_ERROR(...) CIB_LOG(logging::level::ERROR, __VA_ARGS__)
 #define CIB_FATAL(...)                                                         \
-    (CIB_LOG(logging::level::FATAL, __VA_ARGS__), logging::terminate())
+    (CIB_LOG(logging::level::FATAL, __VA_ARGS__), STDX_PANIC(__VA_ARGS__))
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))

@@ -8,7 +8,6 @@
 #include <stdx/tuple.hpp>
 
 #include <cstdint>
-#include <exception>
 #include <utility>
 
 namespace {
@@ -114,8 +113,6 @@ template <typename... TDestinations> struct config {
         : logger{stdx::tuple{std::move(dests)...}} {}
 
     log_handler<destinations_tuple_t> logger;
-
-    [[noreturn]] static auto terminate() { std::terminate(); }
 };
 template <typename... Ts> config(Ts...) -> config<Ts...>;
 } // namespace logging::mipi
