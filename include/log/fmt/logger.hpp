@@ -8,7 +8,6 @@
 #include <fmt/format.h>
 
 #include <chrono>
-#include <exception>
 #include <utility>
 
 template <auto L> struct fmt::formatter<logging::level_constant<L>> {
@@ -58,7 +57,5 @@ template <typename... TDestinations> struct config {
         : logger{stdx::tuple{std::move(dests)...}} {}
 
     log_handler<destinations_tuple_t> logger;
-
-    [[noreturn]] static auto terminate() { std::terminate(); }
 };
 } // namespace logging::fmt

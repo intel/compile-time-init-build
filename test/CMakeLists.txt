@@ -34,8 +34,6 @@ add_unit_test(
     GTEST
     FILES
     interrupt/manager.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     cib)
@@ -45,8 +43,6 @@ add_unit_test(
     CATCH2
     FILES
     log/log.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     cib)
@@ -73,8 +69,6 @@ add_unit_test(
     CATCH2
     FILES
     log/catalog_app.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     catalog_lib
@@ -85,8 +79,6 @@ add_unit_test(
     CATCH2
     FILES
     log/fmt_logger.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     cib)
@@ -96,8 +88,6 @@ add_unit_test(
     CATCH2
     FILES
     log/mipi_encoder.cpp
-    INCLUDE_DIRECTORIES
-    ${CMAKE_SOURCE_DIR}/test/
     LIBRARIES
     warnings
     cib)

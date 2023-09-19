@@ -1,5 +1,6 @@
 #pragma once
 
+#include <conc/concurrency.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
 
@@ -7,7 +8,6 @@
 #include <stdx/tuple.hpp>
 
 #include <cstdint>
-#include <exception>
 #include <utility>
 
 namespace {
@@ -32,8 +32,7 @@ template <logging::level L, typename Msg> constexpr auto to_message(Msg msg) {
 } // namespace
 
 namespace logging::mipi {
-template <typename ConcurrencyPolicy, typename TDestinations>
-struct log_handler {
+template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
     template <logging::level Level, typename FilenameStringType,
@@ -71,21 +70,23 @@ struct log_handler {
     template <typename... MsgDataTypes>
     NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes &&...msg_data)
         -> void {
-        ConcurrencyPolicy::call_in_critical_section([&] {
-            stdx::for_each(
-                [&](auto &dest) {
+        stdx::for_each(
+            [&]<typename Dest>(Dest &dest) {
+                conc::call_in_critical_section<Dest>([&] {
                     dest.log_by_args(std::forward<MsgDataTypes>(msg_data)...);
-                },
-                dests);
-        });
+                });
+            },
+            dests);
     }
 
     NEVER_INLINE auto dispatch_pass_by_buffer(std::uint32_t *msg,
                                               std::uint32_t msg_size) -> void {
-        ConcurrencyPolicy::call_in_critical_section([&] {
-            stdx::for_each([&](auto &dest) { dest.log_by_buf(msg, msg_size); },
-                           dests);
-        });
+        stdx::for_each(
+            [&]<typename Dest>(Dest &dest) {
+                conc::call_in_critical_section<Dest>(
+                    [&] { dest.log_by_buf(msg, msg_size); });
+            },
+            dests);
     }
 
     template <logging::level Level, typename... MsgDataTypes>
@@ -106,22 +107,12 @@ struct log_handler {
     TDestinations dests;
 };
 
-template <typename ConcurrencyPolicy> struct under {
-    template <typename... TDestinations> struct config {
-        using destinations_tuple_t = stdx::tuple<TDestinations...>;
-        constexpr explicit config(TDestinations... dests)
-            : logger{stdx::tuple{std::move(dests)...}} {}
+template <typename... TDestinations> struct config {
+    using destinations_tuple_t = stdx::tuple<TDestinations...>;
+    constexpr explicit config(TDestinations... dests)
+        : logger{stdx::tuple{std::move(dests)...}} {}
 
-        log_handler<ConcurrencyPolicy, destinations_tuple_t> logger;
-
-        [[noreturn]] static auto terminate() { std::terminate(); }
-    };
-
-    // Clang needs a deduction guide here. GCC does not, and in fact GCC
-    // has a bug: it claims that deduction guides must be at namespace
-    // scope.
-#ifdef __clang__
-    template <typename... Ts> config(Ts...) -> config<Ts...>;
-#endif
+    log_handler<destinations_tuple_t> logger;
 };
+template <typename... Ts> config(Ts...) -> config<Ts...>;
 } // namespace logging::mipi

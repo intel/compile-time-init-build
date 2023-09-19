@@ -67,8 +67,8 @@ The provided `libfmt` implementation can output to multiple destinations by cons
 
 ## implementing a logger
 
-Each logging implementation (configuration) provides two customization points: a
-`logger` object (which must implement `log`) and a `terminate` function.
+Each logging implementation (configuration) provides a customization point: a
+`logger` object, which must implement `log`.
 Therefore providing a custom implementation is a matter of defining this
 structure appropriately.
 
@@ -81,10 +81,6 @@ struct config {
       // log the ts... according to my mechanism
     }
   } logger;
-  
-  [[noreturn]] static auto terminate() -> void {
-    // terminate in some way
-  }
 };
 }
 ```
