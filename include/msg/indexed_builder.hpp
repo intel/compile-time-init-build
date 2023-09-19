@@ -87,14 +87,22 @@ struct indexed_builder {
     using callback_func_t = void (*)(BaseMsgT const &,
                                      ExtraCallbackArgsT... args);
 
-    template <typename BuilderValue, std::size_t... i>
-    static CONSTEVAL auto create_callback_array(std::index_sequence<i...>)
+    template <typename BuilderValue, std::size_t I>
+    constexpr static auto invoke_callback(BaseMsgT const &msg,
+                                          ExtraCallbackArgsT... args) {
+        // FIXME: incomplete message callback invocation...
+        //        1) bit_cast message argument
+        //        2) log message match
+        constexpr auto &cb = BuilderValue::value.callbacks[stdx::index<I>];
+        if (cb.matcher(msg)) {
+            cb.callable(msg, args...);
+        }
+    }
+
+    template <typename BuilderValue, std::size_t... Is>
+    static CONSTEVAL auto create_callback_array(std::index_sequence<Is...>)
         -> std::array<callback_func_t, BuilderValue::value.callbacks.size()> {
-        return {// FIXME: incomplete message callback invocation...
-                //        1) bit_cast message argument
-                //        2) log message match
-                //        3) unindexed fields checking
-                BuilderValue::value.callbacks[stdx::index<i>].callable...};
+        return {invoke_callback<BuilderValue, Is>...};
     }
 
     template <typename BuilderValue>
