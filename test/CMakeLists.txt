@@ -39,6 +39,7 @@ add_tests(
     match/simplify_not
     match/simplify_or
     match/sum_of_products
+    msg/detail/rle_codec
     msg/disjoint_field
     msg/field
     msg/handler
@@ -46,6 +47,7 @@ add_tests(
     msg/indexed_builder
     msg/indexed_callback
     msg/indexed_handler
+    msg/rle_indexed_builder
     msg/message
     sc/format
     sc/string_constant
