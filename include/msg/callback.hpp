@@ -1,5 +1,6 @@
 #pragma once
 
+#include <log/log.hpp>
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
 

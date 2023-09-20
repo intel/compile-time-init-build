@@ -1,4 +1,5 @@
 #include <cib/cib.hpp>
+#include <log/fmt/logger.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/match.hpp>
@@ -6,6 +7,10 @@
 #include <msg/service.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <string>
 
 namespace {
 using test_id_field =
@@ -33,7 +38,13 @@ struct test_project {
     constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
+
+std::string log_buffer{};
 } // namespace
+
+template <>
+inline auto logging::config<> =
+    logging::fmt::config{std::back_inserter(log_buffer)};
 
 TEST_CASE("build handler", "[handler_builder]") {
     cib::nexus<test_project> test_nexus{};
@@ -44,4 +55,26 @@ TEST_CASE("build handler", "[handler_builder]") {
     cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
 
     REQUIRE(callback_success);
+}
+
+TEST_CASE("match output success", "[handler_builder]") {
+    log_buffer.clear();
+    cib::nexus<test_project> test_nexus{};
+    test_nexus.init();
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    CHECK(log_buffer.find("Incoming message matched") != std::string::npos);
+    CHECK(log_buffer.find("[TestCallback]") != std::string::npos);
+    CHECK(log_buffer.find("[test_id_field == 0x80]") != std::string::npos);
+}
+
+TEST_CASE("match output failure", "[handler_builder]") {
+    log_buffer.clear();
+    cib::nexus<test_project> test_nexus{};
+    test_nexus.init();
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    CHECK(log_buffer.find(
+              "None of the registered callbacks claimed this message") !=
+          std::string::npos);
+    CHECK(log_buffer.find("TestCallback") != std::string::npos);
+    CHECK(log_buffer.find("test_id_field (0x81) == 0x80") != std::string::npos);
 }
