@@ -1,5 +1,6 @@
 #pragma once
 
+#include <log/log.hpp>
 #include <lookup/entry.hpp>
 #include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
@@ -95,6 +96,9 @@ struct indexed_builder {
         //        2) log message match
         constexpr auto &cb = BuilderValue::value.callbacks[stdx::index<I>];
         if (cb.matcher(msg)) {
+            CIB_INFO("Incoming message matched [{}], because [{}], executing "
+                     "callback",
+                     cb.name, cb.matcher.describe());
             cb.callable(msg, args...);
         }
     }

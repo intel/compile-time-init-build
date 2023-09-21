@@ -100,10 +100,26 @@ add_unit_test(
     msg/disjoint_field.cpp
     msg/field.cpp
     msg/handler.cpp
-    msg/handler_builder.cpp
     msg/indexed_handler.cpp
-    msg/indexed_builder.cpp
     msg/message.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    msg_handler_builder_test
+    CATCH2
+    FILES
+    msg/handler_builder.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
+    msg_indexed_builder_test
+    CATCH2
+    FILES
+    msg/indexed_builder.cpp
     LIBRARIES
     warnings
     cib)

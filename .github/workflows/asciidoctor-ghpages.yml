@@ -30,17 +30,14 @@ jobs:
     needs: configure
     name: Build Documentation
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
       - name: Install asciidoctor
         run: |
           sudo apt update
           sudo apt install -y asciidoctor
           sudo gem install asciidoctor asciidoctor-diagram rouge
-
       - name: Build documentation
         run: |
           mkdir -p ./generated-html
@@ -49,11 +46,9 @@ jobs:
           touch ./generated-html/.nojekyll
           ls -la ./generated-html
           cat ./generated-html/index.html
-
       - name: Setup github pages
         if: needs.configure.outputs.enable_publish == 'true'
         uses: actions/configure-pages@v3
-
       - name: Upload artifacts
         uses: actions/upload-pages-artifact@v2
         with:
@@ -63,18 +58,14 @@ jobs:
     needs: [configure, build]
     if: needs.configure.outputs.enable_publish == 'true'
     name: Deploy Documentation
-
     permissions:
       contents: read
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: $${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-22.04
-
     steps:
       - name: Deploy to github pages
         id: deployment
