@@ -43,6 +43,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      * @see cib::nexus
      */
     template <std::convertible_to<func_ptr_t>... Fs>
+    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     [[nodiscard]] constexpr auto add(Fs &&...fs) const {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             return callback<NumFuncs + sizeof...(Fs), ArgTypes...>{

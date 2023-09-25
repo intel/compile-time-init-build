@@ -13,6 +13,7 @@ namespace null {
 struct config {
     struct {
         template <level L, typename... Ts>
+        // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
         constexpr auto log(Ts &&...) const noexcept -> void {}
     } logger;
 };

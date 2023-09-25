@@ -12,7 +12,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 16
+  DEFAULT_LLVM_VERSION: 17
   DEFAULT_GCC_VERSION: 12
 
 concurrency:
@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 13, 14, 15, 16]
+        version: [12, 13, 14, 15, 16, 17]
         cxx_standard: [20]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
@@ -35,6 +35,15 @@ jobs:
             cc: "clang"
             cxx: "clang++"
             cxx_flags: "-stdlib=libstdc++"
+          - version: 17
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
+            toolchain_root: "/usr/lib/llvm-17"
+          - version: 17
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17 && sudo apt install -y libc++-17-dev libc++abi-17-dev
+            cxx_flags: "-stdlib=libc++"
           - version: 16
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
@@ -77,6 +86,8 @@ jobs:
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: gcc
+            version: 17
           - compiler: gcc
             version: 16
           - compiler: gcc
