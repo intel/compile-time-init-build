@@ -1,48 +1,51 @@
-add_unit_test(
-    cib_test
-    CATCH2
-    FILES
-    cib/builder_meta.cpp
-    cib/callback.cpp
-    cib/nexus.cpp
-    cib/readme_hello_world.cpp
-    LIBRARIES
-    warnings
-    cib)
+function(add_tests)
+    foreach(name ${ARGN})
+        string(REPLACE "/" "_" test ${name})
+        add_unit_test(
+            "${test}_test"
+            CATCH2
+            FILES
+            "${name}.cpp"
+            LIBRARIES
+            warnings
+            cib)
+    endforeach()
+endfunction()
 
-add_unit_test(
-    flow_test
-    CATCH2
-    FILES
-    flow/flow.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    interrupt_test
-    CATCH2
-    FILES
-    interrupt/dynamic_controller.cpp
-    interrupt/policies.cpp
-    LIBRARIES
-    warnings
-    cib)
+add_tests(
+    cib/builder_meta
+    cib/callback
+    cib/nexus
+    cib/readme_hello_world
+    flow/flow
+    interrupt/dynamic_controller
+    interrupt/policies
+    log/fmt_logger
+    log/log
+    log/mipi_encoder
+    lookup/direct_array
+    lookup/fast_hash
+    lookup/input
+    lookup/linear_search
+    lookup/lookup
+    lookup/strategies
+    msg/disjoint_field
+    msg/field
+    msg/handler
+    msg/handler_builder
+    msg/indexed_builder
+    msg/indexed_handler
+    msg/match
+    msg/message
+    sc/format
+    sc/string_constant
+    seq/sequencer)
 
 add_unit_test(
     interrupt_manager_test
     GTEST
     FILES
     interrupt/manager.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    log_test
-    CATCH2
-    FILES
-    log/log.cpp
     LIBRARIES
     warnings
     cib)
@@ -73,86 +76,3 @@ add_unit_test(
     warnings
     catalog_lib
     catalog_strings)
-
-add_unit_test(
-    log_fmt_test
-    CATCH2
-    FILES
-    log/fmt_logger.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    log_mipi_test
-    CATCH2
-    FILES
-    log/mipi_encoder.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    msg_test
-    CATCH2
-    FILES
-    msg/match.cpp
-    msg/disjoint_field.cpp
-    msg/field.cpp
-    msg/handler.cpp
-    msg/indexed_handler.cpp
-    msg/message.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    msg_handler_builder_test
-    CATCH2
-    FILES
-    msg/handler_builder.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    msg_indexed_builder_test
-    CATCH2
-    FILES
-    msg/indexed_builder.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    lookup_test
-    CATCH2
-    FILES
-    lookup/direct_array.cpp
-    lookup/input.cpp
-    lookup/fast_hash.cpp
-    lookup/linear_search.cpp
-    lookup/lookup.cpp
-    lookup/strategies.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    sc_test
-    CATCH2
-    FILES
-    sc/format.cpp
-    sc/string_constant.cpp
-    LIBRARIES
-    warnings
-    cib)
-
-add_unit_test(
-    seq_test
-    CATCH2
-    FILES
-    seq/sequencer.cpp
-    LIBRARIES
-    warnings
-    cib)
