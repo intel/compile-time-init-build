@@ -1,9 +1,9 @@
 #include <cib/cib.hpp>
 #include <log/fmt/logger.hpp>
+#include <match/ops.hpp>
 #include <msg/field.hpp>
 #include <msg/indexed_callback.hpp>
 #include <msg/indexed_service.hpp>
-#include <msg/match.hpp>
 #include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -35,7 +35,7 @@ struct test_service : msg::indexed_service<index_spec, test_msg_t> {};
 bool callback_success;
 
 constexpr auto test_callback = msg::indexed_callback_t(
-    "TestCallback"_sc, match::all(test_id_field::in<0x80>),
+    "TestCallback"_sc, test_id_field::in<0x80>,
     [](test_msg_t const &) { callback_success = true; });
 
 struct test_project {
@@ -113,13 +113,13 @@ TEST_CASE("build handler field equal_to", "[indexed_builder]") {
 namespace {
 constexpr auto test_callback_multi_field = msg::indexed_callback_t(
     "test_callback_multi_field"_sc,
-    match::all(test_id_field::in<0x80, 0x42>, test_opcode_field::equal_to<1>),
+    test_id_field::in<0x80, 0x42> and test_opcode_field::equal_to<1>,
     [](test_msg_t const &) { callback_success = true; });
 
 bool callback_success_single_field;
 
 constexpr auto test_callback_single_field = msg::indexed_callback_t(
-    "test_callback_single_field"_sc, match::all(test_id_field::equal_to<0x50>),
+    "test_callback_single_field"_sc, test_id_field::equal_to<0x50>,
     [](test_msg_t const &) { callback_success_single_field = true; });
 
 struct test_project_multi_field {

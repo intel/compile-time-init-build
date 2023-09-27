@@ -29,13 +29,21 @@ add_tests(
     lookup/linear_search
     lookup/lookup
     lookup/strategies
+    match/and
+    match/constant
+    match/not
+    match/or
+    match/predicate
+    match/simplify_and
+    match/simplify_custom
+    match/simplify_not
+    match/simplify_or
     msg/disjoint_field
     msg/field
     msg/handler
     msg/handler_builder
     msg/indexed_builder
     msg/indexed_handler
-    msg/match
     msg/message
     sc/format
     sc/string_constant

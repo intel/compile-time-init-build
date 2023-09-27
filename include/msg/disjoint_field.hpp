@@ -1,7 +1,7 @@
 #pragma once
 
+#include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
-#include <msg/match.hpp>
 #include <sc/format.hpp>
 
 #include <algorithm>
@@ -13,7 +13,7 @@ namespace msg {
  */
 template <typename NameTypeT, typename FieldsT, typename T = std::uint32_t,
           T DefaultValue = T{},
-          typename MatchRequirementsType = match::always_t<true>>
+          typename MatchRequirementsType = match::always_t>
 class disjoint_field {
   private:
     constexpr static FieldsT fields{};

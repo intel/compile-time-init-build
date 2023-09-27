@@ -1,7 +1,7 @@
 #pragma once
 
+#include <match/ops.hpp>
 #include <msg/field.hpp>
-#include <msg/match.hpp>
 #include <sc/fwd.hpp>
 
 #include <stdx/cx_vector.hpp>
@@ -33,8 +33,11 @@ template <std::uint32_t MaxNumDWords>
 using message_data = stdx::cx_vector<std::uint32_t, MaxNumDWords>;
 
 template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
-    constexpr static auto matcher =
-        match::all(MsgType::match_valid_encoding, additional_matcher{});
+    using is_matcher = void;
+
+    constexpr static auto matcher = [] {
+        return MsgType::match_valid_encoding and additional_matcher{};
+    }();
 
     template <typename BaseMsgType>
     [[nodiscard]] constexpr auto operator()(BaseMsgType const &base_msg) const
@@ -77,21 +80,10 @@ struct message_base : public message_data<MaxNumDWords> {
                 ...);
     }
 
-    template <typename T>
-    using not_required = std::bool_constant<not std::is_same_v<
-        match::always_t<true>, std::decay_t<decltype(T::match_requirements)>>>;
-
-    constexpr static auto match_valid_encoding = []() {
-        constexpr auto required_fields =
-            stdx::filter<not_required>(FieldTupleType{});
-        if constexpr (required_fields.size() == 0) {
-            return match::always<true>;
-        } else {
-            return required_fields.apply([](auto... required_fields_pack) {
-                return match::all(
-                    decltype(required_fields_pack)::match_requirements...);
-            });
-        }
+    constexpr static auto match_valid_encoding = [] {
+        static_assert(
+            (match::matcher<decltype(FieldsT::match_requirements)> and ...));
+        return match::all(FieldsT::match_requirements...);
     }();
 
     [[nodiscard]] constexpr auto isValid() const -> bool {

@@ -18,7 +18,7 @@ jobs:
       - id: check
         name: Check if Fork
         run: |
-          if [ "${{ github.repository }}" = "intel/compile-time-init-build" ]; then
+          if [ "${{ github.repository_owner }}" = "intel" ]; then
             echo "This is the main repository, **enabling publishing**" >> "$GITHUB_STEP_SUMMARY"
             echo "isfork=NO" >> "$GITHUB_OUTPUT"
           else

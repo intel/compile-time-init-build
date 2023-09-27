@@ -1,7 +1,7 @@
+#include <match/ops.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/handler.hpp>
-#include <msg/match.hpp>
 #include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -49,7 +49,7 @@ TEST_CASE("TestMsgDispatch1", "[handler]") {
     correctDispatch = false;
 
     static auto callback = msg::callback<TestBaseMsg>(
-        "TestCallback"_sc, match::always<true>,
+        "TestCallback"_sc, match::always,
         [](TestMsg const &) { correctDispatch = true; });
 
     auto callbacks = stdx::make_tuple(callback);
@@ -69,13 +69,13 @@ TEST_CASE("TestMsgDispatch2", "[handler]") {
     correctDispatch = false;
 
     static auto callback1 = msg::callback<TestBaseMsg>(
-        "TestCallback1"_sc, match::always<true>,
+        "TestCallback1"_sc, match::always,
 
         // if the raw data matches requirements of TestMsg, execute this
         [&](TestMsg const &) { REQUIRE(false); });
 
     static auto callback2 = msg::callback<TestBaseMsg>(
-        "TestCallback2"_sc, match::always<true>,
+        "TestCallback2"_sc, match::always,
 
         // if the raw data matches requirements of
         // TestMsgFieldRequired, execute this
@@ -95,7 +95,7 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
     correctDispatch = false;
 
     static auto callback = msg::callback<TestBaseMsg, int>(
-        "TestCallback"_sc, match::always<true>, [](TestMsg, int value) {
+        "TestCallback"_sc, match::always, [](TestMsg, int value) {
             correctDispatch = true;
             REQUIRE(value == 0xcafe);
         });
@@ -113,7 +113,7 @@ TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
 TEST_CASE("TestMsgWithinEnum", "[handler]") {
     auto handled = false;
     auto const callback =
-        msg::callback<TestBaseMsg>("TestCallback"_sc, match::always<true>,
+        msg::callback<TestBaseMsg>("TestCallback"_sc, match::always,
                                    [&](TestMsgOp const &) { handled = true; });
 
     auto callbacks = stdx::make_tuple(callback);
@@ -128,8 +128,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
     {
         auto correct = false;
         auto const callback = msg::callback<TestBaseMsg>(
-            "TestCallback"_sc, match::always<true>,
-            [](TestMsgMultiCb const &) {},
+            "TestCallback"_sc, match::always, [](TestMsgMultiCb const &) {},
             [&](TestMsg const &) { correct = true; });
         auto callbacks = stdx::make_tuple(callback);
         auto const handler =
@@ -141,7 +140,7 @@ TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
     {
         auto correct = false;
         auto const callback = msg::callback<TestBaseMsg>(
-            "TestCallback"_sc, match::always<true>, [](TestMsg const &) {},
+            "TestCallback"_sc, match::always, [](TestMsg const &) {},
             [&](TestMsgMultiCb const &) { correct = true; });
         auto callbacks = stdx::make_tuple(callback);
         auto const handler =
