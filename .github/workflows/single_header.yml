@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build_single_header:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
