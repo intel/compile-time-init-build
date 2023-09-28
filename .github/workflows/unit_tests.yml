@@ -130,7 +130,7 @@ jobs:
       - name: Install build tools
         run: |
           wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
-          sudo apt install -y ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
+          sudo apt install -y python3-pip ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Install cmake-format
         run: |
