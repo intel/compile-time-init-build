@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build_and_test:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -123,14 +123,14 @@ jobs:
         run: ctest -j $(nproc) -C ${{matrix.build_type}}
 
   quality_checks_pass:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Install build tools
         run: |
           wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
-          sudo apt install -y ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
+          sudo apt install -y python3-pip ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Install cmake-format
         run: |
@@ -147,7 +147,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t quality
 
   sanitize:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +172,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t unit_tests
 
   valgrind:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -222,7 +222,7 @@ jobs:
           test $FAILSIZE = "0"
 
   merge_ok:
-    runs-on: intel-ubuntu-latest
+    runs-on: intel-ubuntu-22.04
     needs: [build_and_test, quality_checks_pass, sanitize, valgrind]
     if: ${{ always() }}
     steps:
