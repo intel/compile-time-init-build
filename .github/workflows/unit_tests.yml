@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build_and_test:
-    runs-on: intel-ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -123,7 +123,7 @@ jobs:
         run: ctest -j $(nproc) -C ${{matrix.build_type}}
 
   quality_checks_pass:
-    runs-on: intel-ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -147,7 +147,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t quality
 
   sanitize:
-    runs-on: intel-ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +172,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t unit_tests
 
   valgrind:
-    runs-on: intel-ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -222,7 +222,7 @@ jobs:
           test $FAILSIZE = "0"
 
   merge_ok:
-    runs-on: intel-ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     needs: [build_and_test, quality_checks_pass, sanitize, valgrind]
     if: ${{ always() }}
     steps:

@@ -10,7 +10,7 @@ env:
 
 jobs:
   release:
-    runs-on: intel-ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
