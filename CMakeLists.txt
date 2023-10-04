@@ -18,8 +18,8 @@ find_package(
 
 include(cmake/string_catalog.cmake)
 
-add_versioned_package("gh:fmtlib/fmt#6c845f5")
-add_versioned_package("gh:intel/cpp-std-extensions#509f259")
+add_versioned_package("gh:fmtlib/fmt#f918289")
+add_versioned_package("gh:intel/cpp-std-extensions#016ff86")
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#8d49b6d")
 
 add_library(cib INTERFACE)
