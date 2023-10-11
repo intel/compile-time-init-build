@@ -12,14 +12,18 @@ namespace logging {
 namespace null {
 struct config {
     struct {
-        template <level L, typename... Ts>
-        // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
-        constexpr auto log(Ts &&...) const noexcept -> void {}
+        template <level L>
+        constexpr auto log(auto &&...) const noexcept -> void {}
     } logger;
 };
 } // namespace null
 
 template <typename...> inline auto config = null::config{};
+
+template <typename T>
+concept loggable = requires(T const &t) {
+    t.apply([]<typename StringType>(StringType, auto const &...) {});
+};
 
 template <level L, typename... Ts, typename... TArgs>
 static auto log(TArgs &&...args) -> void {

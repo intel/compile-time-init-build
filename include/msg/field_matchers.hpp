@@ -9,6 +9,8 @@
 
 namespace msg {
 template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
+    using is_matcher = void;
+
     using field_type = FieldType;
     constexpr static auto expected_values = stdx::make_tuple(ExpectedValue);
 
@@ -46,6 +48,8 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
 };
 
 template <typename FieldType, typename T, T... ExpectedValues> struct in_t {
+    using is_matcher = void;
+
   private:
     template <auto Value> constexpr static auto format_value() {
         if constexpr (std::is_integral_v<decltype(Value)>) {
@@ -87,6 +91,8 @@ template <typename FieldType, typename T, T... ExpectedValues> struct in_t {
 
 template <typename FieldType, typename T, T expected_value>
 struct greater_than_t {
+    using is_matcher = void;
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() > expected_value;
@@ -107,6 +113,8 @@ struct greater_than_t {
 
 template <typename FieldType, typename T, T expected_value>
 struct greater_than_or_equal_to_t {
+    using is_matcher = void;
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() >= expected_value;
@@ -126,6 +134,8 @@ struct greater_than_or_equal_to_t {
 };
 
 template <typename FieldType, typename T, T expected_value> struct less_than_t {
+    using is_matcher = void;
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() < expected_value;
@@ -146,6 +156,8 @@ template <typename FieldType, typename T, T expected_value> struct less_than_t {
 
 template <typename FieldType, typename T, T expected_value>
 struct less_than_or_equal_to_t {
+    using is_matcher = void;
+
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
         return msg.template get<FieldType>() <= expected_value;

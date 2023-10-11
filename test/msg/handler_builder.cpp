@@ -1,8 +1,8 @@
 #include <cib/cib.hpp>
 #include <log/fmt/logger.hpp>
+#include <match/ops.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
-#include <msg/match.hpp>
 #include <msg/message.hpp>
 #include <msg/service.hpp>
 
@@ -31,7 +31,7 @@ struct test_service : msg::service<test_msg_t> {};
 bool callback_success;
 
 constexpr auto test_callback = msg::callback<test_msg_t>(
-    "TestCallback"_sc, match::always<true>,
+    "TestCallback"_sc, match::always,
     [](test_msg_t const &) { callback_success = true; });
 
 struct test_project {

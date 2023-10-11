@@ -1,6 +1,7 @@
 #pragma once
 
 #include <log/log.hpp>
+#include <match/ops.hpp>
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
 
@@ -72,7 +73,7 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         auto const matchers = stdx::transform(
             [&](auto callback) {
                 using MsgType = detail::msg_type_t<decltype(callback)>;
-                return is_valid_msg<MsgType>(match::always<true>);
+                return is_valid_msg<MsgType>(match::always);
             },
             callbacks);
 
@@ -86,12 +87,12 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
         : match_msg(msg), callbacks{std::forward<CBs>(cbs)...} {}
 
     [[nodiscard]] auto is_match(BaseMsgT const &msg) const -> bool {
-        return match::all(match_msg, match_any_callback())(msg);
+        return (match_msg and match_any_callback())(msg);
     }
 
     [[nodiscard]] auto handle(BaseMsgT const &msg,
                               ExtraCallbackArgsT const &...args) const -> bool {
-        auto match_handler = match::all(match_msg, match_any_callback());
+        auto match_handler = match_msg and match_any_callback();
 
         if (match_handler(msg)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
@@ -107,9 +108,8 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     }
 
     auto log_mismatch(BaseMsgT const &msg) const -> void {
-        CIB_INFO(
-            "    {} - F:({})", name,
-            match::all(match_msg, match_any_callback()).describe_match(msg));
+        CIB_INFO("    {} - F:({})", name,
+                 (match_msg and match_any_callback()).describe_match(msg));
     }
 };
 

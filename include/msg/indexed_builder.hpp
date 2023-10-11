@@ -4,9 +4,9 @@
 #include <lookup/entry.hpp>
 #include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
+#include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_handler.hpp>
-#include <msg/match.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
@@ -80,9 +80,9 @@ struct indexed_builder {
         return stdx::make_tuple(m);
     }
 
-    template <typename... T>
-    static CONSTEVAL auto get_matchers(match::all_t<T...> m) {
-        return m.matchers;
+    template <typename... Ts>
+    static CONSTEVAL auto get_matchers(match::and_t<Ts...>) {
+        return stdx::make_tuple(Ts{}...);
     }
 
     using callback_func_t = void (*)(BaseMsgT const &,
