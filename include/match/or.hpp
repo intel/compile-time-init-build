@@ -4,6 +4,7 @@
 #include <match/concepts.hpp>
 #include <match/constant.hpp>
 #include <match/simplify.hpp>
+#include <match/sum_of_products.hpp>
 #include <sc/string_constant.hpp>
 
 #include <cstddef>
@@ -31,6 +32,15 @@ struct or_t : bin_op_t<or_t, decltype(" or "_sc), L, R> {
         -> std::size_t {
         return cost(std::type_identity<L>{}) + cost(std::type_identity<R>{}) +
                1u;
+    }
+
+    [[nodiscard]] friend constexpr auto tag_invoke(sum_of_products_t,
+                                                   or_t const &m) {
+        auto l = sum_of_products(m.lhs);
+        auto r = sum_of_products(m.rhs);
+        using LS = decltype(l);
+        using RS = decltype(r);
+        return or_t<LS, RS>{l, r};
     }
 };
 template <matcher L, matcher R> or_t(L, R) -> or_t<L, R>;

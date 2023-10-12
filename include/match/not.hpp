@@ -5,12 +5,18 @@
 #include <match/cost.hpp>
 #include <match/negate.hpp>
 #include <match/simplify.hpp>
+#include <match/sum_of_products.hpp>
 #include <sc/format.hpp>
 #include <sc/string_constant.hpp>
+
+#include <stdx/type_traits.hpp>
 
 #include <type_traits>
 
 namespace match {
+template <matcher, matcher> struct and_t;
+template <matcher, matcher> struct or_t;
+
 template <matcher M> struct not_t {
     using is_matcher = void;
     [[no_unique_address]] M m;
@@ -47,6 +53,19 @@ template <matcher M> struct not_t {
     [[nodiscard]] friend constexpr auto tag_invoke(negate_t, not_t const &n)
         -> M {
         return n.m;
+    }
+
+    [[nodiscard]] friend constexpr auto tag_invoke(sum_of_products_t,
+                                                   not_t const &n) {
+        if constexpr (stdx::is_specialization_of_v<M, and_t>) {
+            return or_t{sum_of_products(negate(n.m.lhs)),
+                        sum_of_products(negate(n.m.rhs))};
+        } else if constexpr (stdx::is_specialization_of_v<M, or_t>) {
+            return sum_of_products(and_t{sum_of_products(negate(n.m.lhs)),
+                                         sum_of_products(negate(n.m.rhs))});
+        } else {
+            return n;
+        }
     }
 };
 template <matcher M> not_t(M) -> not_t<M>;
