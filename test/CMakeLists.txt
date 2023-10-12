@@ -38,6 +38,7 @@ add_tests(
     match/simplify_custom
     match/simplify_not
     match/simplify_or
+    match/sum_of_products
     msg/disjoint_field
     msg/field
     msg/handler

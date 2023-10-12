@@ -4,6 +4,7 @@
 #include <match/concepts.hpp>
 #include <match/constant.hpp>
 #include <match/simplify.hpp>
+#include <match/sum_of_products.hpp>
 #include <sc/string_constant.hpp>
 
 #include <cstddef>
@@ -29,6 +30,30 @@ struct and_t : bin_op_t<and_t, decltype(" and "_sc), L, R> {
         -> std::size_t {
         return cost(std::type_identity<L>{}) + cost(std::type_identity<R>{}) +
                1u;
+    }
+
+    [[nodiscard]] friend constexpr auto tag_invoke(sum_of_products_t,
+                                                   and_t const &m) {
+        [[maybe_unused]] auto l = sum_of_products(m.lhs);
+        [[maybe_unused]] auto r = sum_of_products(m.rhs);
+        using LS = decltype(l);
+        using RS = decltype(r);
+
+        if constexpr (stdx::is_specialization_of_v<LS, or_t>) {
+            auto lr = sum_of_products(
+                and_t<typename LS::lhs_t, RS>{m.lhs.lhs, m.rhs});
+            auto rr = sum_of_products(
+                and_t<typename LS::rhs_t, RS>{m.lhs.rhs, m.rhs});
+            return or_t{lr, rr};
+        } else if constexpr (stdx::is_specialization_of_v<RS, or_t>) {
+            auto ll = sum_of_products(
+                and_t<LS, typename RS::lhs_t>{m.lhs, m.rhs.lhs});
+            auto lr = sum_of_products(
+                and_t<LS, typename RS::rhs_t>{m.lhs, m.rhs.rhs});
+            return or_t{ll, lr};
+        } else {
+            return m;
+        }
     }
 };
 template <matcher L, matcher R> and_t(L, R) -> and_t<L, R>;
