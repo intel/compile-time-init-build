@@ -64,7 +64,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: $${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - name: Deploy to github pages
