@@ -30,7 +30,7 @@ void dispatch_single_callable(CallableT const &callable,
         using MsgType = detail::msg_type_t<decltype(callable)>;
         MsgType const msg{data};
 
-        if (msg.isValid()) {
+        if (typename MsgType::matcher_t{}(msg)) {
             callable(msg, requiredArgs...);
         }
     });
@@ -71,9 +71,9 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
 
     [[nodiscard]] constexpr auto match_any_callback() const {
         auto const matchers = stdx::transform(
-            [&](auto callback) {
-                using MsgType = detail::msg_type_t<decltype(callback)>;
-                return is_valid_msg<MsgType>(match::always);
+            [&]<typename CB>(CB const &) {
+                using MsgType = detail::msg_type_t<CB>;
+                return typename MsgType::matcher_t{};
             },
             callbacks);
 

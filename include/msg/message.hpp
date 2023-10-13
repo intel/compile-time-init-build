@@ -32,31 +32,23 @@ concept convertible_range_of =
 template <std::uint32_t MaxNumDWords>
 using message_data = stdx::cx_vector<std::uint32_t, MaxNumDWords>;
 
-template <typename MsgType, typename additional_matcher> struct is_valid_msg_t {
-    using is_matcher = void;
-
-    constexpr static auto matcher = [] {
-        return MsgType::match_valid_encoding and additional_matcher{};
-    }();
-
-    template <typename BaseMsgType>
-    [[nodiscard]] constexpr auto operator()(BaseMsgType const &base_msg) const
-        -> bool {
-        return matcher(MsgType{base_msg});
+template <typename Msg, match::matcher M> struct msg_matcher : M {
+    [[nodiscard]] constexpr auto operator()(auto const &base) const -> bool {
+        return this->M::operator()(Msg{base});
     }
 
-    [[nodiscard]] constexpr auto describe() const { return matcher.describe(); }
-
-    template <typename BaseMsgType>
-    [[nodiscard]] constexpr auto
-    describe_match(BaseMsgType const &base_msg) const {
-        return matcher.describe_match(MsgType{base_msg});
+    [[nodiscard]] constexpr auto describe_match(auto const &base) const {
+        return this->M::describe_match(Msg{base});
     }
 };
 
-template <typename MsgType, typename AdditionalMatcher>
-[[nodiscard]] constexpr auto is_valid_msg(AdditionalMatcher) {
-    return is_valid_msg_t<MsgType, AdditionalMatcher>{};
+template <typename Msg, match::matcher M>
+constexpr auto make_msg_matcher() -> match::matcher auto {
+    if constexpr (std::is_same_v<M, match::always_t>) {
+        return M{};
+    } else {
+        return msg_matcher<Msg, M>{};
+    }
 }
 
 template <typename NameType, std::uint32_t MaxNumDWords, typename... FieldsT>
@@ -66,10 +58,8 @@ struct message_base : public message_data<MaxNumDWords> {
     static_assert((... and (FieldsT::MaxDWordExtent < MaxNumDWords)));
     using FieldTupleType = stdx::tuple<FieldsT...>;
 
-    template <typename additional_matcherType>
-    [[nodiscard]] constexpr static auto match(additional_matcherType) {
-        return is_valid_msg_t<message_base, additional_matcherType>{};
-    }
+    using matcher_t = decltype(match::all(
+        make_msg_matcher<message_base, typename FieldsT::matcher_t>()...));
 
     // TODO: need a static_assert to check that fields are not overlapping
 
@@ -78,16 +68,6 @@ struct message_base : public message_data<MaxNumDWords> {
         return (std::is_same_v<typename FieldType::FieldId,
                                typename FieldsT::FieldId> or
                 ...);
-    }
-
-    constexpr static auto match_valid_encoding = [] {
-        static_assert(
-            (match::matcher<decltype(FieldsT::match_requirements)> and ...));
-        return match::all(FieldsT::match_requirements...);
-    }();
-
-    [[nodiscard]] constexpr auto isValid() const -> bool {
-        return match_valid_encoding(*this);
     }
 
     constexpr message_base() {

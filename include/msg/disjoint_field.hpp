@@ -12,8 +12,7 @@ namespace msg {
  * disjoint_field is used when a field contains disjoint spans of bits.
  */
 template <typename NameTypeT, typename FieldsT, typename T = std::uint32_t,
-          T DefaultValue = T{},
-          typename MatchRequirementsType = match::always_t>
+          T DefaultValue = T{}, match::matcher M = match::always_t>
 class disjoint_field {
   private:
     constexpr static FieldsT fields{};
@@ -24,8 +23,7 @@ class disjoint_field {
         0, [](auto f, size_t totalSize) { return totalSize + f.size; });
 
     using FieldId = disjoint_field<NameTypeT, FieldsT, T>;
-    using This = disjoint_field<NameTypeT, FieldsT, T, DefaultValue,
-                                MatchRequirementsType>;
+    using This = disjoint_field<NameTypeT, FieldsT, T, DefaultValue, M>;
 
     using NameType = NameTypeT;
     using ValueType = T;
@@ -40,7 +38,8 @@ class disjoint_field {
     }
 
     constexpr static NameType name{};
-    constexpr static MatchRequirementsType match_requirements{};
+
+    using matcher_t = M;
 
     template <T expected_value>
     constexpr static msg::equal_to_t<This, T, expected_value> equal_to{};

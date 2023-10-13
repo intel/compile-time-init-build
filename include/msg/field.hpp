@@ -140,7 +140,7 @@ template <std::uint32_t DWordIndex, std::uint32_t Lsb> struct field_locator_t {
  */
 template <typename Name, std::uint32_t DWordIndex, std::uint32_t Msb,
           std::uint32_t Lsb, typename T = std::uint32_t, T DefaultValue = T{},
-          typename MatchRequirementsType = match::always_t>
+          match::matcher M = match::always_t>
     requires(Lsb <= 31 and Lsb <= Msb)
 class field : public field_spec_t<Name, T, Msb - Lsb + 1>,
               public field_locator_t<DWordIndex, Lsb> {
@@ -174,7 +174,7 @@ class field : public field_spec_t<Name, T, Msb - Lsb + 1>,
         static_assert(locator_t::template fits_inside<spec_t, MsgType>());
     }
 
-    constexpr static MatchRequirementsType match_requirements{};
+    using matcher_t = M;
 
     template <T expected_value>
     constexpr static msg::equal_to_t<field, T, expected_value> equal_to{};
