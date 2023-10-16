@@ -30,11 +30,6 @@ CONSTEVAL auto for_each_callback(auto fn) -> void {
         (fn(t[stdx::index<Is>], Is), ...);
     }(std::make_index_sequence<t.size()>{});
 }
-
-CONSTEVAL auto with_field_index(auto t) {
-    return stdx::transform<get_field_type>([](auto x, auto) { return x; }, t,
-                                           t);
-}
 } // namespace detail
 
 template <typename FieldType, std::size_t EntryCapacity,
@@ -111,38 +106,38 @@ struct indexed_builder {
 
     template <typename BuilderValue>
     static CONSTEVAL auto create_temp_indices() {
+        // FIXME: use callback matcher indexing with a tag_invocable
         IndexSpec indices{};
-        detail::for_each_callback<BuilderValue>(
-            [&](auto callback, auto callback_num) {
-                // FIXME: need to convert matcher to product of sums
-                auto const matchers =
-                    detail::with_field_index(get_matchers(callback.matcher));
+        detail::for_each_callback<BuilderValue>([&](auto callback,
+                                                    auto callback_num) {
+            auto const matchers = stdx::apply_indices<get_field_type>(
+                get_matchers(callback.matcher));
 
-                stdx::for_each(
-                    [&]<typename T>(T) -> void {
-                        using field_type = typename T::field_type;
+            stdx::for_each(
+                [&]<typename T>(T) -> void {
+                    using field_type = typename T::field_type;
 
-                        // if this callback specifies a constraint on an indexed
-                        // field...
-                        if constexpr (stdx::contains_type<decltype(matchers),
-                                                          field_type>) {
-                            // ...then add that constraint to the index
-                            auto const field = get<field_type>(matchers);
-                            stdx::for_each(
-                                [&](auto field_value) -> void {
-                                    get<field_type>(indices)[field_value].set(
-                                        callback_num);
-                                },
-                                field.expected_values);
-                        } else {
-                            // ...otherwise add this callback to the index's
-                            // default value
-                            get<field_type>(indices).default_value.set(
-                                callback_num);
-                        }
-                    },
-                    indices);
-            });
+                    // if this callback specifies a constraint on an indexed
+                    // field...
+                    if constexpr (stdx::contains_type<decltype(matchers),
+                                                      field_type>) {
+                        // ...then add that constraint to the index
+                        match::matcher auto const m = get<field_type>(matchers);
+                        stdx::for_each(
+                            [&](auto field_value) -> void {
+                                get<field_type>(indices)[field_value].set(
+                                    callback_num);
+                            },
+                            m.expected_values);
+                    } else {
+                        // ...otherwise add this callback to the index's
+                        // default value
+                        get<field_type>(indices).default_value.set(
+                            callback_num);
+                    }
+                },
+                indices);
+        });
         return indices;
     }
 
