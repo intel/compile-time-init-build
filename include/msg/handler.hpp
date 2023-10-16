@@ -7,21 +7,19 @@
 
 namespace msg {
 
-template <typename CallbacksT, typename BaseMsgT,
-          typename... ExtraCallbackArgsT>
-struct handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
-    CallbacksT callbacks{};
+template <typename Callbacks, typename BaseMsg, typename... ExtraCallbackArgs>
+struct handler : handler_interface<BaseMsg, ExtraCallbackArgs...> {
+    Callbacks callbacks{};
 
-    constexpr explicit handler(CallbacksT new_callbacks)
+    constexpr explicit handler(Callbacks new_callbacks)
         : callbacks{new_callbacks} {}
 
-    auto is_match(BaseMsgT const &msg) const -> bool final {
-        return callbacks.fold_left(false, [&](bool state, auto &callback) {
-            return state || callback.is_match(msg);
-        });
+    auto is_match(BaseMsg const &msg) const -> bool final {
+        return stdx::any_of(
+            [&](auto &callback) { return callback.is_match(msg); }, callbacks);
     }
 
-    void handle(BaseMsgT const &msg, ExtraCallbackArgsT... args) const final {
+    void handle(BaseMsg const &msg, ExtraCallbackArgs... args) const final {
         bool const found_valid_callback = stdx::any_of(
             [&](auto &callback) { return callback.handle(msg, args...); },
             callbacks);
