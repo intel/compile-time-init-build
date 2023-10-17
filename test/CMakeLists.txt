@@ -44,6 +44,7 @@ add_tests(
     msg/handler
     msg/handler_builder
     msg/indexed_builder
+    msg/indexed_callback
     msg/indexed_handler
     msg/message
     sc/format
