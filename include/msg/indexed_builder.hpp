@@ -6,6 +6,7 @@
 #include <lookup/lookup.hpp>
 #include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
+#include <msg/indexed_callback.hpp>
 #include <msg/indexed_handler.hpp>
 
 #include <stdx/bitset.hpp>
@@ -73,23 +74,6 @@ struct indexed_builder {
                                ExtraCallbackArgsT...>{new_callbacks};
     }
 
-    template <typename FieldType, typename T, T... ExpectedValues>
-    static CONSTEVAL auto
-    get_matchers(in_t<FieldType, T, ExpectedValues...> m) {
-        return stdx::make_tuple(m);
-    }
-
-    template <typename FieldType, typename T, T ExpectedValue>
-    static CONSTEVAL auto
-    get_matchers(equal_to_t<FieldType, T, ExpectedValue> m) {
-        return stdx::make_tuple(m);
-    }
-
-    template <typename... Ts>
-    static CONSTEVAL auto get_matchers(match::and_t<Ts...>) {
-        return stdx::make_tuple(Ts{}...);
-    }
-
     using callback_func_t = void (*)(BaseMsgT const &,
                                      ExtraCallbackArgsT... args);
 
@@ -98,12 +82,15 @@ struct indexed_builder {
                                           ExtraCallbackArgsT... args) {
         // FIXME: incomplete message callback invocation...
         //        1) bit_cast message argument
-        //        2) log message match
-        constexpr auto &cb = BuilderValue::value.callbacks[stdx::index<I>];
+        constexpr auto &orig_cb = BuilderValue::value.callbacks[stdx::index<I>];
+        constexpr auto cb = IndexSpec{}.apply([&]<typename... Indices>(
+                                                  Indices...) {
+            return remove_match_terms<typename Indices::field_type...>(orig_cb);
+        });
         if (cb.matcher(msg)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
                      "callback",
-                     cb.name, cb.matcher.describe());
+                     cb.name, orig_cb.matcher.describe());
             cb.callable(msg, args...);
         }
     }
@@ -120,7 +107,7 @@ struct indexed_builder {
         std::size_t count{};
         stdx::for_each(
             [&](auto callback) {
-                walk_index(
+                build_index(
                     callback.matcher,
                     [&]<typename Field, typename V>(std::size_t idx,
                                                     V expected_value) {
@@ -169,13 +156,6 @@ struct indexed_builder {
     }
 
     template <typename BuilderValue> static CONSTEVAL auto build() {
-        // build callback array
-        constexpr auto num_callbacks = BuilderValue::value.callbacks.size();
-
-        constexpr std::array<callback_func_t, num_callbacks> callback_array =
-            create_callback_array<BuilderValue>(
-                std::make_index_sequence<num_callbacks>{});
-
         constexpr auto make_index_lookup =
             []<typename I, std::size_t... Es>(std::index_sequence<Es...>) {
                 return lookup::make(make_input<BuilderValue, I, Es...>());
@@ -194,6 +174,11 @@ struct indexed_builder {
                           make_index_lookup.template operator()<I>(
                               entry_index_seq.template operator()<I>())}...};
             });
+
+        constexpr auto num_callbacks = BuilderValue::value.callbacks.size();
+        constexpr std::array<callback_func_t, num_callbacks> callback_array =
+            create_callback_array<BuilderValue>(
+                std::make_index_sequence<num_callbacks>{});
 
         return indexed_handler{
             callback_args_t<BaseMsgT, ExtraCallbackArgsT...>{}, baked_indices,

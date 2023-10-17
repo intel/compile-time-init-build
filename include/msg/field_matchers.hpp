@@ -11,34 +11,61 @@
 #include <type_traits>
 
 namespace msg {
-constexpr inline class walk_index_t {
+constexpr inline class build_index_t {
     template <match::matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(walk_index_t, M const &m,
-                                                   stdx::callable auto const &f,
-                                                   std::size_t &idx) {
+    friend constexpr auto tag_invoke(build_index_t, M const &m,
+                                     stdx::callable auto const &f,
+                                     std::size_t &idx) {
         if constexpr (stdx::is_specialization_of_v<M, match::or_t>) {
-            tag_invoke(walk_index_t{}, m.lhs, f, idx);
+            tag_invoke(build_index_t{}, m.lhs, f, idx);
             ++idx;
-            tag_invoke(walk_index_t{}, m.rhs, f, idx);
+            tag_invoke(build_index_t{}, m.rhs, f, idx);
         } else if constexpr (stdx::is_specialization_of_v<M, match::and_t>) {
-            tag_invoke(walk_index_t{}, m.lhs, f, idx);
-            tag_invoke(walk_index_t{}, m.rhs, f, idx);
-        } else if constexpr (stdx::is_specialization_of_v<M, match::not_t>) {
-            tag_invoke(walk_index_t{}, m.m, f, idx);
+            tag_invoke(build_index_t{}, m.lhs, f, idx);
+            tag_invoke(build_index_t{}, m.rhs, f, idx);
         } else {
-            // this type can't be indexed: do nothing
+            // NOT expressions can't be indexed
+            // Other terms can't be indexed either
         }
     }
 
   public:
     template <typename... Ts>
     constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<walk_index_t>(),
+        noexcept(noexcept(tag_invoke(std::declval<build_index_t>(),
                                      std::forward<Ts>(ts)...)))
             -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
         return tag_invoke(*this, std::forward<Ts>(ts)...);
     }
-} walk_index{};
+} build_index{};
+
+constexpr inline class remove_terms_t {
+    template <match::matcher M, typename... Fields>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(remove_terms_t, M const &m, [[maybe_unused]] Fields... fs)
+        -> match::matcher auto {
+        if constexpr (stdx::is_specialization_of_v<M, match::or_t>) {
+            return tag_invoke(remove_terms_t{}, m.lhs, fs...) or
+                   tag_invoke(remove_terms_t{}, m.rhs, fs...);
+        } else if constexpr (stdx::is_specialization_of_v<M, match::and_t>) {
+            return tag_invoke(remove_terms_t{}, m.lhs, fs...) and
+                   tag_invoke(remove_terms_t{}, m.rhs, fs...);
+        } else if constexpr (stdx::is_specialization_of_v<M, match::not_t>) {
+            return not tag_invoke(remove_terms_t{}, m.m, fs...);
+        } else {
+            return m;
+        }
+    }
+
+  public:
+    template <typename... Ts>
+    constexpr auto operator()(Ts &&...ts) const
+        noexcept(noexcept(tag_invoke(std::declval<remove_terms_t>(),
+                                     std::forward<Ts>(ts)...)))
+            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
+        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    }
+} remove_terms{};
 
 template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     using is_matcher = void;
@@ -79,11 +106,21 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     }
 
   private:
-    [[nodiscard]] friend constexpr auto tag_invoke(walk_index_t,
-                                                   equal_to_t const &,
-                                                   stdx::callable auto const &f,
-                                                   std::size_t &idx) {
+    friend constexpr auto tag_invoke(build_index_t, equal_to_t const &,
+                                     stdx::callable auto const &f,
+                                     std::size_t &idx) -> void {
         f.template operator()<FieldType>(idx, ExpectedValue);
+    }
+
+    template <typename... Fields>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(remove_terms_t, equal_to_t const &m,
+               std::type_identity<Fields>...) -> match::matcher auto {
+        if constexpr ((std::is_same_v<FieldType, Fields> or ...)) {
+            return match::always;
+        } else {
+            return m;
+        }
     }
 };
 

@@ -69,6 +69,7 @@ TEST_CASE("match output success", "[handler_builder]") {
     test_nexus.init();
 
     cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    CAPTURE(log_buffer);
     CHECK(log_buffer.find("Incoming message matched") != std::string::npos);
     CHECK(log_buffer.find("[TestCallback]") != std::string::npos);
     CHECK(log_buffer.find("[test_id_field == 0x80]") != std::string::npos);

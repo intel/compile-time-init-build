@@ -1,4 +1,5 @@
 #include <match/ops.hpp>
+#include <msg/field_matchers.hpp>
 #include <msg/indexed_callback.hpp>
 #include <sc/string_constant.hpp>
 
@@ -15,36 +16,6 @@
 #include <vector>
 
 namespace {
-constexpr class index_t {
-    template <match::matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(index_t, M const &m,
-                                                   stdx::callable auto const &f,
-                                                   std::size_t &idx) {
-        if constexpr (stdx::is_specialization_of_v<M, match::or_t>) {
-            tag_invoke(index_t{}, m.lhs, f, idx);
-            ++idx;
-            tag_invoke(index_t{}, m.rhs, f, idx);
-        } else if constexpr (stdx::is_specialization_of_v<M, match::and_t>) {
-            tag_invoke(index_t{}, m.lhs, f, idx);
-            tag_invoke(index_t{}, m.rhs, f, idx);
-        } else if constexpr (stdx::is_specialization_of_v<M, match::not_t>) {
-            tag_invoke(index_t{}, m.m, f, idx);
-        } else {
-            static_assert(stdx::always_false_v<M>,
-                          "Unexpected type while indexing matchers");
-        }
-    }
-
-  public:
-    template <typename... Ts>
-    constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<index_t>(),
-                                     std::forward<Ts>(ts)...)))
-            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
-        return tag_invoke(*this, std::forward<Ts>(ts)...);
-    }
-} test_index{};
-
 using msg_t = stdx::tuple<int, char>;
 
 template <typename T, T Value> struct test_m {
@@ -59,10 +30,22 @@ template <typename T, T Value> struct test_m {
     }
 
   private:
-    [[nodiscard]] friend constexpr auto tag_invoke(index_t, test_m const &,
+    [[nodiscard]] friend constexpr auto tag_invoke(msg::build_index_t,
+                                                   test_m const &,
                                                    stdx::callable auto const &f,
                                                    std::size_t &idx) {
         f.template operator()<T>(idx, Value);
+    }
+
+    template <typename... Fields>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(msg::remove_terms_t, test_m const &m,
+               std::type_identity<Fields>...) -> match::matcher auto {
+        if constexpr ((std::is_same_v<T, Fields> or ...)) {
+            return match::always;
+        } else {
+            return m;
+        }
     }
 };
 } // namespace
@@ -105,7 +88,7 @@ TEST_CASE("index a callback", "[indexed_callback]") {
     auto charfield_index = std::unordered_map<char, std::vector<std::size_t>>{};
 
     std::size_t idx{};
-    test_index(
+    msg::build_index(
         cb.matcher,
         [&]<typename T>(std::size_t cb_idx, T value) {
             if constexpr (std::is_same_v<T, int>) {
@@ -121,4 +104,27 @@ TEST_CASE("index a callback", "[indexed_callback]") {
     CHECK(intfield_index[0] == std::vector<std::size_t>{0, 1});
     CHECK(charfield_index['a'] == std::vector<std::size_t>{0});
     CHECK(charfield_index['b'] == std::vector<std::size_t>{1});
+}
+
+TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
+    constexpr auto cb = msg::indexed_callback(
+        ""_sc,
+        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
+        [] {});
+
+    constexpr auto sut = msg::remove_match_terms<int>(cb);
+    static_assert(
+        std::is_same_v<decltype(sut.matcher),
+                       match::or_t<test_m<char, 'a'>, test_m<char, 'b'>>>);
+}
+
+TEST_CASE("remove multiple indexed terms from a callback",
+          "[indexed_callback]") {
+    constexpr auto cb = msg::indexed_callback(
+        ""_sc,
+        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
+        [] {});
+
+    constexpr auto sut = msg::remove_match_terms<int, char>(cb);
+    static_assert(std::is_same_v<decltype(sut.matcher), match::always_t>);
 }
