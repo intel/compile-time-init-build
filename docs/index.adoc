@@ -1,7 +1,10 @@
 = Compile-time Initialization and Build
 :revnumber: 0.1
-:revdate: Sep 09, 2023
+:revdate: Oct 18, 2023
 :source-highlighter: rouge
 :rouge-style: base16.solarized
 :source-language: c++
 :toc: left
+
+include::intro.adoc[]
+include::match.adoc[]

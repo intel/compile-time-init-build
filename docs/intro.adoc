@@ -1,0 +1,26 @@
+== Introduction
+
+`cib` is a C++ header-only library for building embedded firmware with reusable
+components. It implements the compile-time initialization and build pattern.
+Instead of initializing components and registering callbacks at runtime, this
+process is executed at compile-time using constexpr or consteval functions.
+
+This documentation is a work in progress. See also the
+https://github.com/intel/compile-time-init-build/blob/main/README.md[`README`]
+file for information.
+
+=== Compiler and C++ version support
+
+The following compilers are supported:
+
+* clang 14 thru 17
+* GCC 12 thru 13
+
+C++20 is required.
+
+An older version of `cib` (not covered by this documentation) that uses C++17 is
+tagged at https://github.com/intel/compile-time-init-build/tree/v1.7.0[v1.7.0].
+It is tested with:
+
+* clang 9 thru 15
+* GCC 9 thru 12
