@@ -52,7 +52,7 @@ struct and_t : bin_op_t<and_t, decltype(" and "_sc), L, R> {
                 and_t<LS, typename RS::rhs_t>{m.lhs, m.rhs.rhs});
             return or_t{ll, lr};
         } else {
-            return m;
+            return and_t<LS, RS>{l, r};
         }
     }
 };
