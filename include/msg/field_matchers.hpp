@@ -7,37 +7,60 @@
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 namespace msg {
-constexpr inline class build_index_t {
+constexpr inline class index_terms_t {
     template <match::matcher M>
-    friend constexpr auto tag_invoke(build_index_t, M const &m,
+    friend constexpr auto tag_invoke(index_terms_t, M const &m,
                                      stdx::callable auto const &f,
-                                     std::size_t &idx) {
-        if constexpr (stdx::is_specialization_of_v<M, match::or_t>) {
-            tag_invoke(build_index_t{}, m.lhs, f, idx);
-            ++idx;
-            tag_invoke(build_index_t{}, m.rhs, f, idx);
-        } else if constexpr (stdx::is_specialization_of_v<M, match::and_t>) {
-            tag_invoke(build_index_t{}, m.lhs, f, idx);
-            tag_invoke(build_index_t{}, m.rhs, f, idx);
-        } else {
-            // NOT expressions can't be indexed
-            // Other terms can't be indexed either
+                                     std::size_t idx) -> void {
+        if constexpr (stdx::is_specialization_of_v<M, match::or_t> or
+                      stdx::is_specialization_of_v<M, match::and_t>) {
+            tag_invoke(index_terms_t{}, m.lhs, f, idx);
+            tag_invoke(index_terms_t{}, m.rhs, f, idx);
+        }
+        // NOT terms are visited later by index_not_terms
+    }
+
+  public:
+    template <typename... Ts>
+    constexpr auto operator()(Ts &&...ts) const
+        noexcept(noexcept(tag_invoke(std::declval<index_terms_t>(),
+                                     std::forward<Ts>(ts)...)))
+            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
+        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    }
+} index_terms{};
+
+constexpr inline class index_not_terms_t {
+    template <match::matcher M>
+    friend constexpr auto tag_invoke(index_not_terms_t, M const &m,
+                                     stdx::callable auto const &f,
+                                     std::size_t idx, bool negated = false)
+        -> void {
+        if constexpr (stdx::is_specialization_of_v<M, match::or_t> or
+                      stdx::is_specialization_of_v<M, match::and_t>) {
+            tag_invoke(index_not_terms_t{}, m.lhs, f, idx, negated);
+            tag_invoke(index_not_terms_t{}, m.rhs, f, idx, negated);
+        } else if constexpr (stdx::is_specialization_of_v<M, match::not_t>) {
+            tag_invoke(index_not_terms_t{}, m.m, f, idx, not negated);
         }
     }
 
   public:
     template <typename... Ts>
     constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<build_index_t>(),
+        noexcept(noexcept(tag_invoke(std::declval<index_not_terms_t>(),
                                      std::forward<Ts>(ts)...)))
             -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
         return tag_invoke(*this, std::forward<Ts>(ts)...);
     }
-} build_index{};
+} index_not_terms{};
 
 constexpr inline class remove_terms_t {
     template <match::matcher M, typename... Fields>
@@ -51,7 +74,9 @@ constexpr inline class remove_terms_t {
             return tag_invoke(remove_terms_t{}, m.lhs, fs...) and
                    tag_invoke(remove_terms_t{}, m.rhs, fs...);
         } else if constexpr (stdx::is_specialization_of_v<M, match::not_t>) {
-            return not tag_invoke(remove_terms_t{}, m.m, fs...);
+            // NOTE: we don't apply `not` here because not terms are accounted
+            // for in the indexing, so the whole not term becomes true
+            return tag_invoke(remove_terms_t{}, m.m, fs...);
         } else {
             return m;
         }
@@ -106,10 +131,18 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     }
 
   private:
-    friend constexpr auto tag_invoke(build_index_t, equal_to_t const &,
+    friend constexpr auto tag_invoke(index_terms_t, equal_to_t const &,
                                      stdx::callable auto const &f,
-                                     std::size_t &idx) -> void {
+                                     std::size_t idx) -> void {
         f.template operator()<FieldType>(idx, ExpectedValue);
+    }
+
+    friend constexpr auto tag_invoke(index_not_terms_t, equal_to_t const &,
+                                     stdx::callable auto const &f,
+                                     std::size_t idx, bool negated) -> void {
+        if (negated) {
+            f.template operator()<FieldType>(idx, ExpectedValue);
+        }
     }
 
     template <typename... Fields>

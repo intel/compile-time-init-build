@@ -30,11 +30,19 @@ template <typename T, T Value> struct test_m {
     }
 
   private:
-    [[nodiscard]] friend constexpr auto tag_invoke(msg::build_index_t,
+    [[nodiscard]] friend constexpr auto tag_invoke(msg::index_terms_t,
                                                    test_m const &,
                                                    stdx::callable auto const &f,
                                                    std::size_t &idx) {
         f.template operator()<T>(idx, Value);
+    }
+
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(msg::index_not_terms_t, test_m const &,
+               stdx::callable auto const &f, std::size_t &idx, bool negated) {
+        if (negated) {
+            f.template operator()<T>(idx, Value);
+        }
     }
 
     template <typename... Fields>
@@ -87,8 +95,7 @@ TEST_CASE("index a callback", "[indexed_callback]") {
     auto intfield_index = std::unordered_map<int, std::vector<std::size_t>>{};
     auto charfield_index = std::unordered_map<char, std::vector<std::size_t>>{};
 
-    std::size_t idx{};
-    msg::build_index(
+    msg::index_terms(
         cb.matcher,
         [&]<typename T>(std::size_t cb_idx, T value) {
             if constexpr (std::is_same_v<T, int>) {
@@ -97,13 +104,36 @@ TEST_CASE("index a callback", "[indexed_callback]") {
                 charfield_index[value].push_back(cb_idx);
             }
         },
-        idx);
-    CHECK(idx == 1);
+        std::size_t{});
     REQUIRE(intfield_index.size() == 1);
     REQUIRE(charfield_index.size() == 2);
-    CHECK(intfield_index[0] == std::vector<std::size_t>{0, 1});
+    CHECK(intfield_index[0] == std::vector<std::size_t>{0, 0});
     CHECK(charfield_index['a'] == std::vector<std::size_t>{0});
-    CHECK(charfield_index['b'] == std::vector<std::size_t>{1});
+    CHECK(charfield_index['b'] == std::vector<std::size_t>{0});
+}
+
+TEST_CASE("index not terms in a callback", "[indexed_callback]") {
+    constexpr auto cb = msg::indexed_callback(
+        ""_sc,
+        not test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
+        [] {});
+
+    auto intfield_index = std::unordered_map<int, std::vector<std::size_t>>{};
+    auto charfield_index = std::unordered_map<char, std::vector<std::size_t>>{};
+
+    msg::index_not_terms(
+        cb.matcher,
+        [&]<typename T>(std::size_t cb_idx, T value) {
+            if constexpr (std::is_same_v<T, int>) {
+                intfield_index[value].push_back(cb_idx);
+            } else {
+                charfield_index[value].push_back(cb_idx);
+            }
+        },
+        std::size_t{});
+    REQUIRE(intfield_index.size() == 1);
+    CHECK(charfield_index.empty());
+    CHECK(intfield_index[0] == std::vector<std::size_t>{0, 0});
 }
 
 TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
@@ -127,4 +157,32 @@ TEST_CASE("remove multiple indexed terms from a callback",
 
     constexpr auto sut = msg::remove_match_terms<int, char>(cb);
     static_assert(std::is_same_v<decltype(sut.matcher), match::always_t>);
+}
+
+namespace {
+int called{};
+}
+
+TEST_CASE("separate sum terms in a callback", "[indexed_callback]") {
+    called = 0;
+    constexpr auto cb = msg::indexed_callback(
+        ""_sc, test_m<int, 0>{} or test_m<int, 1>{}, [] { ++called; });
+    CHECK(cb.matcher(msg_t{}));
+
+    auto sut = msg::separate_sum_terms(cb);
+    static_assert(stdx::is_specialization_of_v<decltype(sut), stdx::tuple>);
+    static_assert(sut.size() == 2);
+
+    auto const &cb1 = stdx::get<0>(sut);
+    auto const &cb2 = stdx::get<1>(sut);
+
+    CHECK(cb1.matcher(msg_t{}));
+    CHECK(not cb2.matcher(msg_t{}));
+    cb1.callable();
+    CHECK(called == 1);
+
+    CHECK(not cb1.matcher(msg_t{1, 'a'}));
+    CHECK(cb2.matcher(msg_t{1, 'a'}));
+    cb2.callable();
+    CHECK(called == 2);
 }

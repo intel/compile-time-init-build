@@ -25,17 +25,11 @@ struct indexed_builder
     using base_t = indexed_builder_base<indexed_builder, IndexSpec, CallbacksT,
                                         BaseMsgT, ExtraCallbackArgsT...>;
 
-    template <typename I>
-    static CONSTEVAL auto get_default_value(auto const &indices) {
-        return get<I>(indices).default_value;
-    }
-
     template <typename I, auto E>
     static CONSTEVAL auto get_entry(auto const &indices) {
         return lookup::entry{
             std::next(get<I>(indices).entries.begin(), E)->key,
-            std::next(get<I>(indices).entries.begin(), E)->value |
-                get<I>(indices).default_value};
+            std::next(get<I>(indices).entries.begin(), E)->value};
     }
 
     template <typename BuilderValue, typename I, auto... Es>
@@ -48,7 +42,7 @@ struct indexed_builder
                     typename decltype(get<I>(indices).entries)::key_type;
                 using value_type = decltype(get<I>(indices).default_value);
                 using entry_t = lookup::entry<key_type, value_type>;
-                return lookup::input{get_default_value<I>(indices),
+                return lookup::input{get<I>(indices).default_value,
                                      std::array<entry_t, sizeof...(Es)>{
                                          get_entry<I, Es>(indices)...}};
             }
