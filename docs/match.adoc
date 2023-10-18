@@ -1,0 +1,226 @@
+
+== The `match` library
+
+See code at
+https://github.com/intel/compile-time-init-build/tree/main/include/match.
+Everything in the match library is in the `match` namespace.
+
+The easiest way to get started using the match library is to `#include
+<match/ops.hpp>`.
+
+=== What is a matcher?
+
+A _matcher_ is conceptually a predicate that takes some object to match on.
+Every matcher has at least the following interface:
+
+[source,cpp]
+----
+// Given some type of event to match on
+struct my_event;
+
+struct my_matcher {
+  // Expose an is_matcher type
+  using is_matcher = void;
+
+  // Implement a call operator taking an event and returning something
+  // convertible to bool
+  auto operator()(my_event const&) const -> bool;
+
+  // Describe this matcher: return something that can be logged
+  auto describe() const {
+    return "my matcher"_sc;
+  }
+
+  // Describe a match: return something that can be logged
+  auto describe_match(my_event const&) const {
+    return "the match passed/failed because reasons"_sc;
+  }
+};
+----
+
+The above matcher models the `matcher` concept and also models `matcher_for<my_event>`.
+
+[source,cpp]
+----
+static_assert(match::matcher<my_matcher>);
+static_assert(match::matcher_for<my_matcher, my_event>);
+----
+
+NOTE: The type of `is_matcher` doesn't matter: this works in the same way
+https://en.cppreference.com/w/cpp/utility/functional/less_void[`is_transparent`
+on operators] in the C++ standard.
+
+=== Basic matchers
+
+`always` and `never` are two foundational matchers. They do what you would
+expect: the call operator of `always` returns `true` no matter what its
+argument; likewise `never` 's call operator returns `false`.
+
+[source,cpp]
+----
+assert(match::always(/*any event*/));
+assert(not match::never(/*any event*/));
+----
+
+A matcher can be made from a predicate function using `match::predicate`:
+
+[source,cpp]
+----
+auto m = match::predicate<"my matcher">{
+    [] (auto const& event) ( /* return true/false */ }};
+----
+
+Here, `"my matcher"_sc` will be returned from both the `describe()` and
+`describe_match()` functions.
+
+=== Composing matchers
+
+A matcher represents a Boolean value; therefore matchers can be composed with
+the ordinary Boolean operators `&&`, `||` and `!`
+(https://en.cppreference.com/w/c/language/operator_alternative[or `and`, `or`
+and `not`]).
+
+[source,cpp]
+----
+// given matchers m1 and m2
+
+// matches when both m1 and m2 match
+match::matcher auto and_matcher = m1 and m2;
+
+// matches when either m1 or m2 (or both) match
+match::matcher auto or_matcher = m1 or m2;
+
+// matches when m1 does not match
+match::matcher auto not_matcher = not m1;
+----
+
+A Boolean composition of matchers is also a matcher. This means we can build up
+arbitrarily complex expressions representing Boolean compositions of matchers.
+
+[source,cpp]
+----
+match::matcher auto complex = m1 and (m2 or m3) and (not m4 or m5);
+----
+
+NOTE: It can be seen that `always` is the identity for `and`, and `never` is the
+identity for `or`, which means these operations can also be used in
+https://en.cppreference.com/w/cpp/language/fold[binary fold expressions] with
+the appropriate identity.
+
+Tha match library also provides `any` and `all` functions for convenient
+expression of `and` and `or` folds.
+
+[source,cpp]
+----
+// given a pack of matchers ms...
+
+// equivalent to a fold over and
+match::matcher auto all_ms = match::all(ms...);
+
+// equivalent to a fold over or
+match::matcher auto any_ms = match::any(ms...);
+----
+
+=== Boolean algebra with matchers
+
+The ability to compose complex Boolean expressions also raises the possibility
+of simplifying those expressions with well-known laws of Boolean algebra. This
+helps efficient evaluation at runtime, as well as limiting the buildup of large
+complex types at compile time.
+
+Some simplifications are obvious:
+[source,cpp]
+----
+match::matcher auto s0 = not not m1;    // simplifies to m1
+
+match::matcher auto s1 = m1 and always; // simplifies to m1
+match::matcher auto s2 = m1 or never;   // simplifies to m1
+
+match::matcher auto s3 = m1 and not m1; // simplifies to never
+match::matcher auto s4 = m1 or not m1;  // simplifies to always
+
+match::matcher auto s5 = m1 and m1;     // simplifies to m1
+match::matcher auto s6 = m1 or m1;      // simplifies to m1
+----
+
+Other simplifications are straightforward, but not obvious unless you have
+studied Boolean algebra:
+[source,cpp]
+----
+// absoprtion: this simplifies to m1
+match::matcher auto s1 = m1 or (m1 and m2);
+
+// de Morgan's law: this simplifies to not (m1 or m2)
+match::matcher auto s2 = not m1 and not m2;
+----
+
+NOTE: Simplification is done automatically by the `and`, `or` and `not` operator
+overloads.
+
+=== Customizing matchers
+
+How does the match library know how to simplify an expression? This is a
+straightforward thing to decide when considering Boolean expressions. But the
+broader question is how to allow customization of matchers in a way that
+preserve's the library's ability to analyze and manipulate expressions.
+
+The match library uses a https://wg21.link/p1895[`tag_invoke`] technique to allow
+customization of two things in particular: negation (i.e. applying `not`) and
+simplification.
+
+If you have a custom matcher, you can overload `tag_invoke` for your type if
+there is either a way to negate or simplify it that is outside the library's
+know-how.
+
+For instance, if we have a less-than matcher (with only the salient part shown here):
+[source,cpp]
+----
+template <std::integral N>
+struct less_than {
+  auto operator(auto value) const { return value < N; }
+  // ...
+};
+----
+
+We might overload `tag_invoke` on the `negate_t` tag to return a
+greater-than-or-equal-to matcher:
+[source,cpp]
+----
+template <std::integral N>
+struct less_than {
+  // ...
+private:
+  friend auto tag_invoke(match::negate_t, less_than const &) {
+    return greater_than_or_equal_to<N>{;
+  }
+};
+----
+
+This could be useful in eliminating a `not` which would otherwise be required.
+
+Similarly to `negate_t`, the `simplify_t` tag is used by the match library to
+simplify expressions.
+
+=== Disjunctive Normal Form
+
+For some applications,
+https://en.wikipedia.org/wiki/Disjunctive_normal_form[_disjunctive normal form_]
+(a.k.a. an _or_ of _ands_, or a sum of products form) is a useful representation.
+
+The match library can convert an arbitrary Boolean expression of matchers into
+this form with the `sum_of_products` transformation.
+
+[source,cpp]
+----
+// s1 is not in DNF, because an or is inside an and
+match::matcher auto s1 = m1 and (m2 or m3);
+
+// s2 is in DNF
+match::matcher auto s2 = match::sum_of_products(s);
+// s2 is equivalent to (m1 and m2) or (m1 and m3)
+----
+
+In disjunctive normal form, all `not` applications are pushed down to act on
+single terms and not on the compound `and` and `or` terms. The transformation
+recursively applies distribution of _and_ over _or_ and
+https://en.wikipedia.org/wiki/De_Morgan%27s_laws[de Morgan's laws].
