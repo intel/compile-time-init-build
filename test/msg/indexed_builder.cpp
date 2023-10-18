@@ -135,12 +135,15 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
     cib::nexus<test_project_multi_field> test_nexus{};
     test_nexus.init();
 
+    log_buffer.clear();
     callback_success = false;
     callback_success_single_field = false;
     cib::service<test_service>->handle(
         test_msg_t{test_id_field{0x80}, test_opcode_field{1}});
     CHECK(callback_success);
     CHECK(not callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
 
     callback_success = false;
     callback_success_single_field = false;
@@ -149,12 +152,15 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
     CHECK(not callback_success_single_field);
 
     // make sure an unconstrained field in a callback doesn't cause a mismatch
+    log_buffer.clear();
     callback_success = false;
     callback_success_single_field = false;
     cib::service<test_service>->handle(
         test_msg_t{test_id_field{0x50}, test_opcode_field{1}});
     CHECK(not callback_success);
     CHECK(callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
 }
 
 namespace {
@@ -177,8 +183,119 @@ TEST_CASE("message matching partial index but not callback matcher",
     cib::nexus<partially_indexed_test_project> test_nexus{};
     test_nexus.init();
 
+    log_buffer.clear();
     callback_success = false;
     cib::service<partially_indexed_test_service>->handle(
         test_msg_t{test_id_field{0x80}, test_opcode_field{2}});
     CHECK(not callback_success);
+}
+
+namespace {
+constexpr auto test_callback_not_single_field = msg::indexed_callback(
+    "test_callback_not_single_field"_sc, not test_id_field::equal_to<0x50>,
+    [](test_msg_t const &) { callback_success_single_field = true; });
+
+struct test_project_not_single_field {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_not_single_field));
+};
+} // namespace
+
+TEST_CASE("build handler not single field", "[indexed_builder]") {
+    cib::nexus<test_project_not_single_field> test_nexus{};
+    test_nexus.init();
+
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x50}});
+    CHECK(not callback_success_single_field);
+
+    log_buffer.clear();
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x51}});
+    CHECK(callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+}
+
+namespace {
+constexpr auto test_callback_not_multi_field = msg::indexed_callback(
+    "test_callback_multi_field"_sc,
+    not test_id_field::in<0x80, 0x42> and test_opcode_field::equal_to<1>,
+    [](test_msg_t const &) { callback_success = true; });
+
+struct test_project_not_multi_field {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_not_multi_field,
+                                              test_callback_not_single_field));
+};
+} // namespace
+
+TEST_CASE("build handler not multi fields", "[indexed_builder]") {
+    log_buffer.clear();
+    cib::nexus<test_project_not_multi_field> test_nexus{};
+    test_nexus.init();
+
+    log_buffer.clear();
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x50}, test_opcode_field{1}});
+    CHECK(callback_success);
+    CHECK(not callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+
+    log_buffer.clear();
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(test_msg_t{test_id_field{0x51}});
+    CHECK(not callback_success);
+    CHECK(callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+
+    log_buffer.clear();
+    callback_success = false;
+    callback_success_single_field = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x51}, test_opcode_field{1}});
+    CHECK(callback_success);
+    CHECK(callback_success_single_field);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+}
+
+namespace {
+constexpr auto test_callback_disjunction = msg::indexed_callback(
+    "test_callback_multi_field"_sc,
+    test_id_field::equal_to<0x80> or test_opcode_field::equal_to<1>,
+    [](test_msg_t const &) { callback_success = true; });
+
+struct test_project_disjunction {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_disjunction));
+};
+} // namespace
+
+TEST_CASE("build handler disjunction", "[indexed_builder]") {
+    cib::nexus<test_project_disjunction> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x80}, test_opcode_field{1}});
+    CHECK(callback_success);
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x80}, test_opcode_field{2}});
+    CHECK(callback_success);
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{test_id_field{0x81}, test_opcode_field{1}});
+    CHECK(callback_success);
 }

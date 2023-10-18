@@ -99,3 +99,13 @@ TEST_CASE("Recursive inside NOT: ¬(X ∧ (Y ∨ Z)) -> ¬X ∨ (¬Y ∧ ¬Z)",
                        or_t<not_t<test_m<0>>,
                             and_t<not_t<test_m<1>>, not_t<test_m<2>>>> const>);
 }
+
+TEST_CASE("Recursive inside AND: ¬(X ∨ Y) ∧ Z -> ¬X ∧ ¬Y ∧ ¬Z",
+          "[match sum of products]") {
+    constexpr auto e = and_t<not_t<or_t<test_m<0>, test_m<1>>>, test_m<2>>{};
+    constexpr auto s = sum_of_products(e);
+    static_assert(
+        std::is_same_v<
+            decltype(s),
+            and_t<and_t<not_t<test_m<0>>, not_t<test_m<1>>>, test_m<2>> const>);
+}

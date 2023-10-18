@@ -5,6 +5,8 @@
 #include <msg/field_matchers.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -13,6 +15,7 @@ namespace msg {
 template <typename Name, match::matcher M, stdx::callable F>
 struct indexed_callback_t {
     using name_t = Name;
+    using matcher_t = M;
     using callable_t = F;
 
     constexpr static Name name{};
@@ -37,4 +40,23 @@ constexpr auto remove_match_terms = []<typename C>(C &&c) {
                               typename callback_t::callable_t>{
         std::move(new_matcher), std::forward<C>(c).callable};
 };
+
+template <typename C> constexpr auto separate_sum_terms(C &&c) {
+    using callback_t = std::remove_cvref_t<C>;
+    if constexpr (stdx::is_specialization_of_v<typename callback_t::matcher_t,
+                                               match::or_t>) {
+        auto lcb = indexed_callback_t<typename callback_t::name_t,
+                                      typename callback_t::matcher_t::lhs_t,
+                                      typename callback_t::callable_t>{
+            std::forward<C>(c).matcher.lhs, c.callable};
+        auto rcb = indexed_callback_t<typename callback_t::name_t,
+                                      typename callback_t::matcher_t::rhs_t,
+                                      typename callback_t::callable_t>{
+            std::forward<C>(c).matcher.rhs, c.callable};
+        return stdx::tuple_cat(separate_sum_terms(std::move(lcb)),
+                               separate_sum_terms(std::move(rcb)));
+    } else {
+        return stdx::make_tuple(std::forward<C>(c));
+    }
+}
 } // namespace msg
