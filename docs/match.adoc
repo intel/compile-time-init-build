@@ -177,7 +177,7 @@ For instance, if we have a less-than matcher (with only the salient part shown h
 ----
 template <std::integral N>
 struct less_than {
-  auto operator(auto value) const { return value < N; }
+  auto operator()(auto value) const { return value < N; }
   // ...
 };
 ----
