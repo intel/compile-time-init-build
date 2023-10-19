@@ -160,17 +160,22 @@ overloads.
 === Customizing matchers
 
 How does the match library know how to simplify an expression? This is a
-straightforward thing to decide when considering Boolean expressions. But the
-broader question is how to allow customization of matchers in a way that
+straightforward thing to decide when considering matchers known to the library.
+But the broader question is how to allow customization of matchers in a way that
 preserve's the library's ability to analyze and manipulate expressions.
 
 The match library uses a https://wg21.link/p1895[`tag_invoke`] technique to allow
-customization of two things in particular: negation (i.e. applying `not`) and
-simplification.
+customization of two things in particular:
 
-If you have a custom matcher, you can overload `tag_invoke` for your type if
-there is either a way to negate or simplify it that is outside the library's
-know-how.
+- negation (i.e. applying `not`)
+- implication (i.e. warranting that A => B)
+
+If you have a custom matcher, you can overload `tag_invoke` with `negate_t` for
+your type if there is a way to negate it that is outside the library's know-how,
+or with `implies_t` if you can warrant implications that the library can use to
+simplify expressions.
+
+==== Customizing negation
 
 For instance, if we have a less-than matcher (with only the salient part shown here):
 [source,cpp]
@@ -186,20 +191,63 @@ We might overload `tag_invoke` on the `negate_t` tag to return a
 greater-than-or-equal-to matcher:
 [source,cpp]
 ----
-template <std::integral N>
+template <std::integral A>
 struct less_than {
   // ...
 private:
   friend auto tag_invoke(match::negate_t, less_than const &) {
-    return greater_than_or_equal_to<N>{;
+    return greater_than_or_equal_to<A>{;
   }
 };
 ----
 
 This could be useful in eliminating a `not` which would otherwise be required.
 
-Similarly to `negate_t`, the `simplify_t` tag is used by the match library to
-simplify expressions.
+==== Customizing implication
+
+Implication rules are used by the match library to simplify expressions. The
+obvious boolean implications are known:
+
+  false => X
+  X => true
+  X => X
+
+Let's take the example of the less-than matcher again. We can warrant the
+following implication:
+
+  (X < A) => (X < B) when A < B
+
+Actually, this is true when `A == B` as well, but in the case where `A == B` the
+match library already knows this because it knows the general case of `X => X`. In
+code, overloading implication to warrant this looks like this:
+
+[source,cpp]
+----
+template <std::integral A>
+struct less_than {
+  // ...
+private:
+  template <std::integral B>
+  friend auto tag_invoke(match::implies_t, less_than const &, less_than<B> const &) {
+    return A < B;
+  }
+};
+----
+
+==== Negation + Implication = Simplification
+
+By customizing negation and providing just a few implication rules, we can
+enable the library to simplify complex boolean expressions involving relational
+operators. For example the following simplifications are all possible:
+
+  X < 3 and X > 5 -> false
+  X < 3 and X < 5 -> X < 3
+
+  X < 5 or X > 3  -> true
+  X < 5 or X < 3  -> X < 5
+
+As a last resort, if you are working complete outside of boolean algebra, the
+`simplify_t` tag is used in overloads for expression simplification.
 
 === Disjunctive Normal Form
 

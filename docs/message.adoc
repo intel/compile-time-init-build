@@ -206,7 +206,7 @@ The process of populating the field maps is then as follows:
   negated terms, and propagate them to all the values in the map.
 
 This process happens conceptually for each indexed field. Each such field then
-has a map from field values to bitsets (represnting indices of callbacks to call
+has a map from field values to bitsets (representing indices of callbacks to call
 when the field has that value), and a default bitset (indices of callbacks to
 call when the field value was not found in the map).
 
