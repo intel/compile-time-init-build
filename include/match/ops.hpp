@@ -2,6 +2,7 @@
 
 #include <match/and.hpp>
 #include <match/concepts.hpp>
+#include <match/implies.hpp>
 #include <match/negate.hpp>
 #include <match/not.hpp>
 #include <match/or.hpp>

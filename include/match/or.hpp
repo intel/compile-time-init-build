@@ -21,10 +21,19 @@ struct or_t : bin_op_t<or_t, decltype(" or "_sc), L, R> {
     }
 
   private:
-    [[nodiscard]] CONSTEVAL static auto annihilator() -> always_t { return {}; }
-
     [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, or_t const &m) {
-        return detail::simplify_bin_op<always_t, never_t, and_t>(m);
+        auto l = simplify(m.lhs);
+        auto r = simplify(m.rhs);
+
+        if constexpr (implies(l, r)) {
+            return r;
+        } else if constexpr (implies(r, l)) {
+            return l;
+        } else if constexpr (implies(negate(l), r) or implies(negate(r), l)) {
+            return always;
+        } else {
+            return detail::de_morgan<or_t, and_t>(l, r);
+        }
     }
 
     [[nodiscard]] friend constexpr auto tag_invoke(cost_t,
@@ -41,6 +50,12 @@ struct or_t : bin_op_t<or_t, decltype(" or "_sc), L, R> {
         using LS = decltype(l);
         using RS = decltype(r);
         return or_t<LS, RS>{l, r};
+    }
+
+    template <matcher M>
+    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, M const &m,
+                                                   or_t const &o) -> bool {
+        return implies(m, o.lhs) or implies(m, o.rhs);
     }
 };
 template <matcher L, matcher R> or_t(L, R) -> or_t<L, R>;

@@ -43,15 +43,6 @@ struct bin_op_t {
 };
 
 namespace detail {
-template <matcher LHS, matcher RHS, template <matcher, matcher> typename Dual>
-[[nodiscard]] CONSTEVAL static auto absorbs() -> bool {
-    if constexpr (stdx::is_specialization_of_v<RHS, Dual>) {
-        return std::is_same_v<LHS, typename RHS::lhs_t> or
-               std::is_same_v<LHS, typename RHS::rhs_t>;
-    }
-    return false;
-}
-
 template <template <matcher, matcher> typename Term,
           template <matcher, matcher> typename Dual, matcher L, matcher R>
 [[nodiscard]] constexpr auto de_morgan(L const &l, R const &r) {
@@ -62,27 +53,6 @@ template <template <matcher, matcher> typename Term,
         return negate(Dual{negate(l), negate(r)});
     } else {
         return T{l, r};
-    }
-}
-
-template <matcher A, matcher I, template <matcher, matcher> typename Dual,
-          template <matcher, matcher> typename Term, matcher L, matcher R>
-[[nodiscard]] constexpr auto simplify_bin_op(Term<L, R> const &m) {
-    auto l = simplify(m.lhs);
-    auto r = simplify(m.rhs);
-    using LS = decltype(l);
-    using RS = decltype(r);
-
-    if constexpr (std::is_same_v<A, LS> or std::is_same_v<A, RS> or
-                  std::is_same_v<LS, decltype(negate(std::declval<RS>()))>) {
-        return A{};
-    } else if constexpr (std::is_same_v<LS, RS> or std::is_same_v<I, RS> or
-                         absorbs<LS, RS, Dual>()) {
-        return l;
-    } else if constexpr (std::is_same_v<I, LS> or absorbs<RS, LS, Dual>()) {
-        return r;
-    } else {
-        return de_morgan<Term, Dual>(l, r);
     }
 }
 } // namespace detail
