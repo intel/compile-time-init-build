@@ -177,10 +177,10 @@ xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
 expression]. The `indexed_callback` construction process ensures that this
 matcher is in xref:match.adoc#_disjunctive_normal_form[sum of products form].
 The process of handling messages works by set intersection on the bitsets, so
-each separate `or` ed term at the top level within each matcher (as well as each
+each separate `or`​ed term at the top level within each matcher (as well as each
 matcher itself) must conceptually map to a separate callback.
 
-The initialization process when `indexed_callback` s are added to the builder
+The initialization process when `indexed_callback`​s are added to the builder
 takes care of this top-level concern, so that at build time, each callback
 matcher is a suitable Boolean term (either a single term, a negation or a
 conjunction, but not a disjunction).
@@ -216,8 +216,8 @@ That was perhaps hard to understand, so here are a couple of examples.
 
 Given two simple callback matchers:
 
-  m[0] == my_field::equal_to_t<42>
-  m[1] == my_field::equal_to_t<17>
+  m[0] == my_field::equal_to_t<​42>
+  m[1] == my_field::equal_to_t<​17>
 
 First we walk the matcher expressions outputting the non-negated values. After
 this stage, the data for `my_field` is:
@@ -247,8 +247,8 @@ case it's empty, so no change. The final data for `my_field` is:
   }
 
   // recall:
-  m[0] == my_field::equal_to_t<42>
-  m[1] == my_field::equal_to_t<17>
+  m[0] == my_field::equal_to_t<​42>
+  m[1] == my_field::equal_to_t<​17>
 
 Now consider this in action.
 
@@ -262,9 +262,9 @@ All correct.
 
 Given three callback matchers:
 
-  m[0] == my_field::equal_to_t<42>
-  m[1] == not my_field::equal_to_t<17>
-  m[2] == another_field::equal_to_t<3>
+  m[0] == my_field::equal_to_t<​42>
+  m[1] == not my_field::equal_to_t<​17>
+  m[2] == another_field::equal_to_t<​3>
 
 First we walk the matcher expressions outputting the non-negated values. After
 this stage, the data for `my_field` is:
@@ -308,9 +308,9 @@ associated with a negative term). The final data for `my_field`:
   }
 
   // recall:
-  m[0] == my_field::equal_to_t<42>
-  m[1] == not my_field::equal_to_t<17>
-  m[2] == another_field::equal_to_t<3>
+  m[0] == my_field::equal_to_t<​42>
+  m[1] == not my_field::equal_to_t<​17>
+  m[2] == another_field::equal_to_t<​3>
 
 Now consider this in action.
 
