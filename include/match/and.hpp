@@ -3,6 +3,7 @@
 #include <match/bin_op.hpp>
 #include <match/concepts.hpp>
 #include <match/constant.hpp>
+#include <match/implies.hpp>
 #include <match/simplify.hpp>
 #include <match/sum_of_products.hpp>
 #include <sc/string_constant.hpp>
@@ -22,7 +23,18 @@ struct and_t : bin_op_t<and_t, decltype(" and "_sc), L, R> {
 
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, and_t const &m) {
-        return detail::simplify_bin_op<never_t, always_t, or_t>(m);
+        auto l = simplify(m.lhs);
+        auto r = simplify(m.rhs);
+
+        if constexpr (implies(l, r)) {
+            return l;
+        } else if constexpr (implies(r, l)) {
+            return r;
+        } else if constexpr (implies(l, negate(r)) or implies(r, negate(l))) {
+            return never;
+        } else {
+            return detail::de_morgan<and_t, or_t>(l, r);
+        }
     }
 
     [[nodiscard]] friend constexpr auto tag_invoke(cost_t,
@@ -54,6 +66,12 @@ struct and_t : bin_op_t<and_t, decltype(" and "_sc), L, R> {
         } else {
             return and_t<LS, RS>{l, r};
         }
+    }
+
+    template <matcher M>
+    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, and_t const &a,
+                                                   M const &m) -> bool {
+        return implies(a.lhs, m) or implies(a.rhs, m);
     }
 };
 template <matcher L, matcher R> and_t(L, R) -> and_t<L, R>;

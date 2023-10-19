@@ -1,6 +1,7 @@
 #pragma once
 
 #include <match/concepts.hpp>
+#include <match/implies.hpp>
 #include <match/negate.hpp>
 #include <sc/format.hpp>
 #include <sc/string_constant.hpp>
@@ -69,4 +70,24 @@ template <typename RelOp, auto Value> struct rel_matcher {
                                                    rel_matcher const &) {
         return rel_matcher<decltype(detail::inverse_op<RelOp>()), Value>{};
     }
+
+    template <auto OtherValue>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, rel_matcher, rel_matcher<RelOp, OtherValue>) {
+        return RelOp{}(Value, OtherValue);
+    }
 };
+
+template <auto X, auto Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t, rel_matcher<std::less<>, X> const &,
+           rel_matcher<std::less_equal<>, Y> const &) {
+    return X <= Y + 1;
+}
+
+template <auto X, auto Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t, rel_matcher<std::less_equal<>, X> const &,
+           rel_matcher<std::less<>, Y> const &) {
+    return X < Y;
+}
