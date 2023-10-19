@@ -1,0 +1,373 @@
+
+== The `message` library
+
+See code at
+https://github.com/intel/compile-time-init-build/tree/main/include/msg.
+Everything in the msg library is in the `msg` namespace.
+
+=== Fields
+
+A `field` represents a value, specified in bits, inside a unit of addressable
+storage. Currently in the _cib_ library, storage is assumed to be in units of
+`std::uint32_t`.
+
+Three things specify a `field`:
+
+- a `field_spec_t` which specifies the name, the type and the size (in bits) of
+  the field
+- a `field_locator_t` which determines how to read and write the field from
+  storage
+- the value of the field
+
+A `field` has two important member functions:
+
+[source,cpp]
+----
+// where T is the type of the field
+
+[[nodiscard]] constexpr static auto extract(auto const &data) -> T;
+[[nodiscard]] constexpr static auto insert(auto &data) -> void;
+----
+
+A field may also specify a xref:match.adoc#_what_is_a_matcher[`matcher`]; this
+can be used to verify that a particular storage area contains the field. By
+default this is xref:match.adoc#_basic_matchers[`match::always`].
+
+For example, a field type looks like this:
+[source,cpp]
+----
+using my_field =
+    msg::field<decltype("my field"_sc),  // name
+               0,                        // offset in storage (32-bit words)
+               31,                       // most significant bit
+               24,                       // least significant bit
+               std::uint32_t>;           // type
+----
+
+Fields also expose several matcher aliases which can typically be used to
+specify field values for a given message type; an example of this follows
+shortly. Further, fields expose aliases for expressing themselves as fields with
+the given matchers.
+
+Field matchers can be found in
+https://github.com/intel/compile-time-init-build/tree/main/include/msg/field_matchers.hpp.
+The most commonly used field matchers are `equal_to_t` (for testing if a field
+has a certain value) and `in_t` (for testing if a field value lies within a set).
+
+=== Messages
+
+A message is a collection of field types together with the storage that contains
+them. Messages are usually aliases for specializations of `message_base` which
+allows these things to be specified.
+
+`message_base` provides a default matcher that reflects all of the field
+matchers, but can also be supplied with an extra matcher to differentiate
+message types based on field values.
+
+For example, a message type looks like this:
+[source,cpp]
+----
+using my_message =  msg::message_base<
+    decltype("TestMsg"_sc),             // name
+    2,                                  // storage size in 32-bit words
+    my_field::WithRequired<0x80>>;      // field(s)
+----
+
+Here the message has only one field. `WithRequired<0x80>` is an alias
+specialization that expresses `my_field` with a matcher that is
+`equal_to_t<0x80>`.
+
+=== Handling messages with callbacks
+
+_cib_ contains an implementation of a basic message handler which can be used in
+the obvious way: given some storage, the handler will run matchers from various
+messages; when a matcher successfully matches, the callback(s) registered will be called.
+[source,cpp]
+----
+// given the above field and message types, define a service
+struct my_service : msg::service<my_message> {};
+
+// define a callback with a matcher that always matches
+constexpr auto my_callback = msg::callback<my_message>(
+    "my callback"_sc,
+    match::always,
+    [](my_message const &) { /* do something */ });
+
+// define a project
+struct my_project {
+    constexpr static auto config = cib::config(
+        cib::exports<my_service>,
+        cib::extend<my_service>(my_callback));
+};
+----
+
+Given these definitions, we can create a `nexus` and ask the service to handle a
+message:
+[source,cpp]
+----
+cib::nexus<my_project> my_nexus{};
+my_nexus.init();
+
+// handling this message calls my callback
+cib::service<my_service>->handle(my_message{my_field{0x80}});
+----
+
+Notice in this case that our callback is defined with a matcher that always
+matches, but also that the field in `my_message` has a matcher that requires it
+to equal `0x80`. Therefore handling the following message will not call the
+callback:
+[source,cpp]
+----
+// handling this message does not call my callback
+// because my_message's field matcher does not match
+cib::service<my_service>->handle(my_message{my_field{0x81}});
+----
+
+This machinery for handling messages with callbacks is fairly basic and can be
+found in
+https://github.com/intel/compile-time-init-build/tree/main/include/msg/callback.hpp
+and
+https://github.com/intel/compile-time-init-build/tree/main/include/msg/handler.hpp.
+
+A more interesting (and better-performing) way to handle message dispatching is
+with _indexed_ callbacks.
+
+=== Indexed callbacks
+
+The code for defining indexed callbacks and their handling is almost the same as
+for the non-indexed case, with the addition that we need to say which fields to
+build indices on:
+[source,cpp]
+----
+// index on my_field
+using my_indices = msg::index_spec<my_field>;
+
+// the service is now an indexed_service
+struct my_indexed_service : msg::indexed_service<my_indices, my_message> {};
+
+// the callback is an indexed_callback
+// and here we specify the matcher
+constexpr auto my_callback = msg::indexed_callback(
+    "my indexed callback"_sc,
+    msg::equal_to<0x80>,
+    [](my_message const &) { /* do something */ });
+
+// everything else is the same
+----
+
+=== How does indexing work?
+
+NOTE: This section documents the details of indexed callbacks. It's not required
+to understand this to _use_ indexed callbacks.
+
+Indexing callbacks properly, interacting with arbitrary matchers, and calling
+the appropriate callbacks on reception of a message involves several pieces that
+work together. We leverage information known at compile time so as to expend
+minimal effort at runtime.
+
+==== Building the indices
+
+For each field in the `msg::index_spec`, we build a map from field values to
+bitsets, where the values in the bitsets represent callback indices.
+
+NOTE: The bitsets may be run-length encoded: this is a work in progress.
+
+Each `indexed_callback` has a matcher that may be an
+xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
+expression]. The `indexed_callback` construction process ensures that this
+matcher is in xref:match.adoc#_disjunctive_normal_form[sum of products form].
+The process of handling messages works by set intersection on the bitsets, so
+each separate `or` ed term at the top level within each matcher (as well as each
+matcher itself) must conceptually map to a separate callback.
+
+The initialization process when `indexed_callback` s are added to the builder
+takes care of this top-level concern, so that at build time, each callback
+matcher is a suitable Boolean term (either a single term, a negation or a
+conjunction, but not a disjunction).
+
+The process of populating the field maps is then as follows:
+
+- Walk the matcher expression, outputting all the positive (non-negated) terms.
+  Each such term is a field matcher specifying a field and a value. Add an entry
+  to the appropriate field map, where the key is the matched value and the
+  current callback index is added into the bitset value.
+
+- Any callback index not represented in the value bitsets of the map is collected
+  into the default bitset. This is saying that if we don't have a key in the map
+  for a given message field value, we'll call the callbacks that didn't specify
+  that key.
+
+- Walk the matcher expression again, this time outputting any negated terms. For
+  each such term, add an entry in the map where the key is the field value and
+  the value is the default bitset, excepting the current callback index. The
+  current callback index is also added into all other values in the map.
+
+- Take all the callback indices in the default bitset that were not used for
+  negated terms, and propagate them to all the values in the map.
+
+This process happens conceptually for each indexed field. Each such field then
+has a map from field values to bitsets (represnting indices of callbacks to call
+when the field has that value), and a default bitset (indices of callbacks to
+call when the field value was not found in the map).
+
+That was perhaps hard to understand, so here are a couple of examples.
+
+**Simple example**
+
+Given two simple callback matchers:
+
+  m[0] == my_field::equal_to_t<42>
+  m[1] == my_field::equal_to_t<17>
+
+First we walk the matcher expressions outputting the non-negated values. After
+this stage, the data for `my_field` is:
+
+  default_value = {}
+  map = {
+    17 -> {1},
+    42 -> {0}
+  }
+
+i.e. each expected value is a key in the map, and the corresponding value in the
+map is a bitset of the callbacks to be called when that value is seen.
+
+Next we check the map for any unrepresented callbacks. In this case every
+callback (0 and 1) is represented in the map, so the default value is unchanged.
+
+Next we walk the matcher expressions again, outputting negated values. In this
+case there are none, so nothing happens.
+
+Finally we propagate the "positive" value from the default value. Again in this
+case it's empty, so no change. The final data for `my_field` is:
+
+  default_value = {}
+  map = {
+    17 -> {1},
+    42 -> {0}
+  }
+
+  // recall:
+  m[0] == my_field::equal_to_t<42>
+  m[1] == my_field::equal_to_t<17>
+
+Now consider this in action.
+
+- If we get a message where `my_field` is 42, callback 0 will be eligible.
+- If we get a message where `my_field` is 17, callback 1 will be eligible.
+- If we get a message where `my_field` is another value, no callback will be eligible.
+
+All correct.
+
+**Slightly more complex example**
+
+Given three callback matchers:
+
+  m[0] == my_field::equal_to_t<42>
+  m[1] == not my_field::equal_to_t<17>
+  m[2] == another_field::equal_to_t<3>
+
+First we walk the matcher expressions outputting the non-negated values. After
+this stage, the data for `my_field` is:
+
+  default_value = {}
+  map = {
+    42 -> {0}
+  }
+
+(`m[1]` is a negated value, so it is not yet considered, and `m[2]` contained no
+data for `my_field`.)
+
+Next we check the map for any unrepresented callbacks. In this case callbacks 1
+and 2 do not occur, so they are added to the defaults. The current data for
+`my_field` is:
+
+  default_value = {1,2}
+  map = {
+    42 -> {0}
+  }
+
+Next we walk the matcher expressions again, outputting negated values (`m[1]`).
+Now the `my_field` data becomes:
+
+  default_value = {1,2}
+  map = {
+    17 -> {2}
+    42 -> {0,1}
+  }
+
+i.e. the entry with value 17 was populated with the defaults, minus its own
+index (1), and its own index (1) was entered into all the other mapped values.
+
+Finally we propagate the "positive" defaults, i.e. `{2}` (because index 1 was
+associated with a negative term). The final data for `my_field`:
+
+  default_value = {1,2}
+  map = {
+    17 -> {2}
+    42 -> {0,1,2}
+  }
+
+  // recall:
+  m[0] == my_field::equal_to_t<42>
+  m[1] == not my_field::equal_to_t<17>
+  m[2] == another_field::equal_to_t<3>
+
+Now consider this in action.
+
+- If we get a message where `my_field` is 42, callbacks  0, 1 and 2 will be eligible.
+- If we get a message where `my_field` is 17, callback 2 will be eligible.
+- If we get a message where `my_field` is another value, callbacks 1 and 2 will be eligible.
+
+Again, all correct.
+
+Remember that this is only considering the indexing on `my_field` to assess
+eligibility: those bitsets would then be intersected with bitsets obtained by a
+similar process on `another_field`.
+
+Working through more complex examples is left as an exercise to the reader.
+
+==== Lookup strategies
+
+Given an index map on a field, at compile time we can decide which runtime
+lookup strategy to use. All the code for this is found in
+https://github.com/intel/compile-time-init-build/tree/main/include/lookup.
+
+There are three main lookup strategies:
+
+- linear search - this is suitable for a small number of possible field values.
+- direct array indexing - this is suitable when the min and max values are not
+  too far apart, and the data is populated not too sparsely (a hash map is
+  likely sparse, so this could be thought of as a very fast hash map that uses
+  the identity function).
+- hash lookup - using a "bad" hash function.
+
+For any given data, the lookup strategy is selected at compile time from a long
+list of potential strategies ordered by speed and found in
+https://github.com/intel/compile-time-init-build/tree/main/include/lookup/strategy/arc_cpu.hpp.
+
+With compile-time selection, hash functions don't need to be judged according to
+the usual criteria! We know the data; we just need something that is fast to
+compute and collision-free. So it is fairly easy to generate "bad" hash
+functions that are fast, and pick the first one that works according to the data
+we have.
+
+==== Handling messages
+
+Having selected the indexing strategy, when a message arrives, we can handle it
+as follows:
+
+- for each indexed field, extract the field from the message and lookup (using
+  an appropriate selected strategy) the bitset of callbacks.
+- `and` together all the resulting bitsets (i.e. perform their set intersection).
+
+This gives us the callbacks to be called. Each callback still has an associated
+matcher that may include field constraints that were already handled by the
+indexing, but may also include constraints on fields that were not indexed. With
+a little xref:match.adoc#_boolean_algebra_with_matchers[Boolean matcher
+manipulation], we can remove the fields that were indexed by setting them to
+`match::always` and simplifying the resulting expression. This is decidable at
+compile time.
+
+For each callback, we now run the remaining matcher expression to deal with any
+unindexed but constrained fields, and call the callback if it passes. Bob's your
+uncle.
