@@ -20,8 +20,6 @@
 #include <utility>
 
 namespace msg {
-template <typename T> using get_field_type = typename T::field_type;
-
 template <typename FieldType, std::size_t EntryCapacity,
           std::size_t CallbackCapacity>
 struct temp_index {
@@ -79,6 +77,12 @@ struct temp_index {
         }
     }
 };
+
+template <typename T> using get_field_type = typename T::field_type;
+
+template <typename... Fields>
+using index_spec = decltype(stdx::make_indexed_tuple<get_field_type>(
+    temp_index<Fields, 256, 32>{}...));
 
 template <template <typename, typename, typename, typename...> typename ParentT,
           typename IndexSpec, typename CallbacksT, typename BaseMsgT,

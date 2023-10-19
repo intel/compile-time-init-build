@@ -26,10 +26,7 @@ using test_msg_t =
     msg::message_base<decltype("test_msg"_sc), 2, test_id_field,
                       test_opcode_field, test_field_2, test_field_3>;
 
-using index_spec = decltype(stdx::make_indexed_tuple<msg::get_field_type>(
-    msg::temp_index<test_id_field, 256, 32>{},
-    msg::temp_index<test_opcode_field, 256, 32>{}));
-
+using index_spec = msg::index_spec<test_id_field, test_opcode_field>;
 struct test_service : msg::indexed_service<index_spec, test_msg_t> {};
 
 bool callback_success;
@@ -164,9 +161,7 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
 }
 
 namespace {
-using partial_index_spec =
-    decltype(stdx::make_indexed_tuple<msg::get_field_type>(
-        msg::temp_index<test_id_field, 256, 32>{}));
+using partial_index_spec = msg::index_spec<test_id_field>;
 
 struct partially_indexed_test_service
     : msg::indexed_service<partial_index_spec, test_msg_t> {};
