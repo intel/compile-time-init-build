@@ -54,7 +54,7 @@ on operators] in the C++ standard.
 
 `always` and `never` are two foundational matchers. They do what you would
 expect: the call operator of `always` returns `true` no matter what its
-argument; likewise `never` 's call operator returns `false`.
+argument; likewise `never`​'s call operator returns `false`.
 
 [source,cpp]
 ----
