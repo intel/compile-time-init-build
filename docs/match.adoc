@@ -206,7 +206,7 @@ This could be useful in eliminating a `not` which would otherwise be required.
 ==== Customizing implication
 
 Implication rules are used by the match library to simplify expressions. The
-obvious boolean implications are known:
+elementary boolean implications are known:
 
   false => X
   X => true
@@ -218,7 +218,7 @@ following implication:
   (X < A) => (X < B) when A < B
 
 Actually, this is true when `A == B` as well, but in the case where `A == B` the
-match library already knows this because it knows the general case of `X => X`. In
+match library already knows this, because it knows the general case of `X => X`. In
 code, overloading implication to warrant this looks like this:
 
 [source,cpp]
@@ -234,11 +234,11 @@ private:
 };
 ----
 
-==== Negation + Implication = Simplification
+==== Implication enables simplification
 
-By customizing negation and providing just a few implication rules, we can
-enable the library to simplify complex boolean expressions involving relational
-operators. For example the following simplifications are all possible:
+By providing just a few implication rules, we can enable the library to simplify
+complex boolean expressions involving relational operators. For example the
+following simplifications are all possible:
 
   X < 3 and X > 5 -> false
   X < 3 and X < 5 -> X < 3
@@ -246,8 +246,98 @@ operators. For example the following simplifications are all possible:
   X < 5 or X > 3  -> true
   X < 5 or X < 3  -> X < 5
 
-As a last resort, if you are working complete outside of boolean algebra, the
-`simplify_t` tag is used in overloads for expression simplification.
+To see how this works, let's look at a truth table:
+
+[width=50%,cols="^1,^1,^2,^2,^2"]
+|===
+| A | B | A ∧ B | A ∨ B | A => B
+
+| F
+| F
+| F
+| F
+| T
+
+| F
+| T
+| F
+| T
+| T
+
+e| T
+e| F
+e| F
+e| T
+e| F
+
+| T
+| T
+| T
+| T
+| T
+|===
+
+NOTE: The proposition `A => B` is logically equivalent to the proposition `¬A ∨ B`.
+
+If we know that `A => B` is true, then we can disregard the third row of this
+table (_italicized_). In that case, it can be seen that:
+
+  A ∧ B ≡ A
+  A ∨ B ≡ B
+
+Similarly, if we know that `A => ¬B` is true, we can conclude:
+
+  A ∧ B ≡ false
+
+And if we know that `¬A => B` is true, we can conclude:
+
+  A ∨ B ≡ true
+
+These conclusions can be seen by striking out the last and first lines
+(_italicized_) respectively of the truth table:
+
+[width=50%,cols="^1,^1,^2,^2,^2,^2"]
+|===
+| A | B | A ∧ B | A ∨ B | A => ¬B | ¬A => B
+
+e| F
+e| F
+e| F
+e| F
+e| T
+e| F
+
+| F
+| T
+| F
+| T
+| T
+| T
+
+| T
+| F
+| F
+| T
+| T
+| T
+
+e| T
+e| T
+e| T
+e| T
+e| F
+e| T
+|===
+
+By warranting implications and perhaps overloading negation appropriately, these
+inferences, together with https://en.wikipedia.org/wiki/De_Morgan%27s_laws[de
+Morgan's laws], suffice to apply all the
+https://en.wikipedia.org/wiki/Boolean_algebra#Laws[laws of Boolean algebra] that
+are required to simplify expressions.
+
+But as a last resort, if working completely outside of boolean algebra, the
+`simplify_t` tag is used in overloads for expression simplification, and can be
+used directly in a `tag_invoke` overload.
 
 === Disjunctive Normal Form
 
