@@ -90,3 +90,6 @@ add_unit_test(
     warnings
     catalog_lib
     catalog_strings)
+
+add_compile_fail_test(msg/impossible_match_callback.cpp LIBRARIES warnings cib)
+add_compile_fail_test(msg/impossible_match_field.cpp LIBRARIES warnings cib)

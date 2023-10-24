@@ -328,3 +328,22 @@ TEST_CASE("match output success (message matcher)", "[handler_builder]") {
         test_msg_match_t{test_id_field{0x81}});
     CHECK(not callback_success);
 }
+
+namespace {
+constexpr auto test_callback_impossible = msg::indexed_callback(
+    "test_callback_impossible"_sc,
+    test_id_field::equal_to<0x80> and test_id_field::equal_to<0x81>,
+    [](test_msg_t const &) { callback_success = true; });
+
+struct test_project_impossible {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_impossible));
+};
+} // namespace
+
+TEST_CASE("build handler impossible matcher does not fail unless configured",
+          "[indexed_builder]") {
+    cib::nexus<test_project_impossible> test_nexus{};
+    test_nexus.init();
+}

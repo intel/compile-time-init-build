@@ -13,6 +13,27 @@
 #include <utility>
 
 namespace msg {
+struct null_matcher_validator {
+    template <match::matcher M>
+    CONSTEVAL static auto validate() noexcept -> bool {
+        return true;
+    }
+};
+
+struct never_matcher_validator {
+    template <match::matcher M>
+    CONSTEVAL static auto validate() noexcept -> bool {
+        return not std::is_same_v<M, match::never_t>;
+    }
+};
+
+template <typename...> inline auto matcher_validator = null_matcher_validator{};
+
+template <match::matcher M, typename... DummyArgs>
+CONSTEVAL auto validate_matcher() -> bool {
+    return matcher_validator<DummyArgs...>.template validate<M>();
+}
+
 template <typename Name, match::matcher M, stdx::callable F>
 struct indexed_callback_t {
     using name_t = Name;
