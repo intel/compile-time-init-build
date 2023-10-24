@@ -11,6 +11,7 @@
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <algorithm>
 #include <array>
@@ -113,6 +114,14 @@ struct indexed_builder_base {
                                                   Indices...) {
             return remove_match_terms<typename Indices::field_type...>(orig_cb);
         });
+
+        using CB = std::remove_cvref_t<decltype(cb)>;
+        if constexpr (not validate_matcher<typename CB::matcher_t>()) {
+            static_assert(
+                stdx::always_false_v<std::remove_cvref_t<decltype(orig_cb)>>,
+                "Indexed callback has matcher that is never matched!");
+        }
+
         if (cb.matcher(msg)) {
             CIB_INFO(
                 "Incoming message matched [{}], because [{}] (collapsed to "

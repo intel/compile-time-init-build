@@ -40,6 +40,25 @@ template <typename Msg, match::matcher M> struct msg_matcher : M {
     [[nodiscard]] constexpr auto describe_match(auto const &base) const {
         return this->M::describe_match(Msg{base});
     }
+
+  private:
+    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
+                                                   msg_matcher const &self) {
+        return msg_matcher<Msg, decltype(match::negate(
+                                    static_cast<M const &>(self)))>{};
+    }
+
+    template <std::same_as<msg_matcher> Self, match::matcher Other>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, Self &&self, Other const &o) {
+        return match::implies(static_cast<M const &>(self), o);
+    }
+
+    template <match::matcher Other, std::same_as<msg_matcher> Self>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, Other const &o, Self &&self) {
+        return match::implies(o, static_cast<M const &>(self));
+    }
 };
 
 template <typename Msg, match::matcher M>
