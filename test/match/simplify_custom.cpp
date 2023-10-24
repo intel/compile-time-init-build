@@ -37,6 +37,14 @@ TEST_CASE("custom matcher simplifies (AND exclusive terms)",
     static_assert(std::is_same_v<decltype(e), match::never_t const>);
 }
 
+TEST_CASE("custom matcher simplifies (exclusive terms inside AND)",
+          "[match simplify]") {
+    constexpr auto e = rel_matcher<std::less<>, 5>{} and
+                       rel_matcher<std::less<>, 10>{} and
+                       rel_matcher<std::greater<>, 4>{};
+    static_assert(std::is_same_v<decltype(e), match::never_t const>);
+}
+
 TEST_CASE("custom matcher simplifies (OR)", "[match simplify]") {
     constexpr auto e =
         rel_matcher<std::less<>, 5>{} or rel_matcher<std::greater_equal<>, 5>{};
@@ -61,5 +69,13 @@ TEST_CASE("custom matcher simplifies (OR overlapping terms)",
           "[match simplify]") {
     constexpr auto e =
         rel_matcher<std::less<>, 5>{} or rel_matcher<std::greater<>, 4>{};
+    static_assert(std::is_same_v<decltype(e), match::always_t const>);
+}
+
+TEST_CASE("custom matcher simplifies (overlapping terms inside OR)",
+          "[match simplify]") {
+    constexpr auto e = rel_matcher<std::less<>, 5>{} or
+                       rel_matcher<std::less<>, 10>{} or
+                       rel_matcher<std::greater<>, 4>{};
     static_assert(std::is_same_v<decltype(e), match::always_t const>);
 }
