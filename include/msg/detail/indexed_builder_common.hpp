@@ -91,8 +91,10 @@ struct indexed_builder_base {
     CallbacksT callbacks;
 
     template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
+        [[maybe_unused]] auto const msg_matcher =
+            typename BaseMsgT::matcher_t{};
         auto new_callbacks =
-            stdx::tuple_cat(callbacks, separate_sum_terms(ts)...);
+            stdx::tuple_cat(callbacks, separate_sum_terms(ts, msg_matcher)...);
         using new_callbacks_t = decltype(new_callbacks);
         return ParentT<IndexSpec, new_callbacks_t, BaseMsgT,
                        ExtraCallbackArgsT...>{new_callbacks};

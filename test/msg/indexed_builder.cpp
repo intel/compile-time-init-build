@@ -294,3 +294,37 @@ TEST_CASE("build handler disjunction", "[indexed_builder]") {
         test_msg_t{test_id_field{0x81}, test_opcode_field{1}});
     CHECK(callback_success);
 }
+
+namespace {
+using test_msg_match_t = msg::message_base<decltype("test_msg"_sc), 2,
+                                           test_id_field::WithRequired<0x80>>;
+using msg_match_index_spec = msg::index_spec<test_id_field>;
+struct test_msg_match_service
+    : msg::indexed_service<msg_match_index_spec, test_msg_match_t> {};
+
+constexpr auto test_msg_match_callback = msg::indexed_callback(
+    "TestCallback"_sc, match::always,
+    [](test_msg_match_t const &) { callback_success = true; });
+
+struct test_msg_match_project {
+    constexpr static auto config = cib::config(
+        cib::exports<test_msg_match_service>,
+        cib::extend<test_msg_match_service>(test_msg_match_callback));
+};
+} // namespace
+
+TEST_CASE("match output success (message matcher)", "[handler_builder]") {
+    log_buffer.clear();
+    cib::nexus<test_msg_match_project> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_msg_match_service>->handle(
+        test_msg_match_t{test_id_field{0x80}});
+    CHECK(callback_success);
+
+    callback_success = false;
+    cib::service<test_msg_match_service>->handle(
+        test_msg_match_t{test_id_field{0x81}});
+    CHECK(not callback_success);
+}
