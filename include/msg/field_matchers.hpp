@@ -10,6 +10,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -92,6 +93,113 @@ constexpr inline class remove_terms_t {
     }
 } remove_terms{};
 
+namespace detail {
+template <typename RelOp> constexpr auto inverse_op() {
+    if constexpr (std::same_as<RelOp, std::less<>>) {
+        return std::greater_equal{};
+    } else if constexpr (std::same_as<RelOp, std::less_equal<>>) {
+        return std::greater{};
+    } else if constexpr (std::same_as<RelOp, std::greater<>>) {
+        return std::less_equal{};
+    } else if constexpr (std::same_as<RelOp, std::greater_equal<>>) {
+        return std::less{};
+    }
+}
+
+template <typename RelOp> constexpr auto to_string() {
+    if constexpr (std::same_as<RelOp, std::less<>>) {
+        return "<"_sc;
+    } else if constexpr (std::same_as<RelOp, std::less_equal<>>) {
+        return "<="_sc;
+    } else if constexpr (std::same_as<RelOp, std::greater<>>) {
+        return ">"_sc;
+    } else if constexpr (std::same_as<RelOp, std::greater_equal<>>) {
+        return ">="_sc;
+    }
+}
+} // namespace detail
+
+template <typename RelOp, typename FieldType, typename T, T ExpectedValue>
+struct rel_matcher_t {
+    using is_matcher = void;
+
+    template <typename MsgType>
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
+        return RelOp{}(msg.template get<FieldType>(), ExpectedValue);
+    }
+
+    [[nodiscard]] constexpr auto describe() const {
+        return format("{} {} 0x{:x}"_sc, FieldType::name,
+                      detail::to_string<RelOp>(),
+                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+    }
+
+    template <typename MsgType>
+    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
+        return format("{} (0x{:x}) {} 0x{:x}"_sc, FieldType::name,
+                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
+                      detail::to_string<RelOp>(),
+                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+    }
+
+  private:
+    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
+                                                   rel_matcher_t const &) {
+        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), FieldType,
+                             T, ExpectedValue>{};
+    }
+
+    template <T OtherValue>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, rel_matcher_t,
+               rel_matcher_t<RelOp, FieldType, T, OtherValue>) -> bool {
+        return RelOp{}(ExpectedValue, OtherValue);
+    }
+};
+
+template <typename FieldType, typename T, T ExpectedValue>
+using less_than_t = rel_matcher_t<std::less<>, FieldType, T, ExpectedValue>;
+template <typename FieldType, typename T, T ExpectedValue>
+using less_than_or_equal_to_t =
+    rel_matcher_t<std::less_equal<>, FieldType, T, ExpectedValue>;
+template <typename FieldType, typename T, T ExpectedValue>
+using greater_than_t =
+    rel_matcher_t<std::greater<>, FieldType, T, ExpectedValue>;
+template <typename FieldType, typename T, T ExpectedValue>
+using greater_than_or_equal_to_t =
+    rel_matcher_t<std::greater_equal<>, FieldType, T, ExpectedValue>;
+
+template <typename FieldType, typename T, T X, T Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t, less_than_or_equal_to_t<FieldType, T, X> const &,
+           less_than_t<FieldType, T, Y> const &) -> bool {
+    return X < Y;
+}
+
+template <typename FieldType, typename T, T X, T Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t, less_than_t<FieldType, T, X> const &,
+           less_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
+    auto inc = T{};
+    return X <= Y + ++inc;
+}
+
+template <typename FieldType, typename T, T X, T Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t,
+           greater_than_or_equal_to_t<FieldType, T, X> const &,
+           greater_than_t<FieldType, T, Y> const &) -> bool {
+    return X > Y;
+}
+
+template <typename FieldType, typename T, T X, T Y>
+[[nodiscard]] constexpr auto
+tag_invoke(match::implies_t, greater_than_t<FieldType, T, X> const &,
+           greater_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
+    auto inc = T{};
+    return X + ++inc >= Y;
+}
+
 template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     using is_matcher = void;
 
@@ -155,96 +263,23 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
             return m;
         }
     }
+
+    template <typename RelOp, T OtherValue>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, equal_to_t,
+               rel_matcher_t<RelOp, FieldType, T, OtherValue>) -> bool {
+        return RelOp{}(ExpectedValue, OtherValue);
+    }
+
+    template <T OtherValue>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t, equal_to_t,
+               match::not_t<equal_to_t<FieldType, T, OtherValue>>) -> bool {
+        return ExpectedValue != OtherValue;
+    }
 };
 
 template <typename FieldType, typename T, T... ExpectedValues>
 using in_t = decltype((equal_to_t<FieldType, T, ExpectedValues>{} or ... or
                        match::never));
-
-template <typename FieldType, typename T, T expected_value>
-struct greater_than_t {
-    using is_matcher = void;
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return msg.template get<FieldType>() > expected_value;
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        return format("{} > 0x{:x}"_sc, FieldType::name,
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) > 0x{:x}"_sc, FieldType::name,
-                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-};
-
-template <typename FieldType, typename T, T expected_value>
-struct greater_than_or_equal_to_t {
-    using is_matcher = void;
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return msg.template get<FieldType>() >= expected_value;
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        return format("{} >= 0x{:x}"_sc, FieldType::name,
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) >= 0x{:x}"_sc, FieldType::name,
-                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-};
-
-template <typename FieldType, typename T, T expected_value> struct less_than_t {
-    using is_matcher = void;
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return msg.template get<FieldType>() < expected_value;
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        return format("{} < 0x{:x}"_sc, FieldType::name,
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) < 0x{:x}"_sc, FieldType::name,
-                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-};
-
-template <typename FieldType, typename T, T expected_value>
-struct less_than_or_equal_to_t {
-    using is_matcher = void;
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return msg.template get<FieldType>() <= expected_value;
-    }
-
-    [[nodiscard]] constexpr auto describe() const {
-        return format("{} <= 0x{:x}"_sc, FieldType::name,
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-
-    template <typename MsgType>
-    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) <= 0x{:x}"_sc, FieldType::name,
-                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                      sc::int_<static_cast<std::uint32_t>(expected_value)>);
-    }
-};
 } // namespace msg

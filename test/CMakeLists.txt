@@ -43,6 +43,7 @@ add_tests(
     msg/detail/rle_codec
     msg/disjoint_field
     msg/field
+    msg/field_matchers
     msg/handler
     msg/handler_builder
     msg/indexed_builder
