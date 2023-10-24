@@ -180,7 +180,8 @@ template <typename FieldType, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
 tag_invoke(match::implies_t, less_than_t<FieldType, T, X> const &,
            less_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
-    return X <= Y + 1;
+    auto inc = T{};
+    return X <= Y + ++inc;
 }
 
 template <typename FieldType, typename T, T X, T Y>
@@ -195,7 +196,8 @@ template <typename FieldType, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
 tag_invoke(match::implies_t, greater_than_t<FieldType, T, X> const &,
            greater_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
-    return X + 1 >= Y;
+    auto inc = T{};
+    return X + ++inc >= Y;
 }
 
 template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
