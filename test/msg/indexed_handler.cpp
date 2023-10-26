@@ -23,18 +23,23 @@
     }()
 
 namespace {
+using namespace msg;
+
 using opcode_field =
-    msg::field<decltype("opcode_field"_sc), 0, 31, 24, std::uint32_t>;
+    field<"opcode_field", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
 
 using sub_opcode_field =
-    msg::field<decltype("sub_opcode_field"_sc), 0, 15, 0, std::uint32_t>;
+    msg::field<"sub_opcode_field",
+               std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
 
-using field_3 = msg::field<decltype("field_3"_sc), 1, 23, 16, std::uint32_t>;
+using field_3 =
+    msg::field<"field_3", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
 
-using field_4 = msg::field<decltype("field_4"_sc), 1, 15, 0, std::uint32_t>;
+using field_4 =
+    msg::field<"field_5", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using test_msg = msg::message_base<decltype("test_msg"_sc), 2, opcode_field,
-                                   sub_opcode_field, field_3, field_4>;
+using test_msg = message_base<decltype("test_msg"_sc), 2, opcode_field,
+                              sub_opcode_field, field_3, field_4>;
 
 template <auto N> using bitset = stdx::bitset<N, std::uint32_t>;
 
@@ -62,13 +67,13 @@ TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
             [](test_msg const &) { callbacks_called.set(0); }}};
 
     callbacks_called.reset();
-    h.handle(test_msg{opcode_field{42}});
-    CHECK(h.is_match(test_msg{opcode_field{42}}));
+    h.handle(test_msg{"opcode_field"_field = 42});
+    CHECK(h.is_match(test_msg{"opcode_field"_field = 42}));
     CHECK(callbacks_called[0]);
 
     callbacks_called.reset();
-    h.handle(test_msg{opcode_field{12}});
-    CHECK(not h.is_match(test_msg{opcode_field{12}}));
+    h.handle(test_msg{"opcode_field"_field = 12});
+    CHECK(not h.is_match(test_msg{"opcode_field"_field = 12}));
     CHECK(callbacks_called.none());
 }
 
@@ -110,7 +115,8 @@ TEST_CASE("create handler with multiple indices and callbacks",
     auto const check_msg = [&](std::uint32_t op, std::uint32_t sub_op,
                                std::size_t callback_index) {
         callbacks_called.reset();
-        h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
+        h.handle(test_msg{"opcode_field"_field = op,
+                          "sub_opcode_field"_field = sub_op});
         CHECK(callbacks_called[callback_index]);
     };
 
@@ -131,7 +137,8 @@ TEST_CASE("create handler with multiple indices and callbacks",
 
     auto const check_no_match = [&](std::uint32_t op, std::uint32_t sub_op) {
         callbacks_called.reset();
-        h.handle(test_msg{opcode_field{op}, sub_opcode_field{sub_op}});
+        h.handle(test_msg{"opcode_field"_field = op,
+                          "sub_opcode_field"_field = sub_op});
         CHECK(callbacks_called.none());
     };
 

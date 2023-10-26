@@ -13,21 +13,22 @@
 #include <string>
 
 namespace {
+using namespace msg;
+
 using test_id_field =
-    msg::field<decltype("test_id_field"_sc), 0, 31, 24, std::uint32_t>;
+    field<"test_id_field", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
 using test_opcode_field =
-    msg::field<decltype("test_opcode_field"_sc), 0, 15, 0, std::uint32_t>;
+    field<"test_opcode_field", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
 using test_field_2 =
-    msg::field<decltype("test_field_2"_sc), 1, 23, 16, std::uint32_t>;
+    field<"test_field_2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
 using test_field_3 =
-    msg::field<decltype("test_field_3"_sc), 1, 15, 0, std::uint32_t>;
+    field<"test_field_3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using test_msg_t =
-    msg::message_base<decltype("test_msg"_sc), 2, test_id_field,
-                      test_opcode_field, test_field_2, test_field_3>;
+using test_msg_t = message_base<decltype("test_msg"_sc), 2, test_id_field,
+                                test_opcode_field, test_field_2, test_field_3>;
 
-using index_spec = msg::index_spec<test_id_field, test_opcode_field>;
-struct test_service : msg::rle_indexed_service<index_spec, test_msg_t> {};
+using index_spec = index_spec<test_id_field, test_opcode_field>;
+struct test_service : rle_indexed_service<index_spec, test_msg_t> {};
 
 bool callback_success;
 
@@ -52,11 +53,13 @@ TEST_CASE("build rle handler", "[rle_indexed_builder]") {
     test_nexus.init();
 
     callback_success = false;
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
     CHECK(callback_success);
 
     callback_success = false;
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x81});
     CHECK(not callback_success);
 }
 
@@ -65,7 +68,8 @@ TEST_CASE("match rle output success", "[rle_handler_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
     CAPTURE(log_buffer);
     CHECK(log_buffer.find("Incoming message matched") != std::string::npos);
     CHECK(log_buffer.find("[TestCallback]") != std::string::npos);
@@ -77,7 +81,8 @@ TEST_CASE("match rle output failure", "[rle_handler_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x81});
     CHECK(log_buffer.find(
               "None of the registered callbacks claimed this message") !=
           std::string::npos);
@@ -100,11 +105,13 @@ TEST_CASE("build rle handler field equal_to", "[rle_indexed_builder]") {
     test_nexus.init();
 
     callback_success = false;
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x80}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
     CHECK(callback_success);
 
     callback_success = false;
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x81});
     CHECK(not callback_success);
 }
 
@@ -134,22 +141,23 @@ TEST_CASE("build rle handler multi fields", "[rle_indexed_builder]") {
 
     callback_success = false;
     callback_success_single_field = false;
-    cib::service<test_service>->handle(
-        test_msg_t{test_id_field{0x80}, test_opcode_field{1}});
+    cib::service<test_service>->handle(test_msg_t{
+        "test_id_field"_field = 0x80, "test_opcode_field"_field = 1});
     CHECK(callback_success);
     CHECK(not callback_success_single_field);
 
     callback_success = false;
     callback_success_single_field = false;
-    cib::service<test_service>->handle(test_msg_t{test_id_field{0x81}});
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x81});
     CHECK(not callback_success);
     CHECK(not callback_success_single_field);
 
     // make sure an unconstrained field in a callback doesn't cause a mismatch
     callback_success = false;
     callback_success_single_field = false;
-    cib::service<test_service>->handle(
-        test_msg_t{test_id_field{0x50}, test_opcode_field{1}});
+    cib::service<test_service>->handle(test_msg_t{
+        "test_id_field"_field = 0x50, "test_opcode_field"_field = 1});
     CHECK(not callback_success);
     CHECK(callback_success_single_field);
 }
@@ -173,7 +181,7 @@ TEST_CASE("message matching partial rle index but not callback matcher",
     test_nexus.init();
 
     callback_success = false;
-    cib::service<partially_indexed_test_service>->handle(
-        test_msg_t{test_id_field{0x80}, test_opcode_field{2}});
+    cib::service<partially_indexed_test_service>->handle(test_msg_t{
+        "test_id_field"_field = 0x80, "test_opcode_field"_field = 2});
     CHECK(not callback_success);
 }

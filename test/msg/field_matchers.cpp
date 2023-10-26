@@ -5,9 +5,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 namespace {
+using namespace msg;
 using test_field =
-    msg::field<decltype("test_field"_sc), 0, 31, 24, std::uint32_t>;
-}
+    field<"test_field", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
+} // namespace
 
 TEST_CASE("negate less_than", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_field, std::uint32_t, 5>{};

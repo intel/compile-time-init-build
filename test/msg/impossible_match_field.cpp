@@ -6,8 +6,11 @@
 #include <msg/message.hpp>
 
 namespace {
+using namespace msg;
+
 using test_id_field =
-    msg::field<decltype("test_id_field"_sc), 0, 31, 24, std::uint32_t>;
+    msg::field<"test_id_field",
+               std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
 
 using test_msg_t = msg::message_base<decltype("test_msg"_sc), 2,
                                      test_id_field::WithRequired<0x80>>;

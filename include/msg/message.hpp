@@ -2,6 +2,7 @@
 
 #include <match/ops.hpp>
 #include <msg/field.hpp>
+#include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
 #include <stdx/cx_vector.hpp>
@@ -70,29 +71,48 @@ constexpr auto make_msg_matcher() -> match::matcher auto {
     }
 }
 
-template <typename NameType, std::uint32_t MaxNumDWords, typename... FieldsT>
+namespace detail {
+template <typename Name, typename T> struct field_value {
+    using name_t = Name;
+    T value;
+};
+
+template <typename Name> struct field_name {
+    using name_t = Name;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature)
+    template <typename T> constexpr auto operator=(T value) {
+        return field_value<Name, T>{value};
+    }
+};
+} // namespace detail
+
+template <class T, T... chars> constexpr auto operator""_field() {
+    return detail::field_name<sc::string_constant<T, chars...>>{};
+}
+
+template <typename T>
+concept field_value = requires(T const &t) {
+    { t.value };
+    typename T::name_t;
+};
+
+template <typename NameType, std::uint32_t MaxNumDWords, typename... Fields>
 struct message_base : public message_data<MaxNumDWords> {
     constexpr static NameType name{};
     constexpr static auto max_num_dwords = MaxNumDWords;
-    static_assert((... and (FieldsT::MaxDWordExtent < MaxNumDWords)));
-    using FieldTupleType = stdx::tuple<FieldsT...>;
+    static_assert((... and (Fields::max_dword_extent < MaxNumDWords)),
+                  "Fields overflow message storage!");
 
     using matcher_t = decltype(match::all(
-        make_msg_matcher<message_base, typename FieldsT::matcher_t>()...));
+        make_msg_matcher<message_base, typename Fields::matcher_t>()...));
 
     // TODO: need a static_assert to check that fields are not overlapping
-
-    template <typename FieldType>
-    [[nodiscard]] constexpr static auto is_valid_field() -> bool {
-        return (std::is_same_v<typename FieldType::FieldId,
-                               typename FieldsT::FieldId> or
-                ...);
-    }
 
     constexpr message_base() {
         resize_and_overwrite(
             *this, [](std::uint32_t *, std::size_t) { return MaxNumDWords; });
-        (set(FieldsT{}), ...);
+        (..., set<Fields>());
     }
 
     template <detail::convertible_range_of<std::uint32_t> R>
@@ -105,50 +125,72 @@ struct message_base : public message_data<MaxNumDWords> {
             });
     }
 
-    template <typename... ArgFields>
-    explicit constexpr message_base(ArgFields... argFields) {
-        if constexpr ((std::is_integral_v<std::remove_cvref_t<ArgFields>> and
-                       ...)) {
-            static_assert(sizeof...(ArgFields) <= MaxNumDWords);
-            resize_and_overwrite(*this, [&](std::uint32_t *dest, std::size_t) {
-                ((*dest++ = static_cast<std::uint32_t>(argFields)), ...);
-                return sizeof...(ArgFields);
-            });
-        } else {
-            resize_and_overwrite(*this, [](std::uint32_t *, std::size_t) {
-                return MaxNumDWords;
-            });
-            // TODO: ensure all required fields are set
-            // TODO: ensure fields aren't set more than once
-            (set(FieldsT{}), ...);
-            (set(argFields), ...);
-        }
+    template <field_value... Vs>
+    explicit constexpr message_base(Vs... vs) : message_base{} {
+        (..., set(vs));
     }
 
-    template <typename FieldType> constexpr void set(FieldType field) {
-        static_assert(is_valid_field<FieldType>());
-        FieldType::fits_inside(*this);
-        field.insert(*this);
+    template <std::integral... Vs> explicit constexpr message_base(Vs... vs) {
+        static_assert(sizeof...(Vs) <= MaxNumDWords);
+        resize_and_overwrite(*this, [&](std::uint32_t *dest, std::size_t) {
+            ((*dest++ = static_cast<std::uint32_t>(vs)), ...);
+            return sizeof...(Vs);
+        });
     }
 
-    template <typename FieldType> [[nodiscard]] constexpr auto get() const {
-        static_assert(is_valid_field<FieldType>());
-        FieldType::fits_inside(*this);
-        return FieldType::extract(*this);
+    template <typename Field>
+    constexpr auto set(typename Field::value_type v) -> void {
+        static_assert(is_valid_for_message<Field>(),
+                      "Field does not belong to this message!");
+        static_assert(Field::template fits_inside<message_base>(),
+                      "Field does not fit inside message!");
+        Field::insert(*this, v);
+    }
+
+    template <typename Field> [[nodiscard]] constexpr auto get() const {
+        static_assert(is_valid_for_message<Field>(),
+                      "Field does not belong to this message!");
+        static_assert(Field::template fits_inside<message_base>(),
+                      "Field does not fit inside message!");
+        return Field::extract(*this);
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        auto const field_descriptions = stdx::transform(
-            [&](auto field) {
-                using FieldType = decltype(field);
-                return FieldType{FieldType::extract(this->data)}.describe();
-            },
-            FieldTupleType{});
+        auto const descs = [&] {
+            auto const field_descriptions =
+                stdx::tuple{Fields::describe(Fields::extract(*this))...};
+            if constexpr (sizeof...(Fields) > 0) {
+                return field_descriptions.join(
+                    [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
+            } else {
+                return ""_sc;
+            }
+        }();
+        return format("{}({})"_sc, name, descs);
+    }
 
-        auto const middle_string = field_descriptions.fold_left(
-            [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
+  private:
+    template <typename FieldType>
+    [[nodiscard]] constexpr static auto is_valid_for_message() -> bool {
+        return (std::is_same_v<typename FieldType::field_id,
+                               typename Fields::field_id> or
+                ...);
+    }
 
-        return format("{}({})"_sc, name, middle_string);
+    template <typename Field> constexpr auto set() -> void {
+        set<Field>(Field::default_value);
+    }
+
+    template <field_value V> constexpr void set(V v) {
+        auto const set_by_name = [&]<typename F>() -> bool {
+            if constexpr (std::is_same_v<typename V::name_t,
+                                         typename F::name_t>) {
+                set<F>(static_cast<typename F::value_type>(v.value));
+                return true;
+            }
+            return false;
+        };
+        (... or set_by_name.template operator()<Fields>());
     }
 };
 } // namespace msg

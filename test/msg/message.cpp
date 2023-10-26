@@ -1,25 +1,26 @@
-#include <msg/disjoint_field.hpp>
+#include <log/fmt/logger.hpp>
 #include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
-namespace msg {
-using TestIdField = field<decltype("TestIdField"_sc), 0, 31, 24, std::uint32_t>;
+namespace {
+using namespace msg;
 
-using TestField1 = field<decltype("TestField1"_sc), 0, 15, 0, std::uint32_t>;
+using TestIdField =
+    field<"TestIdField", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
 
-using TestField2 = field<decltype("TestField2"_sc), 1, 23, 16, std::uint32_t>;
+using TestField1 =
+    field<"TestField1", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
 
-using TestFieldLower =
-    field<decltype("TestFieldLower"_sc), 1, 15, 8, std::uint32_t>;
+using TestField2 =
+    field<"TestField2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
 
-using TestFieldUpper =
-    field<decltype("TestFieldUpper"_sc), 1, 7, 0, std::uint32_t>;
+using TestField3 =
+    field<"TestField3", std::uint32_t>::located<at{1_dw, 15_msb, 8_lsb},
+                                                at{1_dw, 7_msb, 0_lsb}>;
 
-using TestField3 = disjoint_field<decltype("TestField4"_sc),
-                                  stdx::tuple<TestFieldLower, TestFieldUpper>>;
-
-using TestField4 = field<decltype("TestField4"_sc), 1, 31, 24, std::uint8_t>;
+using TestField4 =
+    field<"TestField4", std::uint8_t>::located<at{1_dw, 31_msb, 24_lsb}>;
 
 using TestMsg =
     message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
@@ -28,9 +29,16 @@ using TestMsg =
 using TestLastBitField =
     message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
                  TestField1, TestField2, TestField3, TestField4>;
+std::string log_buffer{};
+} // namespace
+
+template <>
+inline auto logging::config<> =
+    logging::fmt::config{std::back_inserter(log_buffer)};
 
 TEST_CASE("TestMessageDataFieldConstruction", "[message]") {
-    TestMsg msg{TestField1{0xba11}, TestField2{0x42}, TestField3{0xd00d}};
+    TestMsg msg{"TestField1"_field = 0xba11, "TestField2"_field = 0x42,
+                "TestField3"_field = 0xd00d};
 
     CHECK(0xba11 == msg.get<TestField1>());
     CHECK(0x42 == msg.get<TestField2>());
@@ -247,4 +255,12 @@ TEST_CASE("LessThanOrEqualToMatcher", "[message]") {
     CHECK_FALSE(TestField3::less_than_or_equal_to<0x1111>(msg));
 }
 
-} // namespace msg
+TEST_CASE("describe a message", "[message]") {
+    TestMsg msg{"TestField1"_field = 0xba11, "TestField2"_field = 0x42,
+                "TestField3"_field = 0xd00d};
+    CIB_INFO("{}", msg.describe());
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("TestMsg(TestIdField: 0x80, TestField1: 0xba11, "
+                          "TestField2: 0x42, TestField3: 0xd00d)") !=
+          std::string::npos);
+}
