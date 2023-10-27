@@ -170,9 +170,9 @@ struct message_base : public message_data<MaxNumDWords> {
     }
 
   private:
-    template <typename FieldType>
+    template <typename Field>
     [[nodiscard]] constexpr static auto is_valid_for_message() -> bool {
-        return (std::is_same_v<typename FieldType::field_id,
+        return (std::is_same_v<typename Field::field_id,
                                typename Fields::field_id> or
                 ...);
     }
