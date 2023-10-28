@@ -41,7 +41,6 @@ add_tests(
     match/simplify_or
     match/sum_of_products
     msg/detail/rle_codec
-    msg/disjoint_field
     msg/field
     msg/field_matchers
     msg/handler

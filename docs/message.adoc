@@ -9,24 +9,23 @@ Everything in the msg library is in the `msg` namespace.
 
 A `field` represents a value, specified in bits, inside a unit of addressable
 storage. Currently in the _cib_ library, storage is assumed to be in units of
-`std::uint32_t`.
+`std::uint32_t`. A field is a view type: it defines how to access storage, but
+it is an empty type.
 
-Three things specify a `field`:
+Two things specify a `field`:
 
 - a `field_spec_t` which specifies the name, the type and the size (in bits) of
   the field
-- a `field_locator_t` which determines how to read and write the field from
+- one or more `field_locator_t`​s which determine how to read and write the field from
   storage
-- the value of the field
 
 A `field` has two important member functions:
-
 [source,cpp]
 ----
 // where T is the type of the field
 
 [[nodiscard]] constexpr static auto extract(auto const &data) -> T;
-[[nodiscard]] constexpr static auto insert(auto &data) -> void;
+[[nodiscard]] constexpr static auto insert(auto &data, T value) -> void;
 ----
 
 A field may also specify a xref:match.adoc#_what_is_a_matcher[`matcher`]; this
@@ -36,13 +35,17 @@ default this is xref:match.adoc#_basic_matchers[`match::always`].
 For example, a field type looks like this:
 [source,cpp]
 ----
+using namespace msg;
 using my_field =
-    msg::field<decltype("my field"_sc),  // name
-               0,                        // offset in storage (32-bit words)
-               31,                       // most significant bit
-               24,                       // least significant bit
-               std::uint32_t>;           // type
+    field<"my field",               // name
+          std::uint32_t>            // type
+            ::located<at{0_dw,      // offset in storage (32-bit words)
+                         31_msb,    // most significant bit
+                         24_lsb}>;  // least significant bit
 ----
+
+NOTE: A field can specify multiple `at` arguments if it has several disjoint
+parts.
 
 Fields also expose several matcher aliases which can typically be used to
 specify field values for a given message type; an example of this follows
@@ -109,7 +112,8 @@ cib::nexus<my_project> my_nexus{};
 my_nexus.init();
 
 // handling this message calls my callback
-cib::service<my_service>->handle(my_message{my_field{0x80}});
+using msg::operator""_field;
+cib::service<my_service>->handle(my_message{"my field"_field = 0x80});
 ----
 
 Notice in this case that our callback is defined with a matcher that always
@@ -120,7 +124,7 @@ callback:
 ----
 // handling this message does not call my callback
 // because my_message's field matcher does not match
-cib::service<my_service>->handle(my_message{my_field{0x81}});
+cib::service<my_service>->handle(my_message{"my_field"_field = 0x81});
 ----
 
 This machinery for handling messages with callbacks is fairly basic and can be
