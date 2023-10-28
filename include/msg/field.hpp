@@ -11,11 +11,19 @@
 #include <climits>
 #include <concepts>
 #include <cstdint>
+#include <iterator>
+#include <limits>
 #include <span>
 #include <type_traits>
 
 namespace msg {
-// TODO: handle field types that are not integral types
+namespace detail {
+template <typename T>
+concept range = requires(T &t) {
+    std::begin(t);
+    std::end(t);
+};
+}
 
 template <typename T>
 concept field_spec =
@@ -27,7 +35,9 @@ template <typename T>
 concept bits_extractor =
     std::unsigned_integral<decltype(T::size)> and
     requires(std::span<std::uint32_t const> extract_buffer) {
-        { T::extract(extract_buffer) } -> std::same_as<std::uint64_t>;
+        {
+            T::template extract<std::uint32_t>(extract_buffer)
+        } -> std::same_as<std::uint32_t>;
     };
 
 template <typename T>
@@ -48,31 +58,36 @@ concept field_extractor_for =
         } -> std::same_as<typename Spec::type>;
     };
 
-template <typename T, typename Field>
-concept field_inserter_for =
-    requires(std::span<std::uint32_t> insert_buffer, Field f) {
-        { T::template insert<Field>(insert_buffer, f) } -> std::same_as<void>;
-    };
+template <typename T, typename Spec>
+concept field_inserter_for = requires(std::span<std::uint32_t> insert_buffer,
+                                      typename Spec::type value) {
+    { T::template insert<Spec>(insert_buffer, value) } -> std::same_as<void>;
+};
 
-template <typename T, typename Field>
+template <typename T, typename Spec>
 concept field_locator_for =
-    field_extractor_for<T, Field> and field_inserter_for<T, Field>;
+    field_extractor_for<T, Spec> and field_inserter_for<T, Spec>;
+
+template <typename T>
+concept field_location = requires(T const &t) {
+    { t.index() } -> std::same_as<std::uint32_t>;
+    { t.lsb() } -> std::same_as<std::uint32_t>;
+    { t.size() } -> std::same_as<std::uint32_t>;
+    { t.valid() } -> std::same_as<bool>;
+};
 
 namespace detail {
 template <typename T> CONSTEVAL auto bit_size() { return sizeof(T) * CHAR_BIT; }
 
-template <std::uint32_t BitSize>
-    requires(BitSize <= 64)
-CONSTEVAL auto bit_mask() -> std::uint64_t {
-    if constexpr (BitSize == 64) {
-        return 0xFFFF'FFFF'FFFF'FFFFUL;
+template <std::unsigned_integral T, auto BitSize = bit_size<T>()>
+    requires(BitSize <= bit_size<T>())
+CONSTEVAL auto bit_mask() -> T {
+    if constexpr (BitSize == 0u) {
+        return {};
     } else {
-        return (static_cast<std::uint64_t>(1)
-                << static_cast<std::uint64_t>(BitSize)) -
-               static_cast<std::uint64_t>(1);
+        return std::numeric_limits<T>::max() >> (bit_size<T>() - BitSize);
     }
 }
-} // namespace detail
 
 template <typename Name, typename T, std::uint32_t BitSize>
 struct field_spec_t {
@@ -87,101 +102,172 @@ template <std::uint32_t DWordIndex, std::uint32_t BitSize, std::uint32_t Lsb>
 struct bits_locator_t {
     constexpr static auto size = BitSize;
 
-    [[nodiscard]] constexpr static auto fold(std::uint64_t value)
-        -> std::uint64_t {
-        if constexpr (BitSize == 64) {
+    template <std::unsigned_integral T>
+    [[nodiscard]] constexpr static auto fold(T value) -> T {
+        if constexpr (BitSize == bit_size<T>()) {
             return {};
         } else {
             return value >> BitSize;
         }
     }
 
-    [[nodiscard]] constexpr static auto unfold(std::uint64_t value)
-        -> std::uint64_t {
-        if constexpr (BitSize == 64) {
+    template <std::unsigned_integral T>
+    [[nodiscard]] constexpr static auto unfold(T value) -> T {
+        if constexpr (BitSize == bit_size<T>()) {
             return {};
         } else {
             return value << BitSize;
         }
     }
 
-    [[nodiscard]] constexpr static auto
-    extract(std::span<std::uint32_t const> data) -> std::uint64_t {
-        constexpr auto Msb = Lsb + BitSize - 1;
-        std::uint32_t const lower = data[DWordIndex] >> Lsb;
-        std::uint64_t const mid = [&] {
-            if constexpr (Msb < 32) {
-                return 0;
+    template <std::unsigned_integral E, typename R>
+    [[nodiscard]] constexpr static auto extract(R &&r) -> E {
+        using elem_t = typename std::remove_cvref_t<R>::value_type;
+        using T = std::make_unsigned_t<decltype(elem_t{} & E{})>;
+        constexpr auto Msb = Lsb + BitSize - 1u;
+
+        constexpr auto BaseIndex =
+            DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
+
+        constexpr auto elem_size = bit_size<elem_t>();
+        constexpr auto max_idx = BaseIndex + Msb / elem_size;
+        constexpr auto min_idx = BaseIndex + Lsb / elem_size;
+
+        constexpr auto f =
+            []<auto CurrentMsb, typename Rng>([[maybe_unused]] auto recurse,
+                                              Rng &&rng, T value) -> T {
+            constexpr auto current_idx = BaseIndex + CurrentMsb / elem_size;
+            if constexpr (current_idx == max_idx and current_idx == min_idx) {
+                constexpr auto mask =
+                    bit_mask<T, CurrentMsb % elem_size + 1u>();
+                constexpr auto shift = Lsb % elem_size;
+                return (std::forward<Rng>(rng)[current_idx] & mask) >> shift;
+            } else if constexpr (current_idx == min_idx) {
+                constexpr auto shift = Lsb % elem_size;
+                value <<= (elem_size - shift);
+                return value | (std::forward<Rng>(rng)[current_idx] >> shift);
+            } else if constexpr (current_idx == max_idx) {
+                constexpr auto mask =
+                    bit_mask<T, CurrentMsb % elem_size + 1u>();
+                constexpr auto NewMsb =
+                    (CurrentMsb / elem_size) * elem_size - 1u;
+                MUSTTAIL return recurse.template operator()<NewMsb>(
+                    recurse, std::forward<Rng>(rng),
+                    std::forward<Rng>(rng)[current_idx] & mask);
             } else {
-                return static_cast<std::uint64_t>(data[DWordIndex + 1])
-                       << (32 - Lsb);
+                value <<= elem_size;
+                value |= std::forward<Rng>(rng)[current_idx];
+                constexpr auto NewMsb = CurrentMsb - elem_size;
+                MUSTTAIL return recurse.template operator()<NewMsb>(
+                    recurse, std::forward<Rng>(rng), value);
             }
-        }();
-        std::uint64_t const upper = [&] {
-            if constexpr (Msb < 64) {
-                return 0;
-            } else {
-                return static_cast<std::uint64_t>(data[DWordIndex + 2])
-                       << (64 - Lsb);
-            }
-        }();
-        return (upper | mid | lower) & detail::bit_mask<BitSize>();
+        };
+        return static_cast<E>(
+            f.template operator()<Msb>(f, std::forward<R>(r), T{}));
     }
 
-    constexpr static auto insert(std::span<std::uint32_t> data,
-                                 std::uint64_t const &value) -> void {
-        constexpr auto Msb = Lsb + BitSize - 1;
-        constexpr std::uint64_t mask = detail::bit_mask<BitSize>() << Lsb;
-        data[DWordIndex] = static_cast<std::uint32_t>(
-            ((static_cast<std::uint32_t>(value) << Lsb) & mask) |
-            (data[DWordIndex] & ~mask));
+    template <std::unsigned_integral E, typename R>
+    constexpr static auto insert(R &&r, E e) -> void {
+        using elem_t = typename std::remove_cvref_t<R>::value_type;
+        using T = std::make_unsigned_t<decltype(E{} >> 1u)>;
+        constexpr auto Msb = Lsb + BitSize - 1u;
 
-        if constexpr (Msb >= 32) {
-            constexpr auto mask_dword_1 = static_cast<std::uint32_t>(
-                detail::bit_mask<BitSize>() >> (32 - Lsb));
+        constexpr auto BaseIndex =
+            DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
 
-            data[DWordIndex + 1] = static_cast<std::uint32_t>(
-                ((static_cast<std::uint64_t>(value) >> (32 - Lsb)) &
-                 mask_dword_1) |
-                (data[DWordIndex + 1] & ~mask_dword_1));
-        }
-        if constexpr (Msb >= 64) {
-            constexpr auto field_mask_dword_2 = static_cast<std::uint32_t>(
-                detail::bit_mask<BitSize>() >> (64 - Lsb));
+        constexpr auto elem_size = bit_size<elem_t>();
+        constexpr auto max_idx = BaseIndex + Msb / elem_size;
+        constexpr auto min_idx = BaseIndex + Lsb / elem_size;
 
-            data[DWordIndex + 2] = static_cast<std::uint32_t>(
-                ((static_cast<std::uint64_t>(value) >> (64 - Lsb)) &
-                 field_mask_dword_2) |
-                (data[DWordIndex + 2] & ~field_mask_dword_2));
-        }
+        constexpr auto f =
+            []<auto CurrentLsb, typename Rng>([[maybe_unused]] auto recurse,
+                                              Rng &&rng, T value) -> void {
+            constexpr auto current_idx = BaseIndex + CurrentLsb / elem_size;
+
+            if constexpr (current_idx == max_idx and current_idx == min_idx) {
+                constexpr auto shift = CurrentLsb % elem_size;
+                constexpr auto numbits = Msb - CurrentLsb + 1u;
+                constexpr auto value_mask = bit_mask<elem_t, numbits>()
+                                            << shift;
+                constexpr auto leftover_mask = ~value_mask;
+                auto &elem = std::forward<Rng>(rng)[current_idx];
+                elem &= leftover_mask;
+                elem |= static_cast<elem_t>(value << shift);
+            } else if constexpr (current_idx == min_idx) {
+                constexpr auto shift = CurrentLsb % elem_size;
+                constexpr auto numbits = elem_size - shift;
+                constexpr auto value_mask = bit_mask<elem_t, numbits>();
+                constexpr auto leftover_mask = bit_mask<elem_t, shift>();
+                auto &elem = std::forward<Rng>(rng)[current_idx];
+                elem &= leftover_mask;
+                elem |= static_cast<elem_t>((value & value_mask) << shift);
+                constexpr auto NewLsb = CurrentLsb + numbits;
+                MUSTTAIL return recurse.template operator()<NewLsb>(
+                    recurse, std::forward<Rng>(rng), value >> numbits);
+            } else if constexpr (current_idx == max_idx) {
+                constexpr auto numbits = Msb - CurrentLsb + 1u;
+                constexpr auto value_mask = bit_mask<elem_t, numbits>();
+                constexpr auto leftover_mask = ~value_mask;
+
+                auto &elem = std::forward<Rng>(rng)[current_idx];
+                elem &= leftover_mask;
+                elem |= static_cast<elem_t>(value);
+            } else {
+                constexpr auto value_mask = bit_mask<elem_t, elem_size>();
+                auto &elem = std::forward<Rng>(rng)[current_idx];
+                elem = value & value_mask;
+                constexpr auto NewLsb = CurrentLsb + elem_size;
+                MUSTTAIL return recurse.template operator()<NewLsb>(
+                    recurse, std::forward<Rng>(rng), value >> elem_size);
+            }
+        };
+        f.template operator()<Lsb>(f, std::forward<R>(r), T{e});
     }
 
-    template <std::uint32_t MaxDwords>
+    template <std::uint32_t NumBits>
     constexpr static auto fits_inside() -> bool {
-        constexpr auto max_dword_index = DWordIndex + (Lsb + BitSize - 1) / 32;
-        return max_dword_index < MaxDwords;
+        constexpr auto Msb = Lsb + BitSize - 1;
+        return DWordIndex * 32 + Msb <= NumBits;
     }
 };
 
+template <typename T> CONSTEVAL auto select_integral_type() {
+    if constexpr (sizeof(T) <= sizeof(std::uint8_t)) {
+        return std::uint8_t{};
+    } else if constexpr (sizeof(T) <= sizeof(std::uint16_t)) {
+        return std::uint16_t{};
+    } else if constexpr (sizeof(T) <= sizeof(std::uint32_t)) {
+        return std::uint32_t{};
+    } else {
+        static_assert(sizeof(T) <= sizeof(std::uint64_t),
+                      "T is too big to be covered by an integral type!");
+        return std::uint64_t{};
+    }
+}
+template <typename T>
+using integral_type_for = decltype(select_integral_type<T>());
+
 template <bits_locator... BLs> struct field_locator_t {
-    template <field_spec Spec>
-    [[nodiscard]] constexpr static auto
-    extract(std::span<std::uint32_t const> data) -> typename Spec::type {
-        auto raw = std::uint64_t{};
+    template <field_spec Spec, detail::range R>
+    [[nodiscard]] constexpr static auto extract(R &&r) -> typename Spec::type {
+        using raw_t = integral_type_for<typename Spec::type>;
+        auto raw = raw_t{};
         auto const extract_bits = [&]<bits_locator B>() {
             raw = B::unfold(raw);
-            raw |= B::extract(data);
+            raw |= B::template extract<raw_t>(std::forward<R>(r));
         };
         (..., extract_bits.template operator()<BLs>());
         return static_cast<typename Spec::type>(raw);
     }
 
-    template <field_spec Spec>
-    constexpr static auto insert(std::span<std::uint32_t> data,
-                                 typename Spec::type const &value) -> void {
-        auto raw = static_cast<std::uint64_t>(value);
+    template <field_spec Spec, detail::range R>
+    constexpr static auto insert(R &&r, typename Spec::type const &value)
+        -> void {
+        using raw_t = integral_type_for<typename Spec::type>;
+        auto raw = static_cast<raw_t>(value);
         auto const insert_bits = [&]<bits_locator B>() {
-            B::insert(data, raw & detail::bit_mask<B::size>());
+            B::insert(std::forward<R>(r),
+                      raw & detail::bit_mask<raw_t, B::size>());
             raw = B::fold(raw);
         };
 
@@ -189,11 +275,12 @@ template <bits_locator... BLs> struct field_locator_t {
         (void)(dummy = ... = (insert_bits.template operator()<BLs>(), 0));
     }
 
-    template <std::uint32_t MaxDwords>
+    template <std::uint32_t NumBits>
     constexpr static auto fits_inside() -> bool {
-        return (... and BLs::template fits_inside<MaxDwords>());
+        return (... and BLs::template fits_inside<NumBits>());
     }
 };
+} // namespace detail
 
 enum struct dword_index_t : std::uint32_t {};
 enum struct msb_t : std::uint32_t {};
@@ -233,10 +320,6 @@ template <> struct at<dword_index_t, msb_t, lsb_t> {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
-    [[nodiscard]] constexpr auto dword_extent() const
-        -> std::underlying_type_t<dword_index_t> {
-        return index() + (stdx::to_underlying(msb_) / 32u);
-    }
 };
 
 template <> struct at<msb_t, lsb_t> {
@@ -257,27 +340,21 @@ template <> struct at<msb_t, lsb_t> {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
-    [[nodiscard]] constexpr auto dword_extent() const
-        -> std::underlying_type_t<dword_index_t> {
-        return index() + (stdx::to_underlying(msb_) / 32);
-    }
 };
 
 template <typename... Ts> at(Ts...) -> at<Ts...>;
 
 namespace detail {
-template <at... Ats>
+template <auto... Ats>
+    requires(... and field_location<decltype(Ats)>)
 using locator_for =
     field_locator_t<bits_locator_t<Ats.index(), Ats.size(), Ats.lsb()>...>;
 
 template <at... Ats> constexpr inline auto field_size = (0u + ... + Ats.size());
 
-template <at... Ats>
-constexpr inline auto max_dword_extent = std::max({0u, Ats.dword_extent()...});
-} // namespace detail
-
 template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
-          match::matcher M = match::always_t, at... Ats>
+          match::matcher M = match::always_t, auto... Ats>
+    requires(... and field_location<decltype(Ats)>)
 class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 public detail::locator_for<Ats...> {
     using spec_t = field_spec_t<Name, T, detail::field_size<Ats...>>;
@@ -295,29 +372,22 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using field_id = field_t<Name, T, T{}, match::always_t, Ats...>;
     using value_type = T;
     constexpr static auto default_value = DefaultValue;
-    constexpr static auto max_dword_extent = detail::max_dword_extent<Ats...>;
 
-    template <typename DataType>
-    [[nodiscard]] constexpr static auto extract(DataType const &data)
-        -> value_type {
-        static_assert(
-            std::same_as<typename DataType::value_type, std::uint32_t>);
-        return locator_t::template extract<spec_t>(
-            std::span{data.begin(), data.end()});
+    template <detail::range R>
+    [[nodiscard]] constexpr static auto extract(R &&r) -> value_type {
+        return locator_t::template extract<spec_t>(std::forward<R>(r));
     }
 
-    template <typename DataType>
-    constexpr static void insert(DataType &data, value_type const &value) {
-        static_assert(
-            std::same_as<typename DataType::value_type, std::uint32_t>);
-        locator_t::template insert<spec_t>(std::span{data.begin(), data.end()},
-                                           value);
+    template <detail::range R>
+    constexpr static void insert(R &&r, value_type const &value) {
+        locator_t::template insert<spec_t>(std::forward<R>(r), value);
     }
 
     template <typename DataType> constexpr static auto fits_inside() -> bool {
-        static_assert(
-            std::same_as<typename DataType::value_type, std::uint32_t>);
-        return locator_t::template fits_inside<DataType::max_num_dwords>();
+        constexpr auto bits_capacity =
+            detail::bit_size<typename DataType::value_type>() *
+            DataType::capacity();
+        return locator_t::template fits_inside<bits_capacity>();
     }
 
     using matcher_t = M;
@@ -384,17 +454,18 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 Ats...>;
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
-        return format("{}: 0x{:x}"_sc, spec_t::name,
-                      static_cast<std::uint32_t>(v));
+        return format("{}: 0x{:x}"_sc, spec_t::name, v);
     }
 };
+} // namespace detail
 
 template <stdx::ct_string Name, typename T = std::uint32_t,
           T DefaultValue = T{}, match::matcher M = match::always_t>
 struct field {
-    template <at... Ats>
-    using located =
-        field_t<decltype(stdx::ct_string_to_type<Name, sc::string_constant>()),
-                T, DefaultValue, M, Ats...>;
+    template <auto... Ats>
+        requires(... and field_location<decltype(Ats)>)
+    using located = detail::field_t<
+        decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
+        DefaultValue, M, Ats...>;
 };
 } // namespace msg

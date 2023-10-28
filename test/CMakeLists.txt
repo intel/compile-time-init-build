@@ -41,7 +41,8 @@ add_tests(
     match/simplify_or
     match/sum_of_products
     msg/detail/rle_codec
-    msg/field
+    msg/field_extract
+    msg/field_insert
     msg/field_matchers
     msg/handler
     msg/handler_builder
@@ -90,5 +91,9 @@ add_unit_test(
     catalog_lib
     catalog_strings)
 
-add_compile_fail_test(msg/impossible_match_callback.cpp LIBRARIES warnings cib)
-add_compile_fail_test(msg/impossible_match_field.cpp LIBRARIES warnings cib)
+add_compile_fail_test(msg/fail/impossible_match_callback.cpp LIBRARIES warnings
+                      cib)
+add_compile_fail_test(msg/fail/impossible_match_field.cpp LIBRARIES warnings
+                      cib)
+add_compile_fail_test(msg/fail/field_location.cpp LIBRARIES warnings cib)
+add_compile_fail_test(msg/fail/field_size.cpp LIBRARIES warnings cib)

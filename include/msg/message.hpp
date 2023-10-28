@@ -17,12 +17,6 @@
 namespace msg {
 namespace detail {
 template <typename T>
-concept range = requires(T &t) {
-    std::begin(t);
-    std::end(t);
-};
-
-template <typename T>
 using iterator_t = decltype(std::begin(std::declval<T &>()));
 
 template <typename T, typename V>
@@ -30,8 +24,8 @@ concept convertible_range_of =
     range<T> and std::convertible_to<std::iter_value_t<iterator_t<T>>, V>;
 } // namespace detail
 
-template <std::uint32_t MaxNumDWords>
-using message_data = stdx::cx_vector<std::uint32_t, MaxNumDWords>;
+template <std::uint32_t Capacity>
+using message_data = stdx::cx_vector<std::uint32_t, Capacity>;
 
 template <typename Msg, match::matcher M> struct msg_matcher : M {
     [[nodiscard]] constexpr auto operator()(auto const &base) const -> bool {
@@ -97,11 +91,10 @@ concept field_value = requires(T const &t) {
     typename T::name_t;
 };
 
-template <typename NameType, std::uint32_t MaxNumDWords, typename... Fields>
-struct message_base : public message_data<MaxNumDWords> {
+template <typename NameType, std::uint32_t Capacity, typename... Fields>
+struct message_base : public message_data<Capacity> {
     constexpr static NameType name{};
-    constexpr static auto max_num_dwords = MaxNumDWords;
-    static_assert((... and (Fields::max_dword_extent < MaxNumDWords)),
+    static_assert((... and Fields::template fits_inside<message_base>()),
                   "Fields overflow message storage!");
 
     using matcher_t = decltype(match::all(
@@ -111,7 +104,7 @@ struct message_base : public message_data<MaxNumDWords> {
 
     constexpr message_base() {
         resize_and_overwrite(
-            *this, [](std::uint32_t *, std::size_t) { return MaxNumDWords; });
+            *this, [](std::uint32_t *, std::size_t) { return Capacity; });
         (..., set<Fields>());
     }
 
@@ -131,7 +124,7 @@ struct message_base : public message_data<MaxNumDWords> {
     }
 
     template <std::integral... Vs> explicit constexpr message_base(Vs... vs) {
-        static_assert(sizeof...(Vs) <= MaxNumDWords);
+        static_assert(sizeof...(Vs) <= Capacity);
         resize_and_overwrite(*this, [&](std::uint32_t *dest, std::size_t) {
             ((*dest++ = static_cast<std::uint32_t>(vs)), ...);
             return sizeof...(Vs);
