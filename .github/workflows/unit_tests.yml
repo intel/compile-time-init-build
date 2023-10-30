@@ -227,7 +227,7 @@ jobs:
   merge_ok:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     needs: [build_and_test, quality_checks_pass, sanitize, valgrind]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     steps:
       - name: Enable merge
         if: >-
