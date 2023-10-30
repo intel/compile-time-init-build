@@ -24,9 +24,9 @@ constexpr inline class implies_t {
   public:
     template <typename... Ts>
     constexpr auto operator()(Ts &&...ts) const
-    // noexcept(noexcept(tag_invoke(std::declval<implies_t>(),
-    //                              std::forward<Ts>(ts)...)))
-    /*            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) */ {
+        noexcept(noexcept(tag_invoke(std::declval<implies_t>(),
+                                     std::forward<Ts>(ts)...)))
+            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
         return tag_invoke(*this, std::forward<Ts>(ts)...);
     }
 } implies{};
