@@ -46,6 +46,9 @@ using TestField64BitUnaligned24 =
 using DualTestField =
     field<"DualTestField", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb},
                                                    at{1_dw, 7_msb, 0_lsb}>;
+
+using TestFieldNoIndex =
+    field<"TestFieldNoIndex", std::uint32_t>::located<at{39_msb, 32_lsb}>;
 } // namespace
 
 TEST_CASE("TestFieldExtract", "[field]") {
@@ -92,6 +95,17 @@ TEST_CASE("TestFieldExtract64BitUnaligned16", "[field]") {
 TEST_CASE("TestFieldExtract64BitUnaligned24", "[field]") {
     std::array<std::uint32_t, 3> data{0x44332211, 0x88776655, 0xCCBBAA99};
     CHECK(0xBBAA998877665544UL == TestField64BitUnaligned24::extract(data));
+}
+
+TEST_CASE("TestFieldExtractNoIndex", "[field]") {
+    std::array<std::uint32_t, 2> data{0x1123'4567, 0x8abc'def0};
+    CHECK(0xf0 == TestFieldNoIndex::extract(data));
+}
+
+TEST_CASE("extract field spanning elements (no index)", "[field]") {
+    using F = field<"test", std::uint32_t>::located<at{43_msb, 22_lsb}>;
+    std::array<std::uint32_t, 2> data{0x3fc0'0000, 0x0000'0fff};
+    CHECK(0x3f'fcffu == F::extract(data));
 }
 
 TEST_CASE("TestFieldInsert32BitUnaligned8", "[field]") {
@@ -188,6 +202,21 @@ TEST_CASE("TestFieldInsert", "[field]") {
 
     CHECK(0xC001BEAD == data[0]);
     CHECK(0x50d0c001 == data[1]);
+}
+
+TEST_CASE("TestFieldInserttNoIndex", "[field]") {
+    std::array<std::uint32_t, 2> data{0x1123'4567, 0x8abc'de00};
+    TestFieldNoIndex::insert(data, 0x5a);
+    CHECK(0x1123'4567 == data[0]);
+    CHECK(0x8abc'de5a == data[1]);
+}
+
+TEST_CASE("insert field spanning elements (no index)", "[field]") {
+    std::array<std::uint32_t, 2> data{};
+    using F = field<"test", std::uint32_t>::located<at{43_msb, 22_lsb}>;
+    F::insert(data, 0x3f'fcffu);
+    CHECK(0x3fc0'0000 == data[0]);
+    CHECK(0x0000'0fff == data[1]);
 }
 
 TEST_CASE("Dualdisjoint_fieldExtract", "[field]") {

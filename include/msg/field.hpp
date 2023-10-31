@@ -8,6 +8,7 @@
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
+#include <climits>
 #include <concepts>
 #include <cstdint>
 #include <span>
@@ -20,10 +21,7 @@ template <typename T>
 concept field_spec =
     std::unsigned_integral<decltype(T::size)> and
     (std::integral<typename T::type> or std::is_enum_v<typename T::type>) and
-    requires {
-        typename T::name_t;
-        { T::bit_mask } -> std::same_as<std::uint64_t const &>;
-    };
+    requires { typename T::name_t; };
 
 template <typename T>
 concept bits_extractor =
@@ -61,6 +59,8 @@ concept field_locator_for =
     field_extractor_for<T, Field> and field_inserter_for<T, Field>;
 
 namespace detail {
+template <typename T> CONSTEVAL auto bit_size() { return sizeof(T) * CHAR_BIT; }
+
 template <std::uint32_t BitSize>
     requires(BitSize <= 64)
 CONSTEVAL auto bit_mask() -> std::uint64_t {
@@ -81,7 +81,6 @@ struct field_spec_t {
 
     constexpr static name_t name{};
     constexpr static auto size = BitSize;
-    constexpr static uint64_t bit_mask = detail::bit_mask<BitSize>();
 };
 
 template <std::uint32_t DWordIndex, std::uint32_t BitSize, std::uint32_t Lsb>
@@ -213,7 +212,9 @@ CONSTEVAL auto operator""_lsb(unsigned long long int v) -> lsb_t {
     return static_cast<lsb_t>(v);
 }
 
-struct at {
+template <typename...> struct at;
+
+template <> struct at<dword_index_t, msb_t, lsb_t> {
     dword_index_t index_{};
     msb_t msb_{};
     lsb_t lsb_{};
@@ -222,21 +223,47 @@ struct at {
         -> std::underlying_type_t<dword_index_t> {
         return stdx::to_underlying(index_);
     }
-    [[nodiscard]] constexpr auto msb() const -> std::underlying_type_t<msb_t> {
-        return stdx::to_underlying(msb_);
-    }
     [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_);
     }
-
     [[nodiscard]] constexpr auto size() const -> std::underlying_type_t<lsb_t> {
-        return msb() - lsb() + 1;
+        return stdx::to_underlying(msb_) - lsb() + 1;
+    }
+    [[nodiscard]] constexpr auto valid() const -> bool {
+        return size() <= 64 and
+               stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
     [[nodiscard]] constexpr auto dword_extent() const
         -> std::underlying_type_t<dword_index_t> {
-        return index() + (msb() / 32);
+        return index() + (stdx::to_underlying(msb_) / 32u);
     }
 };
+
+template <> struct at<msb_t, lsb_t> {
+    msb_t msb_{};
+    lsb_t lsb_{};
+
+    [[nodiscard]] constexpr auto index() const
+        -> std::underlying_type_t<lsb_t> {
+        return stdx::to_underlying(lsb_) / 32u;
+    }
+    [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
+        return stdx::to_underlying(lsb_) % 32u;
+    }
+    [[nodiscard]] constexpr auto size() const -> std::underlying_type_t<lsb_t> {
+        return stdx::to_underlying(msb_) - stdx::to_underlying(lsb_) + 1;
+    }
+    [[nodiscard]] constexpr auto valid() const -> bool {
+        return size() <= 64 and
+               stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
+    }
+    [[nodiscard]] constexpr auto dword_extent() const
+        -> std::underlying_type_t<dword_index_t> {
+        return index() + (stdx::to_underlying(msb_) / 32);
+    }
+};
+
+template <typename... Ts> at(Ts...) -> at<Ts...>;
 
 namespace detail {
 template <at... Ats>
@@ -256,8 +283,15 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using spec_t = field_spec_t<Name, T, detail::field_size<Ats...>>;
     using locator_t = detail::locator_for<Ats...>;
 
+    [[nodiscard]] constexpr static auto valid_location(auto const &at) -> bool {
+        return at.size() <= 64 and at.msb() >= at.lsb();
+    }
+    static_assert((... and Ats.valid()),
+                  "Individual field location size cannot exceed 64 bits!");
+    static_assert(detail::bit_size<T>() >= (0u + ... + Ats.size()),
+                  "Field size is smaller than sum of locations!");
+
   public:
-    using name_t = Name;
     using field_id = field_t<Name, T, T{}, match::always_t, Ats...>;
     using value_type = T;
     constexpr static auto default_value = DefaultValue;
@@ -350,7 +384,8 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 Ats...>;
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
-        return format("{}: 0x{:x}"_sc, name_t{}, static_cast<std::uint32_t>(v));
+        return format("{}: 0x{:x}"_sc, spec_t::name,
+                      static_cast<std::uint32_t>(v));
     }
 };
 
