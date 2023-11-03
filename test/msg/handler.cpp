@@ -1,154 +1,133 @@
-#include <match/ops.hpp>
+#include <log/fmt/logger.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/handler.hpp>
 #include <msg/message.hpp>
 
+#include <stdx/tuple.hpp>
+
 #include <catch2/catch_test_macros.hpp>
+
+#include <array>
+#include <cstdint>
+#include <iterator>
+#include <string>
 
 namespace {
 using namespace msg;
 
-bool correctDispatch = false;
+bool dispatched = false;
 
-using TestIdField =
-    field<"TestIdField", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
+using id_field = field<"id", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
+using field1 = field<"f1", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+using field2 = field<"f2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
+using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using TestField1 =
-    field<"TestField1", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+using msg_defn =
+    message<"msg", id_field::WithRequired<0x80>, field1, field2, field3>;
 
-using TestField2 =
-    field<"TestField2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
+using msg_defn_field_reqd =
+    message<"msg", id_field::WithRequired<0x44>, field1, field2, field3>;
 
-using TestField3 =
-    field<"TestField3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
-
-using TestBaseMsg = message_data<2>;
-
-using TestMsg =
-    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x80>,
-                 TestField1, TestField2, TestField3>;
-
-using TestMsgMultiCb =
-    message_base<decltype("TestMsg"_sc), 2, TestIdField::WithRequired<0x81>,
-                 TestField1, TestField2, TestField3>;
-
-using TestMsgFieldRequired = message_base<decltype("TestMsgFieldRequired"_sc),
-                                          2, TestIdField::WithRequired<0x44>,
-                                          TestField1, TestField2, TestField3>;
-
-enum class Opcode { A = 0x8, B = 0x9, C = 0xA };
-
-using TestOpField =
-    field<"TestOpField", Opcode>::located<at{0_dw, 27_msb, 24_lsb}>;
-
-using TestMsgOp = message_base<decltype("TestMsg"_sc), 2,
-                               TestOpField::WithIn<Opcode::A, Opcode::B>,
-                               TestField1, TestField2>;
+std::string log_buffer{};
 } // namespace
 
-TEST_CASE("TestMsgDispatch1", "[handler]") {
-    correctDispatch = false;
+template <>
+inline auto logging::config<> =
+    logging::fmt::config{std::back_inserter(log_buffer)};
 
-    static auto callback = msg::callback<TestBaseMsg>(
-        "TestCallback"_sc, match::always,
-        [](TestMsg const &) { correctDispatch = true; });
+TEST_CASE("is_match is true for a match", "[handler]") {
+    auto callback = msg::callback<msg_defn>(
+        "cb"_sc, match::always,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
-
-    static auto handler =
-        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
-
-    handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d});
-
-    REQUIRE(correctDispatch);
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    CHECK(handler.is_match(msg));
 }
 
-// TODO: test no match in handle
-// TODO: test is_match
+TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
+    auto callback = msg::callback<msg_defn>(
+        "cb"_sc, match::always,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
-TEST_CASE("TestMsgDispatch2", "[handler]") {
-    correctDispatch = false;
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    dispatched = false;
+    handler.handle(msg);
+    CHECK(dispatched);
+}
 
-    static auto callback1 = msg::callback<TestBaseMsg>(
-        "TestCallback1"_sc, match::always,
+TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
+    auto callback = msg::callback<msg_defn>(
+        "cb"_sc, match::always,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg = msg::owning<msg_defn>{"id"_field = 0x80};
 
-        // if the raw data matches requirements of TestMsg, execute this
-        [&](TestMsg const &) { REQUIRE(false); });
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    dispatched = false;
+    handler.handle(msg);
+    CHECK(dispatched);
+}
 
-    static auto callback2 = msg::callback<TestBaseMsg>(
+TEST_CASE("dispatch single callback (no match)", "[handler]") {
+    auto callback = msg::callback<msg_defn>(
+        "cb"_sc, match::always,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg = std::array{0x8100ba11u, 0x0042d00du};
+
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    dispatched = false;
+    handler.handle(msg);
+    CHECK(not dispatched);
+}
+
+TEST_CASE("log mismatch when no match", "[handler]") {
+    auto const msg = std::array{0x8000ba11u, 0x0042d00du};
+    auto callbacks = stdx::tuple{};
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    handler.handle(msg);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find(
+              "None of the registered callbacks claimed this message") !=
+          std::string::npos);
+}
+
+TEST_CASE("match and dispatch only one callback", "[handler]") {
+    auto callback1 = msg::callback<msg_defn>(
+        "cb1"_sc, match::always,
+        [&](msg::const_view<msg_defn>) { CHECK(false); });
+    auto callback2 = msg::callback<msg_defn_field_reqd>(
         "TestCallback2"_sc, match::always,
-
-        // if the raw data matches requirements of
-        // TestMsgFieldRequired, execute this
-        [](TestMsgFieldRequired const &) { correctDispatch = true; });
+        [](msg::const_view<msg_defn_field_reqd>) { dispatched = true; });
+    auto const msg = std::array{0x4400ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback1, callback2);
-
     static auto handler =
-        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
+        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
 
-    handler.handle(TestBaseMsg{0x4400ba11, 0x0042d00d});
-
-    REQUIRE(correctDispatch);
+    dispatched = false;
+    handler.handle(msg);
+    CHECK(dispatched);
 }
 
-TEST_CASE("TestMsgDispatchExtraArgs1", "[handler]") {
-    correctDispatch = false;
-
-    static auto callback = msg::callback<TestBaseMsg, int>(
-        "TestCallback"_sc, match::always, [](TestMsg, int value) {
-            correctDispatch = true;
-            REQUIRE(value == 0xcafe);
+TEST_CASE("dispatch with extra args", "[handler]") {
+    auto callback = msg::callback<msg_defn, int>(
+        "cb"_sc, match::always, [](msg::const_view<msg_defn>, int value) {
+            dispatched = true;
+            CHECK(value == 0xcafe);
         });
+    auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
-
     static auto handler =
-        msg::handler<decltype(callbacks), TestBaseMsg, int>{callbacks};
+        msg::handler<decltype(callbacks), decltype(msg), int>{callbacks};
 
-    handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d}, 0xcafe);
-
-    REQUIRE(correctDispatch);
-}
-
-TEST_CASE("TestMsgWithinEnum", "[handler]") {
-    auto handled = false;
-    auto const callback =
-        msg::callback<TestBaseMsg>("TestCallback"_sc, match::always,
-                                   [&](TestMsgOp const &) { handled = true; });
-
-    auto callbacks = stdx::make_tuple(callback);
-    auto const handler =
-        msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
-
-    handler.handle(TestBaseMsg{0x0800ba11, 0x0042d00d});
-    REQUIRE(handled);
-}
-
-TEST_CASE("TestMsgMultipleLambdaCallback", "[handler]") {
-    {
-        auto correct = false;
-        auto const callback = msg::callback<TestBaseMsg>(
-            "TestCallback"_sc, match::always, [](TestMsgMultiCb const &) {},
-            [&](TestMsg const &) { correct = true; });
-        auto callbacks = stdx::make_tuple(callback);
-        auto const handler =
-            msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
-
-        handler.handle(TestBaseMsg{0x8000ba11, 0x0042d00d});
-        REQUIRE(correct);
-    }
-    {
-        auto correct = false;
-        auto const callback = msg::callback<TestBaseMsg>(
-            "TestCallback"_sc, match::always, [](TestMsg const &) {},
-            [&](TestMsgMultiCb const &) { correct = true; });
-        auto callbacks = stdx::make_tuple(callback);
-        auto const handler =
-            msg::handler<decltype(callbacks), TestBaseMsg>{callbacks};
-
-        handler.handle(TestBaseMsg{0x8100ba11, 0x0042d00d});
-        REQUIRE(correct);
-    }
+    dispatched = false;
+    handler.handle(msg, 0xcafe);
+    CHECK(dispatched);
 }

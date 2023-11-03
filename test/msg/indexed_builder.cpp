@@ -24,8 +24,9 @@ using test_field_2 =
 using test_field_3 =
     field<"test_field_3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using test_msg_t = message_base<decltype("test_msg"_sc), 2, test_id_field,
-                                test_opcode_field, test_field_2, test_field_3>;
+using msg_defn = message<"test_msg", test_id_field, test_opcode_field,
+                         test_field_2, test_field_3>;
+using test_msg_t = owning<msg_defn>;
 
 using index_spec = index_spec<test_id_field, test_opcode_field>;
 struct test_service : indexed_service<index_spec, test_msg_t> {};
@@ -156,7 +157,7 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
     CHECK(not callback_success);
     CHECK(not callback_success_single_field);
 
-    // make sure an unconstrained field in a callback doesn't cause a mismatch
+    // make sure an unconstrained field in a callback doesn't cause a  mismatch
     log_buffer.clear();
     callback_success = false;
     callback_success_single_field = false;
@@ -307,8 +308,9 @@ TEST_CASE("build handler disjunction", "[indexed_builder]") {
 }
 
 namespace {
-using test_msg_match_t = msg::message_base<decltype("test_msg"_sc), 2,
-                                           test_id_field::WithRequired<0x80>>;
+using msg_match_defn = message<"test_msg", test_id_field::WithRequired<0x80>>;
+using test_msg_match_t = owning<msg_match_defn>;
+
 using msg_match_index_spec = msg::index_spec<test_id_field>;
 struct test_msg_match_service
     : msg::indexed_service<msg_match_index_spec, test_msg_match_t> {};

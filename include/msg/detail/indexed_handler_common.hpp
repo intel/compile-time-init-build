@@ -13,8 +13,8 @@ template <typename Field, typename Lookup> struct index {
     CONSTEVAL index(Field, Lookup field_lookup_arg)
         : field_lookup{field_lookup_arg} {}
 
-    constexpr auto operator()(auto const &data) const {
-        return field_lookup[Field::extract(data)];
+    constexpr auto operator()(auto const &msg) const {
+        return field_lookup[Field::extract(msg.data())];
     }
 };
 

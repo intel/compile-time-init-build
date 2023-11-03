@@ -8,6 +8,7 @@
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
+#include <algorithm>
 #include <climits>
 #include <concepts>
 #include <cstdint>
@@ -229,6 +230,14 @@ struct bits_locator_t {
         constexpr auto Msb = Lsb + BitSize - 1;
         return DWordIndex * 32 + Msb <= NumBits;
     }
+
+    template <typename T> constexpr static auto extent_in() -> std::size_t {
+        constexpr auto msb = Lsb + BitSize - 1;
+        constexpr auto msb_extent = (msb + CHAR_BIT - 1) / CHAR_BIT;
+        constexpr auto base_extent = DWordIndex * sizeof(std::uint32_t);
+        constexpr auto extent = base_extent + msb_extent;
+        return (extent + sizeof(T) - 1) / sizeof(T);
+    }
 };
 
 template <typename T> CONSTEVAL auto select_integral_type() {
@@ -278,6 +287,10 @@ template <bits_locator... BLs> struct field_locator_t {
     template <std::uint32_t NumBits>
     constexpr static auto fits_inside() -> bool {
         return (... and BLs::template fits_inside<NumBits>());
+    }
+
+    template <typename T> constexpr static auto extent_in() -> std::size_t {
+        return std::max({std::size_t{}, BLs::template extent_in<T>()...});
     }
 };
 } // namespace detail
@@ -352,6 +365,14 @@ using locator_for =
 
 template <at... Ats> constexpr inline auto field_size = (0u + ... + Ats.size());
 
+template <typename R> constexpr auto capacity() -> std::size_t {
+    if constexpr (requires { R::capacity(); }) {
+        return R::capacity();
+    } else {
+        return std::size(R{});
+    }
+}
+
 template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
           match::matcher M = match::always_t, auto... Ats>
     requires(... and field_location<decltype(Ats)>)
@@ -386,8 +407,12 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     template <typename DataType> constexpr static auto fits_inside() -> bool {
         constexpr auto bits_capacity =
             detail::bit_size<typename DataType::value_type>() *
-            DataType::capacity();
+            capacity<DataType>();
         return locator_t::template fits_inside<bits_capacity>();
+    }
+
+    template <typename U> constexpr static auto extent_in() -> std::size_t {
+        return locator_t::template extent_in<U>();
     }
 
     using matcher_t = M;

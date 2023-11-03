@@ -40,6 +40,7 @@ add_tests(
     match/simplify_not
     match/simplify_or
     match/sum_of_products
+    msg/callback
     msg/detail/rle_codec
     msg/field_extract
     msg/field_insert
