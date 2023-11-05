@@ -59,26 +59,79 @@ has a certain value) and `in_t` (for testing if a field value lies within a set)
 
 === Messages
 
-A message is a collection of field types together with the storage that contains
-them. Messages are usually aliases for specializations of `message_base` which
-allows these things to be specified.
-
-`message_base` provides a default matcher that reflects all of the field
-matchers, but can also be supplied with an extra matcher to differentiate
-message types based on field values.
+A message is a named collection of field types. A message can be associated with
+the storage that contains it in two ways: owning, i.e. containing an array, or
+as a view, i.e. containing a span.
 
 For example, a message type looks like this:
 [source,cpp]
 ----
-using my_message =  msg::message_base<
-    decltype("TestMsg"_sc),             // name
-    2,                                  // storage size in 32-bit words
-    my_field::WithRequired<0x80>>;      // field(s)
+using my_message_defn = msg::message<
+    "my_message",                      // name
+    my_field::WithRequired<0x80>>;     // field(s)
+
+using my_message = msg::owning<my_message_defn>;
 ----
 
 Here the message has only one field. `WithRequired<0x80>` is an alias
 specialization that expresses `my_field` with a matcher that is
 `equal_to_t<0x80>`.
+
+==== Owning vs view types
+
+An owning message uses underlying storage: by default, this is a `std::array` of
+`std::uint32_t` whose size is enough to hold all the fields in the message.
+[source,cpp]
+----
+// by default, my_message will contain a std::array<std::uint32_t, 1>
+using my_message = msg::owning<my_message_defn>;
+
+// two corresponding default view types:
+
+// holds a stdx::span<std::uint32_t, 1>
+using mutable_view = msg::mutable_view<my_message_defn>;
+
+// holds a stdx::span<std::uint32_t const, 1>
+using const_view = msg::const_view<my_message_defn>;
+----
+
+The storage for a message can be customized with a tailored `std::array`:
+[source,cpp]
+----
+// an owning message with the same fields and access, but different storage:
+auto msg = my_message_defn::owner_t{std::array<std::uint8_t, 4>{}};
+
+// another way to get the view types from that owning message
+auto mut_view = msg.as_mutable_view();
+auto const_view = msg.as_const_view();
+----
+
+View types are implicitly constructible from the corresponding owning types, or
+from an appropriate `std::array` or `stdx::span`, where they are const. A
+mutable view type must be constructed explicitly.
+
+Owning types can also be constructed from views, arrays and spans - but always
+explicitly: since they are owning, they always incur a copy.
+
+Fields can be set and retrieved in a message, including on construction:
+[source,cpp]
+----
+auto msg = my_message{"my_field"_field = 42};
+auto f = my_message.get("my_field"_field);    // 42
+my_message.set("my_field"_field = 17);
+----
+
+Fields can also be set and retrieved on mutable view type messages. For obvious
+reasons, calling `set` on a const view type is a compile error. Likewise,
+setting a field during construction of a const view type is not possible.
+
+The raw data underlying a message can be obtained with a call to `data`:
+[source,cpp]
+----
+auto data = msg.data();
+----
+
+This always returns a (const-observing) `stdx::span` over the underlying data.
 
 === Handling messages with callbacks
 
@@ -126,6 +179,11 @@ callback:
 // because my_message's field matcher does not match
 cib::service<my_service>->handle(my_message{"my_field"_field = 0x81});
 ----
+
+NOTE: Because message view types are implicitly constructible from an owning
+message type, or from an appropriate `std::array`, it is possible to set up a
+service and handler that works with "raw data" in the form of a `std::array`,
+but whose callbacks and matchers take the appropriate message view types.
 
 This machinery for handling messages with callbacks is fairly basic and can be
 found in
