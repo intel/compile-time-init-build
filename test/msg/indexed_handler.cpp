@@ -38,8 +38,9 @@ using field_3 =
 using field_4 =
     msg::field<"field_5", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using test_msg = message_base<decltype("test_msg"_sc), 2, opcode_field,
-                              sub_opcode_field, field_3, field_4>;
+using msg_defn =
+    message<"test_msg", opcode_field, sub_opcode_field, field_3, field_4>;
+using test_msg = owning<msg_defn>;
 
 template <auto N> using bitset = stdx::bitset<N, std::uint32_t>;
 

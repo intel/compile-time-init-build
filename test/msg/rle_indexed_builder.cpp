@@ -24,8 +24,9 @@ using test_field_2 =
 using test_field_3 =
     field<"test_field_3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using test_msg_t = message_base<decltype("test_msg"_sc), 2, test_id_field,
-                                test_opcode_field, test_field_2, test_field_3>;
+using msg_defn = message<"test_msg", test_id_field, test_opcode_field,
+                         test_field_2, test_field_3>;
+using test_msg_t = owning<msg_defn>;
 
 using index_spec = index_spec<test_id_field, test_opcode_field>;
 struct test_service : rle_indexed_service<index_spec, test_msg_t> {};

@@ -119,25 +119,25 @@ template <typename RelOp> constexpr auto to_string() {
 }
 } // namespace detail
 
-template <typename RelOp, typename FieldType, typename T, T ExpectedValue>
+template <typename RelOp, typename Field, typename T, T ExpectedValue>
 struct rel_matcher_t {
     using is_matcher = void;
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return RelOp{}(msg.template get<FieldType>(), ExpectedValue);
+        return RelOp{}(msg.get(Field{}), ExpectedValue);
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        return format("{} {} 0x{:x}"_sc, FieldType::name,
+        return format("{} {} 0x{:x}"_sc, Field::name,
                       detail::to_string<RelOp>(),
                       sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) {} 0x{:x}"_sc, FieldType::name,
-                      static_cast<std::uint32_t>(msg.template get<FieldType>()),
+        return format("{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
+                      static_cast<std::uint32_t>(msg.get(Field{})),
                       detail::to_string<RelOp>(),
                       sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
@@ -145,78 +145,76 @@ struct rel_matcher_t {
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
                                                    rel_matcher_t const &) {
-        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), FieldType,
-                             T, ExpectedValue>{};
+        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field, T,
+                             ExpectedValue>{};
     }
 
     template <T OtherValue>
     [[nodiscard]] friend constexpr auto
     tag_invoke(match::implies_t, rel_matcher_t,
-               rel_matcher_t<RelOp, FieldType, T, OtherValue>) -> bool {
+               rel_matcher_t<RelOp, Field, T, OtherValue>) -> bool {
         return RelOp{}(ExpectedValue, OtherValue);
     }
 };
 
-template <typename FieldType, typename T, T ExpectedValue>
-using less_than_t = rel_matcher_t<std::less<>, FieldType, T, ExpectedValue>;
-template <typename FieldType, typename T, T ExpectedValue>
+template <typename Field, typename T, T ExpectedValue>
+using less_than_t = rel_matcher_t<std::less<>, Field, T, ExpectedValue>;
+template <typename Field, typename T, T ExpectedValue>
 using less_than_or_equal_to_t =
-    rel_matcher_t<std::less_equal<>, FieldType, T, ExpectedValue>;
-template <typename FieldType, typename T, T ExpectedValue>
-using greater_than_t =
-    rel_matcher_t<std::greater<>, FieldType, T, ExpectedValue>;
-template <typename FieldType, typename T, T ExpectedValue>
+    rel_matcher_t<std::less_equal<>, Field, T, ExpectedValue>;
+template <typename Field, typename T, T ExpectedValue>
+using greater_than_t = rel_matcher_t<std::greater<>, Field, T, ExpectedValue>;
+template <typename Field, typename T, T ExpectedValue>
 using greater_than_or_equal_to_t =
-    rel_matcher_t<std::greater_equal<>, FieldType, T, ExpectedValue>;
+    rel_matcher_t<std::greater_equal<>, Field, T, ExpectedValue>;
 
-template <typename FieldType, typename T, T X, T Y>
+template <typename Field, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_or_equal_to_t<FieldType, T, X> const &,
-           less_than_t<FieldType, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, T, X> const &,
+           less_than_t<Field, T, Y> const &) -> bool {
     return X < Y;
 }
 
-template <typename FieldType, typename T, T X, T Y>
+template <typename Field, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_t<FieldType, T, X> const &,
-           less_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, less_than_t<Field, T, X> const &,
+           less_than_or_equal_to_t<Field, T, Y> const &) -> bool {
     auto inc = T{};
     return X <= Y + ++inc;
 }
 
-template <typename FieldType, typename T, T X, T Y>
+template <typename Field, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t,
-           greater_than_or_equal_to_t<FieldType, T, X> const &,
-           greater_than_t<FieldType, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, T, X> const &,
+           greater_than_t<Field, T, Y> const &) -> bool {
     return X > Y;
 }
 
-template <typename FieldType, typename T, T X, T Y>
+template <typename Field, typename T, T X, T Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_t<FieldType, T, X> const &,
-           greater_than_or_equal_to_t<FieldType, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, greater_than_t<Field, T, X> const &,
+           greater_than_or_equal_to_t<Field, T, Y> const &) -> bool {
     auto inc = T{};
     return X + ++inc >= Y;
 }
 
-template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
+template <typename Field, typename T, T ExpectedValue> struct equal_to_t {
     using is_matcher = void;
 
-    using field_type = FieldType;
+    using field_type = Field;
     constexpr static auto expected_values = stdx::make_tuple(ExpectedValue);
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return ExpectedValue == msg.template get<FieldType>();
+        return ExpectedValue == msg.get(Field{});
     }
 
     [[nodiscard]] constexpr auto describe() const {
         if constexpr (std::is_integral_v<T>) {
-            return format("{} == 0x{:x}"_sc, FieldType::name,
+            return format("{} == 0x{:x}"_sc, Field::name,
                           sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         } else {
-            return format("{} == {} (0x{:x})"_sc, FieldType::name,
+            return format("{} == {} (0x{:x})"_sc, Field::name,
                           sc::enum_<ExpectedValue>,
                           sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         }
@@ -225,16 +223,14 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
         if constexpr (std::is_integral_v<T>) {
-            return format(
-                "{} (0x{:x}) == 0x{:x}"_sc, FieldType::name,
-                static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+            return format("{} (0x{:x}) == 0x{:x}"_sc, Field::name,
+                          static_cast<std::uint32_t>(msg.get(Field{})),
+                          sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         } else {
-            return format(
-                "{} (0x{:x}) == {} (0x{:x})"_sc, FieldType::name,
-                static_cast<std::uint32_t>(msg.template get<FieldType>()),
-                sc::enum_<ExpectedValue>,
-                sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+            return format("{} (0x{:x}) == {} (0x{:x})"_sc, Field::name,
+                          static_cast<std::uint32_t>(msg.get(Field{})),
+                          sc::enum_<ExpectedValue>,
+                          sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
         }
     }
 
@@ -242,14 +238,14 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     friend constexpr auto tag_invoke(index_terms_t, equal_to_t const &,
                                      stdx::callable auto const &f,
                                      std::size_t idx) -> void {
-        f.template operator()<FieldType>(idx, ExpectedValue);
+        f.template operator()<Field>(idx, ExpectedValue);
     }
 
     friend constexpr auto tag_invoke(index_not_terms_t, equal_to_t const &,
                                      stdx::callable auto const &f,
                                      std::size_t idx, bool negated) -> void {
         if (negated) {
-            f.template operator()<FieldType>(idx, ExpectedValue);
+            f.template operator()<Field>(idx, ExpectedValue);
         }
     }
 
@@ -257,7 +253,7 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     [[nodiscard]] friend constexpr auto
     tag_invoke(remove_terms_t, equal_to_t const &m,
                std::type_identity<Fields>...) -> match::matcher auto {
-        if constexpr ((std::is_same_v<FieldType, Fields> or ...)) {
+        if constexpr ((std::is_same_v<Field, Fields> or ...)) {
             return match::always;
         } else {
             return m;
@@ -267,19 +263,19 @@ template <typename FieldType, typename T, T ExpectedValue> struct equal_to_t {
     template <typename RelOp, T OtherValue>
     [[nodiscard]] friend constexpr auto
     tag_invoke(match::implies_t, equal_to_t,
-               rel_matcher_t<RelOp, FieldType, T, OtherValue>) -> bool {
+               rel_matcher_t<RelOp, Field, T, OtherValue>) -> bool {
         return RelOp{}(ExpectedValue, OtherValue);
     }
 
     template <T OtherValue>
     [[nodiscard]] friend constexpr auto
     tag_invoke(match::implies_t, equal_to_t,
-               match::not_t<equal_to_t<FieldType, T, OtherValue>>) -> bool {
+               match::not_t<equal_to_t<Field, T, OtherValue>>) -> bool {
         return ExpectedValue != OtherValue;
     }
 };
 
-template <typename FieldType, typename T, T... ExpectedValues>
-using in_t = decltype((equal_to_t<FieldType, T, ExpectedValues>{} or ... or
-                       match::never));
+template <typename Field, typename T, T... ExpectedValues>
+using in_t =
+    decltype((equal_to_t<Field, T, ExpectedValues>{} or ... or match::never));
 } // namespace msg
