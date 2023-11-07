@@ -6,11 +6,12 @@
 #include <match/simplify.hpp>
 #include <sc/string_constant.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
 namespace match {
-template <template <matcher, matcher> typename Term, typename OpName, matcher L,
-          matcher R>
+template <template <matcher, matcher> typename Term, stdx::ct_string OpName,
+          matcher L, matcher R>
 struct bin_op_t {
     using is_matcher = void;
 
@@ -38,7 +39,9 @@ struct bin_op_t {
                 return "("_sc + f(m) + ")"_sc;
             }
         };
-        return desc(lhs) + OpName{} + desc(rhs);
+        return desc(lhs) +
+               stdx::ct_string_to_type<OpName, sc::string_constant>() +
+               desc(rhs);
     }
 };
 

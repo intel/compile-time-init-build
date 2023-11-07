@@ -28,8 +28,8 @@ struct test_service : msg::service<msg_view_t> {};
 
 bool callback_success;
 
-constexpr auto test_callback = msg::callback<msg_defn>(
-    "cb"_sc, match::always, [](msg_view_t) { callback_success = true; });
+constexpr auto test_callback = msg::callback<"cb", msg_defn>(
+    match::always, [](msg_view_t) { callback_success = true; });
 
 struct test_project {
     constexpr static auto config = cib::config(

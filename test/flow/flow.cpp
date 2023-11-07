@@ -8,13 +8,13 @@
 namespace {
 auto actual = std::string("");
 
-constexpr auto milestone0 = flow::milestone("milestone0"_sc);
-constexpr auto milestone1 = flow::milestone("milestone1"_sc);
+constexpr auto milestone0 = flow::milestone<"milestone0">();
+constexpr auto milestone1 = flow::milestone<"milestone1">();
 
-constexpr auto a = flow::action("a"_sc, [] { actual += "a"; });
-constexpr auto b = flow::action("b"_sc, [] { actual += "b"; });
-constexpr auto c = flow::action("c"_sc, [] { actual += "c"; });
-constexpr auto d = flow::action("d"_sc, [] { actual += "d"; });
+constexpr auto a = flow::action<"a">([] { actual += "a"; });
+constexpr auto b = flow::action<"b">([] { actual += "b"; });
+constexpr auto c = flow::action<"c">([] { actual += "c"; });
+constexpr auto d = flow::action<"d">([] { actual += "d"; });
 
 TEST_CASE("build and run empty flow", "[flow]") {
     flow::builder<> builder;
@@ -224,7 +224,7 @@ TEST_CASE("add parallel lhs", "[flow]") {
 }
 
 TEST_CASE("add parallel in the middle", "[flow]") {
-    flow::builder<decltype("MiddleParallelFlow"_sc)> builder;
+    flow::builder<"MiddleParallelFlow"> builder;
     actual = "";
 
     builder.add(a >> (b && c) >> d);

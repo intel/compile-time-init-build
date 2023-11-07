@@ -35,9 +35,10 @@ struct interface {
  *
  * @see flow::builder
  */
-template <typename Name, std::size_t NumSteps> class impl : public interface {
+template <stdx::ct_string Name, std::size_t NumSteps>
+class impl : public interface {
   private:
-    constexpr static bool loggingEnabled = not std::is_void_v<Name>;
+    constexpr static bool loggingEnabled = not Name.empty();
 
     constexpr static auto capacity = [] {
         if constexpr (loggingEnabled) {
@@ -80,8 +81,10 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
      * Execute the entire flow in order.
      */
     auto operator()() const -> void final {
+        constexpr auto name =
+            stdx::ct_string_to_type<Name, sc::string_constant>();
         if constexpr (loggingEnabled) {
-            CIB_TRACE("flow.start({})", Name{});
+            CIB_TRACE("flow.start({})", name);
         }
 
         for (auto const func : functionPtrs) {
@@ -89,7 +92,7 @@ template <typename Name, std::size_t NumSteps> class impl : public interface {
         }
 
         if constexpr (loggingEnabled) {
-            CIB_TRACE("flow.end({})", Name{});
+            CIB_TRACE("flow.end({})", name);
         }
     }
 };

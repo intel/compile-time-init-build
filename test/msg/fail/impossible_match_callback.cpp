@@ -16,8 +16,7 @@ using test_id_field =
 using msg_defn = message<"test_msg", test_id_field>;
 using test_msg_t = owning<msg_defn>;
 
-constexpr auto test_callback = msg::indexed_callback(
-    "test_callback"_sc,
+constexpr auto test_callback = msg::indexed_callback<"test_callback">(
     test_id_field::equal_to<0x80> and test_id_field::equal_to<0x81>,
     [](test_msg_t const &) {});
 

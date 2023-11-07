@@ -2,6 +2,7 @@
 
 #include <flow/common.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_vector.hpp>
 
@@ -35,7 +36,7 @@ concept walkable = std::same_as<T, Node> or
  *         another.
  * @tparam Derived The class that uses graph_builder with CRTP.
  */
-template <typename Node, typename NameT, std::size_t NodeCapacity,
+template <typename Node, stdx::ct_string Name, std::size_t NodeCapacity,
           std::size_t EdgeCapacity, typename Derived>
 class graph_builder {
     using graph_t = stdx::cx_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
@@ -76,7 +77,7 @@ class graph_builder {
     }
 
     template <typename BuilderValue,
-              template <typename, std::size_t> typename Output>
+              template <stdx::ct_string, std::size_t> typename Output>
     static auto run_impl() -> void {
         constexpr auto builder = BuilderValue::value;
         constexpr auto size = builder.size();
@@ -86,8 +87,7 @@ class graph_builder {
     }
 
   public:
-    using Name = NameT;
-
+    constexpr static auto name = Name;
     /**
      * Add flow descriptions. A flow description describes the dependencies
      * between two or more nodes.
@@ -132,7 +132,7 @@ class graph_builder {
      *
      * @return An object with all dependencies and requirements resolved.
      */
-    template <template <typename, std::size_t> typename Output,
+    template <template <stdx::ct_string, std::size_t> typename Output,
               std::size_t Capacity>
     [[nodiscard]] constexpr auto topo_sort() const
         -> std::optional<Output<Name, Capacity>> {
