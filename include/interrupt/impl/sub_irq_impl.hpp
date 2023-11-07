@@ -46,9 +46,6 @@ template <typename ConfigT, typename FlowTypeT> struct sub_irq_impl {
      *
      * This should be used only by interrupt::Manager.
      *
-     * @tparam InterruptHal
-     *      The hardware abstraction layer that knows how to clear pending
-     * interrupt status.
      */
     inline void run() const {
         if constexpr (active) {

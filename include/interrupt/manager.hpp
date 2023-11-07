@@ -9,6 +9,7 @@
 #include <interrupt/builder/sub_irq_builder.hpp>
 #include <interrupt/config.hpp>
 #include <interrupt/dynamic_controller.hpp>
+#include <interrupt/hal.hpp>
 #include <interrupt/impl/manager_impl.hpp>
 #include <interrupt/manager_interface.hpp>
 #include <interrupt/policies.hpp>
@@ -42,10 +43,6 @@ CONSTEVAL auto extend(T flow_description) {
  * Declare one or more Irqs, SharedIrqs, and their corresponding interrupt
  * service routine attachment points.
  *
- * @tparam InterruptHal
- *      The hardware abstraction layer that knows how to clear pending interrupt
- * status.
- *
  * @tparam IRQs
  */
 template <typename RootT> class manager {
@@ -62,8 +59,6 @@ template <typename RootT> class manager {
     }
 
   public:
-    using InterruptHal = typename RootT::InterruptHal;
-
     constexpr static auto irqs_type = stdx::transform(
         [](auto child) {
             if constexpr (decltype(child.children)::size() > 0u) {
@@ -116,8 +111,8 @@ template <typename RootT> class manager {
             std::make_index_sequence<irqs_t::size()>{});
 
         return irq_impls.apply([](auto... irq_impl_args) {
-            return manager_impl<InterruptHal, Dynamic,
-                                decltype(irq_impl_args)...>(irq_impl_args...);
+            return manager_impl<Dynamic, decltype(irq_impl_args)...>(
+                irq_impl_args...);
         });
     }
 };

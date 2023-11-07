@@ -1,7 +1,12 @@
 #include <cib/cib.hpp>
 
+#include <stdx/concepts.hpp>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <cstdint>
 
 using ::testing::_;
 using ::testing::InSequence;
@@ -16,32 +21,34 @@ class MockCallback {
     MOCK_METHOD(void, run, (std::size_t irq_number));
     MOCK_METHOD(void, status, (std::size_t irq_number));
 
-    MOCK_METHOD(void, write, (int fieldIndex, uint32_t value));
-    MOCK_METHOD(uint32_t, read, (int fieldIndex));
+    MOCK_METHOD(void, write, (int fieldIndex, std::uint32_t value));
+    MOCK_METHOD(std::uint32_t, read, (int fieldIndex));
 };
 
 MockCallback *callbackPtr;
 
 struct MockIrqImpl {
-    static void init() { callbackPtr->init(); }
+    static auto init() -> void { callbackPtr->init(); }
 
-    template <bool enable, int irq_number, int priorityLevel>
-    static inline void irqInit() {
-        if constexpr (enable) {
-            callbackPtr->init(irq_number, priorityLevel);
+    template <bool Enable, int IrqNumber, int Priority>
+    static auto irq_init() -> void {
+        if constexpr (Enable) {
+            callbackPtr->init(IrqNumber, Priority);
         }
     }
 
-    template <typename StatusPolicy, typename Callable>
-    static void run(std::size_t irq_number,
-                    Callable interrupt_service_routine) {
-        StatusPolicy::run([&] { callbackPtr->status(irq_number); },
-                          [&] {
-                              callbackPtr->run(irq_number);
-                              interrupt_service_routine();
-                          });
+    template <status_policy P>
+    static auto run(std::size_t irq_number, stdx::invocable auto const &isr)
+        -> void {
+        P::run([&] { callbackPtr->status(irq_number); },
+               [&] {
+                   callbackPtr->run(irq_number);
+                   isr();
+               });
     }
 };
+
+template <> inline auto injected_hal<> = MockIrqImpl{};
 
 class InterruptManagerTest : public ::testing::Test {
   protected:
@@ -76,14 +83,14 @@ struct test_resource_beta {};
 template <typename FieldType> struct field_value_t {
     constexpr static auto id = FieldType::id;
 
-    uint32_t value;
+    std::uint32_t value;
 };
 
 template <int Id, typename Reg, typename Name, int Msb, int Lsb>
 struct mock_field_t {
     constexpr static auto id = Id;
     using RegisterType = Reg;
-    using DataType = uint32_t;
+    using DataType = std::uint32_t;
 
     constexpr static Reg get_register() { return {}; }
 
@@ -91,7 +98,7 @@ struct mock_field_t {
         return ((1 << (Msb + 1)) - 1) - ((1 << Lsb) - 1);
     }
 
-    constexpr auto operator()(uint32_t value) const {
+    constexpr auto operator()(std::uint32_t value) const {
         return field_value_t<mock_field_t>{value};
     }
 };
@@ -99,7 +106,7 @@ struct mock_field_t {
 template <int Id, typename Reg, typename Name> struct mock_register_t {
     constexpr static auto id = Id;
     using RegisterType = Reg;
-    using DataType = uint32_t;
+    using DataType = std::uint32_t;
 
     constexpr static Reg get_register() { return {}; }
 
@@ -164,8 +171,6 @@ struct rsp_avail_en_field_t
 
 struct BasicBuilder {
     using Config = root<
-        MockIrqImpl,
-
         shared_irq<33, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
                            msg_handler_irq,
@@ -259,8 +264,6 @@ TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllDisabled) {
 struct NoIsrBuilder {
     // Configure Interrupts
     using Config = root<
-        MockIrqImpl,
-
         shared_irq<33, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
                            msg_handler_irq, policies<>>,
@@ -300,8 +303,7 @@ TEST_F(InterruptManagerTest, NoIsrInit) {
 
 struct ClearStatusFirstBuilder {
     // Configure Interrupts
-    using Config =
-        root<MockIrqImpl, irq<38, 0, timer_irq, policies<clear_status_first>>>;
+    using Config = root<irq<38, 0, timer_irq, policies<clear_status_first>>>;
 
     using Dynamic = dynamic_controller<Config>;
 
@@ -333,8 +335,7 @@ TEST_F(InterruptManagerTest, ClearStatusFirstTest) {
 
 struct DontClearStatusBuilder {
     // Configure Interrupts
-    using Config =
-        root<MockIrqImpl, irq<38, 0, timer_irq, policies<dont_clear_status>>>;
+    using Config = root<irq<38, 0, timer_irq, policies<dont_clear_status>>>;
 
     using Dynamic = dynamic_controller<Config>;
 
@@ -467,8 +468,6 @@ struct can_int_en_field_t
 struct SharedSubIrqTest {
     // Configure Interrupts
     using Config = root<
-        MockIrqImpl,
-
         shared_irq<33, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
                            msg_handler_irq, policies<>>,
