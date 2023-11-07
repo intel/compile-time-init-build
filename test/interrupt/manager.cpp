@@ -1,5 +1,4 @@
 #include <cib/cib.hpp>
-#include <conc/concurrency.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
