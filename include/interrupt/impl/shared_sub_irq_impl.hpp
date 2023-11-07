@@ -1,6 +1,6 @@
 #pragma once
 
-#include <interrupt/config/fwd.hpp>
+#include <interrupt/fwd.hpp>
 
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -22,7 +22,7 @@ struct shared_sub_irq_impl {
 
   private:
     template <typename InterruptHal, bool en>
-    constexpr static EnableActionType enable_action =
+    constexpr static FunctionPtr enable_action =
         ConfigT::template enable_action<InterruptHal, en>;
 
     constexpr static auto enable_field = ConfigT::enable_field;

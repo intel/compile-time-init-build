@@ -1,6 +1,6 @@
 #pragma once
 
-#include <interrupt/config/fwd.hpp>
+#include <interrupt/fwd.hpp>
 #include <interrupt/policies.hpp>
 
 #include <stdx/tuple.hpp>
@@ -11,7 +11,7 @@ template <typename InterruptHalT, typename... IrqsT> struct root {
     using InterruptHal = InterruptHalT;
 
     template <typename T, bool en>
-    constexpr static EnableActionType enable_action = []() {};
+    constexpr static FunctionPtr enable_action = [] {};
     using StatusPolicy = clear_status_first;
     constexpr static auto resources = stdx::make_tuple();
     using IrqCallbackType = void;

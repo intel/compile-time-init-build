@@ -1,6 +1,6 @@
 #pragma once
 
-#include <interrupt/config/fwd.hpp>
+#include <interrupt/fwd.hpp>
 #include <interrupt/policies.hpp>
 
 #include <stdx/tuple.hpp>
@@ -25,7 +25,7 @@ template <std::size_t IrqNumberT, std::size_t IrqPriorityT,
           typename IrqCallbackT, typename PoliciesT>
 struct irq {
     template <typename InterruptHal, bool en>
-    constexpr static EnableActionType enable_action =
+    constexpr static FunctionPtr enable_action =
         InterruptHal::template irqInit<en, IrqNumberT, IrqPriorityT>;
     using StatusPolicy = typename PoliciesT::template type<status_clear_policy,
                                                            clear_status_first>;

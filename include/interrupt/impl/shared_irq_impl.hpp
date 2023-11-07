@@ -1,6 +1,6 @@
 #pragma once
 
-#include <interrupt/config/fwd.hpp>
+#include <interrupt/fwd.hpp>
 
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -11,7 +11,7 @@ namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
   public:
     template <typename InterruptHal, bool en>
-    constexpr static EnableActionType enable_action =
+    constexpr static FunctionPtr enable_action =
         ConfigT::template enable_action<InterruptHal, en>;
     using StatusPolicy = typename ConfigT::StatusPolicy;
 
