@@ -1,6 +1,7 @@
 #pragma once
 
 #include <interrupt/fwd.hpp>
+#include <interrupt/hal.hpp>
 
 #include <stdx/tuple.hpp>
 
@@ -16,9 +17,9 @@ namespace interrupt {
  */
 template <typename ConfigT, typename FlowTypeT> struct irq_impl {
   public:
-    template <typename InterruptHal, bool en>
+    template <bool en>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<InterruptHal, en>;
+        ConfigT::template enable_action<en>;
     using StatusPolicy = typename ConfigT::StatusPolicy;
 
     constexpr static auto irq_number = ConfigT::irq_number;
@@ -44,13 +45,8 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
      *
      * This should be used only by interrupt::Manager.
      *
-     * @tparam InterruptHal
-     *      The hardware abstraction layer that knows how to initialize hardware
-     * interrupts.
      */
-    template <typename InterruptHal> inline void init_mcu_interrupts() const {
-        enable_action<InterruptHal, active>();
-    }
+    inline void init_mcu_interrupts() const { enable_action<active>(); }
 
     [[nodiscard]] inline auto get_interrupt_enables() const -> stdx::tuple<> {
         return {};
@@ -61,14 +57,11 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
      *
      * This should be used only by interrupt::Manager.
      *
-     * @tparam InterruptHal
-     *      The hardware abstraction layer that knows how to clear pending
-     * interrupt status.
      */
-    template <typename InterruptHal> inline void run() const {
+    inline void run() const {
         if constexpr (active) {
-            InterruptHal::template run<StatusPolicy>(
-                irq_number, [&]() { interrupt_service_routine(); });
+            hal::run<StatusPolicy>(irq_number,
+                                   [&]() { interrupt_service_routine(); });
         }
     }
 };

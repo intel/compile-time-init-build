@@ -21,9 +21,9 @@ struct shared_sub_irq_impl {
     constexpr static bool active = (SubIrqImpls::active or ...);
 
   private:
-    template <typename InterruptHal, bool en>
+    template <bool en>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<InterruptHal, en>;
+        ConfigT::template enable_action<en>;
 
     constexpr static auto enable_field = ConfigT::enable_field;
     constexpr static auto status_field = ConfigT::status_field;

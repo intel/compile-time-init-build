@@ -7,9 +7,7 @@
 #include <stdx/tuple_algorithms.hpp>
 
 namespace interrupt {
-template <typename InterruptHalT, typename... IrqsT> struct root {
-    using InterruptHal = InterruptHalT;
-
+template <typename... IrqsT> struct root {
     template <typename T, bool en>
     constexpr static FunctionPtr enable_action = [] {};
     using StatusPolicy = clear_status_first;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <interrupt/hal.hpp>
 #include <interrupt/manager_interface.hpp>
 
 #include <stdx/tuple.hpp>
@@ -25,7 +26,7 @@ namespace interrupt {
  *      irq and shared_irq implementations. These are created by calling build()
  * on each of the irq and shared_irq instances from within Manager.
  */
-template <typename InterruptHal, typename Dynamic, typename... IrqImplTypes>
+template <typename Dynamic, typename... IrqImplTypes>
 class manager_impl : public manager_interface {
   private:
     stdx::tuple<IrqImplTypes...> irq_impls;
@@ -56,10 +57,8 @@ class manager_impl : public manager_interface {
      * Initialize the interrupt hardware and each of the active irqs.
      */
     void init_mcu_interrupts() const final {
-        InterruptHal::init();
-        stdx::for_each(
-            [](auto irq) { irq.template init_mcu_interrupts<InterruptHal>(); },
-            irq_impls);
+        hal::init();
+        stdx::for_each([](auto irq) { irq.init_mcu_interrupts(); }, irq_impls);
     }
 
     /**
@@ -90,7 +89,7 @@ class manager_impl : public manager_interface {
         using irq_t = decltype(lookup<IrqNumber, void>(std::declval<M>()));
 
         if constexpr (not std::is_void_v<irq_t>) {
-            get<irq_t>(irq_impls).template run<InterruptHal>();
+            get<irq_t>(irq_impls).run();
         }
     }
 

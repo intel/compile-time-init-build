@@ -1,6 +1,7 @@
 #pragma once
 
 #include <interrupt/fwd.hpp>
+#include <interrupt/hal.hpp>
 
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -10,9 +11,9 @@
 namespace interrupt {
 template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
   public:
-    template <typename InterruptHal, bool en>
+    template <bool en>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<InterruptHal, en>;
+        ConfigT::template enable_action<en>;
     using StatusPolicy = typename ConfigT::StatusPolicy;
 
     constexpr static auto irq_number = ConfigT::irq_number;
@@ -40,15 +41,12 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
      *
      * This should be used only by interrupt::Manager.
      *
-     * @tparam InterruptHal
-     *      The hardware abstraction layer that knows how to initialize hardware
-     * interrupts.
      */
-    template <typename InterruptHal> inline void init_mcu_interrupts() const {
+    inline void init_mcu_interrupts() const {
         // initialize the main irq hardware
         // TODO: unit test says MCU interrupts always get enabled for shared
         // interrupts...why??
-        enable_action<InterruptHal, true>();
+        enable_action<true>();
     }
 
     auto get_interrupt_enables() const {
@@ -71,13 +69,10 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
      *
      * This should be used only by interrupt::Manager.
      *
-     * @tparam InterruptHal
-     *      The hardware abstraction layer that knows how to clear pending
-     * interrupt status.
      */
-    template <typename InterruptHal> inline void run() const {
+    inline void run() const {
         if constexpr (active) {
-            InterruptHal::template run<StatusPolicy>(irq_number, [&] {
+            hal::run<StatusPolicy>(irq_number, [&] {
                 stdx::for_each([](auto irq) { irq.run(); }, sub_irq_impls);
             });
         }

@@ -9,8 +9,7 @@ namespace interrupt {
 template <typename EnableField, typename StatusField, typename PoliciesT,
           typename... SubIrqs>
 struct shared_sub_irq {
-    template <typename InterruptHal, bool en>
-    constexpr static FunctionPtr enable_action = [] {};
+    template <bool en> constexpr static FunctionPtr enable_action = [] {};
     constexpr static auto enable_field = EnableField{};
     constexpr static auto status_field = StatusField{};
     using StatusPolicy = typename PoliciesT::template type<status_clear_policy,
