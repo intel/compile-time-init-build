@@ -1,6 +1,7 @@
 #include <cib/cib.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -57,25 +58,25 @@ class InterruptManagerTest : public ::testing::Test {
     void SetUp() override { callbackPtr = &callback; }
 };
 
-constexpr static auto msg_handler = flow::action("msg_handler"_sc, [] {
+constexpr static auto msg_handler = flow::action<"msg_handler">([] {
     // do nothing
 });
 
-constexpr static auto rsp_handler = flow::action("rsp_handler"_sc, [] {
+constexpr static auto rsp_handler = flow::action<"rsp_handler">([] {
     // do nothing
 });
 
-constexpr static auto timer_action = flow::action("timer_action"_sc, [] {
+constexpr static auto timer_action = flow::action<"timer_action">([] {
     // do nothing
 });
 
-class msg_handler_irq : public irq_flow<decltype("msg_handler_irq"_sc)> {};
-class rsp_handler_irq : public irq_flow<decltype("rsp_handler_irq"_sc)> {};
-class timer_irq : public irq_flow<decltype("timer_irq"_sc)> {};
+class msg_handler_irq : public irq_flow<"msg_handler_irq"> {};
+class rsp_handler_irq : public irq_flow<"rsp_handler_irq"> {};
+class timer_irq : public irq_flow<"timer_irq"> {};
 
-class i2c_handler_irq : public irq_flow<decltype("i2c_handler_irq"_sc)> {};
-class spi_handler_irq : public irq_flow<decltype("spi_handler_irq"_sc)> {};
-class can_handler_irq : public irq_flow<decltype("can_handler_irq"_sc)> {};
+class i2c_handler_irq : public irq_flow<"i2c_handler_irq"> {};
+class spi_handler_irq : public irq_flow<"spi_handler_irq"> {};
+class can_handler_irq : public irq_flow<"can_handler_irq"> {};
 
 struct test_resource_alpha {};
 struct test_resource_beta {};
@@ -86,7 +87,7 @@ template <typename FieldType> struct field_value_t {
     std::uint32_t value;
 };
 
-template <int Id, typename Reg, typename Name, int Msb, int Lsb>
+template <int Id, typename Reg, stdx::ct_string Name, int Msb, int Lsb>
 struct mock_field_t {
     constexpr static auto id = Id;
     using RegisterType = Reg;
@@ -103,14 +104,14 @@ struct mock_field_t {
     }
 };
 
-template <int Id, typename Reg, typename Name> struct mock_register_t {
+template <int Id, typename Reg, stdx::ct_string Name> struct mock_register_t {
     constexpr static auto id = Id;
     using RegisterType = Reg;
     using DataType = std::uint32_t;
 
     constexpr static Reg get_register() { return {}; }
 
-    constexpr static mock_field_t<Id, Reg, decltype("raw"_sc), 31, 0> raw{};
+    constexpr static mock_field_t<Id, Reg, "raw", 31, 0> raw{};
 };
 
 template <typename FieldType> struct read_op_t {
@@ -151,19 +152,17 @@ constexpr auto apply(read_op_t<FieldType> read_op) {
     return read_op();
 }
 
-struct int_sts_reg_t
-    : mock_register_t<0, int_sts_reg_t, decltype("int_sts"_sc)> {};
+struct int_sts_reg_t : mock_register_t<0, int_sts_reg_t, "int_sts"> {};
 struct packet_avail_sts_field_t
-    : mock_field_t<1, int_sts_reg_t, decltype("packet_avail_sts"_sc), 1, 1> {};
+    : mock_field_t<1, int_sts_reg_t, "packet_avail_sts", 1, 1> {};
 struct rsp_avail_sts_field_t
-    : mock_field_t<2, int_sts_reg_t, decltype("rsp_avail_sts"_sc), 0, 0> {};
+    : mock_field_t<2, int_sts_reg_t, "rsp_avail_sts", 0, 0> {};
 
-struct int_en_reg_t : mock_register_t<3, int_en_reg_t, decltype("int_en"_sc)> {
-};
+struct int_en_reg_t : mock_register_t<3, int_en_reg_t, "int_en"> {};
 struct packet_avail_en_field_t
-    : mock_field_t<4, int_en_reg_t, decltype("packet_avail_en"_sc), 1, 1> {};
+    : mock_field_t<4, int_en_reg_t, "packet_avail_en", 1, 1> {};
 struct rsp_avail_en_field_t
-    : mock_field_t<5, int_en_reg_t, decltype("rsp_avail_en"_sc), 0, 0> {};
+    : mock_field_t<5, int_en_reg_t, "rsp_avail_en", 0, 0> {};
 
 #define EXPECT_WRITE(FIELD_TYPE, VALUE)                                        \
     EXPECT_CALL(callback, write(FIELD_TYPE::id, VALUE))
@@ -437,33 +436,25 @@ TEST_F(InterruptManagerTest, ResourceDisableEnableMultiResource) {
 }
 
 constexpr static auto bscan =
-    flow::action("bscan"_sc, [] { callbackPtr->run(0xba5eba11); });
+    flow::action<"bscan">([] { callbackPtr->run(0xba5eba11); });
 
 struct hwio_int_sts_field_t
-    : mock_field_t<6, int_sts_reg_t, decltype("hwio_int_sts_field_t"_sc), 2,
-                   2> {};
+    : mock_field_t<6, int_sts_reg_t, "hwio_int_sts_field_t", 2, 2> {};
 struct i2c_int_sts_field_t
-    : mock_field_t<7, int_sts_reg_t, decltype("i2c_int_sts_field_t"_sc), 3, 3> {
-};
+    : mock_field_t<7, int_sts_reg_t, "i2c_int_sts_field_t", 3, 3> {};
 struct spi_int_sts_field_t
-    : mock_field_t<8, int_sts_reg_t, decltype("spi_int_sts_field_t"_sc), 4, 4> {
-};
+    : mock_field_t<8, int_sts_reg_t, "spi_int_sts_field_t", 4, 4> {};
 struct can_int_sts_field_t
-    : mock_field_t<9, int_sts_reg_t, decltype("can_int_sts_field_t"_sc), 5, 5> {
-};
+    : mock_field_t<9, int_sts_reg_t, "can_int_sts_field_t", 5, 5> {};
 
 struct hwio_int_en_field_t
-    : mock_field_t<10, int_en_reg_t, decltype("hwio_int_en_field_t"_sc), 2, 2> {
-};
+    : mock_field_t<10, int_en_reg_t, "hwio_int_en_field_t", 2, 2> {};
 struct i2c_int_en_field_t
-    : mock_field_t<11, int_en_reg_t, decltype("i2c_int_en_field_t"_sc), 3, 3> {
-};
+    : mock_field_t<11, int_en_reg_t, "i2c_int_en_field_t", 3, 3> {};
 struct spi_int_en_field_t
-    : mock_field_t<12, int_en_reg_t, decltype("spi_int_en_field_t"_sc), 4, 4> {
-};
+    : mock_field_t<12, int_en_reg_t, "spi_int_en_field_t", 4, 4> {};
 struct can_int_en_field_t
-    : mock_field_t<13, int_en_reg_t, decltype("can_int_en_field_t"_sc), 5, 5> {
-};
+    : mock_field_t<13, int_en_reg_t, "can_int_en_field_t", 5, 5> {};
 
 struct SharedSubIrqTest {
     // Configure Interrupts

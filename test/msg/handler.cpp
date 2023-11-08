@@ -37,9 +37,8 @@ inline auto logging::config<> =
     logging::fmt::config{std::back_inserter(log_buffer)};
 
 TEST_CASE("is_match is true for a match", "[handler]") {
-    auto callback = msg::callback<msg_defn>(
-        "cb"_sc, match::always,
-        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto callback = msg::callback<"cb", msg_defn>(
+        match::always, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
@@ -48,9 +47,8 @@ TEST_CASE("is_match is true for a match", "[handler]") {
 }
 
 TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
-    auto callback = msg::callback<msg_defn>(
-        "cb"_sc, match::always,
-        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto callback = msg::callback<"cb", msg_defn>(
+        match::always, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
@@ -61,9 +59,8 @@ TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
 }
 
 TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
-    auto callback = msg::callback<msg_defn>(
-        "cb"_sc, match::always,
-        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto callback = msg::callback<"cb", msg_defn>(
+        match::always, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg = msg::owning<msg_defn>{"id"_field = 0x80};
 
     auto callbacks = stdx::make_tuple(callback);
@@ -74,9 +71,8 @@ TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
 }
 
 TEST_CASE("dispatch single callback (no match)", "[handler]") {
-    auto callback = msg::callback<msg_defn>(
-        "cb"_sc, match::always,
-        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto callback = msg::callback<"cb", msg_defn>(
+        match::always, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg = std::array{0x8100ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
@@ -98,11 +94,10 @@ TEST_CASE("log mismatch when no match", "[handler]") {
 }
 
 TEST_CASE("match and dispatch only one callback", "[handler]") {
-    auto callback1 = msg::callback<msg_defn>(
-        "cb1"_sc, match::always,
-        [&](msg::const_view<msg_defn>) { CHECK(false); });
-    auto callback2 = msg::callback<msg_defn_field_reqd>(
-        "TestCallback2"_sc, match::always,
+    auto callback1 = msg::callback<"cb1", msg_defn>(
+        match::always, [&](msg::const_view<msg_defn>) { CHECK(false); });
+    auto callback2 = msg::callback<"cb2", msg_defn_field_reqd>(
+        match::always,
         [](msg::const_view<msg_defn_field_reqd>) { dispatched = true; });
     auto const msg = std::array{0x4400ba11u, 0x0042d00du};
 
@@ -116,8 +111,8 @@ TEST_CASE("match and dispatch only one callback", "[handler]") {
 }
 
 TEST_CASE("dispatch with extra args", "[handler]") {
-    auto callback = msg::callback<msg_defn, int>(
-        "cb"_sc, match::always, [](msg::const_view<msg_defn>, int value) {
+    auto callback = msg::callback<"cb", msg_defn, int>(
+        match::always, [](msg::const_view<msg_defn>, int value) {
             dispatched = true;
             CHECK(value == 0xcafe);
         });

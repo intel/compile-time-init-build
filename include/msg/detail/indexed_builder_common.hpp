@@ -5,9 +5,11 @@
 #include <lookup/lookup.hpp>
 #include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
+#include <sc/string_constant.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -126,7 +128,8 @@ struct indexed_builder_base {
             CIB_INFO(
                 "Incoming message matched [{}], because [{}] (collapsed to "
                 "[{}]), executing callback",
-                cb.name, orig_cb.matcher.describe(), cb.matcher.describe());
+                stdx::ct_string_to_type<cb.name, sc::string_constant>(),
+                orig_cb.matcher.describe(), cb.matcher.describe());
             cb.callable(msg, args...);
         }
     }

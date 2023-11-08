@@ -34,19 +34,19 @@ CONSTEVAL auto validate_matcher() -> bool {
     return matcher_validator<DummyArgs...>.template validate<M>();
 }
 
-template <typename Name, match::matcher M, stdx::callable F>
+template <stdx::ct_string Name, match::matcher M, stdx::callable F>
 struct indexed_callback_t {
-    using name_t = Name;
     using matcher_t = M;
     using callable_t = F;
 
-    constexpr static Name name{};
+    constexpr static auto name = Name;
     M matcher;
     F callable;
 };
 
+template <stdx::ct_string Name>
 constexpr auto indexed_callback =
-    []<typename Name, match::matcher M, stdx::callable F>(Name, M &&m, F &&f) {
+    []<match::matcher M, stdx::callable F>(M &&m, F &&f) {
         auto sop = match::sum_of_products(std::forward<M>(m));
         return indexed_callback_t<Name, decltype(sop), std::remove_cvref_t<F>>{
             std::move(sop), std::forward<F>(f)};
@@ -57,14 +57,13 @@ constexpr auto remove_match_terms = []<typename C>(C &&c) {
     using callback_t = std::remove_cvref_t<C>;
     match::matcher auto new_matcher = remove_terms(
         std::forward<C>(c).matcher, std::type_identity<Fields>{}...);
-    return indexed_callback_t<typename callback_t::name_t,
-                              decltype(new_matcher),
+    return indexed_callback_t<callback_t::name, decltype(new_matcher),
                               typename callback_t::callable_t>{
         std::move(new_matcher), std::forward<C>(c).callable};
 };
 
 namespace detail {
-template <typename Name, match::matcher M, typename F>
+template <stdx::ct_string Name, match::matcher M, typename F>
 constexpr auto separate_sum_terms(M &&m, F &&f) {
     using matcher_t = std::remove_cvref_t<M>;
     using callable_t = std::remove_cvref_t<F>;
@@ -89,7 +88,7 @@ constexpr auto separate_sum_terms(C &&c, Ms &&...ms) {
     using callback_t = std::remove_cvref_t<C>;
     auto m = match::sum_of_products(
         match::all(std::forward<C>(c).matcher, std::forward<Ms>(ms)...));
-    return detail::separate_sum_terms<typename callback_t::name_t>(
+    return detail::separate_sum_terms<callback_t::name>(
         std::move(m), std::forward<C>(c).callable);
 }
 } // namespace msg

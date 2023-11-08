@@ -6,6 +6,8 @@
 #include <flow/impl.hpp>
 #include <flow/milestone.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <cstddef>
 
 namespace flow {
@@ -22,11 +24,11 @@ namespace flow {
  * @see flow::graph_builder
  */
 
-template <typename Name = void, std::size_t NodeCapacity = 64,
+template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
 struct builder : graph_builder<node, Name, NodeCapacity, EdgeCapacity,
                                builder<Name, NodeCapacity, EdgeCapacity>> {
-    template <typename N, std::size_t Capacity>
+    template <stdx::ct_string N, std::size_t Capacity>
     using impl_t = flow::impl<N, Capacity>;
 };
 
@@ -39,7 +41,7 @@ struct builder : graph_builder<node, Name, NodeCapacity, EdgeCapacity,
  * @see cib::exports
  * @see cib::extend
  */
-template <typename Name = void, std::size_t NodeCapacity = 64,
+template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
 struct service : cib::builder_meta<builder<Name, NodeCapacity, EdgeCapacity>,
                                    FunctionPtr> {};

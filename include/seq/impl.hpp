@@ -3,6 +3,7 @@
 #include <log/log.hpp>
 #include <seq/step.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
 
 #include <array>
@@ -13,7 +14,7 @@
 namespace seq {
 enum struct direction { FORWARD = 0, BACKWARD = 1 };
 
-template <typename, std::size_t NumSteps> struct impl {
+template <stdx::ct_string, std::size_t NumSteps> struct impl {
     stdx::cx_vector<func_ptr, NumSteps> _forward_steps{};
     stdx::cx_vector<func_ptr, NumSteps> _backward_steps{};
     std::size_t next_step{};

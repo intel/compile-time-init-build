@@ -59,14 +59,13 @@ template <typename T, T Value> struct test_m {
 } // namespace
 
 TEST_CASE("callback matches trivially", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(""_sc, test_m<int, 0>{}, [] {});
+    constexpr auto cb = msg::indexed_callback<"">(test_m<int, 0>{}, [] {});
     CHECK(cb.matcher(msg_t{}));
     CHECK(not cb.matcher(msg_t{1, 'a'}));
 }
 
 TEST_CASE("callback with compound match", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
     CHECK(not cb.matcher(msg_t{}));
@@ -75,8 +74,7 @@ TEST_CASE("callback with compound match", "[indexed_callback]") {
 }
 
 TEST_CASE("callback is sum of products", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
     static_assert(
@@ -87,8 +85,7 @@ TEST_CASE("callback is sum of products", "[indexed_callback]") {
 }
 
 TEST_CASE("index a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
 
@@ -113,8 +110,7 @@ TEST_CASE("index a callback", "[indexed_callback]") {
 }
 
 TEST_CASE("index not terms in a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         not test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
 
@@ -137,8 +133,7 @@ TEST_CASE("index not terms in a callback", "[indexed_callback]") {
 }
 
 TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
 
@@ -150,8 +145,7 @@ TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
 
 TEST_CASE("remove multiple indexed terms from a callback",
           "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc,
+    constexpr auto cb = msg::indexed_callback<"">(
         test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
         [] {});
 
@@ -165,8 +159,8 @@ int called{};
 
 TEST_CASE("separate sum terms in a callback", "[indexed_callback]") {
     called = 0;
-    constexpr auto cb = msg::indexed_callback(
-        ""_sc, test_m<int, 0>{} or test_m<int, 1>{}, [] { ++called; });
+    constexpr auto cb = msg::indexed_callback<"">(
+        test_m<int, 0>{} or test_m<int, 1>{}, [] { ++called; });
     CHECK(cb.matcher(msg_t{}));
 
     auto sut = msg::separate_sum_terms(cb);

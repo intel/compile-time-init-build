@@ -61,13 +61,13 @@
 /*
   Service definitions
 */
-// decltype("morning_routine_log_t"_sc) - used during the logging
+// "morning_routine_log_t" - used during the logging
 // struct morning_routine_log_t
-//     : public flow::service<decltype("morning_routine_log_t"_sc)> {};
+//     : public flow::service<"morning_routine_log_t"> {};
 struct morning_routine_t : public flow::service<> {};
 
 // struct evening_routine_t : public
-// flow::service<decltype("evening_routine_t"_sc)>
+// flow::service<"evening_routine_t">
 struct evening_routine_t : public flow::service<> {};
 
 /*
@@ -77,22 +77,20 @@ struct self_care_component_t {
     /*
       Actions: WAKE_UP, EXERCISE, GO_TO_BED, RELAX, TAKE_BATH
     */
-    constexpr static auto WAKE_UP = flow::action(
-        "WakeUp"_sc, []() { std::cout << "Wake up at 6:00 AM" << std::endl; });
+    constexpr static auto WAKE_UP = flow::action<"WakeUp">(
+        []() { std::cout << "Wake up at 6:00 AM" << std::endl; });
 
-    constexpr static auto EXERCISE = flow::action(
-        "Exercise"_sc, []() { std::cout << "Gym activities" << std::endl; });
+    constexpr static auto EXERCISE = flow::action<"Exercise">(
+        []() { std::cout << "Gym activities" << std::endl; });
 
-    constexpr static auto GO_TO_BED = flow::action("GoToBed"_sc, []() {
-        std::cout << "Go to bed at 10:00 PM" << std::endl;
-    });
+    constexpr static auto GO_TO_BED = flow::action<"GoToBed">(
+        []() { std::cout << "Go to bed at 10:00 PM" << std::endl; });
 
-    constexpr static auto RELAX = flow::action("Relax"_sc, []() {
-        std::cout << "Have relax before Dinner" << std::endl;
-    });
+    constexpr static auto RELAX = flow::action<"Relax">(
+        []() { std::cout << "Have relax before Dinner" << std::endl; });
 
-    constexpr static auto TAKE_BATH = flow::action(
-        "TakeBath"_sc, []() { std::cout << "Take a bath" << std::endl; });
+    constexpr static auto TAKE_BATH = flow::action<"TakeBath">(
+        []() { std::cout << "Take a bath" << std::endl; });
 
     // Extend flow services
     constexpr static auto config = cib::config(
@@ -111,12 +109,11 @@ struct food_component_t {
     /*
       Actions: BREAKFAST, DINNER
     */
-    constexpr static auto BREAKFAST = flow::action("Breakfast"_sc, []() {
-        std::cout << "Have healthy breakfast" << std::endl;
-    });
+    constexpr static auto BREAKFAST = flow::action<"Breakfast">(
+        []() { std::cout << "Have healthy breakfast" << std::endl; });
 
-    constexpr static auto DINNER = flow::action(
-        "Dinner"_sc, []() { std::cout << "Have early dinner" << std::endl; });
+    constexpr static auto DINNER = flow::action<"Dinner">(
+        []() { std::cout << "Have early dinner" << std::endl; });
 
     // Extend flow services
     constexpr static auto config = cib::config(
@@ -134,11 +131,11 @@ struct dress_up_component_t {
       Actions: GET_READY_FOR_EXERCISE, GET_READY_TO_WORK
     */
     constexpr static auto GET_READY_FOR_EXERCISE =
-        flow::action("GetReadyForExercise"_sc,
-                     []() { std::cout << "Sports wear" << std::endl; });
+        flow::action<"GetReadyForExercise">(
+            []() { std::cout << "Sports wear" << std::endl; });
 
-    constexpr static auto GET_READY_TO_WORK = flow::action(
-        "GetReadyToWork"_sc, []() { std::cout << "Office wear" << std::endl; });
+    constexpr static auto GET_READY_TO_WORK = flow::action<"GetReadyToWork">(
+        []() { std::cout << "Office wear" << std::endl; });
 
     // Extend flow services
     constexpr static auto config = cib::config(
@@ -160,12 +157,11 @@ struct commute_component_t {
     /*
       Actions: GO_TO_OFFICE, RETURN_HOME
     */
-    constexpr static auto GO_TO_OFFICE = flow::action("GoToOffice"_sc, []() {
-        std::cout << "Commute to office" << std::endl;
-    });
+    constexpr static auto GO_TO_OFFICE = flow::action<"GoToOffice">(
+        []() { std::cout << "Commute to office" << std::endl; });
 
-    constexpr static auto RETURN_HOME = flow::action(
-        "ReturnHome"_sc, []() { std::cout << "Commute to home" << std::endl; });
+    constexpr static auto RETURN_HOME = flow::action<"ReturnHome">(
+        []() { std::cout << "Commute to home" << std::endl; });
 
     // Extend flow services
     constexpr static auto config = cib::config(
@@ -179,31 +175,30 @@ struct commute_component_t {
 };
 
 struct daily_routine_component_t {
-    constexpr static auto DAILY_ROUTINES =
-        flow::action("Daily Routines"_sc, []() {
-            static const auto ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+    constexpr static auto DAILY_ROUTINES = flow::action<"Daily Routines">([]() {
+        static const auto ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
-            static bool daysRoutineComplete = false;
-            static uint32_t dayCount = 1;
-            static auto startTime = std::chrono::system_clock::now();
+        static bool daysRoutineComplete = false;
+        static uint32_t dayCount = 1;
+        static auto startTime = std::chrono::system_clock::now();
 
-            if (!daysRoutineComplete) {
-                std::cout << "----- Day: " << dayCount << " -----\n";
-                flow::run<morning_routine_t>();
-                flow::run<evening_routine_t>();
-                daysRoutineComplete = true;
-            }
+        if (!daysRoutineComplete) {
+            std::cout << "----- Day: " << dayCount << " -----\n";
+            flow::run<morning_routine_t>();
+            flow::run<evening_routine_t>();
+            daysRoutineComplete = true;
+        }
 
-            auto currentTime = std::chrono::system_clock::now();
-            auto elapsedTime =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    currentTime - startTime);
-            if (elapsedTime.count() >= ONE_DAY_IN_MILLISECONDS) {
-                dayCount++;
-                startTime = currentTime;
-                daysRoutineComplete = false;
-            }
-        });
+        auto currentTime = std::chrono::system_clock::now();
+        auto elapsedTime =
+            std::chrono::duration_cast<std::chrono::milliseconds>(currentTime -
+                                                                  startTime);
+        if (elapsedTime.count() >= ONE_DAY_IN_MILLISECONDS) {
+            dayCount++;
+            startTime = currentTime;
+            daysRoutineComplete = false;
+        }
+    });
 
     constexpr static auto config = cib::config(
 

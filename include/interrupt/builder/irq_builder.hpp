@@ -61,8 +61,7 @@ template <typename ConfigT> struct irq_builder {
             BuilderValue::value.interrupt_service_routine;
         constexpr auto flow_size = flow_builder.size();
         auto const optimized_irq_impl =
-            irq_impl<ConfigT,
-                     flow::impl<typename IrqCallbackType::Name, flow_size>>(
+            irq_impl<ConfigT, flow::impl<IrqCallbackType::name, flow_size>>(
                 run_flow);
 
         return optimized_irq_impl;

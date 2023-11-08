@@ -15,6 +15,7 @@
 #include <interrupt/policies.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 
 #include <cstddef>
@@ -22,7 +23,8 @@
 #include <utility>
 
 namespace interrupt {
-template <typename Name = void> using irq_flow = flow::builder<Name, 16, 8>;
+template <stdx::ct_string Name = "">
+using irq_flow = flow::builder<Name, 16, 8>;
 
 template <typename FlowT, typename FlowDescriptionT> struct binding_t {
     FlowDescriptionT flow_description;

@@ -5,6 +5,7 @@
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
@@ -30,7 +31,7 @@ void dispatch_single_callable(Callable const &callable, auto const &msg,
 template <typename T>
 concept not_nullptr = not std::is_null_pointer_v<T>;
 
-template <typename...> struct callback;
+template <stdx::ct_string, typename...> struct callback;
 
 template <typename...> struct extra_callback_args {};
 
@@ -38,13 +39,11 @@ template <typename...> struct extra_callback_args {};
  * A Class that defines a message callback and provides methods for validating
  * and handling incoming messages.
  */
-template <typename MsgDefn, typename... ExtraCallbackArgs, typename Name,
+template <stdx::ct_string Name, typename MsgDefn, typename... ExtraCallbackArgs,
           match::matcher M, detail::not_nullptr... Callables>
-struct callback<MsgDefn, extra_callback_args<ExtraCallbackArgs...>, Name, M,
+struct callback<Name, MsgDefn, extra_callback_args<ExtraCallbackArgs...>, M,
                 Callables...> {
   private:
-    constexpr static Name name{};
-
     decltype(std::declval<M>() and typename MsgDefn::matcher_t{}) matcher;
     stdx::tuple<Callables...> callbacks;
 
@@ -74,7 +73,8 @@ struct callback<MsgDefn, extra_callback_args<ExtraCallbackArgs...>, Name, M,
         if (matcher(m)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
                      "callback",
-                     name, matcher.describe());
+                     stdx::ct_string_to_type<Name, sc::string_constant>(),
+                     matcher.describe());
             dispatch(m, args...);
             return true;
         }
@@ -82,17 +82,19 @@ struct callback<MsgDefn, extra_callback_args<ExtraCallbackArgs...>, Name, M,
     }
 
     template <typename Msg> auto log_mismatch(Msg const &m) const -> void {
-        CIB_INFO("    {} - F:({})", name, matcher.describe_match(m));
+        CIB_INFO("    {} - F:({})",
+                 stdx::ct_string_to_type<Name, sc::string_constant>(),
+                 matcher.describe_match(m));
     }
 };
 } // namespace detail
 
-template <typename MsgDefn, typename... ExtraCallbackArgs>
-constexpr auto callback = []<typename Name, match::matcher M, typename... CBs>(
-                              Name, M const &m, CBs &&...callbacks) {
-    return detail::callback<MsgDefn,
+template <stdx::ct_string Name, typename MsgDefn, typename... ExtraCallbackArgs>
+constexpr auto callback = []<match::matcher M, typename... CBs>(
+                              M const &m, CBs &&...callbacks) {
+    return detail::callback<Name, MsgDefn,
                             detail::extra_callback_args<ExtraCallbackArgs...>,
-                            Name, M, std::remove_cvref_t<CBs>...>{
+                            M, std::remove_cvref_t<CBs>...>{
         m, std::forward<CBs>(callbacks)...};
 };
 } // namespace msg

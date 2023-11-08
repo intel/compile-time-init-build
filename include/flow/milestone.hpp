@@ -3,6 +3,8 @@
 #include <flow/common.hpp>
 #include <log/log.hpp>
 
+#include <stdx/ct_string.hpp>
+
 namespace flow {
 struct node {
     using is_node = void;
@@ -23,16 +25,23 @@ struct node {
  * @return
  *      Node that will execute the given function pointer, f.
  */
-template <typename Name>
-[[nodiscard]] constexpr auto action(Name, FunctionPtr f) -> node {
-    return {.run = f, .log_name = [] { CIB_TRACE("flow.action({})", Name{}); }};
+template <stdx::ct_string Name>
+[[nodiscard]] constexpr auto action(FunctionPtr f) -> node {
+    return {.run = f, .log_name = [] {
+                CIB_TRACE("flow.action({})",
+                          stdx::ct_string_to_type<Name, sc::string_constant>());
+            }};
 }
 
 /**
  * @return
  *      Node with no associated action.
  */
-template <typename Name> [[nodiscard]] constexpr auto milestone(Name) -> node {
-    return {.log_name = [] { CIB_TRACE("flow.milestone({})", Name{}); }};
+template <stdx::ct_string Name>
+[[nodiscard]] constexpr auto milestone() -> node {
+    return {.log_name = [] {
+        CIB_TRACE("flow.milestone({})",
+                  stdx::ct_string_to_type<Name, sc::string_constant>());
+    }};
 }
 } // namespace flow

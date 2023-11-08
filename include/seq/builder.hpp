@@ -6,6 +6,8 @@
 #include <seq/impl.hpp>
 #include <seq/step.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <cstddef>
 
 namespace seq {
@@ -22,12 +24,12 @@ namespace seq {
  * @see flow::graph_builder
  */
 
-template <typename Name = void, std::size_t NodeCapacity = 64,
+template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
 struct builder
     : flow::graph_builder<step_base, Name, NodeCapacity, EdgeCapacity,
                           builder<Name, NodeCapacity, EdgeCapacity>> {
-    template <typename N, std::size_t Capacity>
+    template <stdx::ct_string N, std::size_t Capacity>
     using impl_t = seq::impl<N, Capacity>;
 };
 
@@ -40,7 +42,7 @@ struct builder
  * @see cib::exports
  * @see cib::extend
  */
-template <typename Name = void, std::size_t NodeCapacity = 64,
+template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
 struct service : cib::builder_meta<builder<Name, NodeCapacity, EdgeCapacity>,
                                    flow::FunctionPtr> {};

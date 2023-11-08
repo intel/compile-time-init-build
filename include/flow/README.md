@@ -9,7 +9,7 @@ point to register callbacks at compile-time. Flow implements the constexpr init(
 Flow extension points are declared by extending the `flow::service`.
 
 ```c++
-struct MorningRoutine : public flow::service<decltype("MorningRoutine"_sc)> {}; 
+struct MorningRoutine : public flow::service<"MorningRoutine"> {}; 
 ```
 
 The builder is used during the constexpr init() phase to define and extend the flow. Actions to be added to the flow are
@@ -17,11 +17,11 @@ declared and defined as constexpr constants. all_t actions added to a flow will 
 
 ```c++
 namespace food { 
-    constexpr static auto MAKE_COFFEE = flow::action("MAKE_COFFEE"_sc, [] { 
+    constexpr static auto MAKE_COFFEE = flow::action<"MAKE_COFFEE">([] { 
         coffee_maker.start(ground_coffee.take(100_grams), water.take(16_ounces)); 
     }); 
     
-    constexpr static auto DRINK_COFFEE = flow::action("DRINK_COFFEE"_sc, [] { 
+    constexpr static auto DRINK_COFFEE = flow::action<"DRINK_COFFEE">([] { 
         ...
     }); 
 } 
@@ -74,11 +74,11 @@ inserting additional actions with new dependencies.
 
 ```c++
 struct childcare { 
-    constexpr static auto PACK_SCHOOL_LUNCHES = flow::action("PACK_SCHOOL_LUNCHES"_sc, [] { 
+    constexpr static auto PACK_SCHOOL_LUNCHES = flow::action<"PACK_SCHOOL_LUNCHES">([] { 
         ...
     }); 
     
-    constexpr static auto SEND_KIDS_TO_SCHOOL = flow::action("SEND_KIDS_TO_SCHOOL"_sc, [] { 
+    constexpr static auto SEND_KIDS_TO_SCHOOL = flow::action<"SEND_KIDS_TO_SCHOOL">([] { 
         ...
     }); 
     
@@ -134,7 +134,7 @@ extended by multiple independent components to create new functionality.
 
 ```c++
 namespace exercise { 
-    constexpr static auto RIDE_STATIONARY_BIKE = flow::action("RIDE_STATIONARY_BIKE"_sc, [] { 
+    constexpr static auto RIDE_STATIONARY_BIKE = flow::action<"RIDE_STATIONARY_BIKE">([] { 
         ...
     }); 
     
@@ -213,7 +213,7 @@ defines the various extension points and ensures they get executed over and over
 ```c++
 // simple component for scheduling daily activities.
 struct day_cycle {
-    constexpr static auto DAY_CYCLE = flow::action("DAY_CYCLE"_sc, [] { 
+    constexpr static auto DAY_CYCLE = flow::action<"DAY_CYCLE">([] { 
         flow::run<MorningRoutine>();
         flow::run<DaytimeRoutine>();
         flow::run<EveningRoutine>();
@@ -266,7 +266,7 @@ automatically log the beginning and end of the `flow` as well as all actions.
 struct MyFlow : public flow::service<> {};
 
 // declare a flow with automatic logging enabled
-struct MyFlowWithLogging : public flow::service<decltype("MyFlowWithLogging"_sc)> {}; 
+struct MyFlowWithLogging : public flow::service<"MyFlowWithLogging"> {}; 
 ```
 
 ### `flow::action`
@@ -278,7 +278,7 @@ than once, but can be referenced by other actions when adding dependencies.
 #### Example
 
 ```c++
-constexpr static auto MY_ACTION_NAME = flow::action("MY_ACTION_NAME"_sc, [] {
+constexpr static auto MY_ACTION_NAME = flow::action<"MY_ACTION_NAME">([] {
     // do useful stuff
 }); 
 ```
@@ -291,7 +291,7 @@ within a `flow` in which other actions may base their dependencies on.
 #### Example
 
 ```c++
-constexpr static auto MY_MILESTONE_NAME = flow::milestone("MY_MILESTONE_NAME"_sc); 
+constexpr static auto MY_MILESTONE_NAME = flow::milestone<"MY_MILESTONE_NAME">(); 
 ```
 
 ### `flow::run`
