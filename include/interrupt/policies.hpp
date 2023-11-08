@@ -2,6 +2,7 @@
 
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>
+#include <stdx/utility.hpp>
 
 #include <utility>
 
@@ -57,21 +58,12 @@ template <typename... ResourcesT> struct required_resources {
     constexpr static stdx::tuple<ResourcesT...> resources{};
 };
 
-template <typename... Policies> class policies {
-    template <typename Key, typename Value> struct type_pair {};
-    template <typename... Ts> struct type_map : Ts... {};
-
-    template <typename K, typename Default>
-    constexpr static auto lookup(...) -> Default;
-    template <typename K, typename Default, typename V>
-    constexpr static auto lookup(type_pair<K, V>) -> V;
-
-  public:
+template <typename... Policies> struct policies {
     template <typename PolicyType, typename Default>
     constexpr static auto get() {
-        using M =
-            type_map<type_pair<typename Policies::policy_type, Policies>...>;
-        return decltype(lookup<PolicyType, Default>(std::declval<M>())){};
+        using M = stdx::type_map<
+            stdx::tt_pair<typename Policies::policy_type, Policies>...>;
+        return stdx::type_lookup_t<M, PolicyType, Default>{};
     }
 
     template <typename PolicyType, typename Default>
