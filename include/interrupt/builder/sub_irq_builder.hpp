@@ -13,11 +13,11 @@ namespace interrupt {
  * specialization should be declared by the user while the interrupt::Manager
  * creates and manages instances of shared_irq.
  */
-template <typename ConfigT> struct sub_irq_builder {
-    using IrqCallbackType = typename ConfigT::IrqCallbackType;
+template <typename Config> struct sub_irq_builder {
+    using irq_callback_t = typename Config::irq_callback_t;
 
   private:
-    IrqCallbackType interrupt_service_routine;
+    irq_callback_t interrupt_service_routine;
 
   public:
     /**
@@ -29,9 +29,9 @@ template <typename ConfigT> struct sub_irq_builder {
      * @param flow_description
      *      See flow::Builder<>.add()
      */
-    template <typename IrqType, typename T>
-    constexpr void add(T const &flow_description) {
-        if constexpr (std::is_same_v<IrqCallbackType, IrqType>) {
+    template <typename IrqType>
+    constexpr void add(auto const &flow_description) {
+        if constexpr (std::is_same_v<irq_callback_t, IrqType>) {
             interrupt_service_routine.add(flow_description);
         }
     }
@@ -54,7 +54,7 @@ template <typename ConfigT> struct sub_irq_builder {
             BuilderValue::value.interrupt_service_routine;
         constexpr auto flow_size = flow_builder.size();
         auto const optimized_irq_impl =
-            sub_irq_impl<ConfigT, flow::impl<IrqCallbackType::name, flow_size>>(
+            sub_irq_impl<Config, flow::impl<irq_callback_t::name, flow_size>>(
                 run_flow);
 
         return optimized_irq_impl;

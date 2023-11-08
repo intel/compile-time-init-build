@@ -9,14 +9,14 @@
 #include <type_traits>
 
 namespace interrupt {
-template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
+template <typename Config, typename... SubIrqImpls> struct shared_irq_impl {
   public:
-    template <bool en>
+    template <bool Enable>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<en>;
-    using StatusPolicy = typename ConfigT::StatusPolicy;
+        Config::template enable_action<Enable>;
+    using status_policy_t = typename Config::status_policy_t;
 
-    constexpr static auto irq_number = ConfigT::irq_number;
+    constexpr static auto irq_number = Config::irq_number;
 
     /**
      * True if this shared_irq::impl has any active sub_irq::Impls, otherwise
@@ -58,7 +58,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
                 return stdx::tuple_cat(irqs.get_interrupt_enables()...);
             });
         } else {
-            return stdx::make_tuple();
+            return stdx::tuple{};
         }
     }
 
@@ -72,7 +72,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
      */
     inline void run() const {
         if constexpr (active) {
-            hal::run<StatusPolicy>(irq_number, [&] {
+            hal::run<status_policy_t>(irq_number, [&] {
                 stdx::for_each([](auto irq) { irq.run(); }, sub_irq_impls);
             });
         }

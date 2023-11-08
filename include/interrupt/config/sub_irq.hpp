@@ -20,19 +20,20 @@ namespace interrupt {
  *      The croo register field that indicates if this interrupt is pending or
  * not.
  */
-template <typename EnableField, typename StatusField, typename IrqCallbackT,
-          typename PoliciesT>
+template <typename EnableField, typename StatusField, typename IrqCallback,
+          typename Policies>
 struct sub_irq {
-    template <bool en> constexpr static FunctionPtr enable_action = [] {};
+    template <bool> constexpr static FunctionPtr enable_action = [] {};
     constexpr static auto enable_field = EnableField{};
     constexpr static auto status_field = StatusField{};
-    using StatusPolicy = typename PoliciesT::template type<status_clear_policy,
-                                                           clear_status_first>;
+    using status_policy_t =
+        typename Policies::template type<status_clear_policy,
+                                         clear_status_first>;
     constexpr static auto resources =
-        PoliciesT::template get<required_resources_policy,
-                                required_resources<>>()
+        Policies::template get<required_resources_policy,
+                               required_resources<>>()
             .resources;
-    using IrqCallbackType = IrqCallbackT;
-    constexpr static stdx::tuple<> children{};
+    using irq_callback_t = IrqCallback;
+    constexpr static auto children = stdx::tuple{};
 };
 } // namespace interrupt

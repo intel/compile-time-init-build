@@ -8,8 +8,7 @@
 #include <type_traits>
 
 namespace interrupt {
-template <typename ConfigT, typename... SubIrqImpls>
-struct shared_sub_irq_impl {
+template <typename Config, typename... SubIrqImpls> struct shared_sub_irq_impl {
   public:
     /**
      * True if this shared_irq::impl has any active sub_irq::Impls, otherwise
@@ -21,13 +20,13 @@ struct shared_sub_irq_impl {
     constexpr static bool active = (SubIrqImpls::active or ...);
 
   private:
-    template <bool en>
+    template <bool Enable>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<en>;
+        Config::template enable_action<Enable>;
 
-    constexpr static auto enable_field = ConfigT::enable_field;
-    constexpr static auto status_field = ConfigT::status_field;
-    using StatusPolicy = typename ConfigT::StatusPolicy;
+    constexpr static auto enable_field = Config::enable_field;
+    constexpr static auto status_field = Config::status_field;
+    using status_policy_t = typename Config::status_policy_t;
 
     stdx::tuple<SubIrqImpls...> sub_irq_impls;
 
@@ -48,7 +47,7 @@ struct shared_sub_irq_impl {
             });
 
         } else {
-            return stdx::make_tuple();
+            return stdx::tuple{};
         }
     }
 
@@ -60,12 +59,12 @@ struct shared_sub_irq_impl {
     inline void run() const {
         if constexpr (active) {
             if (apply(read(enable_field(1))) && apply(read(status_field(1)))) {
-                StatusPolicy::run([&] { apply(clear(status_field)); },
-                                  [&] {
-                                      stdx::for_each(
-                                          [](auto irq) { irq.run(); },
-                                          sub_irq_impls);
-                                  });
+                status_policy_t::run([&] { apply(clear(status_field)); },
+                                     [&] {
+                                         stdx::for_each(
+                                             [](auto irq) { irq.run(); },
+                                             sub_irq_impls);
+                                     });
             }
         }
     }

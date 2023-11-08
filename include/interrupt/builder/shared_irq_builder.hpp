@@ -22,7 +22,7 @@ namespace interrupt {
  * specialization should be declared by the user while the interrupt::Manager
  * creates and manages instances of shared_irq.
  */
-template <typename ConfigT> class shared_irq_builder {
+template <typename Config> class shared_irq_builder {
     template <typename BuilderValue, std::size_t Index> struct sub_value {
         constexpr static auto const &value =
             get<Index>(BuilderValue::value.irqs);
@@ -36,7 +36,7 @@ template <typename ConfigT> class shared_irq_builder {
     }
 
   public:
-    constexpr static auto children = ConfigT::children;
+    constexpr static auto children = Config::children;
 
     constexpr static auto irqs_type = stdx::transform(
         [](auto child) {
@@ -46,7 +46,7 @@ template <typename ConfigT> class shared_irq_builder {
                 return sub_irq_builder<decltype(child)>{};
             }
         },
-        ConfigT::children);
+        Config::children);
 
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
@@ -67,7 +67,7 @@ template <typename ConfigT> class shared_irq_builder {
             std::make_index_sequence<irqs_t::size()>{});
 
         return sub_irq_impls.apply([](auto... sub_irq_impl_args) {
-            return shared_irq_impl<ConfigT, decltype(sub_irq_impl_args)...>(
+            return shared_irq_impl<Config, decltype(sub_irq_impl_args)...>(
                 sub_irq_impl_args...);
         });
     }

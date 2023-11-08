@@ -19,12 +19,12 @@ namespace interrupt {
  * @tparam IrqPriorityT
  *      Hardware IRQ priority.
  */
-template <typename ConfigT> struct irq_builder {
-    using IrqCallbackType = typename ConfigT::IrqCallbackType;
-    constexpr static auto irq_number = ConfigT::irq_number;
+template <typename Config> struct irq_builder {
+    using irq_callback_t = typename Config::irq_callback_t;
+    constexpr static auto irq_number = Config::irq_number;
 
   private:
-    IrqCallbackType interrupt_service_routine;
+    irq_callback_t interrupt_service_routine;
 
   public:
     /**
@@ -36,9 +36,8 @@ template <typename ConfigT> struct irq_builder {
      * @param flow_description
      *      See flow::Builder<>.add()
      */
-    template <typename IrqType, typename T>
-    constexpr void add(T const &flow_description) {
-        if constexpr (std::is_same_v<IrqCallbackType, IrqType>) {
+    template <typename Irq> constexpr void add(auto const &flow_description) {
+        if constexpr (std::is_same_v<irq_callback_t, Irq>) {
             interrupt_service_routine.add(flow_description);
         }
     }
@@ -61,7 +60,7 @@ template <typename ConfigT> struct irq_builder {
             BuilderValue::value.interrupt_service_routine;
         constexpr auto flow_size = flow_builder.size();
         auto const optimized_irq_impl =
-            irq_impl<ConfigT, flow::impl<IrqCallbackType::name, flow_size>>(
+            irq_impl<Config, flow::impl<irq_callback_t::name, flow_size>>(
                 run_flow);
 
         return optimized_irq_impl;

@@ -5,6 +5,7 @@
 
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -22,26 +23,25 @@ namespace interrupt {
  * have interrupt service routines associated with them. If any irq is unused,
  * it will not even generate any code for the unused irqs.
  *
- * @tparam IrqImplTypes
+ * @tparam IrqImpls
  *      irq and shared_irq implementations. These are created by calling build()
  * on each of the irq and shared_irq instances from within Manager.
  */
-template <typename Dynamic, typename... IrqImplTypes>
+template <typename Dynamic, typename... IrqImpls>
 class manager_impl : public manager_interface {
   private:
-    stdx::tuple<IrqImplTypes...> irq_impls;
+    stdx::tuple<IrqImpls...> irq_impls;
 
-    template <std::size_t Key, typename Value> struct irq_pair {};
+    template <irq_num_t Key, typename Value> struct irq_pair {};
     template <typename... Ts> struct irq_map : Ts... {};
 
-    template <std::size_t K, typename Default>
+    template <irq_num_t K, typename Default>
     constexpr static auto lookup(...) -> Default;
-    template <std::size_t K, typename Default, typename V>
+    template <irq_num_t K, typename Default, typename V>
     constexpr static auto lookup(irq_pair<K, V>) -> V;
 
   public:
-    explicit constexpr manager_impl(IrqImplTypes... impls)
-        : irq_impls{impls...} {}
+    explicit constexpr manager_impl(IrqImpls... impls) : irq_impls{impls...} {}
 
     /**
      * Initialize the interrupt hardware and each of the active irqs.
@@ -84,8 +84,8 @@ class manager_impl : public manager_interface {
      * @tparam IrqNumber
      *      The IRQ number that has been triggered by hardware.
      */
-    template <std::size_t IrqNumber> inline void run() const {
-        using M = irq_map<irq_pair<IrqImplTypes::irq_number, IrqImplTypes>...>;
+    template <irq_num_t IrqNumber> inline void run() const {
+        using M = irq_map<irq_pair<IrqImpls::irq_number, IrqImpls>...>;
         using irq_t = decltype(lookup<IrqNumber, void>(std::declval<M>()));
 
         if constexpr (not std::is_void_v<irq_t>) {
@@ -96,8 +96,9 @@ class manager_impl : public manager_interface {
     /**
      * @return The highest active IRQ number.
      */
-    [[nodiscard]] constexpr auto max_irq() const -> std::size_t {
-        return std::max({IrqImplTypes::irq_number...});
+    [[nodiscard]] constexpr auto max_irq() const -> irq_num_t {
+        return static_cast<irq_num_t>(
+            std::max({stdx::to_underlying(IrqImpls::irq_number)...}));
     }
 };
 } // namespace interrupt

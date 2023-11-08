@@ -16,27 +16,28 @@ namespace interrupt {
  * specialization should be declared by the user while the interrupt::Manager
  * creates and manages instances of irq.
  *
- * @tparam IrqNumberT
+ * @tparam IrqNumber
  *      Hardware IRQ number.
  *
- * @tparam IrqPriorityT
+ * @tparam IrqPriority
  *      Hardware IRQ priority.
  */
-template <std::size_t IrqNumberT, std::size_t IrqPriorityT,
-          typename IrqCallbackT, typename PoliciesT>
+template <irq_num_t IrqNumber, std::size_t IrqPriority, typename IrqCallback,
+          typename Policies>
 struct irq {
-    template <bool en>
+    template <bool Enable>
     constexpr static FunctionPtr enable_action =
-        hal::irq_init<en, IrqNumberT, IrqPriorityT>;
-    using StatusPolicy = typename PoliciesT::template type<status_clear_policy,
-                                                           clear_status_first>;
+        hal::irq_init<Enable, IrqNumber, IrqPriority>;
+    using status_policy_t =
+        typename Policies::template type<status_clear_policy,
+                                         clear_status_first>;
     constexpr static auto resources =
-        PoliciesT::template get<required_resources_policy,
-                                required_resources<>>()
+        Policies::template get<required_resources_policy,
+                               required_resources<>>()
             .resources;
-    using IrqCallbackType = IrqCallbackT;
-    constexpr static stdx::tuple<> children{};
+    using irq_callback_t = IrqCallback;
 
-    constexpr static auto irq_number = IrqNumberT;
+    constexpr static auto children = stdx::tuple{};
+    constexpr static auto irq_number = IrqNumber;
 };
 } // namespace interrupt

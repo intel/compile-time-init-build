@@ -10,7 +10,7 @@
 #include <utility>
 
 namespace interrupt {
-template <typename ConfigT> class shared_sub_irq_builder {
+template <typename Config> class shared_sub_irq_builder {
     template <typename BuilderValue, std::size_t Index> struct sub_value {
         constexpr static auto const &value =
             get<Index>(BuilderValue::value.irqs);
@@ -24,9 +24,9 @@ template <typename ConfigT> class shared_sub_irq_builder {
     }
 
   public:
-    constexpr static auto resources = ConfigT::resources;
-    using IrqCallbackType = typename ConfigT::IrqCallbackType;
-    constexpr static auto children = ConfigT::children;
+    constexpr static auto resources = Config::resources;
+    using irq_callback_t = typename Config::irq_callback_t;
+    constexpr static auto children = Config::children;
 
     constexpr static auto irqs_type = stdx::transform(
         [](auto child) {
@@ -36,7 +36,7 @@ template <typename ConfigT> class shared_sub_irq_builder {
                 return sub_irq_builder<decltype(child)>{};
             }
         },
-        ConfigT::children);
+        Config::children);
 
     std::remove_cv_t<decltype(irqs_type)> irqs;
 
@@ -57,7 +57,7 @@ template <typename ConfigT> class shared_sub_irq_builder {
             std::make_index_sequence<sub_irqs_t::size()>{});
 
         return sub_irq_impls.apply([](auto... sub_irq_impl_args) {
-            return shared_sub_irq_impl<ConfigT, decltype(sub_irq_impl_args)...>(
+            return shared_sub_irq_impl<Config, decltype(sub_irq_impl_args)...>(
                 sub_irq_impl_args...);
         });
     }
