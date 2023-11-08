@@ -7,16 +7,13 @@
 #include <stdx/tuple_algorithms.hpp>
 
 namespace interrupt {
-template <typename... IrqsT> struct root {
-    template <typename T, bool en>
-    constexpr static FunctionPtr enable_action = [] {};
-    using StatusPolicy = clear_status_first;
-    constexpr static auto resources = stdx::make_tuple();
-    using IrqCallbackType = void;
-    constexpr static stdx::tuple<IrqsT...> children{};
+template <typename... Irqs> struct root {
+    using status_policy_t = clear_status_first;
+    constexpr static auto resources = stdx::tuple{};
+    constexpr static auto children = stdx::tuple<Irqs...>{};
 
   private:
-    template <typename IrqType> constexpr static auto getAllIrqs(IrqType irq) {
+    template <typename Irq> constexpr static auto getAllIrqs(Irq irq) {
         return irq.children.apply([&](auto... irqChildren) {
             return stdx::tuple_cat(getAllIrqs(irqChildren)...,
                                    stdx::make_tuple(irq));

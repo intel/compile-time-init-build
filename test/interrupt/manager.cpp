@@ -1,7 +1,8 @@
+#include "common.hpp"
+
 #include <cib/cib.hpp>
 
 #include <stdx/concepts.hpp>
-#include <stdx/ct_string.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -17,10 +18,9 @@ namespace interrupt {
 class MockCallback {
   public:
     MOCK_METHOD(void, init, ());
-    MOCK_METHOD(void, init,
-                (std::size_t irq_number, std::size_t priorityLevel));
-    MOCK_METHOD(void, run, (std::size_t irq_number));
-    MOCK_METHOD(void, status, (std::size_t irq_number));
+    MOCK_METHOD(void, init, (irq_num_t irq_number, std::size_t priorityLevel));
+    MOCK_METHOD(void, run, (irq_num_t irq_number));
+    MOCK_METHOD(void, status, (irq_num_t irq_number));
 
     MOCK_METHOD(void, write, (int fieldIndex, std::uint32_t value));
     MOCK_METHOD(std::uint32_t, read, (int fieldIndex));
@@ -31,7 +31,7 @@ MockCallback *callbackPtr;
 struct MockIrqImpl {
     static auto init() -> void { callbackPtr->init(); }
 
-    template <bool Enable, int IrqNumber, int Priority>
+    template <bool Enable, irq_num_t IrqNumber, std::size_t Priority>
     static auto irq_init() -> void {
         if constexpr (Enable) {
             callbackPtr->init(IrqNumber, Priority);
@@ -39,7 +39,7 @@ struct MockIrqImpl {
     }
 
     template <status_policy P>
-    static auto run(std::size_t irq_number, stdx::invocable auto const &isr)
+    static auto run(irq_num_t irq_number, stdx::invocable auto const &isr)
         -> void {
         P::run([&] { callbackPtr->status(irq_number); },
                [&] {
@@ -58,111 +58,43 @@ class InterruptManagerTest : public ::testing::Test {
     void SetUp() override { callbackPtr = &callback; }
 };
 
-constexpr static auto msg_handler = flow::action<"msg_handler">([] {
-    // do nothing
-});
+constexpr static auto msg_handler = flow::action<"msg_handler">([] {});
+constexpr static auto rsp_handler = flow::action<"rsp_handler">([] {});
+constexpr static auto timer_action = flow::action<"timer_action">([] {});
 
-constexpr static auto rsp_handler = flow::action<"rsp_handler">([] {
-    // do nothing
-});
+using msg_handler_irq = irq_flow<"msg_handler">;
+using rsp_handler_irq = irq_flow<"rsp_handler">;
+using timer_irq = irq_flow<"timer">;
 
-constexpr static auto timer_action = flow::action<"timer_action">([] {
-    // do nothing
-});
+using i2c_handler_irq = irq_flow<"i2c_handler">;
+using spi_handler_irq = irq_flow<"spi_handler">;
+using can_handler_irq = irq_flow<"can_handler">;
 
-class msg_handler_irq : public irq_flow<"msg_handler_irq"> {};
-class rsp_handler_irq : public irq_flow<"rsp_handler_irq"> {};
-class timer_irq : public irq_flow<"timer_irq"> {};
-
-class i2c_handler_irq : public irq_flow<"i2c_handler_irq"> {};
-class spi_handler_irq : public irq_flow<"spi_handler_irq"> {};
-class can_handler_irq : public irq_flow<"can_handler_irq"> {};
-
-struct test_resource_alpha {};
-struct test_resource_beta {};
-
-template <typename FieldType> struct field_value_t {
-    constexpr static auto id = FieldType::id;
-
-    std::uint32_t value;
-};
-
-template <int Id, typename Reg, stdx::ct_string Name, int Msb, int Lsb>
-struct mock_field_t {
-    constexpr static auto id = Id;
-    using RegisterType = Reg;
-    using DataType = std::uint32_t;
-
-    constexpr static Reg get_register() { return {}; }
-
-    constexpr static DataType get_mask() {
-        return ((1 << (Msb + 1)) - 1) - ((1 << Lsb) - 1);
-    }
-
-    constexpr auto operator()(std::uint32_t value) const {
-        return field_value_t<mock_field_t>{value};
-    }
-};
-
-template <int Id, typename Reg, stdx::ct_string Name> struct mock_register_t {
-    constexpr static auto id = Id;
-    using RegisterType = Reg;
-    using DataType = std::uint32_t;
-
-    constexpr static Reg get_register() { return {}; }
-
-    constexpr static mock_field_t<Id, Reg, "raw", 31, 0> raw{};
-};
-
-template <typename FieldType> struct read_op_t {
-    FieldType field;
-
-    auto operator()() const { return callbackPtr->read(field.id); }
-};
-
-template <typename FieldType> constexpr auto read(FieldType field) {
-    return read_op_t<FieldType>{field};
+template <typename Field> constexpr auto read(Field) {
+    return [] { return callbackPtr->read(Field::id); };
 }
 
-template <typename... ValueTypes> struct write_op_t {
-    stdx::tuple<ValueTypes...> values;
-
-    void operator()() const {
-        stdx::for_each(
-            [](auto value) { callbackPtr->write(value.id, value.value); },
-            values);
-    }
-};
-
-template <typename... ValueTypes> constexpr auto write(ValueTypes... values) {
-    return write_op_t<ValueTypes...>{stdx::make_tuple(values...)};
+template <typename... Values> constexpr auto write(Values... values) {
+    return [... values = values.value] {
+        (callbackPtr->write(Values::id, values), ...);
+    };
 }
 
-template <typename... FieldTypes> constexpr auto clear(FieldTypes...) {
-    return write_op_t<field_value_t<FieldTypes>...>{
-        stdx::make_tuple(field_value_t<FieldTypes>{0}...)};
-}
-
-template <typename... OpTypes> constexpr void apply(OpTypes... ops) {
-    (ops(), ...);
-}
-
-template <typename FieldType>
-constexpr auto apply(read_op_t<FieldType> read_op) {
-    return read_op();
+template <typename... Fields> constexpr auto clear(Fields...) {
+    return [] { (callbackPtr->write(Fields::id, 0), ...); };
 }
 
 struct int_sts_reg_t : mock_register_t<0, int_sts_reg_t, "int_sts"> {};
-struct packet_avail_sts_field_t
-    : mock_field_t<1, int_sts_reg_t, "packet_avail_sts", 1, 1> {};
-struct rsp_avail_sts_field_t
-    : mock_field_t<2, int_sts_reg_t, "rsp_avail_sts", 0, 0> {};
+using packet_avail_sts_field_t =
+    mock_field_t<1, int_sts_reg_t, "packet_avail_sts", 1, 1>;
+using rsp_avail_sts_field_t =
+    mock_field_t<2, int_sts_reg_t, "rsp_avail_sts", 0, 0>;
 
 struct int_en_reg_t : mock_register_t<3, int_en_reg_t, "int_en"> {};
-struct packet_avail_en_field_t
-    : mock_field_t<4, int_en_reg_t, "packet_avail_en", 1, 1> {};
-struct rsp_avail_en_field_t
-    : mock_field_t<5, int_en_reg_t, "rsp_avail_en", 0, 0> {};
+using packet_avail_en_field_t =
+    mock_field_t<4, int_en_reg_t, "packet_avail_en", 1, 1>;
+using rsp_avail_en_field_t =
+    mock_field_t<5, int_en_reg_t, "rsp_avail_en", 0, 0>;
 
 #define EXPECT_WRITE(FIELD_TYPE, VALUE)                                        \
     EXPECT_CALL(callback, write(FIELD_TYPE::id, VALUE))
@@ -170,17 +102,12 @@ struct rsp_avail_en_field_t
 
 struct BasicBuilder {
     using Config = root<
-        shared_irq<33, 0, policies<clear_status_first>,
+        shared_irq<33_irq, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
-                           msg_handler_irq,
-                           policies<required_resources<test_resource_alpha>>>,
+                           msg_handler_irq, policies<>>,
                    sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
-                           rsp_handler_irq,
-                           policies<required_resources<test_resource_alpha,
-                                                       test_resource_beta>>>>,
-        irq<38, 0, timer_irq, policies<>>>;
-
-    using Dynamic = dynamic_controller<Config>;
+                           rsp_handler_irq, policies<>>>,
+        irq<38_irq, 0, timer_irq, policies<>>>;
 
     struct test_service : interrupt::service<Config> {};
 
@@ -192,30 +119,31 @@ struct BasicBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
+    using nexus_t = cib::nexus<test_project>;
+    CONSTINIT static inline nexus_t test_nexus{};
+    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, BasicManagerInit) {
     constexpr auto &manager = BasicBuilder::manager;
 
     EXPECT_CALL(callback, init()).Times(1);
-    EXPECT_CALL(callback, init(33, 0)).Times(1);
-    EXPECT_CALL(callback, init(38, 0)).Times(1);
+    EXPECT_CALL(callback, init(33_irq, 0)).Times(1);
+    EXPECT_CALL(callback, init(38_irq, 0)).Times(1);
 
     EXPECT_WRITE(int_en_reg_t, 3);
 
     manager.init();
 
-    EXPECT_EQ(38, manager.max_irq());
+    EXPECT_EQ(38_irq, manager.max_irq());
 }
 
 TEST_F(InterruptManagerTest, BasicManagerIrqRun) {
     constexpr auto &manager = BasicBuilder::manager;
 
-    EXPECT_CALL(callback, run(38)).Times(1);
+    EXPECT_CALL(callback, run(38_irq)).Times(1);
 
-    manager.run<38>();
+    manager.run<38_irq>();
 }
 
 TEST_F(InterruptManagerTest, BasicManagerSharedIrqRun) {
@@ -227,9 +155,9 @@ TEST_F(InterruptManagerTest, BasicManagerSharedIrqRun) {
     EXPECT_READ(packet_avail_sts_field_t).WillOnce(Return(1));
     EXPECT_WRITE(packet_avail_sts_field_t, 0);
 
-    EXPECT_CALL(callback, run(33)).Times(1);
+    EXPECT_CALL(callback, run(33_irq)).Times(1);
 
-    manager.run<33>();
+    manager.run<33_irq>();
 }
 
 TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllEnabled) {
@@ -244,9 +172,9 @@ TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllEnabled) {
     EXPECT_WRITE(packet_avail_sts_field_t, 0);
     EXPECT_WRITE(rsp_avail_sts_field_t, 0);
 
-    EXPECT_CALL(callback, run(33)).Times(1);
+    EXPECT_CALL(callback, run(33_irq)).Times(1);
 
-    manager.run<33>();
+    manager.run<33_irq>();
 }
 
 TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllDisabled) {
@@ -255,22 +183,20 @@ TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllDisabled) {
     EXPECT_READ(packet_avail_en_field_t).WillRepeatedly(Return(0));
     EXPECT_READ(rsp_avail_en_field_t).WillRepeatedly(Return(0));
 
-    EXPECT_CALL(callback, run(33)).Times(1);
+    EXPECT_CALL(callback, run(33_irq)).Times(1);
 
-    manager.run<33>();
+    manager.run<33_irq>();
 }
 
 struct NoIsrBuilder {
     // Configure Interrupts
     using Config = root<
-        shared_irq<33, 0, policies<clear_status_first>,
+        shared_irq<33_irq, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
                            msg_handler_irq, policies<>>,
                    sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
                            rsp_handler_irq, policies<>>>,
-        irq<38, 0, timer_irq, policies<>>>;
-
-    using Dynamic = dynamic_controller<Config>;
+        irq<38_irq, 0, timer_irq, policies<>>>;
 
     struct test_service : interrupt::service<Config> {};
 
@@ -278,8 +204,9 @@ struct NoIsrBuilder {
         constexpr static auto config = cib::config(cib::exports<test_service>);
     };
 
-    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
+    using nexus_t = cib::nexus<test_project>;
+    CONSTINIT static inline nexus_t test_nexus{};
+    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, NoIsrInit) {
@@ -292,19 +219,18 @@ TEST_F(InterruptManagerTest, NoIsrInit) {
     EXPECT_WRITE(rsp_avail_sts_field_t, _).Times(0);
 
     // MCU interrupts always get enabled for shared interrupts
-    EXPECT_CALL(callback, init(33, 0)).Times(1);
+    EXPECT_CALL(callback, init(33_irq, 0)).Times(1);
 
     // single MCU interrupts get disabled if unused
-    EXPECT_CALL(callback, init(38, 0)).Times(0);
+    EXPECT_CALL(callback, init(38_irq, 0)).Times(0);
 
     manager.init();
 }
 
 struct ClearStatusFirstBuilder {
     // Configure Interrupts
-    using Config = root<irq<38, 0, timer_irq, policies<clear_status_first>>>;
-
-    using Dynamic = dynamic_controller<Config>;
+    using Config =
+        root<irq<38_irq, 0, timer_irq, policies<clear_status_first>>>;
 
     struct test_service : interrupt::service<Config> {};
 
@@ -314,8 +240,9 @@ struct ClearStatusFirstBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
+    using nexus_t = cib::nexus<test_project>;
+    CONSTINIT static inline nexus_t test_nexus{};
+    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, ClearStatusFirstTest) {
@@ -323,20 +250,18 @@ TEST_F(InterruptManagerTest, ClearStatusFirstTest) {
 
     {
         testing::InSequence s;
-        EXPECT_CALL(callback, init(38, 0)).Times(1);
-        EXPECT_CALL(callback, status(38)).Times(1);
-        EXPECT_CALL(callback, run(38)).Times(1);
+        EXPECT_CALL(callback, init(38_irq, 0)).Times(1);
+        EXPECT_CALL(callback, status(38_irq)).Times(1);
+        EXPECT_CALL(callback, run(38_irq)).Times(1);
     }
 
     manager.init();
-    manager.run<38>();
+    manager.run<38_irq>();
 }
 
 struct DontClearStatusBuilder {
     // Configure Interrupts
-    using Config = root<irq<38, 0, timer_irq, policies<dont_clear_status>>>;
-
-    using Dynamic = dynamic_controller<Config>;
+    using Config = root<irq<38_irq, 0, timer_irq, policies<dont_clear_status>>>;
 
     struct test_service : interrupt::service<Config> {};
 
@@ -346,120 +271,47 @@ struct DontClearStatusBuilder {
             interrupt::extend<test_service, timer_irq>(timer_action));
     };
 
-    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
+    using nexus_t = cib::nexus<test_project>;
+    CONSTINIT static inline nexus_t test_nexus{};
+    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, DontClearStatusTest) {
     constexpr auto &manager = DontClearStatusBuilder::manager;
 
-    EXPECT_CALL(callback, init(38, 0)).Times(1);
-    EXPECT_CALL(callback, status(38)).Times(0);
-    EXPECT_CALL(callback, run(38)).Times(1);
+    EXPECT_CALL(callback, init(38_irq, 0)).Times(1);
+    EXPECT_CALL(callback, status(38_irq)).Times(0);
+    EXPECT_CALL(callback, run(38_irq)).Times(1);
 
     manager.init();
-    manager.run<38>();
-}
-
-TEST_F(InterruptManagerTest, DynamicInterruptEnable) {
-    BasicBuilder::Dynamic::disable<msg_handler_irq, rsp_handler_irq>();
-
-    EXPECT_WRITE(int_en_reg_t, 2);
-
-    BasicBuilder::Dynamic::enable<msg_handler_irq>();
-}
-
-TEST_F(InterruptManagerTest, DynamicInterruptEnableMulti) {
-    EXPECT_WRITE(int_en_reg_t, 3);
-
-    BasicBuilder::Dynamic::enable<msg_handler_irq, rsp_handler_irq>();
-}
-
-TEST_F(InterruptManagerTest, ResourceDisableEnable) {
-    BasicBuilder::Dynamic::disable<msg_handler_irq, rsp_handler_irq>();
-
-    InSequence s;
-
-    EXPECT_WRITE(int_en_reg_t, 1);
-    BasicBuilder::Dynamic::enable<rsp_handler_irq>();
-
-    EXPECT_WRITE(int_en_reg_t, 0);
-    BasicBuilder::Dynamic::turn_off_resource<test_resource_beta>();
-
-    EXPECT_WRITE(int_en_reg_t, 1);
-    BasicBuilder::Dynamic::turn_on_resource<test_resource_beta>();
-}
-
-TEST_F(InterruptManagerTest, ResourceDisableEnableMultiIrq) {
-    InSequence s;
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::enable<rsp_handler_irq, msg_handler_irq>();
-
-    EXPECT_WRITE(int_en_reg_t, 2);
-    BasicBuilder::Dynamic::turn_off_resource<test_resource_beta>();
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::turn_on_resource<test_resource_beta>();
-}
-
-TEST_F(InterruptManagerTest, ResourceDisableEnableBigResource) {
-    InSequence s;
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::enable<rsp_handler_irq, msg_handler_irq>();
-
-    EXPECT_WRITE(int_en_reg_t, 0);
-    BasicBuilder::Dynamic::turn_off_resource<test_resource_alpha>();
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::turn_on_resource<test_resource_alpha>();
-}
-
-TEST_F(InterruptManagerTest, ResourceDisableEnableMultiResource) {
-    InSequence s;
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::enable<rsp_handler_irq, msg_handler_irq>();
-
-    EXPECT_WRITE(int_en_reg_t, 2);
-    BasicBuilder::Dynamic::turn_off_resource<test_resource_beta>();
-
-    EXPECT_WRITE(int_en_reg_t, 0);
-    BasicBuilder::Dynamic::turn_off_resource<test_resource_alpha>();
-
-    EXPECT_WRITE(int_en_reg_t, 2);
-    BasicBuilder::Dynamic::turn_on_resource<test_resource_alpha>();
-
-    EXPECT_WRITE(int_en_reg_t, 3);
-    BasicBuilder::Dynamic::turn_on_resource<test_resource_beta>();
+    manager.run<38_irq>();
 }
 
 constexpr static auto bscan =
-    flow::action<"bscan">([] { callbackPtr->run(0xba5eba11); });
+    flow::action<"bscan">([] { callbackPtr->run(0xba5eba11_irq); });
 
-struct hwio_int_sts_field_t
-    : mock_field_t<6, int_sts_reg_t, "hwio_int_sts_field_t", 2, 2> {};
-struct i2c_int_sts_field_t
-    : mock_field_t<7, int_sts_reg_t, "i2c_int_sts_field_t", 3, 3> {};
-struct spi_int_sts_field_t
-    : mock_field_t<8, int_sts_reg_t, "spi_int_sts_field_t", 4, 4> {};
-struct can_int_sts_field_t
-    : mock_field_t<9, int_sts_reg_t, "can_int_sts_field_t", 5, 5> {};
+using hwio_int_sts_field_t =
+    mock_field_t<6, int_sts_reg_t, "hwio_int_sts_field_t", 2, 2>;
+using i2c_int_sts_field_t =
+    mock_field_t<7, int_sts_reg_t, "i2c_int_sts_field_t", 3, 3>;
+using spi_int_sts_field_t =
+    mock_field_t<8, int_sts_reg_t, "spi_int_sts_field_t", 4, 4>;
+using can_int_sts_field_t =
+    mock_field_t<9, int_sts_reg_t, "can_int_sts_field_t", 5, 5>;
 
-struct hwio_int_en_field_t
-    : mock_field_t<10, int_en_reg_t, "hwio_int_en_field_t", 2, 2> {};
-struct i2c_int_en_field_t
-    : mock_field_t<11, int_en_reg_t, "i2c_int_en_field_t", 3, 3> {};
-struct spi_int_en_field_t
-    : mock_field_t<12, int_en_reg_t, "spi_int_en_field_t", 4, 4> {};
-struct can_int_en_field_t
-    : mock_field_t<13, int_en_reg_t, "can_int_en_field_t", 5, 5> {};
+using hwio_int_en_field_t =
+    mock_field_t<10, int_en_reg_t, "hwio_int_en_field_t", 2, 2>;
+using i2c_int_en_field_t =
+    mock_field_t<11, int_en_reg_t, "i2c_int_en_field_t", 3, 3>;
+using spi_int_en_field_t =
+    mock_field_t<12, int_en_reg_t, "spi_int_en_field_t", 4, 4>;
+using can_int_en_field_t =
+    mock_field_t<13, int_en_reg_t, "can_int_en_field_t", 5, 5>;
 
 struct SharedSubIrqTest {
     // Configure Interrupts
     using Config = root<
-        shared_irq<33, 0, policies<clear_status_first>,
+        shared_irq<33_irq, 0, policies<clear_status_first>,
                    sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
                            msg_handler_irq, policies<>>,
                    sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
@@ -472,9 +324,7 @@ struct SharedSubIrqTest {
                                spi_handler_irq, policies<>>,
                        sub_irq<can_int_en_field_t, can_int_sts_field_t,
                                can_handler_irq, policies<dont_clear_status>>>>,
-        irq<38, 0, timer_irq, policies<>>>;
-
-    using Dynamic = dynamic_controller<Config>;
+        irq<38_irq, 0, timer_irq, policies<>>>;
 
     struct test_service : interrupt::service<Config> {};
 
@@ -484,8 +334,9 @@ struct SharedSubIrqTest {
             interrupt::extend<test_service, i2c_handler_irq>(bscan));
     };
 
-    CONSTINIT static inline cib::nexus<test_project> test_nexus{};
-    CONSTINIT static inline auto &manager = test_nexus.service<test_service>;
+    using nexus_t = cib::nexus<test_project>;
+    CONSTINIT static inline nexus_t test_nexus{};
+    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
 TEST_F(InterruptManagerTest, BasicManagerSharedSubIrqRun) {
@@ -500,10 +351,10 @@ TEST_F(InterruptManagerTest, BasicManagerSharedSubIrqRun) {
     EXPECT_WRITE(hwio_int_sts_field_t, 0);
     EXPECT_WRITE(i2c_int_sts_field_t, 0);
 
-    EXPECT_CALL(callback, status(33)).Times(1);
-    EXPECT_CALL(callback, run(33)).Times(1);
-    EXPECT_CALL(callback, run(0xba5eba11)).Times(1);
+    EXPECT_CALL(callback, status(33_irq)).Times(1);
+    EXPECT_CALL(callback, run(33_irq)).Times(1);
+    EXPECT_CALL(callback, run(0xba5eba11_irq)).Times(1);
 
-    manager.run<33>();
+    manager.run<33_irq>();
 }
 } // namespace interrupt

@@ -15,7 +15,7 @@ enum class resource_status { OFF = 0, ON = 1 };
 template <typename Irq>
 constexpr static auto has_enable_field = requires { Irq::enable_field; };
 
-template <typename RootT> struct dynamic_controller {
+template <typename Root> struct dynamic_controller {
   private:
     /**
      * Store the interrupt enable values that are allowed given the current set
@@ -61,7 +61,7 @@ template <typename RootT> struct dynamic_controller {
         // get all interrupt enable fields that don't require the given resource
         auto const matching_irqs =
             stdx::filter<doesnt_require_resource<ResourceType>::template fn>(
-                RootT::all_irqs);
+                Root::all_irqs);
         auto const interrupt_enables_tuple = stdx::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
@@ -123,7 +123,7 @@ template <typename RootT> struct dynamic_controller {
     /**
      * tuple of every resource mentioned in the interrupt configuration
      */
-    constexpr static auto all_resources = RootT::all_irqs.fold_left(
+    constexpr static auto all_resources = Root::all_irqs.fold_left(
         stdx::make_tuple(), [](auto resources, auto irq) {
             // TODO: check that an IRQ doesn't list a resource more than once
             auto const additional_resources =
@@ -136,7 +136,7 @@ template <typename RootT> struct dynamic_controller {
      * tuple of every interrupt register affected by a resource
      */
     constexpr static auto all_resource_affected_regs =
-        get_unique_regs(RootT::all_irqs.fold_left(
+        get_unique_regs(Root::all_irqs.fold_left(
             stdx::make_tuple(), [](auto registers, auto irq) {
                 using irq_t = decltype(irq);
                 constexpr bool depends_on_resources =
@@ -197,7 +197,7 @@ template <typename RootT> struct dynamic_controller {
         template <typename Irq>
         using fn = std::bool_constant<
             has_enable_field<Irq> and
-            (... or std::is_same_v<typename Irq::IrqCallbackType, Callbacks>)>;
+            (... or std::is_same_v<typename Irq::irq_callback_t, Callbacks>)>;
     };
 
     template <bool en, typename... CallbacksToFind>
@@ -211,7 +211,7 @@ template <typename RootT> struct dynamic_controller {
         //       removed or made private.
         auto const matching_irqs =
             stdx::filter<match_callback<CallbacksToFind...>::template fn>(
-                RootT::all_irqs);
+                Root::all_irqs);
 
         auto const interrupt_enables_tuple = stdx::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);

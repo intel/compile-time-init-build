@@ -9,20 +9,20 @@ namespace interrupt {
 /**
  * Runtime implementation of the irq.
  *
- * @tparam FlowTypeT
+ * @tparam Flow
  *      The actual flow::impl<Size> type that can contain all of the interrupt
  * service routines from the irq's flow::Builder<>. This needs to be accurately
  * sized to ensure it can indicate whether any interrupt service routines are
  * registered.
  */
-template <typename ConfigT, typename FlowTypeT> struct irq_impl {
+template <typename Config, typename Flow> struct irq_impl {
   public:
-    template <bool en>
+    template <bool Enable>
     constexpr static FunctionPtr enable_action =
-        ConfigT::template enable_action<en>;
-    using StatusPolicy = typename ConfigT::StatusPolicy;
+        Config::template enable_action<Enable>;
+    using status_policy_t = typename Config::status_policy_t;
 
-    constexpr static auto irq_number = ConfigT::irq_number;
+    constexpr static auto irq_number = Config::irq_number;
 
     /**
      * True if this irq::impl has any interrupt service routines to execute,
@@ -31,7 +31,7 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
      * This is used to optimize compiled size and runtime performance. Unused
      * Irqs should not consume any resources.
      */
-    constexpr static bool active = FlowTypeT::active;
+    constexpr static bool active = Flow::active;
 
   private:
     FunctionPtr interrupt_service_routine;
@@ -60,8 +60,8 @@ template <typename ConfigT, typename FlowTypeT> struct irq_impl {
      */
     inline void run() const {
         if constexpr (active) {
-            hal::run<StatusPolicy>(irq_number,
-                                   [&]() { interrupt_service_routine(); });
+            hal::run<status_policy_t>(irq_number,
+                                      [&]() { interrupt_service_routine(); });
         }
     }
 };
