@@ -6,6 +6,7 @@
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
+#include <stdx/utility.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -31,14 +32,6 @@ template <typename Dynamic, typename... IrqImpls>
 class manager_impl : public manager_interface {
   private:
     stdx::tuple<IrqImpls...> irq_impls;
-
-    template <irq_num_t Key, typename Value> struct irq_pair {};
-    template <typename... Ts> struct irq_map : Ts... {};
-
-    template <irq_num_t K, typename Default>
-    constexpr static auto lookup(...) -> Default;
-    template <irq_num_t K, typename Default, typename V>
-    constexpr static auto lookup(irq_pair<K, V>) -> V;
 
   public:
     explicit constexpr manager_impl(IrqImpls... impls) : irq_impls{impls...} {}
@@ -85,8 +78,9 @@ class manager_impl : public manager_interface {
      *      The IRQ number that has been triggered by hardware.
      */
     template <irq_num_t IrqNumber> inline void run() const {
-        using M = irq_map<irq_pair<IrqImpls::irq_number, IrqImpls>...>;
-        using irq_t = decltype(lookup<IrqNumber, void>(std::declval<M>()));
+        using M =
+            stdx::type_map<stdx::vt_pair<IrqImpls::irq_number, IrqImpls>...>;
+        using irq_t = stdx::value_lookup_t<M, IrqNumber>;
 
         if constexpr (not std::is_void_v<irq_t>) {
             get<irq_t>(irq_impls).run();
