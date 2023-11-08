@@ -1,0 +1,157 @@
+
+== Implementation Details
+
+This section details some of the internal implementation details to assist contributors.
+The details here are not required to use the `cib` library.
+
+=== Run Length Encoded Message Indices
+
+To switch to using the RLE indices is as simple as converting your `msg::indexed_service` to a
+`msg::rle_indexed_service`.
+
+The initial building of the mapping indices proceeds the same as
+the normal ones, where a series of entries in an index is generated
+and the callback that match are encoded into a `stdx::bitset`.
+
+However, once this initial representation is built, we then take this and
+perform additional work (at compile time) to encode the bitsets as RLE
+data, and store in the index just an offset into the blob of RLE data
+rather than the bitset itself.
+
+This is good for message maps that contain a large number of handlers as
+we trade off storage space for some decoding overhead.
+
+Once encoded, the normal operation of the lookup process at run time
+proceeds and a set of candidate matches is collected, these are then
+_intersected_ from the RLE data and the final set of callbacks invoked
+without needing to materialise any of the underlying bitsets.
+
+==== RLE Data Encoding
+
+There are several options for encoding the bitset into an RLE pattern, many of which will result
+in smaller size, but a lot of bit-shifting to extract data. We have chosen to trade off encoded
+size for faster decoding, as it is likely the handling of the RLE data and index lookup will be
+in the critical path for system state changes.
+
+The encoding chosen is simply the number of consecutive bits of `0`​s or `1`​s.
+
+Specifics:
+
+- The encoding runs from the least significant bit to most significant bit
+- The number of consecutive bits is stored as a `std::byte` and ranges `0...255`
+- The first byte of the encoding counts the number of `0` bits
+- If there are more than 255 consecutive identical bits, they can only be encoded in
+  blocks of 255, and an additional 0 is needed to indicate zero opposite bits are needed.
+
+[ditaa, format="svg", scale=1.5]
+----
+  Bitset            RLE Data
+/-------------+    +---+
+| 0b0000`0000 |--->| 8 |
++-------------/    +---+
+
+/-------------+    +---+---+
+| 0b1111`1111 |--->| 0 | 8 |
++-------------/    +---+---+
+
+/-------------+    +---+---+---+
+| 0b0000`0001 |--->| 0 | 1 | 7 |
++-------------/    +---+---+---+
+
+/-------------+    +---+---+---+---+
+| 0b1000`0011 |--->| 0 | 2 | 5 | 1 |
++-------------/    +---+---+---+---+
+
+/-------------+    +---+---+---+---+
+| 0b1100`1110 |--->| 1 | 3 | 2 | 2 |
++-------------/    +---+---+---+---+
+
+
+/------------------------------+    +---+---+-----+---+-----+---+-----+---+-----+
+| 1000 `0`s and one `1` in LSB |--->| 0 | 1 | 255 | 0 | 255 | 0 | 255 | 0 | 235 |
++------------------------------/    +---+---+-----+---+-----+---+-----+---+-----+
+----
+
+The `msg::rle_indexed_builder` will go through a process to take the indices and
+their bitset data and build a single blob of RLE encoded data for all indices, stored in
+an instance of a `msg::detail::rle_storage`. It also generates a set of
+`msg::detail::rle_index` entries for each of the index entries that maps the original bitmap
+to a location in the shared storage blob.
+
+The `rle_storage` object contains a simple array of all RLE data bytes. The `rle_index`
+contains a simple offset into that array. We compute the smallest size that can contain the
+offset to avoid wasted storage and use that.
+
+NOTE: The specific `rle_storage` and `rle_index`​s are locked together using a unique type
+so that the `rle_index` can not be used with the wrong `rle_storage` object.
+
+When building the shared blob, the encoder will attempt to reduce the storage size by finding
+and reusing repeated patterns in the RLE data.
+
+The final `msg::indexed_handler` contains an instance of the `msg::rle_indices` which contains
+both the storage and the maps referring to all the `rle_index` objects.
+
+This means that the final compile time data generated consists of:
+
+- The Message Map lookups as per the normal implementation, however they store a simple offset
+  rather than a bitset.
+- The blob of all RLE bitset data for all indices in the message handling map
+
+==== Runtime Handling
+
+The `msg::indexed_handler` implementation will delegate the mapping call for an incoming
+message down to the `msg::rle_indices` implementation. It will further call into it's
+storage indices and match to the set of `rle_index` values for each mapping index.
+
+This set of `rle_index` values (which are just offsets) are then converted to instances of
+a `msg::detail::rle_decoder` by the `rle_storage`. This converts the offset into a
+pointer to the sequence of `std::byte`​s for the RLE encoding.
+
+All the collected `rle_decoders` from the various maps in the set of indices are then passed
+to an instance of the `msg::detail::rle_intersect` object and returned from the `rle_indices`
+call operator.
+
+The `rle_decoder` provides a single-use enumerator that will step over the groups of
+`0`​s or `1`​s, providing a way to advance through them by arbitrary increments.
+
+The `rle_intersect` implementation wraps the variadic set of `rle_decoder`​s so that
+the caller can iterate through all `1`​s, calling the appropriate callback as it goes.
+
+===== Efficient Iteration of Bits
+
+The `msg::detail::rle_decoder::chunk_enumerator` provides a way to step through the RLE
+data for the encoded bitset an arbitrary number of bits at a time. It does this by exposing
+the current number of bits of consecutive value.
+
+This is presented so that it is possible to efficiently find:
+
+- the longest run of `0`​s
+- or, if none, the shortest run of `1`​s.
+
+Remember that we are trying to compute the intersection of all the encoded bitsets, so
+where all bitsets have a `1`, we call the associated callback, where any of the bitsets
+has a `0`, we skip that callback.
+
+So the `chunk_enumerator` will return a signed 16 bit (at least) value indicating:
+
+- *negative* value - the number of `0`​s
+- *positive* value - the number of `1`​s
+- *zero* when past the end (special case)
+
+The `rle_intersect` will initialise an array of `rle_decoder::chunk_enumerators`
+when it is asked to run a lambda for each `1` bit using the `for_each()` method.
+
+This list is then searched for the _minimum_ value of chunk size. This will either
+be the largest negative value, and so the longest run of `0`​s, or the smallest
+number of `1`​s, representing the next set of bits that are set in all bitsets.
+
+The `for_each()` method will then advance past all the `0`​s, or execute the lambda
+for that many set bits, until it has consumed all bits in the encoded bitsets.
+
+This means that the cost of intersection of `N` indices is a number of pointers and
+a small amount of state for tracking the current run of bits and their type for each index.
+
+There is no need to materialise a full bitset at all. This can be quite a memory saving if
+there are a large number of callbacks. The trade-off, of course, is more complex iteration
+of bits to discover the callbacks to run.
+

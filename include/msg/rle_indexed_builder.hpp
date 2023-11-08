@@ -80,10 +80,17 @@ template <typename LockType, std::size_t DataLength> struct rle_storage {
         return codec_type::decode(std::next(data.begin(), idx.offset));
     }
 
+    template <typename FieldType, typename BitSetType, typename OffsetType>
+    constexpr auto
+    decode(rle_index<LockType, FieldType, BitSetType, OffsetType> idx) const
+        -> rle_decoder<BitSetType> {
+        return rle_decoder<BitSetType>{std::next(data.begin(), idx.offset)};
+    }
+
     storage_type data;
 };
 
-// Build the encoded RLE data with a max lenght of MaxDataLen
+// Build the encoded RLE data with a max length of MaxDataLen
 // Take the opportunity to reuse byte sequences where possible.
 template <std::size_t MaxDataLength> struct rle_storage_builder {
     using offset_type = detail::smallest_storage_type<MaxDataLength>;

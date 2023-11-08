@@ -1,6 +1,7 @@
 #pragma once
 
 #include <msg/detail/indexed_handler_common.hpp>
+#include <msg/detail/rle_codec.hpp>
 
 #include <stdx/compiler.hpp>
 
@@ -12,10 +13,9 @@ struct rle_indices : IndicesT... {
         : IndicesT{index_args}..., storage{data} {}
 
     constexpr auto operator()(auto const &data) const {
-        // TODO: efficient bitand that doesn't need to materialise full bitset
-
-        // use the index to decode the bitset from storage
-        return (storage.get(this->IndicesT::operator()(data)) & ...);
+        // proxy to allow intersection without materializing a full bitset.
+        return detail::rle_intersect{
+            storage.decode(this->IndicesT::operator()(data))...};
     }
 
     // index entries will map into this storage to decode RLE data
