@@ -18,7 +18,16 @@ find_package(
 
 include(cmake/string_catalog.cmake)
 
-add_versioned_package("gh:fmtlib/fmt#10.1.1")
+add_versioned_package(
+    NAME
+    fmt
+    GIT_TAG
+    10.1.1
+    GITHUB_REPOSITORY
+    fmtlib/fmt
+    OPTIONS
+    "FMT_INSTALL OFF"
+    "FMT_OS OFF")
 add_versioned_package("gh:intel/cpp-std-extensions#19b7932")
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#8d49b6d")
 
