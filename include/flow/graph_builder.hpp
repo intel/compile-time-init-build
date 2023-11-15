@@ -30,10 +30,10 @@ namespace flow {
  * @tparam NodeCapacity The maximum number of nodes that can be added.
  * @tparam EdgeCapacity The maximum number of edges between one node and
  *         another.
- * @tparam Derived The class that uses graph_builder with CRTP.
  */
-template <flow::dsl::node Node, stdx::ct_string Name, std::size_t NodeCapacity,
-          std::size_t EdgeCapacity, typename Derived>
+template <
+    flow::dsl::node Node, template <stdx::ct_string, std::size_t> typename Impl,
+    stdx::ct_string Name, std::size_t NodeCapacity, std::size_t EdgeCapacity>
 class graph_builder {
     using graph_t = stdx::cx_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
     graph_t graph{};
@@ -105,9 +105,9 @@ class graph_builder {
      * "c".
      */
     template <typename... Ts>
-    constexpr auto add(Ts const &...descriptions) -> Derived & {
+    constexpr auto add(Ts const &...descriptions) -> auto & {
         (insert(descriptions), ...);
-        return static_cast<Derived &>(*this);
+        return *this;
     }
 
     /**
@@ -171,7 +171,7 @@ class graph_builder {
 
     template <typename BuilderValue>
     [[nodiscard]] constexpr static auto build() -> FunctionPtr {
-        return run_impl<BuilderValue, Derived::template impl_t>;
+        return run_impl<BuilderValue, Impl>;
     }
 };
 } // namespace flow

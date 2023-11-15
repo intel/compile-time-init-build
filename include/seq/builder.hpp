@@ -26,12 +26,8 @@ namespace seq {
 
 template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
-struct builder
-    : flow::graph_builder<step_base, Name, NodeCapacity, EdgeCapacity,
-                          builder<Name, NodeCapacity, EdgeCapacity>> {
-    template <stdx::ct_string N, std::size_t Capacity>
-    using impl_t = seq::impl<N, Capacity>;
-};
+using builder =
+    flow::graph_builder<step_base, impl, Name, NodeCapacity, EdgeCapacity>;
 
 /**
  * Extend this to create named seq services.
