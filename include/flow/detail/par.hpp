@@ -22,17 +22,19 @@ template <node Lhs, node Rhs> struct par {
 
     using is_node = void;
 
-    constexpr auto walk(auto c) const -> void {
-        dsl::walk(c, lhs);
-        dsl::walk(c, rhs);
+  private:
+    template <typename F>
+    friend constexpr auto tag_invoke(walk_t, F &&f, par const &p) -> void {
+        walk(f, p.lhs);
+        walk(f, p.rhs);
     }
 
-    constexpr auto initials() const {
-        return concat(dsl::initials(lhs), dsl::initials(rhs));
+    friend constexpr auto tag_invoke(get_initials_t, par const &p) {
+        return concat(get_initials(p.lhs), get_initials(p.rhs));
     }
 
-    constexpr auto finals() const {
-        return concat(dsl::finals(lhs), dsl::finals(rhs));
+    friend constexpr auto tag_invoke(get_finals_t, par const &p) {
+        return concat(get_finals(p.lhs), get_finals(p.rhs));
     }
 };
 
