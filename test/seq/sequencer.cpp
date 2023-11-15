@@ -8,7 +8,7 @@
 
 namespace {
 int attempt_count;
-std::string result;
+std::string result{};
 } // namespace
 
 TEST_CASE("build and run empty seq", "[seq]") {
@@ -19,8 +19,7 @@ TEST_CASE("build and run empty seq", "[seq]") {
 }
 
 TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
-    result = "";
-    seq::builder<> builder;
+    result.clear();
 
     auto s = seq::step(
         "S"_sc,
@@ -33,8 +32,7 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
             return seq::status::DONE;
         });
 
-    builder.add(s);
-
+    auto builder = seq::builder<>{}.add(s);
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     CHECK(seq_impl->forward() == seq::status::DONE);
@@ -46,9 +44,8 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
 
 TEST_CASE("build seq with a forward step that takes a while to finish",
           "[seq]") {
-    result = "";
+    result.clear();
     attempt_count = 0;
-    seq::builder<> builder;
 
     auto s = seq::step(
         "S"_sc,
@@ -65,8 +62,7 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
             return seq::status::DONE;
         });
 
-    builder.add(s);
-
+    auto builder = seq::builder<>{}.add(s);
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     SECTION("forward can be called") {
@@ -94,9 +90,8 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
 
 TEST_CASE("build seq with a backward step that takes a while to finish",
           "[seq]") {
-    result = "";
+    result.clear();
     attempt_count = 0;
-    seq::builder<> builder;
 
     auto s = seq::step(
         "S"_sc,
@@ -113,8 +108,7 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
             }
         });
 
-    builder.add(s);
-
+    auto builder = seq::builder<>{}.add(s);
     auto seq_impl = builder.topo_sort<seq::impl, 1>();
 
     SECTION("backward can be called") {
@@ -146,8 +140,7 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
 
 TEST_CASE("build seq with three steps and run forwards and backwards",
           "[seq]") {
-    result = "";
-    seq::builder<> builder;
+    result.clear();
 
     auto s1 = seq::step(
         "S1"_sc,
@@ -182,8 +175,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
             return seq::status::DONE;
         });
 
-    builder.add(s1 >> s2 >> s3);
-
+    auto builder = seq::builder<>{}.add(s1 >> s2 >> s3);
     auto seq_impl = builder.topo_sort<seq::impl, 3>();
 
     CHECK(seq_impl->forward() == seq::status::DONE);

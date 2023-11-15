@@ -6,7 +6,7 @@
 #include <string>
 
 namespace {
-auto actual = std::string("");
+auto actual = std::string{};
 
 constexpr auto milestone0 = flow::milestone<"milestone0">();
 constexpr auto milestone1 = flow::milestone<"milestone1">();
@@ -15,6 +15,7 @@ constexpr auto a = flow::action<"a">([] { actual += "a"; });
 constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
+} // namespace
 
 TEST_CASE("build and run empty flow", "[flow]") {
     flow::builder<> builder;
@@ -23,115 +24,71 @@ TEST_CASE("build and run empty flow", "[flow]") {
 }
 
 TEST_CASE("add single action", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a);
     auto const flow = builder.topo_sort<flow::impl, 1>();
     REQUIRE(flow.has_value());
-
     flow.value()();
     CHECK(actual == "a");
 }
 
 TEST_CASE("two milestone linear before dependency", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    /*
-     * A fundamental feature of flows are their ability to traverse a graph
-     * of dependencies and execute a series of tasks in the correct order.
-     * The Flow::add function is used to add these ordering relationships to
-     * the flow.
-     */
-    builder.add(a >> milestone0);
-
-    /*
-     * Because we previously created a dependent relationship between
-     * 'action' and 'done', the flow knows to execute 'action' before it is
-     * finished.
-     */
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> milestone0);
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow.value()();
-
     CHECK(actual == "a");
 }
 
 TEST_CASE("actions get executed once", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> milestone0);
-    builder.add(a >> milestone1);
-    builder.add(milestone0 >> milestone1);
-
+    actual.clear();
+    auto builder = flow::builder<>{}
+                       .add(a >> milestone0)
+                       .add(a >> milestone1)
+                       .add(milestone0 >> milestone1);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
-
     CHECK(actual == "a");
 }
 
 TEST_CASE("two milestone linear after dependency", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> milestone0);
-
-    builder.add(milestone0 >> milestone1);
-
-    builder.add(milestone0 >> b >> milestone1);
-
+    actual.clear();
+    auto builder = flow::builder<>{}
+                       .add(a >> milestone0)
+                       .add(milestone0 >> milestone1)
+                       .add(milestone0 >> b >> milestone1);
     auto const flow = builder.topo_sort<flow::impl, 4>();
     flow.value()();
-
     CHECK(actual == "ab");
 }
 
 TEST_CASE("three milestone linear before and after dependency", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> b >> c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> b >> c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
-
     CHECK(actual == "abc");
 }
 
 TEST_CASE("just two actions in order", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> b);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> b);
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow.value()();
-
     CHECK(actual == "ab");
 }
 
 TEST_CASE("insert action between two actions", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> c);
-
-    builder.add(a >> b >> c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> c).add(a >> b >> c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
-
     CHECK(actual == "abc");
 }
 
 TEST_CASE("add single parallel 2", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a && b);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a && b);
     auto const flow = builder.topo_sort<flow::impl, 2>();
     flow.value()();
 
@@ -141,11 +98,8 @@ TEST_CASE("add single parallel 2", "[flow]") {
 }
 
 TEST_CASE("add single parallel 3", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a && b && c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a && b && c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -156,12 +110,8 @@ TEST_CASE("add single parallel 3", "[flow]") {
 }
 
 TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a && b && c);
-    builder.add(c >> a);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a && b && c).add(c >> a);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -173,12 +123,8 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
 }
 
 TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a && b && c);
-    builder.add(a >> c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a && b && c).add(a >> c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -190,11 +136,8 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
 }
 
 TEST_CASE("add parallel rhs", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a >> (b && c));
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> (b && c));
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -207,11 +150,8 @@ TEST_CASE("add parallel rhs", "[flow]") {
 }
 
 TEST_CASE("add parallel lhs", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add((a && b) >> c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add((a && b) >> c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -224,11 +164,8 @@ TEST_CASE("add parallel lhs", "[flow]") {
 }
 
 TEST_CASE("add parallel in the middle", "[flow]") {
-    flow::builder<"MiddleParallelFlow"> builder;
-    actual = "";
-
-    builder.add(a >> (b && c) >> d);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a >> (b && c) >> d);
     auto const flow = builder.topo_sort<flow::impl, 4>();
     flow.value()();
 
@@ -247,11 +184,8 @@ TEST_CASE("add parallel in the middle", "[flow]") {
 }
 
 TEST_CASE("add dependency lhs", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add((a >> b) && c);
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add((a >> b) && c);
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -265,11 +199,8 @@ TEST_CASE("add dependency lhs", "[flow]") {
 }
 
 TEST_CASE("add dependency rhs", "[flow]") {
-    flow::builder<> builder;
-    actual = "";
-
-    builder.add(a && (b >> c));
-
+    actual.clear();
+    auto builder = flow::builder<>{}.add(a && (b >> c));
     auto const flow = builder.topo_sort<flow::impl, 3>();
     flow.value()();
 
@@ -282,6 +213,7 @@ TEST_CASE("add dependency rhs", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
+namespace {
 struct TestFlowAlpha : public flow::service<> {};
 struct TestFlowBeta : public flow::service<> {};
 
@@ -289,45 +221,38 @@ struct SingleFlowSingleActionConfig {
     constexpr static auto config =
         cib::config(cib::exports<TestFlowAlpha>, cib::extend<TestFlowAlpha>(a));
 };
+} // namespace
 
 TEST_CASE("add single action through cib::nexus", "[flow]") {
+    actual.clear();
     cib::nexus<SingleFlowSingleActionConfig> nexus{};
-    actual = "";
-
     nexus.service<TestFlowAlpha>();
-
     CHECK(actual == "a");
 }
 
+namespace {
 struct MultiFlowMultiActionConfig {
     constexpr static auto config = cib::config(
         cib::exports<TestFlowAlpha, TestFlowBeta>,
-
         cib::extend<TestFlowAlpha>(a), cib::extend<TestFlowAlpha>(a >> b),
-
         cib::extend<TestFlowBeta>(d), cib::extend<TestFlowBeta>(c >> d));
 };
+} // namespace
 
 TEST_CASE("add multi action through cib::nexus", "[flow]") {
+    actual.clear();
     cib::nexus<MultiFlowMultiActionConfig> nexus{};
-    actual = "";
-
     nexus.service<TestFlowAlpha>();
     nexus.service<TestFlowBeta>();
-
     CHECK(actual == "abcd");
 }
 
 TEST_CASE("add multi action through cib::nexus, run through cib::service",
           "[flow]") {
+    actual.clear();
     cib::nexus<MultiFlowMultiActionConfig> nexus{};
     nexus.init();
-
-    actual = "";
-
     cib::service<TestFlowAlpha>();
     cib::service<TestFlowBeta>();
-
     CHECK(actual == "abcd");
 }
-} // namespace
