@@ -26,11 +26,7 @@ namespace flow {
 
 template <stdx::ct_string Name = "", std::size_t NodeCapacity = 64,
           std::size_t EdgeCapacity = 16>
-struct builder : graph_builder<node, Name, NodeCapacity, EdgeCapacity,
-                               builder<Name, NodeCapacity, EdgeCapacity>> {
-    template <stdx::ct_string N, std::size_t Capacity>
-    using impl_t = flow::impl<N, Capacity>;
-};
+using builder = graph_builder<node, impl, Name, NodeCapacity, EdgeCapacity>;
 
 /**
  * Extend this to create named flow services.

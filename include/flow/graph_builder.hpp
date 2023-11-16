@@ -1,10 +1,12 @@
 #pragma once
 
 #include <flow/common.hpp>
+#include <flow/detail/walk.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_vector.hpp>
+#include <stdx/utility.hpp>
 
 #include <algorithm>
 #include <array>
@@ -14,12 +16,6 @@
 #include <span>
 
 namespace flow {
-namespace detail {
-template <typename T, typename Node>
-concept walkable = std::same_as<T, Node> or
-                   requires(T const &t) { t.walk([](Node, Node) {}); };
-}
-
 /**
  * flow::graph_builder allows a compile-time graph to be built, and then used to
  * output a topologically sorted flow.
@@ -34,10 +30,10 @@ concept walkable = std::same_as<T, Node> or
  * @tparam NodeCapacity The maximum number of nodes that can be added.
  * @tparam EdgeCapacity The maximum number of edges between one node and
  *         another.
- * @tparam Derived The class that uses graph_builder with CRTP.
  */
-template <typename Node, stdx::ct_string Name, std::size_t NodeCapacity,
-          std::size_t EdgeCapacity, typename Derived>
+template <
+    flow::dsl::node Node, template <stdx::ct_string, std::size_t> typename Impl,
+    stdx::ct_string Name, std::size_t NodeCapacity, std::size_t EdgeCapacity>
 class graph_builder {
     using graph_t = stdx::cx_multimap<Node, Node, NodeCapacity, EdgeCapacity>;
     graph_t graph{};
@@ -63,17 +59,11 @@ class graph_builder {
         return s;
     }
 
-    constexpr auto insert(Node const &node) -> void { graph.put(node); }
-
-    template <detail::walkable<Node> T>
-    constexpr auto insert(T const &t) -> void {
-        t.walk([&](Node lhs, Node rhs) {
-            if (rhs == Node{}) {
-                graph.put(lhs);
-            } else {
-                graph.put(lhs, rhs);
-            }
-        });
+    constexpr auto insert(flow::dsl::node auto const &t) -> void {
+        dsl::walk(
+            stdx::overload{[&](Node n) { graph.put(n); },
+                           [&](Node lhs, Node rhs) { graph.put(lhs, rhs); }},
+            t);
     }
 
     template <typename BuilderValue,
@@ -114,10 +104,10 @@ class graph_builder {
      * Note that it does not specify an ordering requirement between "b" and
      * "c".
      */
-    template <detail::walkable<Node>... Ts>
-    constexpr auto add(Ts const &...descriptions) -> Derived & {
+    template <typename... Ts>
+    constexpr auto add(Ts const &...descriptions) -> auto & {
         (insert(descriptions), ...);
-        return static_cast<Derived &>(*this);
+        return *this;
     }
 
     /**
@@ -181,7 +171,7 @@ class graph_builder {
 
     template <typename BuilderValue>
     [[nodiscard]] constexpr static auto build() -> FunctionPtr {
-        return run_impl<BuilderValue, Derived::template impl_t>;
+        return run_impl<BuilderValue, Impl>;
     }
 };
 } // namespace flow
