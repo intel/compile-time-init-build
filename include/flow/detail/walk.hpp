@@ -1,33 +1,23 @@
 #pragma once
 
 #include <stdx/concepts.hpp>
+#include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 
-#include <array>
 #include <utility>
 
 namespace flow::dsl {
 template <typename T>
-concept node = requires { typename T::is_node; };
+concept node = requires { typename stdx::remove_cvref_t<T>::is_node; };
 
-constexpr inline class walk_t {
-    template <node N, stdx::invocable<N> F>
-    friend constexpr auto tag_invoke(walk_t, F &&f, N const &n) {
-        return std::forward<F>(f)(n);
-    }
-
-  public:
-    template <typename... Ts>
-    constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<walk_t>(),
-                                     std::forward<Ts>(ts)...)))
-            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
-        return tag_invoke(*this, std::forward<Ts>(ts)...);
-    }
-} walk{};
+template <typename Source, typename Dest> struct edge {
+    using source_t = Source;
+    using dest_t = Dest;
+};
 
 constexpr inline class get_initials_t {
-    friend constexpr auto tag_invoke(get_initials_t, node auto const &n) {
-        return std::array{n};
+    template <node N> friend constexpr auto tag_invoke(get_initials_t, N &&n) {
+        return stdx::make_tuple(std::forward<N>(n));
     }
 
   public:
@@ -41,8 +31,8 @@ constexpr inline class get_initials_t {
 } get_initials{};
 
 constexpr inline class get_finals_t {
-    friend constexpr auto tag_invoke(get_finals_t, node auto const &n) {
-        return std::array{n};
+    template <node N> friend constexpr auto tag_invoke(get_finals_t, N &&n) {
+        return stdx::make_tuple(std::forward<N>(n));
     }
 
   public:
@@ -54,4 +44,34 @@ constexpr inline class get_finals_t {
         return tag_invoke(*this, std::forward<Ts>(ts)...);
     }
 } get_finals{};
+
+constexpr inline class get_nodes_t {
+    template <node N> friend constexpr auto tag_invoke(get_nodes_t, N &&n) {
+        return stdx::make_tuple(std::forward<N>(n));
+    }
+
+  public:
+    template <typename... Ts>
+    constexpr auto operator()(Ts &&...ts) const
+        noexcept(noexcept(tag_invoke(std::declval<get_nodes_t>(),
+                                     std::forward<Ts>(ts)...)))
+            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
+        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    }
+} get_nodes{};
+
+constexpr inline class get_edges_t {
+    friend constexpr auto tag_invoke(get_edges_t, node auto const &) {
+        return stdx::tuple{};
+    }
+
+  public:
+    template <typename... Ts>
+    constexpr auto operator()(Ts &&...ts) const
+        noexcept(noexcept(tag_invoke(std::declval<get_edges_t>(),
+                                     std::forward<Ts>(ts)...)))
+            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
+        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    }
+} get_edges{};
 } // namespace flow::dsl

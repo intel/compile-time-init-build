@@ -1,350 +1,215 @@
 #include "common.hpp"
 
-#include <cib/cib.hpp>
+#include <interrupt/config.hpp>
+#include <interrupt/manager.hpp>
 
-#include <stdx/concepts.hpp>
+#include <catch2/catch_test_macros.hpp>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <type_traits>
 
-#include <cstddef>
-#include <cstdint>
+namespace {
+struct flow_1 : std::true_type {};
+struct flow_2 : std::true_type {};
 
-using ::testing::_;
-using ::testing::InSequence;
-using ::testing::Return;
+using config_a =
+    interrupt::root<interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1>>;
+using config_b = interrupt::root<
+    interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1, flow_2>>;
+} // namespace
 
-namespace interrupt {
-class mock_t {
-  public:
-    MOCK_METHOD(void, init, ());
-    MOCK_METHOD(void, irq_init, (bool, irq_num_t, std::size_t));
-    MOCK_METHOD(void, run, (irq_num_t));
-    MOCK_METHOD(void, status, (irq_num_t));
+TEST_CASE("init enables interrupts", "[flow]") {
+    auto m = interrupt::manager<config_a, test_nexus>{};
+    inited = false;
+    enabled<17_irq> = false;
+    priority<17_irq> = 0;
 
-    MOCK_METHOD(void, write, (int, std::uint32_t));
-    MOCK_METHOD(std::uint32_t, read, (int));
-} *mock_ptr;
+    m.init();
 
-struct test_hal {
-    static auto init() -> void { mock_ptr->init(); }
-
-    template <bool Enable, irq_num_t IrqNumber, std::size_t Priority>
-    static auto irq_init() -> void {
-        mock_ptr->irq_init(Enable, IrqNumber, Priority);
-    }
-
-    template <status_policy P>
-    static auto run(irq_num_t irq_number, stdx::invocable auto const &isr)
-        -> void {
-        P::run([&] { mock_ptr->status(irq_number); },
-               [&] {
-                   mock_ptr->run(irq_number);
-                   isr();
-               });
-    }
-};
-
-template <> inline auto injected_hal<> = test_hal{};
-
-class InterruptManagerTest : public ::testing::Test {
-  protected:
-    mock_t mock;
-    void SetUp() override { mock_ptr = &mock; }
-};
-
-constexpr static auto msg_handler = flow::action<"msg_handler">([] {});
-constexpr static auto rsp_handler = flow::action<"rsp_handler">([] {});
-constexpr static auto timer_action = flow::action<"timer_action">([] {});
-
-using msg_handler_irq = irq_flow<"msg_handler">;
-using rsp_handler_irq = irq_flow<"rsp_handler">;
-using timer_irq = irq_flow<"timer">;
-
-using i2c_handler_irq = irq_flow<"i2c_handler">;
-using spi_handler_irq = irq_flow<"spi_handler">;
-using can_handler_irq = irq_flow<"can_handler">;
-
-template <typename Field> constexpr auto read(Field) {
-    return [] { return mock_ptr->read(Field::id); };
+    CHECK(inited);
+    CHECK(enabled<17_irq>);
+    CHECK(priority<17_irq> == 42);
 }
 
-template <typename... Values> constexpr auto write(Values... values) {
-    return [... values = values.value] {
-        (mock_ptr->write(Values::id, values), ...);
+TEST_CASE("run single flow", "[flow]") {
+    auto m = interrupt::manager<config_a, test_nexus>{};
+    flow_run<flow_1> = false;
+
+    m.run<17_irq>();
+
+    CHECK(flow_run<flow_1>);
+}
+
+TEST_CASE("run multiple flows", "[flow]") {
+    auto m = interrupt::manager<config_b, test_nexus>{};
+    flow_run<flow_1> = false;
+    flow_run<flow_2> = false;
+
+    m.run<17_irq>();
+
+    CHECK(flow_run<flow_1>);
+    CHECK(flow_run<flow_2>);
+}
+
+namespace {
+template <typename Flow> struct alt_flow : Flow {};
+
+struct alt_nexus {
+    template <typename T> constexpr static auto service = flow<alt_flow<T>>{};
+};
+} // namespace
+
+TEST_CASE("run flow across multiple nexi", "[flow]") {
+    auto m = interrupt::manager<config_a, test_nexus, alt_nexus>{};
+    flow_run<flow_1> = false;
+    flow_run<alt_flow<flow_1>> = false;
+
+    m.run<17_irq>();
+
+    CHECK(flow_run<flow_1>);
+    CHECK(flow_run<alt_flow<flow_1>>);
+}
+
+namespace {
+struct flow_33_1 : std::true_type {};
+struct flow_33_2 : std::true_type {};
+struct flow_38 : std::true_type {};
+
+template <typename... Ts> struct root : interrupt::root<Ts...> {
+    template <typename> struct dynamic_controller_t {
+        template <bool Enable, typename... Field>
+        static void enable_by_field() {
+            ((Field::value = Enable), ...);
+        }
     };
-}
-
-template <typename... Fields> constexpr auto clear(Fields...) {
-    return [] { (mock_ptr->write(Fields::id, 0), ...); };
-}
-
-struct int_sts_reg_t : mock_register_t<0, int_sts_reg_t, "int_sts"> {};
-using packet_avail_sts_field_t =
-    mock_field_t<1, int_sts_reg_t, "packet_avail_sts", 1, 1>;
-using rsp_avail_sts_field_t =
-    mock_field_t<2, int_sts_reg_t, "rsp_avail_sts", 0, 0>;
-
-struct int_en_reg_t : mock_register_t<3, int_en_reg_t, "int_en"> {};
-using packet_avail_en_field_t =
-    mock_field_t<4, int_en_reg_t, "packet_avail_en", 1, 1>;
-using rsp_avail_en_field_t =
-    mock_field_t<5, int_en_reg_t, "rsp_avail_en", 0, 0>;
-
-#define EXPECT_WRITE(FIELD_TYPE, VALUE)                                        \
-    EXPECT_CALL(mock, write(FIELD_TYPE::id, VALUE))
-#define EXPECT_READ(FIELD_TYPE) EXPECT_CALL(mock, read(FIELD_TYPE::id))
-
-struct BasicBuilder {
-    using Config = root<
-        shared_irq<33_irq, 0, policies<clear_status_first>,
-                   sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
-                           msg_handler_irq, policies<>>,
-                   sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
-                           rsp_handler_irq, policies<>>>,
-        irq<38_irq, 0, timer_irq, policies<>>>;
-
-    struct test_service : interrupt::service<Config> {};
-
-    struct test_project {
-        constexpr static auto config = cib::config(
-            cib::exports<test_service>,
-            interrupt::extend<test_service, msg_handler_irq>(msg_handler),
-            interrupt::extend<test_service, rsp_handler_irq>(rsp_handler),
-            interrupt::extend<test_service, timer_irq>(timer_action));
-    };
-
-    using nexus_t = cib::nexus<test_project>;
-    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
 };
 
-TEST_F(InterruptManagerTest, BasicManagerInit) {
-    constexpr auto &manager = BasicBuilder::manager;
+using config_shared =
+    root<interrupt::shared_irq<
+             33_irq, 34, interrupt::policies<>,
+             interrupt::sub_irq<enable_field_t<33'1>, status_field_t<33'1>,
+                                interrupt::policies<>, flow_33_1>,
+             interrupt::sub_irq<enable_field_t<33'2>, status_field_t<33'2>,
+                                interrupt::policies<>, flow_33_2>>,
+         interrupt::irq<38_irq, 39, interrupt::policies<>, flow_38>>;
+} // namespace
 
-    EXPECT_CALL(mock, init()).Times(1);
-    EXPECT_CALL(mock, irq_init(true, 33_irq, 0)).Times(1);
-    EXPECT_CALL(mock, irq_init(true, 38_irq, 0)).Times(1);
+TEST_CASE("init enables mcu interrupts", "[flow]") {
+    auto m = interrupt::manager<config_shared, test_nexus>{};
+    inited = false;
+    enabled<33_irq> = false;
+    priority<33_irq> = 0;
+    enabled<38_irq> = false;
+    priority<38_irq> = 0;
 
-    EXPECT_WRITE(int_en_reg_t, 3);
+    m.init();
+    CHECK(38_irq == m.max_irq());
 
-    manager.init();
-
-    EXPECT_EQ(38_irq, manager.max_irq());
+    CHECK(inited);
+    CHECK(enabled<33_irq>);
+    CHECK(priority<33_irq> == 34);
+    CHECK(enabled<38_irq>);
+    CHECK(priority<38_irq> == 39);
 }
 
-TEST_F(InterruptManagerTest, BasicManagerIrqRun) {
-    constexpr auto &manager = BasicBuilder::manager;
+TEST_CASE("init enables dynamic interrupts", "[flow]") {
+    auto m = interrupt::manager<config_shared, test_nexus>{};
+    enable_field_t<33'1>::value = false;
+    enable_field_t<33'2>::value = false;
 
-    EXPECT_CALL(mock, run(38_irq)).Times(1);
+    m.init();
 
-    manager.run<38_irq>();
+    CHECK(enable_field_t<33'1>::value);
+    CHECK(enable_field_t<33'2>::value);
 }
 
-TEST_F(InterruptManagerTest, BasicManagerSharedIrqRun) {
-    constexpr auto &manager = BasicBuilder::manager;
+TEST_CASE("run flows if sub_irq is enabled", "[flow]") {
+    auto m = interrupt::manager<config_shared, test_nexus>{};
+    enable_field_t<33'1>::value = true;
+    status_field_t<33'1>::value = true;
+    enable_field_t<33'2>::value = false;
+    flow_run<flow_33_1> = false;
+    flow_run<flow_33_2> = false;
 
-    EXPECT_READ(packet_avail_en_field_t).WillRepeatedly(Return(1));
-    EXPECT_READ(rsp_avail_en_field_t).WillRepeatedly(Return(0));
+    m.run<33_irq>();
 
-    EXPECT_READ(packet_avail_sts_field_t).WillOnce(Return(1));
-    EXPECT_WRITE(packet_avail_sts_field_t, 0);
-
-    EXPECT_CALL(mock, run(33_irq)).Times(1);
-
-    manager.run<33_irq>();
+    CHECK(not status_field_t<33'1>::value);
+    CHECK(flow_run<flow_33_1>);
+    CHECK(not flow_run<flow_33_2>);
 }
 
-TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllEnabled) {
-    constexpr auto &manager = BasicBuilder::manager;
+TEST_CASE("init enables mcu interrupt if any flow is active", "[flow]") {
+    using config_t = root<interrupt::shared_irq<
+        33_irq, 34, interrupt::policies<>,
+        interrupt::sub_irq<enable_field_t<33'0>, status_field_t<33'0>,
+                           interrupt::policies<>, std::true_type>,
+        interrupt::sub_irq<enable_field_t<33'1>, status_field_t<33'1>,
+                           interrupt::policies<>, std::false_type>>>;
 
-    EXPECT_READ(packet_avail_en_field_t).WillRepeatedly(Return(1));
-    EXPECT_READ(rsp_avail_en_field_t).WillRepeatedly(Return(1));
+    enable_field_t<33'0>::value = false;
+    enable_field_t<33'1>::value = false;
+    auto m = interrupt::manager<config_t, test_nexus>{};
+    enabled<33_irq> = false;
+    priority<33_irq> = 0;
 
-    EXPECT_READ(packet_avail_sts_field_t).WillOnce(Return(1));
-    EXPECT_READ(rsp_avail_sts_field_t).WillOnce(Return(1));
+    m.init();
 
-    EXPECT_WRITE(packet_avail_sts_field_t, 0);
-    EXPECT_WRITE(rsp_avail_sts_field_t, 0);
-
-    EXPECT_CALL(mock, run(33_irq)).Times(1);
-
-    manager.run<33_irq>();
+    CHECK(enabled<33_irq>);
+    CHECK(priority<33_irq> == 34);
 }
 
-TEST_F(InterruptManagerTest, BasicManagerSharedIrqRunAllDisabled) {
-    constexpr auto &manager = BasicBuilder::manager;
+TEST_CASE("init does not enable mcu interrupt if all flows are inactive",
+          "[flow]") {
+    using config_t = root<interrupt::shared_irq<
+        33_irq, 34, interrupt::policies<>,
+        interrupt::sub_irq<enable_field_t<33'0>, status_field_t<33'0>,
+                           interrupt::policies<>, std::false_type>>>;
 
-    EXPECT_READ(packet_avail_en_field_t).WillRepeatedly(Return(0));
-    EXPECT_READ(rsp_avail_en_field_t).WillRepeatedly(Return(0));
+    enable_field_t<33'0>::value = false;
+    auto m = interrupt::manager<config_t, test_nexus>{};
+    enabled<33_irq> = false;
+    priority<33_irq> = 0;
 
-    EXPECT_CALL(mock, run(33_irq)).Times(1);
+    m.init();
 
-    manager.run<33_irq>();
+    CHECK(not enabled<33_irq>);
+    CHECK(priority<33_irq> == 34);
 }
 
-struct NoIsrBuilder {
-    // Configure Interrupts
-    using Config = root<
-        shared_irq<33_irq, 0, policies<clear_status_first>,
-                   sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
-                           msg_handler_irq, policies<>>,
-                   sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
-                           rsp_handler_irq, policies<>>>,
-        irq<38_irq, 0, timer_irq, policies<>>>;
+namespace {
+struct flow_33_2_1 : std::true_type {};
+struct flow_33_2_2 : std::true_type {};
 
-    struct test_service : interrupt::service<Config> {};
+using config_shared_sub = root<interrupt::shared_irq<
+    33_irq, 34, interrupt::policies<>,
+    interrupt::sub_irq<enable_field_t<33'1>, status_field_t<33'1>,
+                       interrupt::policies<>, flow_33_1>,
+    interrupt::shared_sub_irq<
+        enable_field_t<33'2>, status_field_t<33'2>, interrupt::policies<>,
+        interrupt::sub_irq<enable_field_t<33'2'1>, status_field_t<33'2'1>,
+                           interrupt::policies<>, flow_33_2_1>,
+        interrupt::sub_irq<enable_field_t<33'2'2>, status_field_t<33'2'2>,
+                           interrupt::policies<>, flow_33_2_2>>>>;
+} // namespace
 
-    struct test_project {
-        constexpr static auto config = cib::config(cib::exports<test_service>);
-    };
+TEST_CASE("run flows for shared sub irqs if enabled", "[flow]") {
+    auto m = interrupt::manager<config_shared_sub, test_nexus>{};
+    enable_field_t<33'1>::value = false;
 
-    using nexus_t = cib::nexus<test_project>;
-    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
-};
+    enable_field_t<33'2>::value = true;
+    status_field_t<33'2>::value = true;
 
-TEST_F(InterruptManagerTest, NoIsrInit) {
-    constexpr auto &manager = NoIsrBuilder::manager;
+    enable_field_t<33'2'1>::value = true;
+    status_field_t<33'2'1>::value = true;
+    enable_field_t<33'1'2>::value = false;
 
-    EXPECT_READ(packet_avail_sts_field_t).Times(0);
-    EXPECT_READ(rsp_avail_sts_field_t).Times(0);
+    flow_run<flow_33_1> = false;
+    flow_run<flow_33_2_1> = false;
+    flow_run<flow_33_2_2> = false;
 
-    EXPECT_WRITE(packet_avail_sts_field_t, _).Times(0);
-    EXPECT_WRITE(rsp_avail_sts_field_t, _).Times(0);
+    m.run<33_irq>();
 
-    // MCU interrupts always get enabled for shared interrupts
-    EXPECT_CALL(mock, irq_init(true, 33_irq, 0)).Times(1);
-
-    // single MCU interrupts get disabled if unused
-    EXPECT_CALL(mock, irq_init(false, 38_irq, 0)).Times(1);
-
-    manager.init();
+    CHECK(not status_field_t<33'2'1>::value);
+    CHECK(not flow_run<flow_33_1>);
+    CHECK(flow_run<flow_33_2_1>);
+    CHECK(not flow_run<flow_33_2_2>);
 }
-
-struct ClearStatusFirstBuilder {
-    // Configure Interrupts
-    using Config =
-        root<irq<38_irq, 0, timer_irq, policies<clear_status_first>>>;
-
-    struct test_service : interrupt::service<Config> {};
-
-    struct test_project {
-        constexpr static auto config = cib::config(
-            cib::exports<test_service>,
-            interrupt::extend<test_service, timer_irq>(timer_action));
-    };
-
-    using nexus_t = cib::nexus<test_project>;
-    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
-};
-
-TEST_F(InterruptManagerTest, ClearStatusFirstTest) {
-    constexpr auto &manager = ClearStatusFirstBuilder::manager;
-
-    {
-        testing::InSequence s;
-        EXPECT_CALL(mock, irq_init(true, 38_irq, 0)).Times(1);
-        EXPECT_CALL(mock, status(38_irq)).Times(1);
-        EXPECT_CALL(mock, run(38_irq)).Times(1);
-    }
-
-    manager.init();
-    manager.run<38_irq>();
-}
-
-struct DontClearStatusBuilder {
-    // Configure Interrupts
-    using Config = root<irq<38_irq, 0, timer_irq, policies<dont_clear_status>>>;
-
-    struct test_service : interrupt::service<Config> {};
-
-    struct test_project {
-        constexpr static auto config = cib::config(
-            cib::exports<test_service>,
-            interrupt::extend<test_service, timer_irq>(timer_action));
-    };
-
-    using nexus_t = cib::nexus<test_project>;
-    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
-};
-
-TEST_F(InterruptManagerTest, DontClearStatusTest) {
-    constexpr auto &manager = DontClearStatusBuilder::manager;
-
-    EXPECT_CALL(mock, irq_init(true, 38_irq, 0)).Times(1);
-    EXPECT_CALL(mock, status(38_irq)).Times(0);
-    EXPECT_CALL(mock, run(38_irq)).Times(1);
-
-    manager.init();
-    manager.run<38_irq>();
-}
-
-constexpr static auto bscan =
-    flow::action<"bscan">([] { mock_ptr->run(0xba5eba11_irq); });
-
-using hwio_int_sts_field_t =
-    mock_field_t<6, int_sts_reg_t, "hwio_int_sts_field_t", 2, 2>;
-using i2c_int_sts_field_t =
-    mock_field_t<7, int_sts_reg_t, "i2c_int_sts_field_t", 3, 3>;
-using spi_int_sts_field_t =
-    mock_field_t<8, int_sts_reg_t, "spi_int_sts_field_t", 4, 4>;
-using can_int_sts_field_t =
-    mock_field_t<9, int_sts_reg_t, "can_int_sts_field_t", 5, 5>;
-
-using hwio_int_en_field_t =
-    mock_field_t<10, int_en_reg_t, "hwio_int_en_field_t", 2, 2>;
-using i2c_int_en_field_t =
-    mock_field_t<11, int_en_reg_t, "i2c_int_en_field_t", 3, 3>;
-using spi_int_en_field_t =
-    mock_field_t<12, int_en_reg_t, "spi_int_en_field_t", 4, 4>;
-using can_int_en_field_t =
-    mock_field_t<13, int_en_reg_t, "can_int_en_field_t", 5, 5>;
-
-struct SharedSubIrqTest {
-    // Configure Interrupts
-    using Config = root<
-        shared_irq<33_irq, 0, policies<clear_status_first>,
-                   sub_irq<packet_avail_en_field_t, packet_avail_sts_field_t,
-                           msg_handler_irq, policies<>>,
-                   sub_irq<rsp_avail_en_field_t, rsp_avail_sts_field_t,
-                           rsp_handler_irq, policies<>>,
-                   shared_sub_irq<
-                       hwio_int_en_field_t, hwio_int_sts_field_t, policies<>,
-                       sub_irq<i2c_int_en_field_t, i2c_int_sts_field_t,
-                               i2c_handler_irq, policies<>>,
-                       sub_irq<spi_int_en_field_t, spi_int_sts_field_t,
-                               spi_handler_irq, policies<>>,
-                       sub_irq<can_int_en_field_t, can_int_sts_field_t,
-                               can_handler_irq, policies<dont_clear_status>>>>,
-        irq<38_irq, 0, timer_irq, policies<>>>;
-
-    struct test_service : interrupt::service<Config> {};
-
-    struct test_project {
-        constexpr static auto config = cib::config(
-            cib::exports<test_service>,
-            interrupt::extend<test_service, i2c_handler_irq>(bscan));
-    };
-
-    using nexus_t = cib::nexus<test_project>;
-    CONSTINIT static inline auto &manager = nexus_t::service<test_service>;
-};
-
-TEST_F(InterruptManagerTest, BasicManagerSharedSubIrqRun) {
-    constexpr auto &manager = SharedSubIrqTest::manager;
-
-    EXPECT_READ(hwio_int_en_field_t).WillRepeatedly(Return(1));
-    EXPECT_READ(i2c_int_en_field_t).WillRepeatedly(Return(1));
-
-    EXPECT_READ(hwio_int_sts_field_t).WillOnce(Return(1));
-    EXPECT_READ(i2c_int_sts_field_t).WillOnce(Return(1));
-
-    EXPECT_WRITE(hwio_int_sts_field_t, 0);
-    EXPECT_WRITE(i2c_int_sts_field_t, 0);
-
-    EXPECT_CALL(mock, status(33_irq)).Times(1);
-    EXPECT_CALL(mock, run(33_irq)).Times(1);
-    EXPECT_CALL(mock, run(0xba5eba11_irq)).Times(1);
-
-    manager.run<33_irq>();
-}
-} // namespace interrupt

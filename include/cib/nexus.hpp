@@ -31,14 +31,18 @@ template <typename Config> struct nexus {
 
     static void init() {
         auto const service = []<typename T> {
-            auto &service_impl = this_t::service<T>;
-            using service_impl_type =
-                std::remove_reference_t<decltype(service_impl)>;
+            using from_t = std::remove_cvref_t<decltype(this_t::service<T>)>;
+            using to_t = std::remove_cvref_t<decltype(cib::service<T>)>;
 
-            if constexpr (std::is_pointer_v<service_impl_type>) {
+            auto &service_impl = this_t::service<T>;
+            if constexpr (std::is_convertible_v<from_t, to_t>) {
                 cib::service<T> = service_impl;
             } else {
-                cib::service<T> = &service_impl;
+                if constexpr (std::is_pointer_v<from_t>) {
+                    cib::service<T> = service_impl;
+                } else {
+                    cib::service<T> = &service_impl;
+                }
             }
         };
         initialized_builders<Config>.apply([&]<typename... Ts>(Ts const &...) {

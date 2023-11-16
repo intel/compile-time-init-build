@@ -17,16 +17,47 @@ constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
 } // namespace
 
+TEST_CASE("node size (empty flow)", "[flow]") {
+    constexpr auto builder = flow::builder<>{};
+    static_assert(builder.node_size() == 0);
+}
+
+TEST_CASE("node size (single action)", "[flow]") {
+    constexpr auto builder = flow::builder<>{}.add(a >> b);
+    static_assert(builder.node_size() == 2);
+}
+
+TEST_CASE("node size (overlapping actions)", "[flow]") {
+    constexpr auto builder = flow::builder<>{}.add(a >> b).add(b >> c);
+    static_assert(builder.node_size() == 3);
+}
+
+TEST_CASE("edge size (empty flow)", "[flow]") {
+    constexpr auto builder = flow::builder<>{};
+    static_assert(builder.edge_size() == 1);
+}
+
+TEST_CASE("edge size (single action)", "[flow]") {
+    constexpr auto builder = flow::builder<>{}.add(a >> b);
+    static_assert(builder.edge_size() == 1);
+}
+
+TEST_CASE("edge size (overlapping actions)", "[flow]") {
+    constexpr auto builder = flow::builder<>{}.add(a >> b).add(b >> c);
+    static_assert(builder.edge_size() == 2);
+}
+
 TEST_CASE("build and run empty flow", "[flow]") {
-    flow::builder<> builder;
-    auto const flow = builder.topo_sort<flow::impl, 0>();
+    auto builder = flow::builder<>{};
+    auto const flow = builder.topo_sort<flow::impl>();
+    REQUIRE(flow.has_value());
     flow.value()();
 }
 
 TEST_CASE("add single action", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a);
-    auto const flow = builder.topo_sort<flow::impl, 1>();
+    auto const flow = builder.topo_sort<flow::impl>();
     REQUIRE(flow.has_value());
     flow.value()();
     CHECK(actual == "a");
@@ -35,7 +66,8 @@ TEST_CASE("add single action", "[flow]") {
 TEST_CASE("two milestone linear before dependency", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> milestone0);
-    auto const flow = builder.topo_sort<flow::impl, 2>();
+    auto const flow = builder.topo_sort<flow::impl>();
+    REQUIRE(flow.has_value());
     flow.value()();
     CHECK(actual == "a");
 }
@@ -46,7 +78,7 @@ TEST_CASE("actions get executed once", "[flow]") {
                        .add(a >> milestone0)
                        .add(a >> milestone1)
                        .add(milestone0 >> milestone1);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
     CHECK(actual == "a");
 }
@@ -57,7 +89,7 @@ TEST_CASE("two milestone linear after dependency", "[flow]") {
                        .add(a >> milestone0)
                        .add(milestone0 >> milestone1)
                        .add(milestone0 >> b >> milestone1);
-    auto const flow = builder.topo_sort<flow::impl, 4>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
     CHECK(actual == "ab");
 }
@@ -65,7 +97,7 @@ TEST_CASE("two milestone linear after dependency", "[flow]") {
 TEST_CASE("three milestone linear before and after dependency", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> b >> c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
     CHECK(actual == "abc");
 }
@@ -73,7 +105,7 @@ TEST_CASE("three milestone linear before and after dependency", "[flow]") {
 TEST_CASE("just two actions in order", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> b);
-    auto const flow = builder.topo_sort<flow::impl, 2>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
     CHECK(actual == "ab");
 }
@@ -81,7 +113,7 @@ TEST_CASE("just two actions in order", "[flow]") {
 TEST_CASE("insert action between two actions", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> c).add(a >> b >> c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
     CHECK(actual == "abc");
 }
@@ -89,7 +121,7 @@ TEST_CASE("insert action between two actions", "[flow]") {
 TEST_CASE("add single parallel 2", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a && b);
-    auto const flow = builder.topo_sort<flow::impl, 2>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -100,7 +132,7 @@ TEST_CASE("add single parallel 2", "[flow]") {
 TEST_CASE("add single parallel 3", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a && b && c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -112,7 +144,7 @@ TEST_CASE("add single parallel 3", "[flow]") {
 TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a && b && c).add(c >> a);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -125,7 +157,7 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
 TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a && b && c).add(a >> c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -138,7 +170,7 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
 TEST_CASE("add parallel rhs", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> (b && c));
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -152,7 +184,7 @@ TEST_CASE("add parallel rhs", "[flow]") {
 TEST_CASE("add parallel lhs", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add((a && b) >> c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -166,7 +198,7 @@ TEST_CASE("add parallel lhs", "[flow]") {
 TEST_CASE("add parallel in the middle", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a >> (b && c) >> d);
-    auto const flow = builder.topo_sort<flow::impl, 4>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -186,7 +218,7 @@ TEST_CASE("add parallel in the middle", "[flow]") {
 TEST_CASE("add dependency lhs", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add((a >> b) && c);
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -201,7 +233,7 @@ TEST_CASE("add dependency lhs", "[flow]") {
 TEST_CASE("add dependency rhs", "[flow]") {
     actual.clear();
     auto builder = flow::builder<>{}.add(a && (b >> c));
-    auto const flow = builder.topo_sort<flow::impl, 3>();
+    auto const flow = builder.topo_sort<flow::impl>();
     flow.value()();
 
     CHECK(actual.find('a') != std::string::npos);
@@ -234,8 +266,7 @@ namespace {
 struct MultiFlowMultiActionConfig {
     constexpr static auto config = cib::config(
         cib::exports<TestFlowAlpha, TestFlowBeta>,
-        cib::extend<TestFlowAlpha>(a), cib::extend<TestFlowAlpha>(a >> b),
-        cib::extend<TestFlowBeta>(d), cib::extend<TestFlowBeta>(c >> d));
+        cib::extend<TestFlowAlpha>(a >> b), cib::extend<TestFlowBeta>(c >> d));
 };
 } // namespace
 

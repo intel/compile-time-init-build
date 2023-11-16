@@ -2,46 +2,48 @@
 
 #include <flow/common.hpp>
 #include <log/log.hpp>
+#include <sc/string_constant.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/type_traits.hpp>
+
+#include <type_traits>
 
 namespace flow {
-struct node {
-    using is_node = void;
-
-    FunctionPtr run{[] {}};
-    FunctionPtr log_name{[] {}};
+struct rt_node {
+    FunctionPtr run;
+    FunctionPtr log_name;
 
   private:
-    [[nodiscard]] friend constexpr auto operator==(node const &lhs,
-                                                   node const &rhs)
+    friend constexpr auto operator==(rt_node const &, rt_node const &)
         -> bool = default;
 };
 
-/**
- * @param f
- *      The function pointer to execute.
- *
- * @return
- *      Node that will execute the given function pointer, f.
- */
-template <stdx::ct_string Name>
-[[nodiscard]] constexpr auto action(FunctionPtr f) -> node {
-    return {.run = f, .log_name = [] {
-                CIB_TRACE("flow.action({})",
-                          stdx::ct_string_to_type<Name, sc::string_constant>());
-            }};
+template <stdx::ct_string Name> struct ct_node : rt_node {
+    using is_node = void;
+    using name_t =
+        decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+};
+
+namespace detail {
+template <stdx::ct_string Name, stdx::ct_string Type, typename F>
+[[nodiscard]] constexpr auto make_node() {
+    return ct_node<Name>{
+        {.run = F{}, .log_name = [] {
+             CIB_TRACE("flow.{}({})",
+                       stdx::ct_string_to_type<Type, sc::string_constant>(),
+                       stdx::ct_string_to_type<Name, sc::string_constant>());
+         }}};
+}
+} // namespace detail
+
+template <stdx::ct_string Name, typename F>
+    requires(stdx::is_function_object_v<F> and std::is_empty_v<F>)
+[[nodiscard]] constexpr auto action(F const &) {
+    return detail::make_node<Name, "action", F>();
 }
 
-/**
- * @return
- *      Node with no associated action.
- */
-template <stdx::ct_string Name>
-[[nodiscard]] constexpr auto milestone() -> node {
-    return {.log_name = [] {
-        CIB_TRACE("flow.milestone({})",
-                  stdx::ct_string_to_type<Name, sc::string_constant>());
-    }};
+template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
+    return detail::make_node<Name, "milestone", decltype([] {})>();
 }
 } // namespace flow

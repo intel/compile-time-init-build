@@ -10,7 +10,7 @@ namespace interrupt {
 template <typename T>
 concept status_policy = requires(void (*f)()) {
     typename T::policy_type;
-    { T ::run(f, f) } -> stdx::same_as<void>;
+    { T::run(f, f) } -> stdx::same_as<void>;
 };
 
 struct status_clear_policy {};

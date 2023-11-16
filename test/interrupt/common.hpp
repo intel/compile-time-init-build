@@ -1,42 +1,67 @@
 #pragma once
 
-#include <stdx/ct_string.hpp>
+#include <interrupt/config.hpp>
+#include <interrupt/fwd.hpp>
+#include <interrupt/hal.hpp>
+#include <interrupt/policies.hpp>
 
-#include <cstdint>
+#include <stdx/concepts.hpp>
 
-template <typename Field> struct field_value_t {
-    constexpr static auto id = Field::id;
-    std::uint32_t value;
-};
+#include <cstddef>
 
-template <int Id, typename Reg, stdx::ct_string Name, std::uint32_t Msb,
-          std::uint32_t Lsb>
-struct mock_field_t {
-    constexpr static auto id = Id;
-    using RegisterType = Reg;
-    using DataType = std::uint32_t;
+using interrupt::operator""_irq;
 
-    constexpr static auto get_register() -> Reg { return {}; }
+namespace {
+template <typename interrupt::irq_num_t> bool enabled{};
+template <typename interrupt::irq_num_t> std::size_t priority{};
+bool inited{};
 
-    constexpr static auto get_mask() -> DataType {
-        return ((1u << (Msb + 1u)) - 1u) - ((1u << Lsb) - 1u);
+struct test_hal {
+    static auto init() -> void { inited = true; }
+
+    template <bool Enable, interrupt::irq_num_t IrqNumber, std::size_t Priority>
+    static auto irq_init() -> void {
+        enabled<IrqNumber> = Enable;
+        priority<IrqNumber> = Priority;
     }
 
-    constexpr auto operator()(std::uint32_t value) const {
-        return field_value_t<mock_field_t>{value};
+    template <interrupt::status_policy P>
+    static auto run(interrupt::irq_num_t, stdx::invocable auto const &isr)
+        -> void {
+        P::run([] {}, [&] { isr(); });
     }
 };
+} // namespace
+template <> inline auto interrupt::injected_hal<> = test_hal{};
 
-template <int Id, typename Reg, stdx::ct_string Name> struct mock_register_t {
-    constexpr static auto id = Id;
-    using RegisterType = Reg;
-    using DataType = std::uint32_t;
+namespace {
+template <typename T> inline bool flow_run{};
 
-    constexpr static auto get_register() -> Reg { return {}; }
-
-    constexpr static mock_field_t<Id, Reg, "raw", 31, 0> raw{};
+template <typename T> struct flow {
+    auto operator()() const { flow_run<T> = true; }
+    constexpr static bool active{T::value};
 };
 
+struct test_nexus {
+    template <typename T> constexpr static auto service = flow<T>{};
+};
+
+template <auto> struct enable_field_t {
+    static inline bool value{};
+    constexpr friend auto operator==(enable_field_t, enable_field_t)
+        -> bool = default;
+};
+template <auto> struct status_field_t {
+    static inline bool value{};
+};
+
+template <typename Field> constexpr auto read(Field) {
+    return [] { return Field::value; };
+}
+template <typename Field> constexpr auto clear(Field) {
+    return [] { Field::value = false; };
+}
 template <typename... Ops> constexpr auto apply(Ops... ops) {
     return (ops(), ...);
 }
+} // namespace

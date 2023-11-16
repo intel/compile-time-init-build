@@ -14,3 +14,24 @@ TEST_CASE("policies get", "[policies]") {
                                            default_policy_t>()),
                   default_policy_t>);
 }
+
+TEST_CASE("clear status first policy", "[policies]") {
+    int call_value{};
+    interrupt::clear_status_first::run([&] { ++call_value; },
+                                       [&] { call_value *= 2; });
+    CHECK(call_value == 2);
+}
+
+TEST_CASE("clear status last policy", "[policies]") {
+    int call_value{};
+    interrupt::clear_status_last::run([&] { ++call_value; },
+                                      [&] { call_value *= 2; });
+    CHECK(call_value == 1);
+}
+
+TEST_CASE("don't clear status policy", "[policies]") {
+    int call_value{};
+    interrupt::dont_clear_status::run([&] { call_value += 3; },
+                                      [&] { ++call_value; });
+    CHECK(call_value == 1);
+}

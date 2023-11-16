@@ -19,6 +19,11 @@ add_tests(
     cib/readme_hello_world
     flow/flow
     interrupt/dynamic_controller
+    interrupt/irq_impl
+    interrupt/manager
+    interrupt/shared_irq_impl
+    interrupt/shared_sub_irq_impl
+    interrupt/sub_irq_impl
     interrupt/policies
     log/fmt_logger
     log/log
@@ -55,15 +60,6 @@ add_tests(
     sc/format
     sc/string_constant
     seq/sequencer)
-
-add_unit_test(
-    interrupt_manager_test
-    GTEST
-    FILES
-    interrupt/manager.cpp
-    LIBRARIES
-    warnings
-    cib)
 
 add_library(catalog_lib log/catalog_lib.cpp)
 target_include_directories(catalog_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)

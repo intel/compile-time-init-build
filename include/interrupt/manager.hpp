@@ -1,126 +1,57 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
-#include <cib/config.hpp>
-#include <flow/builder.hpp>
-#include <interrupt/builder/irq_builder.hpp>
-#include <interrupt/builder/shared_irq_builder.hpp>
-#include <interrupt/builder/shared_sub_irq_builder.hpp>
-#include <interrupt/builder/sub_irq_builder.hpp>
-#include <interrupt/config.hpp>
+#include <interrupt/concepts.hpp>
 #include <interrupt/dynamic_controller.hpp>
 #include <interrupt/hal.hpp>
-#include <interrupt/impl/manager_impl.hpp>
-#include <interrupt/manager_interface.hpp>
-#include <interrupt/policies.hpp>
 
-#include <stdx/compiler.hpp>
-#include <stdx/ct_string.hpp>
-#include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
+#include <stdx/utility.hpp>
 
-#include <cstddef>
+#include <algorithm>
 #include <type_traits>
-#include <utility>
 
 namespace interrupt {
-template <stdx::ct_string Name = "">
-using irq_flow = flow::builder<Name, 16, 8>;
-
-template <typename FlowT, typename FlowDescriptionT> struct binding_t {
-    FlowDescriptionT flow_description;
-};
-
-template <typename FlowT, typename T>
-CONSTEVAL auto binding(T flow_description)
-    -> binding_t<FlowT, decltype(flow_description)> {
-    return {flow_description};
-}
-
-template <typename ServiceT, typename FlowT, typename T>
-CONSTEVAL auto extend(T flow_description) {
-    return cib::extend<ServiceT>(binding<FlowT>(flow_description));
-}
-
-/**
- * Declare one or more Irqs, SharedIrqs, and their corresponding interrupt
- * service routine attachment points.
- *
- * @tparam IRQs
- */
-template <typename RootT> class manager {
-    template <typename BuilderValue, std::size_t Index> struct sub_value {
-        constexpr static auto const &value =
-            get<Index>(BuilderValue::value.irqs);
-    };
-
-    template <typename BuilderValue, auto... Is>
-    constexpr static auto built_irqs(std::index_sequence<Is...>) {
-        return stdx::make_tuple(
-            get<Is>(BuilderValue::value.irqs)
-                .template build<sub_value<BuilderValue, Is>>()...);
+namespace detail {
+template <typename Dynamic, irq_interface... Impls> struct manager {
+    void init() const {
+        // TODO: log exact interrupt manager configuration
+        //       (should be a single compile-time string with no arguments)
+        hal::init();
+        init_mcu_interrupts();
+        init_sub_interrupts();
     }
 
-  public:
-    constexpr static auto irqs_type = stdx::transform(
-        [](auto child) {
-            if constexpr (decltype(child.children)::size() > 0u) {
-                return shared_irq_builder<decltype(child)>{};
-            } else {
-                return irq_builder<decltype(child)>{};
-            }
-        },
-        RootT::children);
+    void init_mcu_interrupts() const { (Impls::init_mcu_interrupts(), ...); }
 
-    std::remove_cv_t<decltype(irqs_type)> irqs;
-
-    using Dynamic = dynamic_controller<RootT>;
-
-    /**
-     * Add interrupt service routine(s) to be executed when this IRQ is
-     * triggered.
-     *
-     * @tparam IrqType
-     *      The IrqType the flow_description should be attached to.
-     *
-     * @param flow_description
-     *      See flow::Builder<>.add()
-     */
-    template <typename... IrqTypes, typename... Ts>
-    constexpr auto add(binding_t<IrqTypes, Ts> const &...bindings) {
-        stdx::for_each(
-            [&](auto &irq) {
-                (irq.template add<IrqTypes>(bindings.flow_description), ...);
-            },
-            irqs);
-        return *this;
-    }
-
-    /**
-     * Given a constexpr Manager instance stored in BuilderValue::value, build
-     * an optimal Manager::impl instance to initialize and run interrupts at
-     * runtime.
-     *
-     * @tparam BuilderValue
-     *      A type with a static constexpr Manager field to be built into a
-     * Manager::impl
-     *
-     * @return The optimized Manager::impl to be used at runtime.
-     */
-    template <typename BuilderValue>
-    [[nodiscard]] constexpr static auto build() {
-        using irqs_t = decltype(BuilderValue::value.irqs);
-        auto const irq_impls = built_irqs<BuilderValue>(
-            std::make_index_sequence<irqs_t::size()>{});
-
-        return irq_impls.apply([](auto... irq_impl_args) {
-            return manager_impl<Dynamic, decltype(irq_impl_args)...>(
-                irq_impl_args...);
+    void init_sub_interrupts() const {
+        auto enables = stdx::tuple_cat(Impls::get_interrupt_enables()...);
+        enables.apply([]<typename... Enables>(Enables...) {
+            Dynamic::template enable_by_field<true, Enables...>();
         });
     }
+
+    template <irq_num_t Number> inline void run() const {
+        using M = stdx::type_map<stdx::vt_pair<Impls::irq_number, Impls>...>;
+        using irq_t = stdx::value_lookup_t<M, Number>;
+
+        if constexpr (not std::is_void_v<irq_t>) {
+            irq_t::run();
+        }
+    }
+
+    [[nodiscard]] constexpr auto max_irq() const -> irq_num_t {
+        return static_cast<irq_num_t>(
+            std::max({stdx::to_underlying(Impls::irq_number)...}));
+    }
 };
 
-template <typename Config>
-struct service : cib::builder_meta<manager<Config>, manager_interface const *> {
+template <typename Config> struct build_manager {
+    using dynamic_t = typename Config::template dynamic_controller_t<Config>;
+    template <typename... Built> using impl = manager<dynamic_t, Built...>;
 };
+} // namespace detail
 
+template <interrupt::root_config Config, typename... Nexi>
+using manager = typename Config::template build<
+    detail::build_manager<Config>::template impl, Nexi...>;
 } // namespace interrupt

@@ -22,7 +22,9 @@ template <stdx::ct_string, std::size_t NumSteps> struct impl {
     status prev_status{status::DONE};
     direction prev_direction{direction::BACKWARD};
 
-    constexpr explicit(true) impl(std::span<step_base const> steps) {
+    using node_t = rt_step;
+
+    constexpr explicit(true) impl(std::span<node_t const> steps) {
         CIB_ASSERT(NumSteps >= std::size(steps));
         for (auto const &step : steps) {
             _forward_steps.push_back(step.forward_ptr);
