@@ -16,10 +16,9 @@ template <typename Policies> struct policy_config {
     using status_policy_t =
         typename Policies::template type<status_clear_policy,
                                          clear_status_first>;
-    constexpr static auto resources =
-        Policies::template get<required_resources_policy,
-                               required_resources<>>()
-            .resources;
+    using resources_t =
+        typename Policies::template type<required_resources_policy,
+                                         required_resources<>>::resources;
 };
 
 template <base_irq_config... Cfgs> struct parent_config {

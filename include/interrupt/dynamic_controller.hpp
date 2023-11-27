@@ -5,6 +5,10 @@
 #include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
+
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/list.hpp>
 
 #include <limits>
 #include <type_traits>
@@ -16,31 +20,39 @@ template <typename Irq>
 concept has_enable_field = requires { Irq::enable_field; };
 
 template <typename Irq>
-concept has_resource = has_enable_field<Irq> and Irq::resources.size() > 0u;
+concept has_resource =
+    has_enable_field<Irq> and
+    not boost::mp11::mp_empty<typename Irq::resources_t>::value;
 
 template <typename Root> struct dynamic_controller {
   private:
-    /**
-     * Store the interrupt enable values that are allowed given the current set
-     * of resources that are available.
-     *
-     * @tparam RegType
-     *      The croo::Register this mask corresponds to.
-     */
-    template <typename RegType>
-    CONSTINIT static inline typename RegType::DataType allowed_enables =
-        std::numeric_limits<typename RegType::DataType>::max();
+    using all_resources_t =
+        boost::mp11::mp_unique<decltype(Root::descendants.apply(
+            []<typename... Irqs>(Irqs const &...) {
+                return boost::mp11::mp_append<typename Irqs::resources_t...>{};
+            }))>;
 
-    template <typename ResourceType> struct doesnt_require_resource {
+    template <typename Register>
+    CONSTINIT static inline typename Register::DataType allowed_enables =
+        std::numeric_limits<typename Register::DataType>::max();
+
+    template <typename Register>
+    CONSTINIT static inline typename Register::DataType dynamic_enables{};
+
+    template <typename Resource>
+    CONSTINIT static inline bool is_resource_on = true;
+
+    template <typename Resource> struct doesnt_require_resource {
         template <typename Irq>
-        using fn = std::bool_constant<
-            has_enable_field<Irq> and
-            not stdx::contains_type<decltype(Irq::resources), ResourceType>>;
+        using fn =
+            std::bool_constant<has_enable_field<Irq> and
+                               not boost::mp11::mp_contains<
+                                   typename Irq::resources_t, Resource>::value>;
     };
 
-    template <typename RegType> struct in_register {
+    template <typename Register> struct in_register {
         template <typename Field>
-        using fn = std::is_same<RegType, typename Field::RegisterType>;
+        using fn = std::is_same<Register, typename Field::RegisterType>;
     };
 
     /**
@@ -82,9 +94,6 @@ template <typename Root> struct dynamic_controller {
             });
     }();
 
-    template <typename ResourceType>
-    CONSTINIT static inline bool is_resource_on = true;
-
     template <typename RegTypeTuple>
     static inline void reprogram_interrupt_enables(RegTypeTuple regs) {
         stdx::for_each(
@@ -99,14 +108,6 @@ template <typename Root> struct dynamic_controller {
             },
             regs);
     }
-
-    /**
-     * tuple of every resource mentioned in the interrupt configuration
-     */
-    constexpr static auto all_resources =
-        Root::descendants.apply([](auto... irqs) {
-            return stdx::to_unsorted_set(stdx::tuple_cat(irqs.resources...));
-        });
 
     /**
      * tuple of every interrupt register affected by a resource
@@ -132,17 +133,15 @@ template <typename Root> struct dynamic_controller {
             all_resource_affected_regs);
 
         // for each resource, if it is not on, mask out unavailable interrupts
-        stdx::for_each(
-            []<typename Rsrc>(Rsrc) {
-                if (not is_resource_on<Rsrc>) {
-                    stdx::for_each(
-                        []<typename R>(R) {
-                            allowed_enables<R> &= irqs_allowed<Rsrc, R>;
-                        },
-                        all_resource_affected_regs);
-                }
-            },
-            all_resources);
+        stdx::template_for_each<all_resources_t>([]<typename Rsrc>() {
+            if (not is_resource_on<Rsrc>) {
+                stdx::for_each(
+                    []<typename R>(R) {
+                        allowed_enables<R> &= irqs_allowed<Rsrc, R>;
+                    },
+                    all_resource_affected_regs);
+            }
+        });
 
         return all_resource_affected_regs;
     }
@@ -155,8 +154,6 @@ template <typename Root> struct dynamic_controller {
      * @tparam RegType
      *      The croo::Register this value corresponds to.
      */
-    template <typename RegType>
-    CONSTINIT static inline typename RegType::DataType dynamic_enables{};
 
     template <typename... Flows> struct match_flow {
         template <typename Irq>
@@ -185,7 +182,6 @@ template <typename Root> struct dynamic_controller {
         });
     }
 
-  public:
     template <typename ResourceType>
     static inline void update_resource(resource_status status) {
         conc::call_in_critical_section<dynamic_controller>([&] {
@@ -195,6 +191,7 @@ template <typename Root> struct dynamic_controller {
         });
     }
 
+  public:
     template <typename ResourceType> static inline void turn_on_resource() {
         update_resource<ResourceType>(resource_status::ON);
     }

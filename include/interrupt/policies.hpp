@@ -2,18 +2,21 @@
 
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
 #include <utility>
 
 namespace interrupt {
 template <typename T>
-concept status_policy = requires(void (*f)()) {
-    typename T::policy_type;
+concept policy = requires { typename T::policy_type; };
+
+template <typename T>
+concept status_policy = policy<T> and requires(void (*f)()) {
     { T::run(f, f) } -> stdx::same_as<void>;
 };
 
-struct status_clear_policy {};
+struct status_clear_policy;
 
 struct clear_status_first {
     using policy_type = status_clear_policy;
@@ -50,12 +53,17 @@ struct dont_clear_status {
     static_assert(status_policy<dont_clear_status>);
 };
 
-struct required_resources_policy {};
+struct required_resources_policy;
+template <typename... Resources> struct resource_list {};
 
-template <typename... ResourcesT> struct required_resources {
+template <typename T>
+concept resources_policy =
+    policy<T> and
+    stdx::is_specialization_of_v<typename T::resources, resource_list>;
+
+template <typename... Resources> struct required_resources {
     using policy_type = required_resources_policy;
-
-    constexpr static stdx::tuple<ResourcesT...> resources{};
+    using resources = resource_list<Resources...>;
 };
 
 template <typename... Policies> struct policies {

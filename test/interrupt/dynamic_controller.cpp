@@ -61,8 +61,8 @@ using en_field_1_t = mock_field_t<1, mock_register_t, 0, 0>;
 using sts_field_t = mock_field_t<2, mock_register_t, 1, 1>;
 using en_field_2_t = mock_field_t<3, mock_register_t, 2, 2>;
 
-struct test_resource_1 {};
-struct test_resource_2 {};
+struct test_resource_1;
+struct test_resource_2;
 
 using config_t = interrupt::root<interrupt::shared_irq<
     0_irq, 0, interrupt::policies<>,
@@ -77,7 +77,7 @@ using config_t = interrupt::root<interrupt::shared_irq<
 
 using dynamic_t = interrupt::dynamic_controller<config_t>;
 
-auto reset_dynamic_state() {
+auto reset_dynamic_state() -> void {
     register_value = 0;
     dynamic_t::disable<test_flow_1_t, test_flow_2_t>();
     dynamic_t::turn_on_resource<test_resource_1>();

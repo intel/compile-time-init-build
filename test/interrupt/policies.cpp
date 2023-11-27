@@ -35,3 +35,12 @@ TEST_CASE("don't clear status policy", "[policies]") {
                                       [&] { ++call_value; });
     CHECK(call_value == 1);
 }
+
+TEST_CASE("policy with required resources", "[policies]") {
+    using policies_t = interrupt::policies<interrupt::required_resources<int>>;
+    using P =
+        decltype(policies_t::get<interrupt::required_resources_policy, void>());
+    static_assert(interrupt::policy<P>);
+    static_assert(
+        std::is_same_v<typename P::resources, interrupt::resource_list<int>>);
+}
