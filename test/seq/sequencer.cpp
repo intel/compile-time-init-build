@@ -13,7 +13,7 @@ std::string result{};
 
 TEST_CASE("build and run empty seq", "[seq]") {
     seq::builder<> builder;
-    auto seq_impl = builder.topo_sort<seq::impl, 0>();
+    auto seq_impl = builder.topo_sort<seq::impl>();
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(seq_impl->backward() == seq::status::DONE);
 }
@@ -21,8 +21,7 @@ TEST_CASE("build and run empty seq", "[seq]") {
 TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
     result.clear();
 
-    auto s = seq::step(
-        "S"_sc,
+    auto s = seq::step<"S">(
         []() -> seq::status {
             result += "F";
             return seq::status::DONE;
@@ -33,7 +32,7 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
         });
 
     auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl, 1>();
+    auto seq_impl = builder.topo_sort<seq::impl>();
 
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F");
@@ -47,8 +46,7 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
     result.clear();
     attempt_count = 0;
 
-    auto s = seq::step(
-        "S"_sc,
+    auto s = seq::step<"S">(
         []() -> seq::status {
             if (attempt_count++ < 3) {
                 result += "F";
@@ -63,7 +61,7 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
         });
 
     auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl, 1>();
+    auto seq_impl = builder.topo_sort<seq::impl>();
 
     SECTION("forward can be called") {
         CHECK(seq_impl->forward() == seq::status::NOT_DONE);
@@ -93,8 +91,7 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
     result.clear();
     attempt_count = 0;
 
-    auto s = seq::step(
-        "S"_sc,
+    auto s = seq::step<"S">(
         []() -> seq::status {
             result += "F";
             return seq::status::DONE;
@@ -109,7 +106,7 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
         });
 
     auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl, 1>();
+    auto seq_impl = builder.topo_sort<seq::impl>();
 
     SECTION("backward can be called") {
         CHECK(seq_impl->forward() == seq::status::DONE);
@@ -142,8 +139,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
           "[seq]") {
     result.clear();
 
-    auto s1 = seq::step(
-        "S1"_sc,
+    auto s1 = seq::step<"S1">(
         []() -> seq::status {
             result += "F1";
             return seq::status::DONE;
@@ -153,8 +149,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
             return seq::status::DONE;
         });
 
-    auto s2 = seq::step(
-        "S2"_sc,
+    auto s2 = seq::step<"S2">(
         []() -> seq::status {
             result += "F2";
             return seq::status::DONE;
@@ -164,8 +159,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
             return seq::status::DONE;
         });
 
-    auto s3 = seq::step(
-        "S3"_sc,
+    auto s3 = seq::step<"S3">(
         []() -> seq::status {
             result += "F3";
             return seq::status::DONE;
@@ -176,7 +170,7 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
         });
 
     auto builder = seq::builder<>{}.add(s1 >> s2 >> s3);
-    auto seq_impl = builder.topo_sort<seq::impl, 3>();
+    auto seq_impl = builder.topo_sort<seq::impl>();
 
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F1F2F3");

@@ -51,6 +51,7 @@ class impl : public interface {
     stdx::cx_vector<FunctionPtr, capacity> functionPtrs{};
 
   public:
+    using node_t = rt_node;
     constexpr static bool active = capacity > 0;
 
     /**
@@ -63,7 +64,7 @@ class impl : public interface {
      *
      * @see flow::builder
      */
-    constexpr explicit(true) impl(std::span<node const> newMilestones) {
+    constexpr explicit(true) impl(std::span<node_t const> newMilestones) {
         CIB_ASSERT(NumSteps >= std::size(newMilestones));
         if constexpr (loggingEnabled) {
             for (auto const &milestone : newMilestones) {

@@ -1,5 +1,5 @@
-#include "common.hpp"
-
+#include <flow/flow.hpp>
+#include <interrupt/config.hpp>
 #include <interrupt/dynamic_controller.hpp>
 #include <interrupt/fwd.hpp>
 #include <interrupt/manager.hpp>
@@ -20,32 +20,62 @@ TEST_CASE("detect enable_field", "[dynamic controller]") {
 }
 
 namespace {
-using namespace interrupt;
+template <typename Field> struct field_value_t {
+    std::uint32_t value;
+};
+
+template <int Id, typename Reg, std::uint32_t Msb, std::uint32_t Lsb>
+struct mock_field_t {
+    using RegisterType = Reg;
+
+    constexpr static auto get_register() -> Reg { return {}; }
+
+    constexpr static auto get_mask() -> typename Reg::DataType {
+        return ((1u << (Msb + 1u)) - 1u) - ((1u << Lsb) - 1u);
+    }
+
+    constexpr auto operator()(std::uint32_t value) const {
+        return field_value_t<mock_field_t>{value};
+    }
+};
+
+struct mock_register_t {
+    using DataType = std::uint32_t;
+    constexpr static mock_field_t<-1, mock_register_t, 31, 0> raw{};
+};
+
+template <typename... Ops> constexpr auto apply(Ops... ops) {
+    return (ops(), ...);
+}
+using interrupt::operator""_irq;
 
 std::uint32_t register_value{};
-constexpr auto write(auto v) {
+template <typename F> constexpr auto write(field_value_t<F> v) {
     return [=] { register_value = v.value; };
 }
 
-using test_flow_1_t = irq_flow<"1">;
-using test_flow_2_t = irq_flow<"2">;
+struct test_flow_1_t : public flow::service<"1"> {};
+struct test_flow_2_t : public flow::service<"2"> {};
 
-struct reg_t : mock_register_t<0, reg_t, ""> {};
-using en_field_1_t = mock_field_t<1, reg_t, "", 0, 0>;
-using sts_field_t = mock_field_t<2, reg_t, "", 1, 1>;
-using en_field_2_t = mock_field_t<3, reg_t, "", 2, 2>;
+using en_field_1_t = mock_field_t<1, mock_register_t, 0, 0>;
+using sts_field_t = mock_field_t<2, mock_register_t, 1, 1>;
+using en_field_2_t = mock_field_t<3, mock_register_t, 2, 2>;
 
 struct test_resource_1 {};
 struct test_resource_2 {};
 
-using config_t = root<shared_irq<
-    0_irq, 0, policies<>,
-    sub_irq<en_field_1_t, sts_field_t, test_flow_1_t,
-            policies<required_resources<test_resource_1>>>,
-    sub_irq<en_field_2_t, sts_field_t, test_flow_2_t,
-            policies<required_resources<test_resource_1, test_resource_2>>>>>;
+using config_t = interrupt::root<interrupt::shared_irq<
+    0_irq, 0, interrupt::policies<>,
+    interrupt::sub_irq<
+        en_field_1_t, sts_field_t,
+        interrupt::policies<interrupt::required_resources<test_resource_1>>,
+        test_flow_1_t>,
+    interrupt::sub_irq<en_field_2_t, sts_field_t,
+                       interrupt::policies<interrupt::required_resources<
+                           test_resource_1, test_resource_2>>,
+                       test_flow_2_t>>>;
 
-using dynamic_t = dynamic_controller<config_t>;
+using dynamic_t = interrupt::dynamic_controller<config_t>;
 
 auto reset_dynamic_state() {
     register_value = 0;
