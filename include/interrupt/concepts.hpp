@@ -23,11 +23,11 @@ concept root_config = requires {
 
 template <typename T>
 concept base_irq_config =
-    status_policy<typename T::status_policy_t> and requires {
+    status_policy<typename T::status_policy_t> and
+    detail::specializes<typename T::resources_t, resource_list> and requires {
         { T::template enable<true>() } -> std::same_as<void>;
         { T::children } -> detail::specializes<stdx::tuple>;
         { T::descendants } -> detail::specializes<stdx::tuple>;
-        { T::resources } -> detail::specializes<stdx::tuple>;
     };
 
 template <typename T>
