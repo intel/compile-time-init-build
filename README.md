@@ -30,23 +30,33 @@ to implement *cib* and others extend *cib*.
     * [string_constant](include/sc) - Compile-time string library with support for
       formatting similar to fmt/python format specifiers.
     * [log (wip)](include/log) - Logging library.
-    * [Container](include/container) - Simple containers optimized for constexpr
-      and/or free-standing applications.
 
 ## Compiler/Standard support
 
 The main branch of *cib* currently uses C++20 and is tested with:
-- Clang 14 thru 15
-- GCC 12
+- Clang 14 thru 17
+- GCC 12 thru 13
 
 An older version of *cib* that uses C++17 is tagged at v1.7.0. It
 is tested with:
 - Clang 9 thru 15
 - GCC 9 thru 12
 
+For the older version see [this repo at that tag](https://github.com/intel/compile-time-init-build/tree/v1.7.0).
+
 ## Installing / Getting started
 
-*cib* is released as a single header file as well as the zipped github repo. 
+The recommended way to use *cib* is with CMake and [CPM](https://github.com/cpm-cmake/CPM.cmake).
+With this method,add the following to your CMakeLists.txt:
+
+```cmake
+CPMAddPackage("gh:intel/compile-time-init-build#047aab6)
+target_link_libraries(your_target PRIVATE cib)
+```
+
+Where `047aab6` is the git hash (or tag, or branch) that you want to use.
+
+*cib* is also released as a single header file as well as the zipped github repo. 
 To get started quickly, download the cib.hpp header from the 
 [release area](https://github.com/intel/compile-time-init-build/releases):
 
@@ -63,7 +73,7 @@ add_subdirectory(extern/compile-time-init-build)
 target_link_libraries(your_target PRIVATE cib)
 ```
 
-With either of these methods, include the cib.hpp header in your code to use it.
+With any of these methods, include the cib.hpp header in your code to use it.
 
 ### Hello, world!
 
@@ -153,6 +163,8 @@ ctest --test-dir build
 * Perform registration of components at compile-time
   * 🏎 Optimize runtime-performance and memory usage
   * 🦺 Catch undefined behavior during initialization
+
+See the [full documentation](https://intel.github.io/compile-time-init-build/).
 
 ## Contributing
 
