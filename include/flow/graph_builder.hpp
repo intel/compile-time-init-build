@@ -2,6 +2,7 @@
 
 #include <flow/common.hpp>
 #include <flow/detail/walk.hpp>
+#include <flow/impl.hpp>
 #include <flow/milestone.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -20,48 +21,29 @@
 #include <utility>
 
 namespace flow {
-template <stdx::ct_string Name,
-          template <stdx::ct_string, std::size_t> typename Impl,
-          flow::dsl::node... Fragments>
-class graph_builder {
-    friend constexpr auto tag_invoke(flow::dsl::get_nodes_t,
-                                     graph_builder const &b) {
-        auto t = b.fragments.apply([](auto const &...frags) {
-            return stdx::tuple_cat(flow::dsl::get_nodes(frags)...);
-        });
-        return stdx::to_unsorted_set(t);
-    }
+[[nodiscard]] constexpr auto edge_size(auto const &nodes, auto const &edges)
+    -> std::size_t {
+    auto const edge_capacities = transform(
+        [&]<typename N>(N const &) {
+            return edges.fold_left(
+                std::size_t{}, []<typename E>(auto acc, E const &) {
+                    if constexpr (std::is_same_v<typename E::source_t, N> or
+                                  std::is_same_v<typename E::dest_t, N>) {
+                        return ++acc;
+                    } else {
+                        return acc;
+                    }
+                });
+        },
+        nodes);
 
-    friend constexpr auto tag_invoke(flow::dsl::get_edges_t,
-                                     graph_builder const &b) {
-        auto t = b.fragments.apply([](auto const &...frags) {
-            return stdx::tuple_cat(flow::dsl::get_edges(frags)...);
-        });
-        return stdx::to_unsorted_set(t);
-    }
+    return edge_capacities.fold_left(std::size_t{1}, [](auto acc, auto next) {
+        return std::max(acc, next);
+    });
+}
 
-    [[nodiscard]] constexpr static auto edge_size(auto const &nodes,
-                                                  auto const &edges)
-        -> std::size_t {
-        auto const edge_capacities = transform(
-            [&]<typename N>(N const &) {
-                return edges.fold_left(
-                    std::size_t{}, []<typename E>(auto acc, E const &) {
-                        if constexpr (std::is_same_v<typename E::source_t, N> or
-                                      std::is_same_v<typename E::dest_t, N>) {
-                            return ++acc;
-                        } else {
-                            return acc;
-                        }
-                    });
-            },
-            nodes);
-
-        return edge_capacities.fold_left(
-            std::size_t{1},
-            [](auto acc, auto next) { return std::max(acc, next); });
-    }
-
+template <template <stdx::ct_string, std::size_t> typename Impl>
+struct graph_builder {
     template <typename T> using name_for = typename T::name_t;
 
     template <typename Node, std::size_t N, std::size_t E>
@@ -105,7 +87,7 @@ class graph_builder {
     }
 
     template <typename Output, typename Graph>
-    [[nodiscard]] constexpr auto topo_sort(Graph &g) const
+    [[nodiscard]] constexpr static auto topo_sort(Graph &g)
         -> std::optional<Output> {
         stdx::cx_vector<typename Graph::key_type, Graph::capacity()>
             ordered_list{};
@@ -138,44 +120,15 @@ class graph_builder {
             std::span{std::cbegin(ordered_list), std::size(ordered_list)}};
     }
 
-    template <typename BuilderValue> class built_flow {
-        constexpr static auto built() {
-            constexpr auto builder = BuilderValue::value;
-            constexpr auto built = builder.template topo_sort<Impl>();
-            static_assert(built.has_value());
-            return *built;
-        }
-
-        constexpr static auto run() { built()(); }
-
-      public:
-        // NOLINTNEXTLINE(google-explicit-constructor)
-        constexpr operator FunctionPtr() const { return run; }
-        constexpr auto operator()() const -> void { run(); }
-        constexpr static bool active = decltype(built())::active;
-    };
-
-  public:
-    constexpr static auto name = Name;
-
-    template <flow::dsl::node... Ns>
-    [[nodiscard]] constexpr auto add(Ns &&...ns) {
-        return fragments.apply([&](auto &...frags) {
-            return graph_builder<Name, Impl, Fragments...,
-                                 stdx::remove_cvref_t<Ns>...>{
-                {frags..., std::forward<Ns>(ns)...}};
-        });
-    }
-
-    template <template <stdx::ct_string, std::size_t> typename Output>
-    [[nodiscard]] constexpr auto topo_sort() const {
-        auto nodes = flow::dsl::get_nodes(*this);
-        auto edges = flow::dsl::get_edges(*this);
+    template <typename Graph>
+    [[nodiscard]] constexpr static auto build(Graph const &input) {
+        auto nodes = flow::dsl::get_nodes(input);
+        auto edges = flow::dsl::get_edges(input);
 
         constexpr auto node_capacity = stdx::tuple_size_v<decltype(nodes)>;
         constexpr auto edge_capacity = edge_size(nodes, edges);
 
-        using output_t = Output<Name, node_capacity>;
+        using output_t = Impl<Graph::name, node_capacity>;
         using rt_node_t = typename output_t::node_t;
 
         static_assert(
@@ -191,20 +144,62 @@ class graph_builder {
         return topo_sort<output_t>(g);
     }
 
-    [[nodiscard]] constexpr auto node_size() const -> std::size_t {
-        return stdx::tuple_size_v<decltype(flow::dsl::get_nodes(*this))>;
+    template <typename Initialized> class built_flow {
+        constexpr static auto built() {
+            constexpr auto v = Initialized::value;
+            constexpr auto built = build(v);
+            static_assert(built.has_value());
+            return *built;
+        }
+
+        constexpr static auto run() { built()(); }
+
+      public:
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr operator FunctionPtr() const { return run; }
+        constexpr auto operator()() const -> void { run(); }
+        constexpr static bool active = decltype(built())::active;
+    };
+
+    template <typename Initialized>
+    [[nodiscard]] constexpr static auto render() -> built_flow<Initialized> {
+        return {};
+    }
+};
+
+template <stdx::ct_string Name = "", typename Renderer = graph_builder<impl>,
+          flow::dsl::node... Fragments>
+class graph {
+    friend constexpr auto tag_invoke(flow::dsl::get_nodes_t, graph const &g) {
+        auto t = g.fragments.apply([](auto const &...frags) {
+            return stdx::tuple_cat(flow::dsl::get_nodes(frags)...);
+        });
+        return stdx::to_unsorted_set(t);
     }
 
-    [[nodiscard]] constexpr auto edge_size() const -> std::size_t {
-        return edge_size(flow::dsl::get_nodes(*this),
-                         flow::dsl::get_edges(*this));
+    friend constexpr auto tag_invoke(flow::dsl::get_edges_t, graph const &g) {
+        auto t = g.fragments.apply([](auto const &...frags) {
+            return stdx::tuple_cat(flow::dsl::get_edges(frags)...);
+        });
+        return stdx::to_unsorted_set(t);
+    }
+
+  public:
+    template <flow::dsl::node... Ns>
+    [[nodiscard]] constexpr auto add(Ns &&...ns) {
+        return fragments.apply([&](auto &...frags) {
+            return graph<Name, Renderer, Fragments...,
+                         stdx::remove_cvref_t<Ns>...>{
+                {frags..., std::forward<Ns>(ns)...}};
+        });
     }
 
     template <typename BuilderValue>
-    [[nodiscard]] constexpr static auto build() -> built_flow<BuilderValue> {
-        return {};
+    [[nodiscard]] constexpr static auto build() {
+        return Renderer::template render<BuilderValue>();
     }
 
+    constexpr static auto name = Name;
     stdx::tuple<Fragments...> fragments;
 };
 } // namespace flow

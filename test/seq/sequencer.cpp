@@ -9,11 +9,14 @@
 namespace {
 int attempt_count;
 std::string result{};
+
+using builder = flow::graph_builder<seq::impl>;
 } // namespace
 
 TEST_CASE("build and run empty seq", "[seq]") {
-    seq::builder<> builder;
-    auto seq_impl = builder.topo_sort<seq::impl>();
+    auto g = seq::builder<>{};
+    auto seq_impl = builder::build(g);
+    REQUIRE(seq_impl.has_value());
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(seq_impl->backward() == seq::status::DONE);
 }
@@ -31,8 +34,9 @@ TEST_CASE("build seq with one step and run forwards and backwards", "[seq]") {
             return seq::status::DONE;
         });
 
-    auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl>();
+    auto g = seq::builder<>{}.add(s);
+    auto seq_impl = builder::build(g);
+    REQUIRE(seq_impl.has_value());
 
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F");
@@ -60,8 +64,9 @@ TEST_CASE("build seq with a forward step that takes a while to finish",
             return seq::status::DONE;
         });
 
-    auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl>();
+    auto g = seq::builder<>{}.add(s);
+    auto seq_impl = builder::build(g);
+    REQUIRE(seq_impl.has_value());
 
     SECTION("forward can be called") {
         CHECK(seq_impl->forward() == seq::status::NOT_DONE);
@@ -105,8 +110,9 @@ TEST_CASE("build seq with a backward step that takes a while to finish",
             }
         });
 
-    auto builder = seq::builder<>{}.add(s);
-    auto seq_impl = builder.topo_sort<seq::impl>();
+    auto g = seq::builder<>{}.add(s);
+    auto seq_impl = builder::build(g);
+    REQUIRE(seq_impl.has_value());
 
     SECTION("backward can be called") {
         CHECK(seq_impl->forward() == seq::status::DONE);
@@ -169,8 +175,9 @@ TEST_CASE("build seq with three steps and run forwards and backwards",
             return seq::status::DONE;
         });
 
-    auto builder = seq::builder<>{}.add(s1 >> s2 >> s3);
-    auto seq_impl = builder.topo_sort<seq::impl>();
+    auto g = seq::builder<>{}.add(s1 >> s2 >> s3);
+    auto seq_impl = builder::build(g);
+    REQUIRE(seq_impl.has_value());
 
     CHECK(seq_impl->forward() == seq::status::DONE);
     CHECK(result == "F1F2F3");
