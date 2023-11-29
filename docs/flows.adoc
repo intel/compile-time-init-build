@@ -7,9 +7,9 @@ Everything in the flow library is in the `flow` namespace.
 
 A flow is a series of actions to be executed in order based on their
 dependencies. The flow library was originally designed to be used for power
-flows, moving from one power state to another. It can also be used as a generic
-extension point to register callbacks at compile-time. Flow implements the
-`constexpr` init()/build() pattern.
+flows, moving from one power state to another. A flow can also be used as a
+generic extension point to register callbacks at compile-time. A flow implements
+the _cib_ `service` pattern.
 
 === Example
 
