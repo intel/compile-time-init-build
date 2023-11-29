@@ -1,0 +1,222 @@
+
+== The `interrupt` library
+
+`interrupt::manager` is intended to automate and hide the low level details of
+interrupt hardware initialization, registration, and execution while using the
+least amount of memory and execution time.
+
+=== `interrupt::manager`
+
+The interrupt manager is the one-stop shop for configuring interrupts and
+executing code when interrupts are triggered.
+
+A manager is constructed by specifying an interrupt configuration and a nexus
+type:
+
+[source,cpp]
+----
+struct my_flow : flow::service<"my flow"> {};
+
+using interrupt::operator""_irq;
+
+using config = interrupt::root<
+    interrupt::irq<17_irq, 4, interrupt::policies<>, my_flow>>;
+
+struct my_project {
+  constexpr static auto config = cib::config(cib::exports<my_flow>);
+};
+using nexus_t = cib::nexus<my_project>;
+
+auto mgr = interrupt::manager<config, nexus_t>{};
+----
+
+Given this setup, the idea is that when interrupt 17 is triggered, `my_flow`
+will run.
+
+=== Interrupt configuration
+
+Interrupt configuration comes in 4 flavors.
+
+==== `interrupt::irq`
+
+A basic interrupt configuration is specified with `interrupt::irq`.
+
+[source,cpp]
+----
+using irq_t = interrupt::irq<
+    17_irq,                    // the IRQ number
+    4,                         // priority
+    interrupt::policies<>,     // policies
+    my_flow>;                  // flow(s) to run when triggered
+----
+
+==== `interrupt::sub_irq`
+
+A `sub_irq` is designed to be a child of another interrupt configuration; as
+such, instead of specifiying an IRQ number and priority, instead it has enable
+and status fields.
+
+[source,cpp]
+----
+using irq_t = interrupt::sub_irq<
+    enable_field_t,
+    status_field_t,
+    interrupt::policies<>,
+    my_flow>;
+----
+
+The idea here is that when the parent interrupt fires, `my_flow` will run if the
+enable/status field states allow it.
+
+==== `interrupt::shared_irq`
+
+Of course a `sub_irq` has to have a parent, and that is often a `shared_irq`.
+
+[source,cpp]
+----
+using irq_t = interrupt::shared_irq<
+    17_irq, 4, interrupt::policies<>, // as for irq
+    interrupt::sub_irq<
+        enable_field_t,
+        status_field_t,
+        interrupt::policies<>,
+        my_flow>>;
+----
+
+A `shared_irq` may have any number of `sub_irq` children.
+
+==== `interrupt::shared_sub_irq`
+
+Lastly, we may want multiple nested levels. This is where `shared_sub_irq`
+comes in. Like `sub_irq`, `shared_sub_irq` has enable and status fields. And
+like `shared_irq`, `shared_sub_irq` can have any number of children.
+
+[source,cpp]
+----
+using irq_t = nterrupt::shared_irq<
+    17_irq, 4, interrupt::policies<>,
+    interrupt::sub_irq<enable_field_t, status_field_t,
+                       interrupt::policies<>, my_flow>,
+    interrupt::shared_sub_irq<
+        enable_field_1_t, status_field_1_t, interrupt::policies<>,
+        interrupt::sub_irq<enable_field_1_0_t, status_field_1_0_t,
+                           interrupt::policies<>, my_flow_0>,
+        interrupt::sub_irq<enable_field_1_1_t, status_field_1_1_t,
+                           interrupt::policies<>, my_flow_1>>>;
+----
+
+==== `interrupt::root`
+
+The configuration passed to the `interrupt::manager` is an `interrupt::root`
+object which contains any number of IRQ configurations.
+
+NOTE: The various interrupt configurations can run multiple flows: the last
+template parameter (the flow) in each case above is a variadic pack.
+
+=== `policies`
+
+Policies allow customization of how interrupt status fields get handled:
+chiefly, when they are cleared. There are three policies provided:
+
+- `interrupt::clear_status_first`
+- `interrupt::clear_status_last`
+- `interrupt::dont_clear_status`
+
+Any of these policies can be specified in an interrupt configuration with for
+example `interrupt::policies<interrupt::clear_status_last>`. If none is
+provided, `interrupt::clear_status_first` is the default behavior.
+
+Policies also allow interrupt configurations to depend upon resources. Resources
+are just types that are specified in the `interrupt::required_resources` template.
+
+So an interrupt configuration that depends on a resource might look like this:
+
+[source,cpp]
+----
+struct my_hw_resource; // just a tag type representing a resource
+
+using config = interrupt::root<interrupt::irq<
+    17_irq, 4,
+    interrupt::policies<interrupt::required_resources<my_hw_resource>>,
+    my_flow>>;
+----
+
+NOTE: `interrupt::policies` is a variadic template, but we didn't specify the
+status policy here (only the resources policy), so the default status policy
+will be `interrupt::clear_status_first`. The default resource policy of course
+depends on no resources.
+
+Resources can be turned on and off at runtime, allowing dynamic interrupt
+control. When a resource is turned off, any interrupt configurations that depend
+on that resource will not run their flows when the interrupt is triggered.
+
+=== The interrupt HAL
+
+The interrupt manager interacts with hardware through a HAL interface that must
+be provided. It has three functions.
+
+[source,cpp]
+----
+struct my_hal {
+  static auto init() -> void {
+    // do any preliminary interrupt initialization work
+  }
+
+  template <bool Enable, interrupt::irq_num_t IrqNumber, std::size_t Priority>
+  static auto irq_init() -> void {
+    // enable/disable the given IRQ at the given priority
+  }
+
+  template <interrupt::status_policy P>
+  static auto run(interrupt::irq_num_t irq, stdx::invocable auto const &isr) -> void {
+    // run according to policy
+    P::run([] {},            // clear status, if any
+           [&] { isr(); });  // execute the interrupt service routine
+  }
+};
+----
+
+This global interface is injected by specializing a variable template.
+
+[source,cpp]
+----
+template <> inline auto interrupt::injected_hal<> = my_hal{};
+----
+
+=== Initialization
+
+The `interrupt::manager`​'s `init()` method enables and initializes all
+interrupts with associated flows.
+
+=== Running
+
+The `interrupt::manager`​'s `run<irq_number>()` method clears the pending
+interrupt status and runs any flows associated with that IRQ. If it's a shared
+interrupt, each registered `sub_irq` will have its interrupt status field
+checked to determine if its flow should be executed, and the field will be
+cleared according to the specified policy for that `sub_irq` configuration.
+
+This is the method that should be wired to an ISR vector table.
+
+=== Dynamic interrupt control
+
+At runtime, interrupts can be enabled and disabled dynamically according to
+resources, enable fields, or just by enabling/disabling flows. This is done with
+the `dynamic_controller`. It is initialized with the same configuration (a
+`root` object) as the `interrupt::manager`.
+
+[source,cpp]
+----
+using dynamic_t = interrupt::dynamic_controller<config>;
+
+// disable my_flow: the interrupt wired to trigger my_flow will be disabled if
+// nothing else depends on it
+dynamic_t::disable<my_flow>();
+
+// turn off a resource: interrupts that depend on this resource will be disabled
+dynamic_t::turn_off_resource<my_hw_resource>();
+
+// turning flows and resources back on re-enables any dependent interrupts
+dynamic_t::enable<my_flow>();
+dynamic_t::turn_on_resource<my_hw_resource>();
+----
