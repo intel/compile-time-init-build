@@ -18,6 +18,8 @@ add_tests(
     cib/nexus
     cib/readme_hello_world
     flow/flow
+    flow/graph
+    flow/graph_builder
     interrupt/dynamic_controller
     interrupt/irq_impl
     interrupt/manager
