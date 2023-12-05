@@ -80,7 +80,7 @@ TEST_CASE("max field size", "[field extract]") {
 }
 
 namespace {
-enum struct E { Value = 0b10101 };
+enum struct E : std::uint8_t { Value = 0b10101 };
 } // namespace
 
 TEST_CASE("enum field type ", "[field extract]") {

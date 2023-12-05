@@ -86,7 +86,8 @@ CONSTEVAL auto bit_mask() -> T {
     if constexpr (BitSize == 0u) {
         return {};
     } else {
-        return std::numeric_limits<T>::max() >> (bit_size<T>() - BitSize);
+        return static_cast<T>(std::numeric_limits<T>::max() >>
+                              (bit_size<T>() - BitSize));
     }
 }
 
@@ -108,7 +109,7 @@ struct bits_locator_t {
         if constexpr (BitSize == bit_size<T>()) {
             return {};
         } else {
-            return value >> BitSize;
+            return static_cast<T>(value >> BitSize);
         }
     }
 
@@ -117,7 +118,7 @@ struct bits_locator_t {
         if constexpr (BitSize == bit_size<T>()) {
             return {};
         } else {
-            return value << BitSize;
+            return static_cast<T>(value << BitSize);
         }
     }
 
@@ -275,8 +276,9 @@ template <bits_locator... BLs> struct field_locator_t {
         using raw_t = integral_type_for<typename Spec::type>;
         auto raw = static_cast<raw_t>(value);
         auto const insert_bits = [&]<bits_locator B>() {
-            B::insert(std::forward<R>(r),
-                      raw & detail::bit_mask<raw_t, B::size>());
+            B::insert(
+                std::forward<R>(r),
+                static_cast<raw_t>(raw & detail::bit_mask<raw_t, B::size>()));
             raw = B::fold(raw);
         };
 
