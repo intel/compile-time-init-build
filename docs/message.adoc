@@ -44,8 +44,18 @@ using my_field =
                          24_lsb}>;  // least significant bit
 ----
 
-NOTE: A field can specify multiple `at` arguments if it has several disjoint
-parts.
+A field can specify multiple `at` arguments if it has several disjoint parts. In
+that case, earlier `at` arguments specify more significant bits in the field,
+with later `at` arguments being less significant. For example:
+[source,cpp]
+----
+using namespace msg;
+using my_field =
+    field<"my field",               // name
+          std::uint16_t>            // type
+            ::located<at{0_dw, 31_msb, 24_lsb},  // high byte
+                      at{0_dw,  7_msb,  0_lsb}>; // low byte
+----
 
 Fields also expose several matcher aliases which can typically be used to
 specify field values for a given message type; an example of this follows

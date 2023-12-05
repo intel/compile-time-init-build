@@ -51,8 +51,8 @@ TEST_CASE("disjoint", "[field insert]") {
                                                 at{0_dw, 11_msb, 9_lsb}>;
     std::array<std::uint32_t, 1> data{0b1'0001'1100'0110u};
     //                                    ^-^    ^--^
-    F::insert(data, 0b101'101u);
-    CHECK(0b1'1011'1110'1110u == data[0]);
+    F::insert(data, 0b101'110u);
+    CHECK(0b1'1101'1110'1110u == data[0]);
 }
 
 TEST_CASE("across multiple storage elements", "[field insert]") {
