@@ -96,10 +96,10 @@ TEST_CASE("max field size", "[field insert]") {
 }
 
 namespace {
-enum struct E { Value = 0b10101 };
+enum struct E : std::uint8_t { Value = 0b10101 };
 } // namespace
 
-TEST_CASE("enum field type ", "[field extract]") {
+TEST_CASE("enum field type ", "[field insert]") {
     using F = field<"", E>::located<at{0_dw, 5_msb, 1_lsb}>;
     std::array<std::uint8_t, 1> data{0b1100'0001};
     //                                   ^----^
