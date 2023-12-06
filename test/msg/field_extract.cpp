@@ -45,9 +45,9 @@ TEST_CASE("across two storage elements", "[field extract]") {
 TEST_CASE("disjoint", "[field extract]") {
     using F = field<"", std::uint32_t>::located<at{0_dw, 5_msb, 3_lsb},
                                                 at{0_dw, 11_msb, 9_lsb}>;
-    std::array<std::uint32_t, 1> data{0b1'1011'1110'1110u};
+    std::array<std::uint32_t, 1> data{0b1'1101'1110'1110u};
     //                                    ^-^    ^--^
-    CHECK(0b101'101u == F::extract(data));
+    CHECK(0b101'110u == F::extract(data));
 }
 
 TEST_CASE("across multiple storage elements", "[field extract]") {
