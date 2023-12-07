@@ -61,36 +61,18 @@ dependencies.
 If we only use the `morning` component in our project, the `MorningRoutine` flow
 graph would look like the following:
 
-[ditaa, format="svg", scale=1.5]
+[mermaid, format="svg"]
 ----
-  /------------------\
-  | MorningRoutine   |
-  | cGRE             |
-  |                  |
-  | /---------\      |
-  | | WAKE_UP |      |
-  | \---------/      |
-  |     |            |
-  |     v            |
-  | /--------\       |
-  | | SHOWER |       |
-  | \--------/       |
-  |     |            |
-  |     v            |
-  | /-------------\  |
-  | | GET_DRESSED |  |
-  | \-------------/  |
-  |     |            |
-  |     v            |
-  | /-------------\  |
-  | | MAKE_COFFEE |  |
-  | \-------------/  |
-  |     |            |
-  |     v            |
-  | /--------------\ |
-  | | DRINK_COFFEE | |
-  | \--------------/ |
-  \------------------/
+flowchart TD
+  a(WAKE_UP)
+  b(selfcare::SHOWER)
+  c(selfcare::GET_DRESSED)
+  d(food::MAKE_COFFEE)
+  e(food::DRINK_COFFEE)
+  a --> b
+  b --> c
+  c --> d
+  d --> e
 ----
 
 The power of `flow` services comes when more than one component adds actions to
@@ -121,56 +103,27 @@ struct childcare {
 
 The new steps are inserted into the existing `flow`​'s dependency graph:
 
-[ditaa, format="svg", scale=1.5]
+[mermaid, format="svg"]
 ----
-  /--------------------------------\
-  | MorningRoutine                 |
-  | cGRE                           |
-  |                                |
-  | /---------\                    |
-  | | WAKE_UP |                    |
-  | \---------/                    |
-  |     |                          |
-  |     v                          |
-  | /--------\                     |
-  | | SHOWER |                     |
-  | \--------/                     |
-  |     |                          |
-  |     v                          |
-  | /-------------\                |
-  | | GET_DRESSED |                |
-  | \-------------/                |
-  |     |                          |
-  |     v                          |
-  | /-------------\                |
-  | | MAKE_COFFEE |                |
-  | \-------------/                |
-  |     |      |                   |
-  |     |      v                   |
-  |     |  /---------------------\ |
-  |     |  | PACK_SCHOOL_LUNCHES | |
-  |     |  \---------------------/ |
-  |     |      |                   |
-  |     v      v                   |
-  | /--------------\               |
-  | | DRINK_COFFEE |               |
-  | \--------------/               |
-  |     |                          |
-  |     v                          |
-  | /----------------\             |
-  | | MAKE_BREAKFAST |             |
-  | \----------------/             |
-  |     |                          |
-  |     v                          |
-  | /---------------\              |
-  | | EAT_BREAKFAST |              |
-  | \---------------/              |
-  |     |                          |
-  |     v                          |
-  | /---------------------\        |
-  | | SEND_KIDS_TO_SCHOOL |        |
-  | \---------------------/        |
-  \--------------------------------/
+flowchart TD
+  a(WAKE_UP)
+  b(selfcare::SHOWER)
+  c(selfcare::GET_DRESSED)
+  d(food::MAKE_COFFEE)
+  e(food::DRINK_COFFEE)
+  a --> b
+  b --> c
+  c --> d
+  d --> e
+  f(food::MAKE_BREAKFAST)
+  g(food::EAT_BREAKFAST)
+  h(childcare::PACK_SCHOOL_LUNCHES)
+  i(childcare::SEND_KIDS_TO_SCHOOL)
+  d --> h
+  h --> e
+  e --> f
+  f --> g
+  g --> i
 ----
 
 Multiple independent components can add actions to the same `flow`. This is the
@@ -179,7 +132,7 @@ components to create new functionality.
 
 [source,cpp]
 ----
-namespace exercise {
+struct exercise {
   constexpr static auto RIDE_STATIONARY_BIKE = flow::action<"RIDE_STATIONARY_BIKE">([] {
     // ...
   });
@@ -189,7 +142,7 @@ namespace exercise {
           morning::WAKE_UP >>
           RIDE_STATIONARY_BIKE >>
           selfcare::SHOWER));
-}
+};
 ----
 
 The `MorningRoutine` `flow` now contains the functionality of three components,
@@ -197,61 +150,30 @@ all without the `MorningRoutine` source code having known about the new
 functionality. We can mix and match new components without modifying the
 original source code.
 
-[ditaa, format="svg", scale=1.5]
+[mermaid, format="svg"]
 ----
-  /---------------------------------\
-  | MorningRoutine                  |
-  | cGRE                            |
-  |                                 |
-  | /------------\                  |
-  | |   WAKE_UP  |                  |
-  | \------------/                  |
-  |     |      |                    |
-  |     |      v                    |
-  |     |  /----------------------\ |
-  |     |  | RIDE_STATIONARY_BIKE | |
-  |     |  \----------------------/ |
-  |     |      |                    |
-  |     v      v                    |
-  | /------------\                  |
-  | |   SHOWER   |                  |
-  | \------------/                  |
-  |     |                           |
-  |     v                           |
-  | /-------------\                 |
-  | | GET_DRESSED |                 |
-  | \-------------/                 |
-  |     |                           |
-  |     v                           |
-  | /-------------\                 |
-  | | MAKE_COFFEE |                 |
-  | \-------------/                 |
-  |     |      |                    |
-  |     |      v                    |
-  |     |  /---------------------\  |
-  |     |  | PACK_SCHOOL_LUNCHES |  |
-  |     |  \---------------------/  |
-  |     |      |                    |
-  |     v      v                    |
-  | /--------------\                |
-  | | DRINK_COFFEE |                |
-  | \--------------/                |
-  |     |                           |
-  |     v                           |
-  | /----------------\              |
-  | | MAKE_BREAKFAST |              |
-  | \----------------/              |
-  |     |                           |
-  |     v                           |
-  | /---------------\               |
-  | | EAT_BREAKFAST |               |
-  | \---------------/               |
-  |     |                           |
-  |     v                           |
-  | /---------------------\         |
-  | | SEND_KIDS_TO_SCHOOL |         |
-  | \---------------------/         |
-  \---------------------------------/
+flowchart TD
+  a(WAKE_UP)
+  b(selfcare::SHOWER)
+  c(selfcare::GET_DRESSED)
+  d(food::MAKE_COFFEE)
+  e(food::DRINK_COFFEE)
+  a --> b
+  b --> c
+  c --> d
+  d --> e
+  f(food::MAKE_BREAKFAST)
+  g(food::EAT_BREAKFAST)
+  h(childcare::PACK_SCHOOL_LUNCHES)
+  i(childcare::SEND_KIDS_TO_SCHOOL)
+  d --> h
+  h --> e
+  e --> f
+  f --> g
+  g --> i
+  j(exercise::RIDE_STATIONARY_BIKE)
+  a --> j
+  j --> b
 ----
 
 The `cib` library will take care of initializing and building all services,
@@ -263,22 +185,22 @@ runtime.
 ----
 MorningRoutine
  1. WAKE_UP
- 2. RIDE_STATIONARY_BIKE
+ 2. exercise::RIDE_STATIONARY_BIKE
  3. selfcare::SHOWER
  4. selfcare::GET_DRESSED
  5. food::MAKE_COFFEE
- 6. PACK_SCHOOL_LUNCHES
+ 6. childcare::PACK_SCHOOL_LUNCHES
  7. food::DRINK_COFFEE
  8. food::MAKE_BREAKFAST
  9. food::EAT_BREAKFAST
-10. SEND_KIDS_TO_SCHOOL
+10. childcare::SEND_KIDS_TO_SCHOOL
 ----
 
 All of these components are composed in a project component and brought to life
 with an instance of `cib::top`. We need to make sure our `flow`​s get executed at
 the appropriate times, so our example has a `day_cycle` component that defines
 the various extension points and ensures they get executed over and over in
-`cib::top`'s `MainLoop`.
+`cib::top`​'s `MainLoop`.
 
 [source,cpp]
 ----
