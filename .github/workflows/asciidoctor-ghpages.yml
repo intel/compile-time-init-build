@@ -33,6 +33,14 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install Mermaid
+        run: |
+          sudo npm install -g @mermaid-js/mermaid-cli@10.6.1
+          node /usr/local/lib/node_modules/@mermaid-js/mermaid-cli/node_modules/puppeteer/install.js
       - name: Install asciidoctor
         run: |
           sudo apt update
@@ -45,7 +53,6 @@ jobs:
           if [ -e docs/static ]; then cp -rf docs/static ./generated-html; fi
           touch ./generated-html/.nojekyll
           ls -la ./generated-html
-          cat ./generated-html/index.html
       - name: Setup github pages
         if: needs.configure.outputs.enable_publish == 'true'
         uses: actions/configure-pages@v4

@@ -39,11 +39,6 @@ jobs:
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
             toolchain_root: "/usr/lib/llvm-17"
-          - version: 17
-            compiler: clang
-            stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17 && sudo apt install -y libc++-17-dev libc++abi-17-dev
-            cxx_flags: "-stdlib=libc++"
           - version: 16
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16
@@ -97,6 +92,9 @@ jobs:
           - compiler: clang
             version: 14
             stdlib: libstdc++
+          - compiler: clang
+            version: 17
+            stdlib: libc++
           - compiler: clang
             version: 13
           - compiler: clang
