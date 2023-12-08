@@ -47,8 +47,7 @@ CIB_CONSTEVAL static void quicksort(T *elems, std::size_t lo, std::size_t hi) {
 }
 
 template <typename T> CIB_CONSTEVAL static void quicksort(T &collection) {
-    quicksort(std::begin(collection), 0,
-              std::size(collection) - std::size_t{1});
+    quicksort(collection.data(), 0, std::size(collection) - std::size_t{1});
 }
 } // namespace cib::detail
 
