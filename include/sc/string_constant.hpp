@@ -4,6 +4,7 @@
 #include <sc/fwd.hpp>
 
 #include <array>
+#include <cstdint>
 #include <iterator>
 #include <limits>
 #include <string_view>
@@ -89,7 +90,7 @@ template <typename CharT, CharT... chars> struct string_constant {
         return detail::create<detail::Replace<This, pos, count, StrT>>();
     }
 
-    [[nodiscard]] constexpr static auto hash() -> uint64_t {
+    [[nodiscard]] constexpr static auto hash() -> std::uint64_t {
         // http://www.cse.yorku.ca/~oz/hash.html @ Aug. 19, 2022
         // this is a very slightly cleaned up version of djb2
         std::uint64_t hash = 5381;
