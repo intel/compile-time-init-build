@@ -29,7 +29,7 @@ add_versioned_package(
     OPTIONS
     "FMT_INSTALL OFF"
     "FMT_OS OFF")
-add_versioned_package("gh:intel/cpp-std-extensions#698200c")
+add_versioned_package("gh:intel/cpp-std-extensions#495e387")
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#8d49b6d")
 
 add_library(cib INTERFACE)

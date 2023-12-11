@@ -96,3 +96,5 @@ add_compile_fail_test(msg/fail/impossible_match_field.cpp LIBRARIES warnings
                       cib)
 add_compile_fail_test(msg/fail/field_location.cpp LIBRARIES warnings cib)
 add_compile_fail_test(msg/fail/field_size.cpp LIBRARIES warnings cib)
+add_compile_fail_test(msg/fail/message_dup_fieldnames.cpp LIBRARIES warnings
+                      cib)
