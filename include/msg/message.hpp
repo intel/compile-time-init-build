@@ -11,6 +11,10 @@
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/set.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
@@ -93,8 +97,9 @@ template <typename... Fields> struct storage_size {
         std::max({std::size_t{}, Fields::template extent_in<T>()...});
 };
 
+template <typename F> using name_for = typename F::name_t;
+
 template <stdx::ct_string Name, typename... Fields> class message_access {
-    template <typename F> using name_for = typename F::name_t;
     using FieldsTuple =
         decltype(stdx::make_indexed_tuple<name_for>(Fields{}...));
 
@@ -200,6 +205,11 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     using default_storage_t = typename access_t::default_storage_t;
     using default_span_t = typename access_t::default_span_t;
     using default_const_span_t = typename access_t::default_const_span_t;
+
+    static_assert(
+        boost::mp11::mp_is_set<boost::mp11::mp_transform<
+            detail::name_for, boost::mp11::mp_list<Fields...>>>::value,
+        "Message contains fields with duplicate names");
 
     template <typename T> struct base {
         constexpr auto as_derived() const -> T const & {
