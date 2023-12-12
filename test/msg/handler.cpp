@@ -58,6 +58,20 @@ TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
     CHECK(dispatched);
 }
 
+TEST_CASE("dispatch single callback (match, raw byte data)", "[handler]") {
+    auto callback = msg::callback<"cb", msg_defn>(
+        match::always, [](msg::const_raw_view<msg_defn>) { dispatched = true; });
+    auto const msg = std::array<uint8_t, 8>{0x11u, 0xba, 0x00, 0x80u, 0x00, 0x42, 0xd0, 0x0du};
+
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    dispatched = false;
+    handler.handle(msg);
+    msg_defn::view_t m{msg};
+    CHECK(0x80 == m.get("id"_field));
+    CHECK(dispatched);
+}
+
 TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
     auto callback = msg::callback<"cb", msg_defn>(
         match::always, [](msg::const_view<msg_defn>) { dispatched = true; });

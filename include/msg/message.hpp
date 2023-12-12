@@ -182,15 +182,19 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
     }
 
     using default_value_type = std::uint32_t;
+    using raw_value_type = std::uint8_t;
 
     template <template <typename, std::size_t> typename C, typename T>
     using storage_t = C<T, storage_size<Fields...>::template in<T>>;
     using default_storage_t = storage_t<std::array, default_value_type>;
+    using raw_storage_t = storage_t<std::array, raw_value_type>;
 
     template <typename T>
     using span_t = stdx::span<T, storage_size<Fields...>::template in<T>>;
     using default_span_t = span_t<default_value_type>;
     using default_const_span_t = span_t<default_value_type const>;
+    using raw_span_t = span_t<raw_value_type>;
+    using raw_const_span_t = span_t<raw_value_type const>;
 };
 
 template <typename T>
@@ -203,8 +207,11 @@ concept storage_like = range<T> and requires {
 template <stdx::ct_string Name, typename... Fields> struct message {
     using access_t = detail::message_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
+    using raw_storage_t = typename access_t::raw_storage_t;
     using default_span_t = typename access_t::default_span_t;
     using default_const_span_t = typename access_t::default_const_span_t;
+    using raw_span_t = typename access_t::raw_span_t;
+    using raw_const_span_t = typename access_t::raw_const_span_t;
 
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;
@@ -265,6 +272,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     };
     using const_view_t = view_t<default_const_span_t>;
     using mutable_view_t = view_t<default_span_t>;
+    using raw_view_t = view_t<raw_span_t>;
+    using const_raw_view_t = view_t<raw_const_span_t>;
 
     template <typename Storage = default_storage_t>
     struct owner_t : base<owner_t<Storage>> {
@@ -341,7 +350,11 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         make_msg_matcher<message, typename Fields::matcher_t>()...));
 };
 
+template <typename T> using raw_owning = typename T::template owner_t<typename T::raw_storage_t>;
 template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
 template <typename T> using const_view = typename T::const_view_t;
+
+template<class T> using raw_view = typename T::raw_view_t;
+template<class T> using const_raw_view = typename T::const_raw_view_t;
 } // namespace msg
