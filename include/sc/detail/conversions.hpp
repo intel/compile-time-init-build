@@ -14,7 +14,7 @@ template <typename CharT, int SizeT> struct static_string {
     std::size_t size{};
 
     constexpr explicit operator std::basic_string_view<CharT>() const {
-        return std::string_view{std::prev(data.end(), static_cast<int>(size)),
+        return std::string_view{&*std::prev(data.end(), static_cast<int>(size)),
                                 size};
     }
 };

@@ -36,8 +36,8 @@ struct repl_field_iter {
             end++;
         }
 
-        return {
-            i, static_cast<std::string_view::size_type>(std::distance(i, end))};
+        return {&*i, static_cast<std::string_view::size_type>(
+                         std::distance(i, end))};
     }
 
     [[nodiscard]] constexpr auto operator==(repl_field_iter other) const
@@ -194,7 +194,7 @@ template <typename FmtStringConstant, typename... ArgTs> struct format_t {
         return tmp_buf;
     }();
 
-    constexpr static std::string_view value{buf.data.begin(), buf.size};
+    constexpr static std::string_view value{&*buf.data.begin(), buf.size};
 };
 
 template <typename T>
