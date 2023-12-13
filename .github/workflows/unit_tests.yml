@@ -3,9 +3,9 @@ name: Unit Tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ cpp17 ]
   pull_request:
-    branches: [ main ]
+    branches: [ cpp17 ]
 
 env:
   DEBIAN_FRONTEND: noninteractive
@@ -70,13 +70,13 @@ jobs:
         run: ctest -C ${{matrix.build_type}}
   
   build_and_test:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
         version: [11, 12, 13, 14, 15]
-        cxx_standard: [17, 20]
+        cxx_standard: [17]
         build_type: [Debug]
         include:
           - version: 15
@@ -146,7 +146,7 @@ jobs:
         run: ctest -C ${{matrix.build_type}}
 
   quality_checks_pass:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
@@ -157,14 +157,14 @@ jobs:
 
       - name: Install cmake-format
         run: |
-          pip3 install --upgrade pip
-          pip3 install pyyaml cmake-format
+          sudo pip3 install --upgrade pip
+          sudo pip3 install pyyaml cmake-format
 
       - name: Configure CMake
         env:
           CC: "/usr/lib/llvm-15/bin/clang"
           CXX: "/usr/lib/llvm-15/bin/clang++"
-          CXX_STANDARD: 20
+          CXX_STANDARD: 17
           CLANG_TOOLS_PATH: "/usr/lib/llvm-15/bin"
         run: cmake -B ${{github.workspace}}/build
 
@@ -172,7 +172,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t quality
 
   sanitize:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
 
@@ -185,7 +185,7 @@ jobs:
         env:
           CC: "/usr/lib/llvm-15/bin/clang"
           CXX: "/usr/lib/llvm-15/bin/clang++"
-          CXX_STANDARD: 20
+          CXX_STANDARD: 17
           SANITIZERS: "undefined,address"
         run: cmake -B ${{github.workspace}}/build
 
@@ -193,11 +193,18 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t unit_tests
 
   merge_ok:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     needs: [build_and_test_older_compilers, build_and_test, quality_checks_pass, sanitize]
+    if: ${{ !cancelled() }}
     steps:
       - name: Enable merge
-        run: echo "OK to merge!"
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+            || contains(needs.*.result, 'skipped')
+          }}
+        run: exit 1
 
   build_single_header:
     runs-on: ubuntu-22.04
