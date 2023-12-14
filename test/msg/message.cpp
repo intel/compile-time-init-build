@@ -345,3 +345,24 @@ TEST_CASE("describe a message", "[message]") {
     CHECK(log_buffer.find("msg(id: 0x80, f1: 0xba11, f2: 0x42, f3: 0xd00d)") !=
           std::string::npos);
 }
+
+namespace {
+using uint8_storage_t = msg_defn::custom_storage_t<std::array, std::uint8_t>;
+using test_uint8_msg = msg_defn::owner_t<uint8_storage_t>;
+} // namespace
+
+TEST_CASE("construct with 8-bit storage", "[message]") {
+    test_uint8_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42,
+                       "f3"_field = 0xd00d};
+
+    CHECK(0x80 == msg.get("id"_field));
+    CHECK(0xba11 == msg.get("f1"_field));
+    CHECK(0x42 == msg.get("f2"_field));
+    CHECK(0xd00d == msg.get("f3"_field));
+
+    auto const expected =
+        std::array<std::uint8_t, 7>{0x11, 0xba, 0x00, 0x80, 0x0d, 0xd0, 0x42};
+    auto const data = msg.data();
+    CHECK(std::equal(std::begin(expected), std::end(expected), std::begin(data),
+                     std::end(data)));
+}
