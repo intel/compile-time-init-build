@@ -155,7 +155,7 @@ TEST_CASE("build rle handler multi fields", "[rle_indexed_builder]") {
     CHECK(not callback_success);
     CHECK(not callback_success_single_field);
 
-    // make sure an unconstrained field in a callback doesn't cause a mismatch
+    // an unconstrained field in a callback doesn't cause a mismatch
     callback_success = false;
     callback_success_single_field = false;
     cib::service<test_service>->handle(test_msg_t{
