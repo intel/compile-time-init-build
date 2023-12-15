@@ -31,7 +31,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t release_header
 
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cib.hpp
           path: ${{github.workspace}}/build/include/cib/cib.hpp
