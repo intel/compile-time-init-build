@@ -216,6 +216,9 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;
 
+    template <template <typename, std::size_t> typename C, typename T>
+    using custom_storage_t = typename access_t::template storage_t<C, T>;
+
     static_assert(
         boost::mp11::mp_is_set<boost::mp11::mp_transform<
             detail::name_for, boost::mp11::mp_list<Fields...>>>::value,
