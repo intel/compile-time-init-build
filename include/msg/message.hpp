@@ -22,7 +22,6 @@
 
 namespace msg {
 template <typename Msg, match::matcher M> struct msg_matcher : M {
-
     template <typename Data>
     [[nodiscard]] constexpr auto operator()(Data const &d) const -> bool {
         auto view = typename Msg::view_t{d};

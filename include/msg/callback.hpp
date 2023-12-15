@@ -39,12 +39,12 @@ template <typename...> struct extra_callback_args {};
  * A Class that defines a message callback and provides methods for validating
  * and handling incoming messages.
  */
-template <stdx::ct_string Name, typename MsgDefn, typename... ExtraCallbackArgs,
-          match::matcher M, detail::not_nullptr... Callables>
-struct callback<Name, MsgDefn, extra_callback_args<ExtraCallbackArgs...>, M,
+template <stdx::ct_string Name, typename... ExtraCallbackArgs, match::matcher M,
+          detail::not_nullptr... Callables>
+struct callback<Name, extra_callback_args<ExtraCallbackArgs...>, M,
                 Callables...> {
   private:
-    decltype(std::declval<M>() and typename MsgDefn::matcher_t{}) matcher;
+    M matcher;
     stdx::tuple<Callables...> callbacks;
 
     template <typename Msg>
@@ -59,8 +59,7 @@ struct callback<Name, MsgDefn, extra_callback_args<ExtraCallbackArgs...>, M,
   public:
     template <typename... CBs>
     constexpr explicit callback(M const &m, CBs &&...cbs)
-        : matcher{m and typename MsgDefn::matcher_t{}},
-          callbacks{std::forward<CBs>(cbs)...} {}
+        : matcher{m}, callbacks{std::forward<CBs>(cbs)...} {}
 
     template <typename Msg>
     [[nodiscard]] auto is_match(Msg const &m) const -> bool {
@@ -89,10 +88,10 @@ struct callback<Name, MsgDefn, extra_callback_args<ExtraCallbackArgs...>, M,
 };
 } // namespace detail
 
-template <stdx::ct_string Name, typename MsgDefn, typename... ExtraCallbackArgs>
+template <stdx::ct_string Name, typename... ExtraCallbackArgs>
 constexpr auto callback = []<match::matcher M, typename... CBs>(
                               M const &m, CBs &&...callbacks) {
-    return detail::callback<Name, MsgDefn,
+    return detail::callback<Name,
                             detail::extra_callback_args<ExtraCallbackArgs...>,
                             M, std::remove_cvref_t<CBs>...>{
         m, std::forward<CBs>(callbacks)...};

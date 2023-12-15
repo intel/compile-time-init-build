@@ -44,6 +44,22 @@ TEST_CASE("negate greater_than_or_equal_to", "[field matchers]") {
                        msg::less_than_t<test_field, std::uint32_t, 5> const>);
 }
 
+TEST_CASE("negate equal_to", "[field matchers]") {
+    constexpr auto m = msg::equal_to_t<test_field, std::uint32_t, 5>{};
+    constexpr auto n = match::negate(m);
+    static_assert(std::is_same_v<
+                  decltype(n),
+                  msg::not_equal_to_t<test_field, std::uint32_t, 5> const>);
+}
+
+TEST_CASE("negate not_equal_to", "[field matchers]") {
+    constexpr auto m = msg::not_equal_to_t<test_field, std::uint32_t, 5>{};
+    constexpr auto n = match::negate(m);
+    static_assert(
+        std::is_same_v<decltype(n),
+                       msg::equal_to_t<test_field, std::uint32_t, 5> const>);
+}
+
 TEST_CASE("less_than X implies less_than Y (X <= Y)", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_field, std::uint32_t, 5>{};
     constexpr auto n = msg::less_than_t<test_field, std::uint32_t, 6>{};
@@ -151,4 +167,41 @@ TEST_CASE("equal_to X and less_than Y is equal_to X (X < Y)",
     static_assert(
         std::is_same_v<decltype(m),
                        msg::equal_to_t<test_field, std::uint32_t, 5> const>);
+}
+
+TEST_CASE("less_than X implies not_equal_to X", "[field matchers]") {
+    constexpr auto m = msg::less_than_t<test_field, std::uint32_t, 5>{};
+    constexpr auto n = msg::not_equal_to_t<test_field, std::uint32_t, 5>{};
+    static_assert(match::implies(m, n));
+}
+
+TEST_CASE("greater_than X implies not_equal_to X", "[field matchers]") {
+    constexpr auto m = msg::greater_than_t<test_field, std::uint32_t, 5>{};
+    constexpr auto n = msg::not_equal_to_t<test_field, std::uint32_t, 5>{};
+    static_assert(match::implies(m, n));
+}
+
+TEST_CASE("less_than_or_equal_to X implies not_equal_to X",
+          "[field matchers]") {
+    constexpr auto m =
+        msg::less_than_or_equal_to_t<test_field, std::uint32_t, 5>{};
+    constexpr auto n = msg::not_equal_to_t<test_field, std::uint32_t, 6>{};
+    static_assert(match::implies(m, n));
+}
+
+TEST_CASE("greater_than_or_equal_to X implies not_equal_to X",
+          "[field matchers]") {
+    constexpr auto m =
+        msg::greater_than_or_equal_to_t<test_field, std::uint32_t, 6>{};
+    constexpr auto n = msg::not_equal_to_t<test_field, std::uint32_t, 5>{};
+    static_assert(match::implies(m, n));
+}
+
+TEST_CASE("not_equal_to X and less_than Y is less_than Y (X >= Y)",
+          "[field matchers]") {
+    constexpr auto m = msg::not_equal_to_t<test_field, std::uint32_t, 6>{} and
+                       msg::less_than_t<test_field, std::uint32_t, 6>{};
+    static_assert(
+        std::is_same_v<decltype(m),
+                       msg::less_than_t<test_field, std::uint32_t, 6> const>);
 }

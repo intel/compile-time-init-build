@@ -19,17 +19,20 @@ using field1 = field<"f1", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
 using field2 = field<"f2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
 using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
-using msg_defn =
-    message<"msg", id_field::WithRequired<0x80>, field1, field2, field3>;
+using msg_defn = message<"msg", id_field, field1, field2, field3>;
 using test_msg_t = msg::owning<msg_defn>;
 using msg_view_t = msg::const_view<msg_defn>;
+
+constexpr auto id_match =
+    msg::msg_matcher<msg_defn,
+                     msg::equal_to_t<id_field, std::uint32_t, 0x80>>{};
 
 struct test_service : msg::service<msg_view_t> {};
 
 bool callback_success;
 
-constexpr auto test_callback = msg::callback<"cb", msg_defn>(
-    match::always, [](msg_view_t) { callback_success = true; });
+constexpr auto test_callback =
+    msg::callback<"cb">(id_match, [](msg_view_t) { callback_success = true; });
 
 struct test_project {
     constexpr static auto config = cib::config(
