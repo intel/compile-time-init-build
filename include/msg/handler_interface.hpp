@@ -6,6 +6,6 @@ struct handler_interface {
     virtual auto is_match(MsgBaseT const &msg) const -> bool = 0;
 
     virtual auto handle(MsgBaseT const &msg,
-                        ExtraCallbackArgsT... extra_args) const -> void = 0;
+                        ExtraCallbackArgsT... extra_args) const -> bool = 0;
 };
 } // namespace msg

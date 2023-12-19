@@ -19,7 +19,8 @@ struct handler : handler_interface<BaseMsg, ExtraCallbackArgs...> {
             [&](auto &callback) { return callback.is_match(msg); }, callbacks);
     }
 
-    void handle(BaseMsg const &msg, ExtraCallbackArgs... args) const final {
+    auto handle(BaseMsg const &msg, ExtraCallbackArgs... args) const
+        -> bool final {
         bool const found_valid_callback = stdx::any_of(
             [&](auto &callback) { return callback.handle(msg, args...); },
             callbacks);
@@ -28,6 +29,7 @@ struct handler : handler_interface<BaseMsg, ExtraCallbackArgs...> {
             stdx::for_each([&](auto &callback) { callback.log_mismatch(msg); },
                            callbacks);
         }
+        return found_valid_callback;
     }
 };
 

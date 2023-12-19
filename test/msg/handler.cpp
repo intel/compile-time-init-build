@@ -54,7 +54,7 @@ TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
     auto callbacks = stdx::make_tuple(callback);
     auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
-    handler.handle(msg);
+    CHECK(handler.handle(msg));
     CHECK(dispatched);
 }
 
@@ -66,7 +66,7 @@ TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
     auto callbacks = stdx::make_tuple(callback);
     auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
-    handler.handle(msg);
+    CHECK(handler.handle(msg));
     CHECK(dispatched);
 }
 
@@ -78,7 +78,7 @@ TEST_CASE("dispatch single callback (no match)", "[handler]") {
     auto callbacks = stdx::make_tuple(callback);
     auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
-    handler.handle(msg);
+    CHECK(not handler.handle(msg));
     CHECK(not dispatched);
 }
 
@@ -86,7 +86,7 @@ TEST_CASE("log mismatch when no match", "[handler]") {
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
     auto callbacks = stdx::tuple{};
     auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
-    handler.handle(msg);
+    CHECK(not handler.handle(msg));
     CAPTURE(log_buffer);
     CHECK(log_buffer.find(
               "None of the registered callbacks claimed this message") !=
@@ -105,7 +105,7 @@ TEST_CASE("match and dispatch only one callback", "[handler]") {
         msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
 
     dispatched = false;
-    handler.handle(msg);
+    CHECK(handler.handle(msg));
     CHECK(dispatched);
 }
 
@@ -122,6 +122,6 @@ TEST_CASE("dispatch with extra args", "[handler]") {
         msg::handler<decltype(callbacks), decltype(msg), int>{callbacks};
 
     dispatched = false;
-    handler.handle(msg, 0xcafe);
+    CHECK(handler.handle(msg, 0xcafe));
     CHECK(dispatched);
 }
