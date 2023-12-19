@@ -85,6 +85,26 @@ TEST_CASE("callback handles message (raw)", "[handler]") {
     CHECK(dispatched);
 }
 
+namespace {
+template <typename T>
+using uint8_view =
+    typename T::template view_t<typename T::access_t::template span_t<uint8_t>>;
+template <typename T>
+using const_uint8_view = typename T::template view_t<
+    typename T::access_t::template span_t<uint8_t const>>;
+} // namespace
+
+TEST_CASE("callback handles message (custom raw format)", "[handler]") {
+    auto callback = msg::callback<"cb">(
+        id_match, [](const_uint8_view<msg_defn>) { dispatched = true; });
+    auto const msg_match = std::array<uint8_t, 32>{0x00u, 0xbau, 0x11u, 0x80u,
+                                                   0x00u, 0x42u, 0xd0u, 0x0du};
+
+    dispatched = false;
+    CHECK(callback.handle(msg_match));
+    CHECK(dispatched);
+}
+
 TEST_CASE("callback handles message (typed)", "[handler]") {
     auto callback = msg::callback<"cb">(
         id_match, [](msg::const_view<msg_defn>) { dispatched = true; });

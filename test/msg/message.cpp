@@ -366,3 +366,10 @@ TEST_CASE("construct with 8-bit storage", "[message]") {
     CHECK(std::equal(std::begin(expected), std::end(expected), std::begin(data),
                      std::end(data)));
 }
+
+TEST_CASE("view with external custom storage (oversized)", "[message]") {
+    auto const arr = std::array<std::uint8_t, 32>{0x00, 0xba, 0x11, 0x80,
+                                                  0x00, 0x42, 0xd0, 0x0d};
+    msg_defn::view_t msg{arr};
+    CHECK(0x80 == msg.get("id"_field));
+}
