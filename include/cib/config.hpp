@@ -44,17 +44,11 @@ template <auto... Args, typename... Configs>
 /**
  * Compose one or more components into a project or larger component.
  *
- * @tparam Args
- *      Template instantiation of cib::args filled with compile-time
- *      configurations values.
- *
  * @tparam Components
  *      List of components to be added to the configuration.
- *
- * @see cib::args
  */
-template <typename Args, typename... Components>
-constexpr static detail::components<Args, Components...> components{};
+template <typename... Components>
+constexpr static detail::components<Components...> components{};
 
 /**
  * Declare a list of services for use in the project.
