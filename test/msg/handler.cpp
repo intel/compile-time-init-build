@@ -109,6 +109,33 @@ TEST_CASE("match and dispatch only one callback", "[handler]") {
     CHECK(dispatched);
 }
 
+namespace {
+template <typename T>
+using uint8_view =
+    typename T::template view_t<typename T::access_t::template span_t<uint8_t>>;
+template <typename T>
+using const_uint8_view = typename T::template view_t<
+    typename T::access_t::template span_t<uint8_t const>>;
+} // namespace
+
+TEST_CASE("match and dispatch only one callback with uint8_t storage",
+          "[handler]") {
+    auto callback1 = msg::callback<"cb1">(
+        id_match<0x80>, [&](const_uint8_view<msg_defn>) { CHECK(false); });
+    auto callback2 = msg::callback<"cb2">(
+        id_match<0x44>, [](const_uint8_view<msg_defn>) { dispatched = true; });
+    auto const msg = std::array<uint8_t, 8>{0x00u, 0xbau, 0x11u, 0x44u,
+                                            0x00u, 0x42u, 0xd0u, 0x0du};
+
+    auto callbacks = stdx::make_tuple(callback1, callback2);
+    static auto handler =
+        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+
+    dispatched = false;
+    handler.handle(msg);
+    CHECK(dispatched);
+}
+
 TEST_CASE("dispatch with extra args", "[handler]") {
     auto callback = msg::callback<"cb", int>(
         id_match<0x80>, [](msg::const_view<msg_defn>, int value) {
