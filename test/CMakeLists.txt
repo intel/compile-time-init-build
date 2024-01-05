@@ -38,6 +38,7 @@ add_tests(
     lookup/strategies
     match/and
     match/constant
+    match/equivalence
     match/implies
     match/not
     match/or
