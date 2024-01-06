@@ -181,7 +181,7 @@ cib::service<my_service>->handle(my_message{"my field"_field = 0x80});
 
 Notice in this case that our callback is defined with a matcher that always
 matches, but also that the field in `my_message` has a matcher that requires it
-to equal `0x80`. Therefore handling the following message will not call the
+to equal `0x80`. Therefore, handling the following message will not call the
 callback:
 [source,cpp]
 ----
@@ -242,7 +242,12 @@ minimal effort at runtime.
 For each field in the `msg::index_spec`, we build a map from field values to
 bitsets, where the values in the bitsets represent callback indices.
 
-NOTE: The bitsets may be run-length encoded: this is a work in progress.
+NOTE: The bitsets may be run-length encoded by using the `rle_indexed_service`
+inplace of the `indexed_service`. This may be useful if you have limited space
+and/or a large set of possible callbacks.
+See xref:implementation_details.adoc#run_length_encoded_message_indices[Run Length
+Encoding Implementation Details]
+
 
 Each `indexed_callback` has a matcher that may be an
 xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
