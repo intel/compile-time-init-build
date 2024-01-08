@@ -153,11 +153,10 @@ messages; when a matcher successfully matches, the callback(s) registered will b
 // given the above field and message types, define a service
 struct my_service : msg::service<my_message> {};
 
-// define a callback with a matcher that always matches
-constexpr auto my_callback = msg::callback<my_message>(
-    "my callback"_sc,
-    match::always,
-    [](my_message const &) { /* do something */ });
+// define a callback with the matcher from the message definition
+constexpr auto my_callback = msg::callback<"my_callback">(
+    typename my_message_defn::matcher_t{},
+    [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // define a project
 struct my_project {
@@ -167,8 +166,10 @@ struct my_project {
 };
 ----
 
-Given these definitions, we can create a `nexus` and ask the service to handle a
-message:
+In this case, the callback parameter is a `const_view` over the message
+definition as explained above. Given these definitions, we can create a `nexus`
+and ask the service to handle a message:
+
 [source,cpp]
 ----
 cib::nexus<my_project> my_nexus{};
@@ -179,10 +180,11 @@ using msg::operator""_field;
 cib::service<my_service>->handle(my_message{"my field"_field = 0x80});
 ----
 
-Notice in this case that our callback is defined with a matcher that always
-matches, but also that the field in `my_message` has a matcher that requires it
-to equal `0x80`. Therefore, handling the following message will not call the
-callback:
+Notice in this case that our callback is defined with the `matcher_t` from the
+message definition; that matcher is the conjunction of all the field matchers,
+and the `my_field` matcher requires it to equal `0x80`. Therefore, handling
+the following message will not call the callback:
+
 [source,cpp]
 ----
 // handling this message does not call my callback
@@ -191,7 +193,7 @@ cib::service<my_service>->handle(my_message{"my_field"_field = 0x81});
 ----
 
 NOTE: Because message view types are implicitly constructible from an owning
-message type, or from an appropriate `std::array`, it is possible to set up a
+message type _or_ from an appropriate `std::array`, it is possible to set up a
 service and handler that works with "raw data" in the form of a `std::array`,
 but whose callbacks and matchers take the appropriate message view types.
 
@@ -217,12 +219,10 @@ using my_indices = msg::index_spec<my_field>;
 // the service is now an indexed_service
 struct my_indexed_service : msg::indexed_service<my_indices, my_message> {};
 
-// the callback is an indexed_callback
-// and here we specify the matcher
-constexpr auto my_callback = msg::indexed_callback(
-    "my indexed callback"_sc,
-    msg::equal_to<0x80>,
-    [](my_message const &) { /* do something */ });
+// this time, the callback is an indexed_callback
+constexpr auto my_callback = msg::indexed_callback<"my_indexed_callback">(
+    typename my_message_defn::matcher_t{},
+    [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // everything else is the same
 ----
