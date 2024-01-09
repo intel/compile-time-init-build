@@ -3,6 +3,7 @@
 #include <match/and.hpp>
 #include <match/concepts.hpp>
 #include <match/sum_of_products.hpp>
+#include <msg/callback.hpp>
 #include <msg/field_matchers.hpp>
 
 #include <stdx/concepts.hpp>
@@ -34,22 +35,11 @@ CONSTEVAL auto validate_matcher() -> bool {
     return matcher_validator<DummyArgs...>.template validate<M>();
 }
 
-template <stdx::ct_string Name, match::matcher M, stdx::callable F>
-struct indexed_callback_t {
-    using matcher_t = M;
-    using callable_t = F;
-
-    constexpr static auto name = Name;
-    M matcher;
-    F callable;
-};
-
 template <stdx::ct_string Name>
 constexpr auto indexed_callback =
     []<match::matcher M, stdx::callable F>(M &&m, F &&f) {
-        auto sop = match::sum_of_products(std::forward<M>(m));
-        return indexed_callback_t<Name, decltype(sop), std::remove_cvref_t<F>>{
-            std::move(sop), std::forward<F>(f)};
+        return callback<Name>(match::sum_of_products(std::forward<M>(m)),
+                              std::forward<F>(f));
     };
 
 template <typename... Fields>
@@ -57,10 +47,13 @@ constexpr auto remove_match_terms = []<typename C>(C &&c) {
     using callback_t = std::remove_cvref_t<C>;
     match::matcher auto new_matcher = remove_terms(
         std::forward<C>(c).matcher, std::type_identity<Fields>{}...);
-    return indexed_callback_t<callback_t::name, decltype(new_matcher),
-                              typename callback_t::callable_t>{
+    return detail::callback<callback_t::name, decltype(new_matcher),
+                            typename callback_t::callable_t>{
         std::move(new_matcher), std::forward<C>(c).callable};
 };
+
+template <typename C, match::matcher... Ms>
+constexpr auto separate_sum_terms(C &&, Ms &&...);
 
 namespace detail {
 template <stdx::ct_string Name, match::matcher M, typename F>
@@ -69,15 +62,15 @@ constexpr auto separate_sum_terms(M &&m, F &&f) {
     using callable_t = std::remove_cvref_t<F>;
     if constexpr (stdx::is_specialization_of_v<matcher_t, match::or_t>) {
         auto lcb =
-            indexed_callback_t<Name, typename matcher_t::lhs_t, callable_t>{
+            detail::callback<Name, typename matcher_t::lhs_t, callable_t>{
                 std::forward<M>(m).lhs, f};
         auto rcb =
-            indexed_callback_t<Name, typename matcher_t::rhs_t, callable_t>{
+            detail::callback<Name, typename matcher_t::rhs_t, callable_t>{
                 std::forward<M>(m).rhs, f};
-        return stdx::tuple_cat(separate_sum_terms(std::move(lcb)),
-                               separate_sum_terms(std::move(rcb)));
+        return stdx::tuple_cat(msg::separate_sum_terms(std::move(lcb)),
+                               msg::separate_sum_terms(std::move(rcb)));
     } else {
-        return stdx::make_tuple(indexed_callback_t<Name, matcher_t, callable_t>{
+        return stdx::make_tuple(detail::callback<Name, matcher_t, callable_t>{
             std::forward<M>(m), std::forward<F>(f)});
     }
 }
