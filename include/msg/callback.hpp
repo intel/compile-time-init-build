@@ -5,6 +5,7 @@
 #include <msg/detail/func_traits.hpp>
 #include <msg/message.hpp>
 
+#include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -28,47 +29,28 @@ void dispatch_single_callable(Callable const &callable, auto const &msg,
         [&](auto const &...requiredArgs) { callable(msg, requiredArgs...); });
 }
 
-template <typename T>
-concept not_nullptr = not std::is_null_pointer_v<T>;
-
-template <stdx::ct_string, typename...> struct callback;
-
-template <typename...> struct extra_callback_args {};
-
 /**
  * A Class that defines a message callback and provides methods for validating
  * and handling incoming messages.
  */
-template <stdx::ct_string Name, typename... ExtraCallbackArgs, match::matcher M,
-          detail::not_nullptr... Callables>
-struct callback<Name, extra_callback_args<ExtraCallbackArgs...>, M,
-                Callables...> {
+template <stdx::ct_string Name, match::matcher M, stdx::callable F,
+          typename... ExtraArgs>
+struct callback {
   private:
-    M matcher;
-    stdx::tuple<Callables...> callbacks;
-
     template <typename Msg>
-    void dispatch(Msg const &m, ExtraCallbackArgs const &...args) const {
-        stdx::for_each(
-            [&](auto const &cb) {
-                detail::dispatch_single_callable(cb, m, args...);
-            },
-            callbacks);
+    void dispatch(Msg const &m, ExtraArgs const &...args) const {
+        detail::dispatch_single_callable(callable, m, args...);
     }
 
   public:
-    template <typename... CBs>
-    constexpr explicit callback(M const &m, CBs &&...cbs)
-        : matcher{m}, callbacks{std::forward<CBs>(cbs)...} {}
-
     template <typename Msg>
     [[nodiscard]] auto is_match(Msg const &m) const -> bool {
         return matcher(m);
     }
 
     template <typename Msg>
-    [[nodiscard]] auto handle(Msg const &m,
-                              ExtraCallbackArgs const &...args) const -> bool {
+    [[nodiscard]] auto handle(Msg const &m, ExtraArgs const &...args) const
+        -> bool {
         if (matcher(m)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
                      "callback",
@@ -85,15 +67,20 @@ struct callback<Name, extra_callback_args<ExtraCallbackArgs...>, M,
                  stdx::ct_string_to_type<Name, sc::string_constant>(),
                  matcher.describe_match(m));
     }
+
+    using matcher_t = M;
+    using callable_t = F;
+
+    constexpr static auto name = Name;
+    [[no_unique_address]] M matcher;
+    [[no_unique_address]] F callable;
 };
 } // namespace detail
 
-template <stdx::ct_string Name, typename... ExtraCallbackArgs>
-constexpr auto callback = []<match::matcher M, typename... CBs>(
-                              M const &m, CBs &&...callbacks) {
-    return detail::callback<Name,
-                            detail::extra_callback_args<ExtraCallbackArgs...>,
-                            M, std::remove_cvref_t<CBs>...>{
-        m, std::forward<CBs>(callbacks)...};
-};
+template <stdx::ct_string Name, typename... ExtraArgs>
+constexpr auto callback =
+    []<match::matcher M, stdx::callable F>(M const &m, F &&f) {
+        return detail::callback<Name, M, std::remove_cvref_t<F>, ExtraArgs...>{
+            m, std::forward<F>(f)};
+    };
 } // namespace msg
