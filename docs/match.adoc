@@ -362,3 +362,21 @@ In disjunctive normal form, all `not` applications are pushed down to act on
 single terms and not on the compound `and` and `or` terms. The transformation
 recursively applies distribution of _and_ over _or_ and
 https://en.wikipedia.org/wiki/De_Morgan%27s_laws[de Morgan's laws].
+
+=== Matcher ordering and equivalence
+
+Given a definition of implication, we can define a partial ordering of matchers:
+
+* Two matchers `A` and `B` are equivalent if `A => B` and `B => A`.
+* Otherwise, `A => B` means that `A < B` and vice versa.
+* If no implication relationship between `A` and `B` holds true, then `A` and
+  `B` are unorderable.
+
+Therefore, `operator<​=​>` is defined on matchers such that it returns a
+https://en.cppreference.com/w/cpp/utility/compare/partial_ordering[`std::partial_ordering`].
+
+An intuition for what "less than" means when applied to matchers: one matcher is
+less than another if it matches fewer values. This is consistent with theory:
+matchers form a
+https://en.wikipedia.org/wiki/Boolean_algebra_(structure)[Boolean algebra] with
+`never` and `always` as ⊥ and ⊤ respectively.
