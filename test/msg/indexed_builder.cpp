@@ -361,3 +361,32 @@ TEST_CASE("build handler impossible matcher does not fail unless configured",
     cib::nexus<test_project_impossible> test_nexus{};
     test_nexus.init();
 }
+
+namespace {
+int callback_extra_arg{};
+
+constexpr auto test_callback_extra_args =
+    msg::indexed_callback<"test_callback_extra_args", int>(
+        test_id_field::equal_to<0x80>, [](test_msg_t const &, int i) {
+            callback_success = true;
+            callback_extra_arg = i;
+        });
+
+struct test_service_extra_args : indexed_service<index_spec, test_msg_t, int> {
+};
+struct test_project_extra_args {
+    constexpr static auto config = cib::config(
+        cib::exports<test_service_extra_args>,
+        cib::extend<test_service_extra_args>(test_callback_extra_args));
+};
+} // namespace
+
+TEST_CASE("handle extra arguments", "[handler_builder]") {
+    cib::nexus<test_project_extra_args> test_nexus{};
+    test_nexus.init();
+
+    cib::service<test_service_extra_args>->handle(
+        test_msg_t{"test_id_field"_field = 0x80}, 42);
+    CHECK(callback_success);
+    CHECK(callback_extra_arg == 42);
+}

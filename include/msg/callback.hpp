@@ -71,6 +71,9 @@ struct callback {
     using matcher_t = M;
     using callable_t = F;
 
+    template <match::matcher NewM>
+    using rebind_matcher = callback<Name, NewM, F, ExtraArgs...>;
+
     constexpr static auto name = Name;
     [[no_unique_address]] M matcher;
     [[no_unique_address]] F callable;
