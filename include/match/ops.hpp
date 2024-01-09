@@ -39,5 +39,5 @@ template <match::matcher L, match::matcher R>
     if (not x and not y) {
         return std::partial_ordering::unordered;
     }
-    return x <=> y;
+    return y <=> x;
 }
