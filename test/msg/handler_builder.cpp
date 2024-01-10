@@ -27,13 +27,12 @@ constexpr auto id_match =
     msg::msg_matcher<msg_defn,
                      msg::equal_to_t<id_field, std::uint32_t, 0x80>>{};
 
-struct test_service : msg::service<msg_view_t> {};
-
 bool callback_success;
 
 constexpr auto test_callback =
     msg::callback<"cb">(id_match, [](msg_view_t) { callback_success = true; });
 
+struct test_service : msg::service<msg_view_t> {};
 struct test_project {
     constexpr static auto config = cib::config(
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
@@ -81,4 +80,31 @@ TEST_CASE("match output failure", "[handler_builder]") {
           std::string::npos);
     CHECK(log_buffer.find("cb") != std::string::npos);
     CHECK(log_buffer.find("id (0x81) == 0x80") != std::string::npos);
+}
+
+namespace {
+int callback_extra_arg{};
+
+constexpr auto test_callback_extra_args =
+    msg::callback<"cb", int>(id_match, [](msg_view_t, int i) {
+        callback_success = true;
+        callback_extra_arg = i;
+    });
+
+struct test_service_extra_args : msg::service<msg_view_t, int> {};
+struct test_project_extra_args {
+    constexpr static auto config = cib::config(
+        cib::exports<test_service_extra_args>,
+        cib::extend<test_service_extra_args>(test_callback_extra_args));
+};
+} // namespace
+
+TEST_CASE("handle extra arguments", "[handler_builder]") {
+    cib::nexus<test_project_extra_args> test_nexus{};
+    test_nexus.init();
+
+    cib::service<test_service_extra_args>->handle(test_msg_t{"id"_field = 0x80},
+                                                  42);
+    CHECK(callback_success);
+    CHECK(callback_extra_arg == 42);
 }

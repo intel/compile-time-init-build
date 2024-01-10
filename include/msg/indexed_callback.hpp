@@ -35,11 +35,11 @@ CONSTEVAL auto validate_matcher() -> bool {
     return matcher_validator<DummyArgs...>.template validate<M>();
 }
 
-template <stdx::ct_string Name>
+template <stdx::ct_string Name, typename... ExtraArgs>
 constexpr auto indexed_callback =
     []<match::matcher M, stdx::callable F>(M &&m, F &&f) {
-        return callback<Name>(match::sum_of_products(std::forward<M>(m)),
-                              std::forward<F>(f));
+        return callback<Name, ExtraArgs...>(
+            match::sum_of_products(std::forward<M>(m)), std::forward<F>(f));
     };
 
 template <typename... Fields>
@@ -52,36 +52,30 @@ constexpr auto remove_match_terms = []<typename C>(C &&c) {
         std::move(new_matcher), std::forward<C>(c).callable};
 };
 
-template <typename C, match::matcher... Ms>
-constexpr auto separate_sum_terms(C &&, Ms &&...);
-
 namespace detail {
-template <stdx::ct_string Name, match::matcher M, typename F>
-constexpr auto separate_sum_terms(M &&m, F &&f) {
+template <match::matcher M, typename C>
+    requires(
+        not stdx::is_specialization_of_v<std::remove_cvref_t<M>, match::or_t>)
+constexpr auto separate_sum_terms(M &&m, C &&c) {
     using matcher_t = std::remove_cvref_t<M>;
-    using callable_t = std::remove_cvref_t<F>;
-    if constexpr (stdx::is_specialization_of_v<matcher_t, match::or_t>) {
-        auto lcb =
-            detail::callback<Name, typename matcher_t::lhs_t, callable_t>{
-                std::forward<M>(m).lhs, f};
-        auto rcb =
-            detail::callback<Name, typename matcher_t::rhs_t, callable_t>{
-                std::forward<M>(m).rhs, f};
-        return stdx::tuple_cat(msg::separate_sum_terms(std::move(lcb)),
-                               msg::separate_sum_terms(std::move(rcb)));
-    } else {
-        return stdx::make_tuple(detail::callback<Name, matcher_t, callable_t>{
-            std::forward<M>(m), std::forward<F>(f)});
-    }
+    using callback_t = std::remove_cvref_t<C>;
+    return stdx::make_tuple(
+        typename callback_t::template rebind_matcher<matcher_t>{
+            std::forward<M>(m), std::forward<C>(c).callable});
+}
+
+template <match::matcher M>
+    requires stdx::is_specialization_of_v<std::remove_cvref_t<M>, match::or_t>
+constexpr auto separate_sum_terms(M &&m, auto const &c) {
+    return stdx::tuple_cat(separate_sum_terms(std::forward<M>(m).lhs, c),
+                           separate_sum_terms(std::forward<M>(m).rhs, c));
 }
 } // namespace detail
 
 template <typename C, match::matcher... Ms>
 constexpr auto separate_sum_terms(C &&c, Ms &&...ms) {
-    using callback_t = std::remove_cvref_t<C>;
     auto m = match::sum_of_products(
         match::all(std::forward<C>(c).matcher, std::forward<Ms>(ms)...));
-    return detail::separate_sum_terms<callback_t::name>(
-        std::move(m), std::forward<C>(c).callable);
+    return detail::separate_sum_terms(std::move(m), std::forward<C>(c));
 }
 } // namespace msg

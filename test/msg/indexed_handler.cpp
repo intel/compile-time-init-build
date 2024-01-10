@@ -148,4 +148,21 @@ TEST_CASE("create handler with multiple indices and callbacks",
     check_no_match(1, 4);
 }
 
+TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
+    constexpr auto h = msg::indexed_handler{
+        msg::callback_args<test_msg, std::size_t>,
+        msg::indices{msg::index{
+            opcode_field{},
+            lookup::make(CX_VALUE(lookup::input{
+                bitset<32>{}, std::array{lookup::entry{
+                                  42u, bitset<32>{stdx::place_bits, 0}}}}))}},
+        std::array<void (*)(test_msg const &, std::size_t), 1>{
+            [](test_msg const &, std::size_t i) { callbacks_called.set(i); }}};
+
+    callbacks_called.reset();
+    CHECK(h.handle(test_msg{"opcode_field"_field = 42}, std::size_t{1}));
+    CHECK(h.is_match(test_msg{"opcode_field"_field = 42}));
+    CHECK(callbacks_called[1]);
+}
+
 #undef CX_VALUE
