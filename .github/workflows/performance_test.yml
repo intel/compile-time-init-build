@@ -1,4 +1,5 @@
 name: Performance Tests
+permissions: read-all
 
 on:
   workflow_dispatch:
@@ -13,7 +14,7 @@ jobs:
   performance_test:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install compiler
         run: sudo apt update && sudo apt-get install -y clang-14
@@ -43,7 +44,7 @@ jobs:
           echo "</details>" >> $GITHUB_STEP_SUMMARY
 
       - name: 'Upload Compilation Trace'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         with:
           name: compilation_trace.json
           path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
