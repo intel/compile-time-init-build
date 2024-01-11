@@ -1,4 +1,5 @@
 name: Release
+permissions: read-all
 
 on:
   push:
@@ -12,7 +13,7 @@ jobs:
   release:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: recursive
 
@@ -24,7 +25,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target release_header
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           files: ${{github.workspace}}/build/include/cib/cib.hpp
           generate_release_notes: true
