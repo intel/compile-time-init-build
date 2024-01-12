@@ -38,6 +38,7 @@
 #include <cib/built.hpp>
 #include <cib/callback.hpp>
 #include <cib/config.hpp>
+#include <cib/func_decl.hpp>
 #include <cib/nexus.hpp>
 #include <cib/top.hpp>
 #include <interrupt/manager.hpp>

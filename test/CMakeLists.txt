@@ -12,12 +12,21 @@ function(add_tests)
     endforeach()
 endfunction()
 
+add_unit_test(
+    "flow_flow_test"
+    CATCH2
+    FILES
+    "flow/flow.cpp"
+    "flow/flow_cib_func.cpp"
+    LIBRARIES
+    warnings
+    cib)
+
 add_tests(
     cib/builder_meta
     cib/callback
     cib/nexus
     cib/readme_hello_world
-    flow/flow
     flow/graph
     flow/graph_builder
     interrupt/dynamic_controller
