@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cib/func_decl.hpp>
 #include <flow/common.hpp>
 #include <log/log.hpp>
 #include <sc/string_constant.hpp>
@@ -41,6 +42,10 @@ template <stdx::ct_string Name, typename F>
     requires(stdx::is_function_object_v<F> and std::is_empty_v<F>)
 [[nodiscard]] constexpr auto action(F const &) {
     return detail::make_node<Name, "action", F>();
+}
+
+template <stdx::ct_string Name> [[nodiscard]] constexpr auto action() {
+    return action<Name>(cib::func_decl<Name>);
 }
 
 template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {

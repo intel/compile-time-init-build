@@ -1,17 +1,19 @@
 #include <cib/cib.hpp>
+#include <cib/func_decl.hpp>
 #include <flow/flow.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <string>
 
-namespace {
-auto actual = std::string{};
+std::string actual = {};
 
+namespace {
 constexpr auto a = flow::action<"a">([] { actual += "a"; });
 constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
+constexpr auto e = flow::action<"e">();
 
 struct TestFlowAlpha : public flow::service<> {};
 struct TestFlowBeta : public flow::service<> {};
@@ -53,4 +55,18 @@ TEST_CASE("add multi action through cib::nexus, run through cib::service",
     cib::service<TestFlowAlpha>();
     cib::service<TestFlowBeta>();
     CHECK(actual == "abcd");
+}
+
+namespace {
+struct SingleFlowSingleActionFuncDeclConfig {
+    constexpr static auto config =
+        cib::config(cib::exports<TestFlowAlpha>, cib::extend<TestFlowAlpha>(e));
+};
+} // namespace
+
+TEST_CASE("add single action using func_decl through cib::nexus", "[flow]") {
+    actual.clear();
+    cib::nexus<SingleFlowSingleActionFuncDeclConfig> nexus{};
+    nexus.service<TestFlowAlpha>();
+    CHECK(actual == "e");
 }
