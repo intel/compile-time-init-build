@@ -1,5 +1,7 @@
 #include <msg/field.hpp>
 
+#include <stdx/bit.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
@@ -105,4 +107,17 @@ TEST_CASE("enum field type ", "[field insert]") {
     //                                   ^----^
     F::insert(data, E::Value);
     CHECK(0b1110'1011 == data[0]);
+}
+
+namespace {
+struct custom_t {
+    std::uint32_t v{42};
+};
+} // namespace
+
+TEST_CASE("trivially_copyable field type ", "[field insert]") {
+    using F = field<"", custom_t>::located<at{31_msb, 0_lsb}>;
+    std::array<std::uint32_t, 1> data{};
+    F::insert(data, custom_t{17});
+    CHECK(17 == stdx::bit_cast<custom_t>(data[0]).v);
 }
