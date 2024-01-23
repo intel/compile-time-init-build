@@ -4,6 +4,7 @@
 #include <msg/field_matchers.hpp>
 #include <sc/format.hpp>
 
+#include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
@@ -27,10 +28,9 @@ concept range = requires(T &t) {
 }
 
 template <typename T>
-concept field_spec =
-    std::unsigned_integral<decltype(T::size)> and
-    (std::integral<typename T::type> or std::is_enum_v<typename T::type>) and
-    requires { typename T::name_t; };
+concept field_spec = std::unsigned_integral<decltype(T::size)> and
+                     std::is_trivially_copyable_v<typename T::type> and
+                     requires { typename T::name_t; };
 
 template <typename T>
 concept bits_extractor =
@@ -267,14 +267,14 @@ template <bits_locator... BLs> struct field_locator_t {
             raw |= B::template extract<raw_t>(std::forward<R>(r));
         };
         (..., extract_bits.template operator()<BLs>());
-        return static_cast<typename Spec::type>(raw);
+        return stdx::bit_cast<typename Spec::type>(raw);
     }
 
     template <field_spec Spec, detail::range R>
     constexpr static auto insert(R &&r, typename Spec::type const &value)
         -> void {
         using raw_t = integral_type_for<typename Spec::type>;
-        auto raw = static_cast<raw_t>(value);
+        auto raw = stdx::bit_cast<raw_t>(value);
         auto const insert_bits = [&]<bits_locator B>() {
             B::insert(
                 std::forward<R>(r),
@@ -380,7 +380,8 @@ template <typename R> constexpr auto capacity() -> std::size_t {
 
 template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
           match::matcher M = match::always_t, auto... Ats>
-    requires(... and field_location<decltype(Ats)>)
+    requires std::is_trivially_copyable_v<T> and
+                 (... and field_location<decltype(Ats)>)
 class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 public detail::locator_for<Ats...> {
     using spec_t = field_spec_t<Name, T, detail::field_size<Ats...>>;

@@ -1,5 +1,6 @@
 #include <msg/field.hpp>
 
+#include <stdx/bit.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -88,4 +89,16 @@ TEST_CASE("enum field type ", "[field extract]") {
     std::array<std::uint8_t, 1> data{0b1110'1011};
     //                                   ^----^
     CHECK(E::Value == F::extract(data));
+}
+
+namespace {
+struct custom_t {
+    std::uint32_t v{42};
+};
+} // namespace
+
+TEST_CASE("trivially_copyable field type ", "[field insert]") {
+    using F = field<"", custom_t>::located<at{31_msb, 0_lsb}>;
+    std::array<std::uint32_t, 1> data{17};
+    CHECK(17 == F::extract(data).v);
 }
