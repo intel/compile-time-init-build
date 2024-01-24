@@ -424,26 +424,26 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using matcher_t = M;
 
     template <T expected_value>
-    constexpr static msg::equal_to_t<field_t, T, expected_value> equal_to{};
+    constexpr static msg::equal_to_t<field_t, expected_value> equal_to{};
 
-    constexpr static msg::equal_to_t<field_t, T, DefaultValue> match_default{};
+    constexpr static msg::equal_to_t<field_t, DefaultValue> match_default{};
 
     template <T... expected_values>
-    constexpr static msg::in_t<field_t, T, expected_values...> in{};
+    constexpr static msg::in_t<field_t, expected_values...> in{};
 
     template <T expected_value>
-    constexpr static msg::greater_than_t<field_t, T, expected_value>
+    constexpr static msg::greater_than_t<field_t, expected_value>
         greater_than{};
 
     template <T expected_value>
-    constexpr static msg::greater_than_or_equal_to_t<field_t, T, expected_value>
+    constexpr static msg::greater_than_or_equal_to_t<field_t, expected_value>
         greater_than_or_equal_to{};
 
     template <T expected_value>
-    constexpr static msg::less_than_t<field_t, T, expected_value> less_than{};
+    constexpr static msg::less_than_t<field_t, expected_value> less_than{};
 
     template <T expected_value>
-    constexpr static msg::less_than_or_equal_to_t<field_t, T, expected_value>
+    constexpr static msg::less_than_or_equal_to_t<field_t, expected_value>
         less_than_or_equal_to{};
 
     template <T NewDefaultValue>
@@ -455,34 +455,32 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     template <T NewRequiredValue>
     using WithRequired =
         field_t<Name, T, NewRequiredValue,
-                msg::equal_to_t<field_t, T, NewRequiredValue>, Ats...>;
+                msg::equal_to_t<field_t, NewRequiredValue>, Ats...>;
 
     template <T... PotentialValues>
-    using WithIn = field_t<Name, T, T{},
-                           msg::in_t<field_t, T, PotentialValues...>, Ats...>;
+    using WithIn =
+        field_t<Name, T, T{}, msg::in_t<field_t, PotentialValues...>, Ats...>;
 
     template <T NewGreaterValue>
     using WithGreaterThan =
         field_t<Name, T, NewGreaterValue,
-                msg::greater_than_t<field_t, T, NewGreaterValue>, Ats...>;
+                msg::greater_than_t<field_t, NewGreaterValue>, Ats...>;
 
     template <T NewGreaterValue>
     using WithGreaterThanOrEqualTo =
         field_t<Name, T, NewGreaterValue,
-                msg::greater_than_or_equal_to_t<field_t, T, NewGreaterValue>,
+                msg::greater_than_or_equal_to_t<field_t, NewGreaterValue>,
                 Ats...>;
 
     template <T NewLesserValue>
     using WithLessThan =
         field_t<Name, T, NewLesserValue,
-                msg::less_than_or_equal_to_t<field_t, T, NewLesserValue>,
-                Ats...>;
+                msg::less_than_or_equal_to_t<field_t, NewLesserValue>, Ats...>;
 
     template <T NewLesserValue>
     using WithLessThanOrEqualTo =
         field_t<Name, T, NewLesserValue,
-                msg::less_than_or_equal_to_t<field_t, T, NewLesserValue>,
-                Ats...>;
+                msg::less_than_or_equal_to_t<field_t, NewLesserValue>, Ats...>;
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
         return format("{}: 0x{:x}"_sc, spec_t::name, v);

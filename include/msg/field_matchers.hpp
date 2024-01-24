@@ -127,7 +127,7 @@ template <typename RelOp> constexpr auto to_string() {
 }
 } // namespace detail
 
-template <typename RelOp, typename Field, typename T, T ExpectedValue>
+template <typename RelOp, typename Field, typename Field::type ExpectedValue>
 struct rel_matcher_t {
     using is_matcher = void;
 
@@ -153,91 +153,90 @@ struct rel_matcher_t {
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
                                                    rel_matcher_t const &) {
-        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field, T,
+        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field,
                              ExpectedValue>{};
     }
 
-    template <T OtherValue>
+    template <typename Field::type OtherValue>
     [[nodiscard]] friend constexpr auto
     tag_invoke(match::implies_t, rel_matcher_t,
-               rel_matcher_t<RelOp, Field, T, OtherValue>) -> bool {
+               rel_matcher_t<RelOp, Field, OtherValue>) -> bool {
         return RelOp{}(ExpectedValue, OtherValue);
     }
 };
 
-template <typename Field, typename T, T ExpectedValue>
-using less_than_t = rel_matcher_t<std::less<>, Field, T, ExpectedValue>;
-template <typename Field, typename T, T ExpectedValue>
+template <typename Field, auto ExpectedValue>
+using less_than_t = rel_matcher_t<std::less<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
 using less_than_or_equal_to_t =
-    rel_matcher_t<std::less_equal<>, Field, T, ExpectedValue>;
-template <typename Field, typename T, T ExpectedValue>
-using greater_than_t = rel_matcher_t<std::greater<>, Field, T, ExpectedValue>;
-template <typename Field, typename T, T ExpectedValue>
+    rel_matcher_t<std::less_equal<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+using greater_than_t = rel_matcher_t<std::greater<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
 using greater_than_or_equal_to_t =
-    rel_matcher_t<std::greater_equal<>, Field, T, ExpectedValue>;
+    rel_matcher_t<std::greater_equal<>, Field, ExpectedValue>;
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, T, X> const &,
-           less_than_t<Field, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, X> const &,
+           less_than_t<Field, Y> const &) -> bool {
     return X < Y;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_t<Field, T, X> const &,
-           less_than_or_equal_to_t<Field, T, Y> const &) -> bool {
-    auto inc = T{};
+tag_invoke(match::implies_t, less_than_t<Field, X> const &,
+           less_than_or_equal_to_t<Field, Y> const &) -> bool {
+    auto inc = decltype(X){};
     return X <= Y + ++inc;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, T, X> const &,
-           greater_than_t<Field, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, X> const &,
+           greater_than_t<Field, Y> const &) -> bool {
     return X > Y;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_t<Field, T, X> const &,
-           greater_than_or_equal_to_t<Field, T, Y> const &) -> bool {
-    auto inc = T{};
+tag_invoke(match::implies_t, greater_than_t<Field, X> const &,
+           greater_than_or_equal_to_t<Field, Y> const &) -> bool {
+    auto inc = decltype(X){};
     return X + ++inc >= Y;
 }
 
-template <typename Field, typename T, T ExpectedValue>
-using equal_to_t = rel_matcher_t<std::equal_to<>, Field, T, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+using equal_to_t = rel_matcher_t<std::equal_to<>, Field, ExpectedValue>;
 
-template <typename Field, typename T, T X, typename RelOp, T Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, equal_to_t<Field, T, X> const &,
-           rel_matcher_t<RelOp, Field, T, Y> const &) -> bool {
+template <typename Field, auto X, typename RelOp, decltype(X) Y>
+[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
+                                        equal_to_t<Field, X> const &,
+                                        rel_matcher_t<RelOp, Field, Y> const &)
+    -> bool {
     return RelOp{}(X, Y);
 }
 
-template <typename Field, typename T, T X>
-constexpr auto tag_invoke(index_terms_t, equal_to_t<Field, T, X> const &,
+template <typename Field, auto X>
+constexpr auto tag_invoke(index_terms_t, equal_to_t<Field, X> const &,
                           stdx::callable auto const &f, std::size_t idx)
     -> void {
     f.template operator()<Field>(idx, X);
 }
 
-template <typename Field, typename T, T ExpectedValue>
-using not_equal_to_t =
-    rel_matcher_t<std::not_equal_to<>, Field, T, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+using not_equal_to_t = rel_matcher_t<std::not_equal_to<>, Field, ExpectedValue>;
 
-template <typename Field, typename T, T X>
-constexpr auto tag_invoke(index_not_terms_t,
-                          not_equal_to_t<Field, T, X> const &,
+template <typename Field, auto X>
+constexpr auto tag_invoke(index_not_terms_t, not_equal_to_t<Field, X> const &,
                           stdx::callable auto const &f, std::size_t idx,
                           bool = false) -> void {
     f.template operator()<Field>(idx, X);
 }
 
-template <typename Field, typename T, T X, typename... Fields>
+template <typename Field, auto X, typename... Fields>
 [[nodiscard]] constexpr auto tag_invoke(remove_terms_t,
-                                        equal_to_t<Field, T, X> const &m,
+                                        equal_to_t<Field, X> const &m,
                                         std::type_identity<Fields>...)
     -> match::matcher auto {
     if constexpr ((std::is_same_v<Field, Fields> or ...)) {
@@ -247,9 +246,9 @@ template <typename Field, typename T, T X, typename... Fields>
     }
 }
 
-template <typename Field, typename T, T X, typename... Fields>
+template <typename Field, auto X, typename... Fields>
 [[nodiscard]] constexpr auto tag_invoke(remove_terms_t,
-                                        not_equal_to_t<Field, T, X> const &m,
+                                        not_equal_to_t<Field, X> const &m,
                                         std::type_identity<Fields>...)
     -> match::matcher auto {
     if constexpr ((std::is_same_v<Field, Fields> or ...)) {
@@ -259,37 +258,37 @@ template <typename Field, typename T, T X, typename... Fields>
     }
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto tag_invoke(match::implies_t,
-                                        less_than_t<Field, T, X> const &,
-                                        not_equal_to_t<Field, T, Y> const &)
+                                        less_than_t<Field, X> const &,
+                                        not_equal_to_t<Field, Y> const &)
     -> bool {
     return X <= Y;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto tag_invoke(match::implies_t,
-                                        greater_than_t<Field, T, X> const &,
-                                        not_equal_to_t<Field, T, Y> const &)
+                                        greater_than_t<Field, X> const &,
+                                        not_equal_to_t<Field, Y> const &)
     -> bool {
     return X >= Y;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, T, X> const &,
-           not_equal_to_t<Field, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, X> const &,
+           not_equal_to_t<Field, Y> const &) -> bool {
     return X < Y;
 }
 
-template <typename Field, typename T, T X, T Y>
+template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, T, X> const &,
-           not_equal_to_t<Field, T, Y> const &) -> bool {
+tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, X> const &,
+           not_equal_to_t<Field, Y> const &) -> bool {
     return X > Y;
 }
 
-template <typename Field, typename T, T... ExpectedValues>
+template <typename Field, auto... ExpectedValues>
 using in_t =
-    decltype((equal_to_t<Field, T, ExpectedValues>{} or ... or match::never));
+    decltype((equal_to_t<Field, ExpectedValues>{} or ... or match::never));
 } // namespace msg

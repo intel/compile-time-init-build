@@ -24,8 +24,7 @@ using test_msg_t = msg::owning<msg_defn>;
 using msg_view_t = msg::const_view<msg_defn>;
 
 constexpr auto id_match =
-    msg::msg_matcher<msg_defn,
-                     msg::equal_to_t<id_field, std::uint32_t, 0x80>>{};
+    msg::msg_matcher<msg_defn, msg::equal_to_t<id_field, 0x80>>{};
 
 bool callback_success;
 
