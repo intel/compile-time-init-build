@@ -27,7 +27,7 @@ using msg_defn = message<"msg", id_field, field1, field2, field3>;
 
 template <auto V>
 constexpr auto id_match =
-    msg::msg_matcher<msg_defn, msg::equal_to_t<id_field, std::uint32_t, V>>{};
+    msg::msg_matcher<msg_defn, msg::equal_to_t<id_field, V>>{};
 
 std::string log_buffer{};
 } // namespace

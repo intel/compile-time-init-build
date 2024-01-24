@@ -24,8 +24,7 @@ using msg_defn =
     message<"msg", id_field::WithRequired<0x80>, field1, field2, field3>;
 
 constexpr auto id_match =
-    msg::msg_matcher<msg_defn,
-                     msg::equal_to_t<id_field, std::uint32_t, 0x80>>{};
+    msg::msg_matcher<msg_defn, msg::equal_to_t<id_field, 0x80>>{};
 
 std::string log_buffer{};
 } // namespace
