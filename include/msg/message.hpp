@@ -338,6 +338,12 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     using matcher_t = decltype(match::all(
         make_msg_matcher<message, typename Fields::matcher_t>()...));
+
+    template <typename M> constexpr static auto matcher(M) {
+        return match::all(
+            make_msg_matcher<message, M>(),
+            make_msg_matcher<message, typename Fields::matcher_t>()...);
+    }
 };
 
 template <typename T> using owning = typename T::template owner_t<>;

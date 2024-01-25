@@ -125,3 +125,26 @@ TEST_CASE("callback logs match", "[handler]") {
     CHECK(log_buffer.find("matched [cb], because [id == 0x80]") !=
           std::string::npos);
 }
+
+TEST_CASE("callback with convenience matcher", "[handler]") {
+    auto callback = msg::callback<"cb">(
+        msg_defn::matcher(id_field::equal_to<0x80>),
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg_match = msg::owning<msg_defn>{"id"_field = 0x80};
+
+    dispatched = false;
+    CHECK(callback.handle(msg_match));
+    CHECK(dispatched);
+}
+
+TEST_CASE("callback with compound convenience matcher", "[handler]") {
+    auto callback = msg::callback<"cb">(
+        msg_defn::matcher(id_field::equal_to<0x80> and field1::equal_to<11>),
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg_match =
+        msg::owning<msg_defn>{"id"_field = 0x80, "f1"_field = 11};
+
+    dispatched = false;
+    CHECK(callback.handle(msg_match));
+    CHECK(dispatched);
+}
