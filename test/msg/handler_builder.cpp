@@ -23,13 +23,12 @@ using msg_defn = message<"msg", id_field, field1, field2, field3>;
 using test_msg_t = msg::owning<msg_defn>;
 using msg_view_t = msg::const_view<msg_defn>;
 
-constexpr auto id_match =
-    msg::msg_matcher<msg_defn, msg::equal_to_t<id_field, 0x80>>{};
+constexpr auto id_match = id_field::equal_to<0x80>;
 
 bool callback_success;
 
-constexpr auto test_callback =
-    msg::callback<"cb">(id_match, [](msg_view_t) { callback_success = true; });
+constexpr auto test_callback = msg::callback<"cb", msg_defn>(
+    id_match, [](msg_view_t) { callback_success = true; });
 
 struct test_service : msg::service<msg_view_t> {};
 struct test_project {
@@ -85,7 +84,7 @@ namespace {
 int callback_extra_arg{};
 
 constexpr auto test_callback_extra_args =
-    msg::callback<"cb", int>(id_match, [](msg_view_t, int i) {
+    msg::callback<"cb", msg_defn, int>(id_match, [](msg_view_t, int i) {
         callback_success = true;
         callback_extra_arg = i;
     });

@@ -4,6 +4,7 @@
 #include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
 #include <match/ops.hpp>
+#include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
 #include <sc/string_constant.hpp>
 
@@ -94,10 +95,8 @@ struct indexed_builder_base {
     CallbacksT callbacks;
 
     template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
-        [[maybe_unused]] auto const msg_matcher =
-            typename BaseMsgT::definition_t::matcher_t{};
         auto new_callbacks =
-            stdx::tuple_cat(callbacks, separate_sum_terms(ts, msg_matcher)...);
+            stdx::tuple_cat(callbacks, separate_sum_terms(ts)...);
         using new_callbacks_t = decltype(new_callbacks);
         return ParentT<IndexSpec, new_callbacks_t, BaseMsgT,
                        ExtraCallbackArgsT...>{new_callbacks};

@@ -1,6 +1,7 @@
 #include <cib/cib.hpp>
 #include <log/fmt/logger.hpp>
 #include <match/ops.hpp>
+#include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/indexed_callback.hpp>
 #include <msg/message.hpp>
@@ -33,7 +34,7 @@ struct test_service : rle_indexed_service<index_spec, test_msg_t> {};
 
 bool callback_success;
 
-constexpr auto test_callback = msg::indexed_callback<"TestCallback">(
+constexpr auto test_callback = msg::callback<"TestCallback", msg_defn>(
     test_id_field::in<0x80>,
     [](test_msg_t const &) { callback_success = true; });
 
@@ -90,7 +91,7 @@ TEST_CASE("match rle output failure", "[rle_handler_builder]") {
 }
 
 namespace {
-constexpr auto test_callback_equals = msg::indexed_callback<"TestCallback">(
+constexpr auto test_callback_equals = msg::callback<"TestCallback", msg_defn>(
     test_id_field::equal_to<0x80>,
     [](test_msg_t const &) { callback_success = true; });
 
@@ -118,14 +119,14 @@ TEST_CASE("build rle handler field equal_to", "[rle_indexed_builder]") {
 
 namespace {
 constexpr auto test_callback_multi_field =
-    msg::indexed_callback<"test_callback_multi_field">(
+    msg::callback<"test_callback_multi_field", msg_defn>(
         test_id_field::in<0x80, 0x42> and test_opcode_field::equal_to<1>,
         [](test_msg_t const &) { callback_success = true; });
 
 bool callback_success_single_field;
 
 constexpr auto test_callback_single_field =
-    msg::indexed_callback<"test_callback_single_field">(
+    msg::callback<"test_callback_single_field", msg_defn>(
         test_id_field::equal_to<0x50>,
         [](test_msg_t const &) { callback_success_single_field = true; });
 
