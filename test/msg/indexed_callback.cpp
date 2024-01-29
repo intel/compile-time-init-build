@@ -1,6 +1,8 @@
 #include <match/ops.hpp>
+#include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/indexed_callback.hpp>
+#include <msg/message.hpp>
 #include <sc/string_constant.hpp>
 
 #include <stdx/concepts.hpp>
@@ -16,86 +18,57 @@
 #include <vector>
 
 namespace {
-using msg_t = stdx::tuple<int, char>;
-
-template <typename T, T Value> struct test_m {
-    using is_matcher = void;
-
-    [[nodiscard]] constexpr auto operator()(msg_t const &msg) const -> bool {
-        return stdx::get<T>(msg) == Value;
-    }
-    [[nodiscard]] constexpr static auto describe() { return ""_sc; }
-    [[nodiscard]] constexpr auto describe_match(auto const &) const {
-        return ""_sc;
-    }
-
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(msg::index_terms_t,
-                                                   test_m const &,
-                                                   stdx::callable auto const &f,
-                                                   std::size_t &idx) {
-        f.template operator()<T>(idx, Value);
-    }
-
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(msg::index_not_terms_t, test_m const &,
-               stdx::callable auto const &f, std::size_t &idx, bool negated) {
-        if (negated) {
-            f.template operator()<T>(idx, Value);
-        }
-    }
-
-    template <typename... Fields>
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(msg::remove_terms_t, test_m const &m,
-               std::type_identity<Fields>...) -> match::matcher auto {
-        if constexpr ((std::is_same_v<T, Fields> or ...)) {
-            return match::always;
-        } else {
-            return m;
-        }
-    }
-};
+using namespace msg;
+using int_f =
+    msg::field<"int", std::int32_t>::located<msg::at{0_dw, 31_msb, 0_lsb}>;
+using char_f =
+    msg::field<"char", char32_t>::located<msg::at{1_dw, 31_msb, 0_lsb}>;
+using msg_defn = msg::message<"msg", int_f, char_f>;
 } // namespace
 
 TEST_CASE("callback matches trivially", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(test_m<int, 0>{}, [] {});
-    CHECK(cb.matcher(msg_t{}));
-    CHECK(not cb.matcher(msg_t{1, 'a'}));
+    constexpr auto cb =
+        msg::callback<"", msg_defn>(int_f::equal_to<0>, [](auto) {});
+    CHECK(cb.matcher(msg_defn::owner_t{}));
+    CHECK(
+        not cb.matcher(msg_defn::owner_t{"int"_field = 1, "char"_field = 'a'}));
 }
 
 TEST_CASE("callback with compound match", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
-    CHECK(not cb.matcher(msg_t{}));
-    CHECK(cb.matcher(msg_t{0, 'a'}));
-    CHECK(cb.matcher(msg_t{0, 'b'}));
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> and (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
+    CHECK(not cb.matcher(msg_defn::owner_t{}));
+    CHECK(cb.matcher(msg_defn::owner_t{"int"_field = 0, "char"_field = 'a'}));
+    CHECK(cb.matcher(msg_defn::owner_t{"int"_field = 0, "char"_field = 'b'}));
 }
 
 TEST_CASE("callback is sum of products", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> and (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
     static_assert(
         std::is_same_v<
             decltype(cb.matcher),
-            match::or_t<match::and_t<test_m<int, 0>, test_m<char, 'a'>>,
-                        match::and_t<test_m<int, 0>, test_m<char, 'b'>>>>);
+            match::or_t<
+                match::and_t<equal_to_t<int_f, 0>, equal_to_t<char_f, 'a'>>,
+                match::and_t<equal_to_t<int_f, 0>, equal_to_t<char_f, 'b'>>>>);
 }
 
 TEST_CASE("index a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> and (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
 
-    auto intfield_index = std::unordered_map<int, std::vector<std::size_t>>{};
-    auto charfield_index = std::unordered_map<char, std::vector<std::size_t>>{};
+    auto intfield_index =
+        std::unordered_map<std::int32_t, std::vector<std::size_t>>{};
+    auto charfield_index =
+        std::unordered_map<char32_t, std::vector<std::size_t>>{};
 
     msg::index_terms(
         cb.matcher,
-        [&]<typename T>(std::size_t cb_idx, T value) {
-            if constexpr (std::is_same_v<T, int>) {
+        [&]<typename T>(std::size_t cb_idx, auto value) {
+            if constexpr (std::is_same_v<T, int_f>) {
                 intfield_index[value].push_back(cb_idx);
             } else {
                 charfield_index[value].push_back(cb_idx);
@@ -110,17 +83,20 @@ TEST_CASE("index a callback", "[indexed_callback]") {
 }
 
 TEST_CASE("index not terms in a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        not test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        not int_f::equal_to<0> and
+            (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
 
-    auto intfield_index = std::unordered_map<int, std::vector<std::size_t>>{};
-    auto charfield_index = std::unordered_map<char, std::vector<std::size_t>>{};
+    auto intfield_index =
+        std::unordered_map<std::int32_t, std::vector<std::size_t>>{};
+    auto charfield_index =
+        std::unordered_map<char32_t, std::vector<std::size_t>>{};
 
     msg::index_not_terms(
         cb.matcher,
-        [&]<typename T>(std::size_t cb_idx, T value) {
-            if constexpr (std::is_same_v<T, int>) {
+        [&]<typename T>(std::size_t cb_idx, auto value) {
+            if constexpr (std::is_same_v<T, int_f>) {
                 intfield_index[value].push_back(cb_idx);
             } else {
                 charfield_index[value].push_back(cb_idx);
@@ -133,23 +109,24 @@ TEST_CASE("index not terms in a callback", "[indexed_callback]") {
 }
 
 TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> and (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
 
-    constexpr auto sut = msg::remove_match_terms<int>(cb);
+    constexpr auto sut = msg::remove_match_terms<int_f>(cb);
     static_assert(
-        std::is_same_v<decltype(sut.matcher),
-                       match::or_t<test_m<char, 'a'>, test_m<char, 'b'>>>);
+        std::is_same_v<
+            decltype(sut.matcher),
+            match::or_t<equal_to_t<char_f, 'a'>, equal_to_t<char_f, 'b'>>>);
 }
 
 TEST_CASE("remove multiple indexed terms from a callback",
           "[indexed_callback]") {
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} and (test_m<char, 'a'>{} or test_m<char, 'b'>{}),
-        [] {});
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> and (char_f::equal_to<'a'> or char_f::equal_to<'b'>),
+        [](auto) {});
 
-    constexpr auto sut = msg::remove_match_terms<int, char>(cb);
+    constexpr auto sut = msg::remove_match_terms<int_f, char_f>(cb);
     static_assert(std::is_same_v<decltype(sut.matcher), match::always_t>);
 }
 
@@ -159,9 +136,9 @@ int called{};
 
 TEST_CASE("separate sum terms in a callback", "[indexed_callback]") {
     called = 0;
-    constexpr auto cb = msg::indexed_callback<"">(
-        test_m<int, 0>{} or test_m<int, 1>{}, [] { ++called; });
-    CHECK(cb.matcher(msg_t{}));
+    constexpr auto cb = msg::callback<"", msg_defn>(
+        int_f::equal_to<0> or int_f::equal_to<1>, []() { ++called; });
+    CHECK(cb.matcher(msg_defn::owner_t{}));
 
     auto sut = msg::separate_sum_terms(cb);
     static_assert(stdx::is_specialization_of_v<decltype(sut), stdx::tuple>);
@@ -170,13 +147,14 @@ TEST_CASE("separate sum terms in a callback", "[indexed_callback]") {
     auto const &cb1 = stdx::get<0>(sut);
     auto const &cb2 = stdx::get<1>(sut);
 
-    CHECK(cb1.matcher(msg_t{}));
-    CHECK(not cb2.matcher(msg_t{}));
+    CHECK(cb1.matcher(msg_defn::owner_t{}));
+    CHECK(not cb2.matcher(msg_defn::owner_t{}));
     cb1.callable();
     CHECK(called == 1);
 
-    CHECK(not cb1.matcher(msg_t{1, 'a'}));
-    CHECK(cb2.matcher(msg_t{1, 'a'}));
+    CHECK(not cb1.matcher(
+        msg_defn::owner_t{"int"_field = 1, "char"_field = 'a'}));
+    CHECK(cb2.matcher(msg_defn::owner_t{"int"_field = 1, "char"_field = 'a'}));
     cb2.callable();
     CHECK(called == 2);
 }

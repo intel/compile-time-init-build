@@ -16,9 +16,9 @@ using test_id_field =
 using msg_defn = message<"test_msg", test_id_field>;
 using test_msg_t = owning<msg_defn>;
 
-constexpr auto test_callback = msg::indexed_callback<"test_callback">(
+constexpr auto test_callback = msg::callback<"test_callback", msg_defn>(
     test_id_field::equal_to<0x80> and test_id_field::equal_to<0x81>,
-    [](test_msg_t const &) {});
+    [](auto) {});
 
 using index_spec = msg::index_spec<test_id_field>;
 struct test_service : msg::indexed_service<index_spec, test_msg_t> {};

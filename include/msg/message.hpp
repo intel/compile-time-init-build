@@ -1,6 +1,7 @@
 #pragma once
 
 #include <match/ops.hpp>
+#include <match/sum_of_products.hpp>
 #include <msg/field.hpp>
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
@@ -21,48 +22,6 @@
 #include <type_traits>
 
 namespace msg {
-template <typename Msg, match::matcher M> struct msg_matcher : M {
-    template <typename Data>
-    [[nodiscard]] constexpr auto operator()(Data const &d) const -> bool {
-        auto view = typename Msg::view_t{d};
-        return this->M::operator()(view);
-    }
-
-    template <typename Data>
-    [[nodiscard]] constexpr auto describe_match(Data const &d) const {
-        auto view = typename Msg::view_t{d};
-        return this->M::describe_match(view);
-    }
-
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
-                                                   msg_matcher const &self) {
-        return msg_matcher<Msg, decltype(match::negate(
-                                    static_cast<M const &>(self)))>{};
-    }
-
-    template <std::same_as<msg_matcher> Self, match::matcher Other>
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(match::implies_t, Self &&self, Other const &o) {
-        return match::implies(static_cast<M const &>(self), o);
-    }
-
-    template <match::matcher Other, std::same_as<msg_matcher> Self>
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(match::implies_t, Other const &o, Self &&self) {
-        return match::implies(o, static_cast<M const &>(self));
-    }
-};
-
-template <typename MsgDefn, match::matcher M>
-constexpr auto make_msg_matcher() -> match::matcher auto {
-    if constexpr (std::is_same_v<M, match::always_t>) {
-        return M{};
-    } else {
-        return msg_matcher<MsgDefn, M>{};
-    }
-}
-
 namespace detail {
 template <typename Name, typename T> struct field_value {
     using name_t = Name;
@@ -336,14 +295,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     view_t(owner_t<S> &, auto &&...)
         -> view_t<stdx::span<typename S::value_type, detail::capacity<S>()>>;
 
-    using matcher_t = decltype(match::all(
-        make_msg_matcher<message, typename Fields::matcher_t>()...));
-
-    template <typename M> constexpr static auto matcher(M) {
-        return match::all(
-            make_msg_matcher<message, M>(),
-            make_msg_matcher<message, typename Fields::matcher_t>()...);
-    }
+    using matcher_t = decltype(match::all(typename Fields::matcher_t{}...));
 };
 
 template <typename T> using owning = typename T::template owner_t<>;
