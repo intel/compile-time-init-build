@@ -28,13 +28,14 @@ template <typename FieldType, std::size_t EntryCapacity,
           std::size_t CallbackCapacity>
 struct temp_index {
     using field_type = FieldType;
+    using key_type = typename field_type::value_type;
 
     using value_t = stdx::bitset<CallbackCapacity, std::uint32_t>;
-    stdx::cx_map<uint32_t, value_t, EntryCapacity> entries{};
+    stdx::cx_map<key_type, value_t, EntryCapacity> entries{};
     value_t default_value{};
     value_t negative_value{};
 
-    constexpr auto add_positive(auto key, std::size_t idx) -> void {
+    constexpr auto add_positive(key_type key, std::size_t idx) -> void {
         // add this index into the map: simple
         if (not entries.contains(key)) {
             entries.put(key, value_t{});
@@ -54,7 +55,7 @@ struct temp_index {
         }
     }
 
-    constexpr auto add_negative(auto key, std::size_t idx) -> void {
+    constexpr auto add_negative(key_type key, std::size_t idx) -> void {
         // the defaults (without this index) go in the entry for this key
         if (not entries.contains(key)) {
             entries.put(key, value_t{});
