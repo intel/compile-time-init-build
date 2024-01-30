@@ -145,7 +145,7 @@ struct indexed_builder_base {
                                      ExtraCallbackArgsT... args);
 
     template <typename BuilderValue, std::size_t I>
-    constexpr static auto invoke_callback(BaseMsgT const &msg,
+    constexpr static auto invoke_callback(BaseMsgT const &data,
                                           ExtraCallbackArgsT... args) {
         // FIXME: incomplete message callback invocation...
         //        1) bit_cast message argument
@@ -164,13 +164,15 @@ struct indexed_builder_base {
                 "Indexed callback has matcher that is never matched!");
         }
 
-        if (cb.matcher(msg)) {
+        auto view = typename CB::msg_t::view_t{data};
+
+        if (cb.matcher(view)) {
             CIB_INFO(
                 "Incoming message matched [{}], because [{}] (collapsed to "
                 "[{}]), executing callback",
                 stdx::ct_string_to_type<cb.name, sc::string_constant>(),
                 orig_cb.matcher.describe(), cb.matcher.describe());
-            cb.callable(msg, args...);
+            cb.callable(view, args...);
         }
     }
 
