@@ -3,7 +3,6 @@
 #include <match/ops.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
-#include <msg/indexed_callback.hpp>
 #include <msg/message.hpp>
 #include <msg/rle_indexed_service.hpp>
 

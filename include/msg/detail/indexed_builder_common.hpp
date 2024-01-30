@@ -3,13 +3,18 @@
 #include <lookup/entry.hpp>
 #include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
+#include <match/and.hpp>
+#include <match/concepts.hpp>
 #include <match/ops.hpp>
+#include <match/sum_of_products.hpp>
+#include <msg/callback.hpp>
 #include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
 #include <sc/string_constant.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
+#include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
@@ -21,9 +26,42 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 namespace msg {
+struct null_matcher_validator {
+    template <match::matcher M>
+    CONSTEVAL static auto validate() noexcept -> bool {
+        return true;
+    }
+};
+
+struct never_matcher_validator {
+    template <match::matcher M>
+    CONSTEVAL static auto validate() noexcept -> bool {
+        return not std::is_same_v<M, match::never_t>;
+    }
+};
+
+template <typename...> inline auto matcher_validator = null_matcher_validator{};
+
+template <match::matcher M, typename... DummyArgs>
+CONSTEVAL auto validate_matcher() -> bool {
+    return matcher_validator<DummyArgs...>.template validate<M>();
+}
+
+template <typename... Fields>
+constexpr auto remove_match_terms = []<typename C>(C &&c) {
+    using callback_t = std::remove_cvref_t<C>;
+    match::matcher auto new_matcher = remove_terms(
+        std::forward<C>(c).matcher, std::type_identity<Fields>{}...);
+    return detail::callback<callback_t::name, typename callback_t::msg_t,
+                            decltype(new_matcher),
+                            typename callback_t::callable_t>{
+        std::move(new_matcher), std::forward<C>(c).callable};
+};
+
 template <typename FieldType, std::size_t EntryCapacity,
           std::size_t CallbackCapacity>
 struct temp_index {

@@ -1,7 +1,8 @@
 #include <match/ops.hpp>
+#include <msg/callback.hpp>
+#include <msg/detail/indexed_builder_common.hpp>
 #include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
-#include <msg/indexed_callback.hpp>
 #include <msg/message.hpp>
 #include <sc/string_constant.hpp>
 
