@@ -64,6 +64,7 @@ template <matcher L, matcher R> struct and_t : bin_op_t<and_t, " and ", L, R> {
     }
 
     template <matcher M>
+        requires(not stdx::is_specialization_of_v<M, or_t>)
     [[nodiscard]] friend constexpr auto tag_invoke(implies_t, and_t const &a,
                                                    M const &m) -> bool {
         return implies(a.lhs, m) or implies(a.rhs, m);
