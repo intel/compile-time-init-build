@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -133,7 +134,7 @@ struct rel_matcher_t {
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return RelOp{}(msg.get(Field{}), ExpectedValue);
+        return RelOp{}(Field::extract(std::data(msg)), ExpectedValue);
     }
 
     [[nodiscard]] constexpr auto describe() const {
@@ -144,10 +145,11 @@ struct rel_matcher_t {
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
-                      static_cast<std::uint32_t>(msg.get(Field{})),
-                      detail::to_string<RelOp>(),
-                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+        return format(
+            "{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
+            static_cast<std::uint32_t>(Field::extract(std::data(msg))),
+            detail::to_string<RelOp>(),
+            sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
 
   private:
