@@ -41,3 +41,9 @@ TEST_CASE("recursive: (Y ∧ (X ∧ Z)) => X", "[match implies]") {
         match::and_t<test_m<0>, match::and_t<test_matcher, test_m<1>>>{},
         test_matcher{}));
 }
+
+TEST_CASE("ambiguity between X => or, and => X", "[match implies]") {
+    using T1 = match::and_t<test_m<0>, test_m<1>>;
+    using T2 = match::or_t<test_m<0>, test_m<1>>;
+    static_assert(match::implies(T1{}, T2{}));
+}
