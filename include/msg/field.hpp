@@ -389,6 +389,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                   "Field size is smaller than sum of locations!");
 
   public:
+    using name_t = Name;
     using field_id = field_t<Name, T, T{}, match::always_t, Ats...>;
     using value_type = T;
     constexpr static auto default_value = DefaultValue;

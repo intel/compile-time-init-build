@@ -3,15 +3,18 @@
 #include <match/ops.hpp>
 #include <match/sum_of_products.hpp>
 #include <msg/field.hpp>
+#include <msg/field_matchers.hpp>
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
 #include <stdx/span.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
@@ -19,11 +22,78 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <type_traits>
 
 namespace msg {
+template <auto V> struct constant_t {};
+template <auto V> constexpr static auto constant = constant_t<V>{};
+
+template <typename T>
+concept matcher_maker = requires { typename T::is_matcher_maker; };
+
 namespace detail {
+template <typename N> struct matching_name {
+    template <typename Field>
+    using fn = std::is_same<N, typename Field::name_t>;
+};
+
+template <typename Name, typename RelOp, auto V> struct matcher_maker {
+    using is_matcher_maker = void;
+    using name_t = Name;
+
+    template <typename Msg>
+    constexpr static auto make_matcher() -> match::matcher auto {
+        using fields_t = typename Msg::fields_t;
+        using index_t =
+            boost::mp11::mp_find_if_q<fields_t, matching_name<name_t>>;
+        static_assert(index_t::value < boost::mp11::mp_size<fields_t>::value,
+                      "Named field not in message!");
+        return rel_matcher_t<RelOp, boost::mp11::mp_at<fields_t, index_t>, V>{};
+    }
+};
+
+template <msg::matcher_maker T> struct mm_not_t {
+    using is_matcher_maker = void;
+    template <typename Msg>
+    constexpr static auto make_matcher() -> match::matcher auto {
+        return not T::template make_matcher<Msg>();
+    }
+};
+
+template <msg::matcher_maker T> constexpr auto operator not(T) -> mm_not_t<T> {
+    return {};
+}
+
+template <msg::matcher_maker T, msg::matcher_maker U> struct mm_and_t {
+    using is_matcher_maker = void;
+    template <typename Msg>
+    constexpr static auto make_matcher() -> match::matcher auto {
+        return T::template make_matcher<Msg>() and
+               U::template make_matcher<Msg>();
+    }
+};
+
+template <msg::matcher_maker T, msg::matcher_maker U>
+constexpr auto operator and(T, U) -> mm_and_t<T, U> {
+    return {};
+}
+
+template <msg::matcher_maker T, msg::matcher_maker U> struct mm_or_t {
+    using is_matcher_maker = void;
+    template <typename Msg>
+    constexpr static auto make_matcher() -> match::matcher auto {
+        return T::template make_matcher<Msg>() or
+               U::template make_matcher<Msg>();
+    }
+};
+
+template <msg::matcher_maker T, msg::matcher_maker U>
+constexpr auto operator or(T, U) -> mm_or_t<T, U> {
+    return {};
+}
+
 template <typename Name, typename T> struct field_value {
     using name_t = Name;
     T value;
@@ -35,6 +105,38 @@ template <typename Name> struct field_name {
     // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature)
     template <typename T> constexpr auto operator=(T value) {
         return field_value<Name, T>{value};
+    }
+
+  private:
+    template <auto V>
+    friend CONSTEVAL auto operator==(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::equal_to<>, V> {
+        return {};
+    }
+    template <auto V>
+    friend CONSTEVAL auto operator!=(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::not_equal_to<>, V> {
+        return {};
+    }
+    template <auto V>
+    friend CONSTEVAL auto operator<(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::less<>, V> {
+        return {};
+    }
+    template <auto V>
+    friend CONSTEVAL auto operator<=(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::less_equal<>, V> {
+        return {};
+    }
+    template <auto V>
+    friend CONSTEVAL auto operator>(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::greater<>, V> {
+        return {};
+    }
+    template <auto V>
+    friend CONSTEVAL auto operator>=(field_name, constant_t<V>)
+        -> matcher_maker<Name, std::greater_equal<>, V> {
+        return {};
     }
 };
 } // namespace detail
@@ -160,6 +262,7 @@ concept storage_like = stdx::range<T> and requires {
 } // namespace detail
 
 template <stdx::ct_string Name, typename... Fields> struct message {
+    using fields_t = stdx::type_list<Fields...>;
     using access_t = detail::message_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
     using default_span_t = typename access_t::default_span_t;
