@@ -66,12 +66,11 @@ template <msg::matcher_maker T> constexpr auto operator not(T) -> mm_not_t<T> {
     return {};
 }
 
-template <msg::matcher_maker T, msg::matcher_maker U> struct mm_and_t {
+template <msg::matcher_maker... Ts> struct mm_and_t {
     using is_matcher_maker = void;
     template <typename Msg>
     constexpr static auto make_matcher() -> match::matcher auto {
-        return T::template make_matcher<Msg>() and
-               U::template make_matcher<Msg>();
+        return (... and Ts::template make_matcher<Msg>());
     }
 };
 
@@ -80,12 +79,11 @@ constexpr auto operator and(T, U) -> mm_and_t<T, U> {
     return {};
 }
 
-template <msg::matcher_maker T, msg::matcher_maker U> struct mm_or_t {
+template <msg::matcher_maker... Ts> struct mm_or_t {
     using is_matcher_maker = void;
     template <typename Msg>
     constexpr static auto make_matcher() -> match::matcher auto {
-        return T::template make_matcher<Msg>() or
-               U::template make_matcher<Msg>();
+        return (... or Ts::template make_matcher<Msg>());
     }
 };
 
@@ -106,6 +104,10 @@ template <typename Name> struct field_name {
     template <typename T> constexpr auto operator=(T value) {
         return field_value<Name, T>{value};
     }
+
+    template <auto... Vs>
+    constexpr static inline auto in =
+        mm_or_t<matcher_maker<Name, std::equal_to<>, Vs>...>{};
 
   private:
     template <auto V>
