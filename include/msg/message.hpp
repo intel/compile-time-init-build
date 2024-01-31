@@ -6,6 +6,7 @@
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
 #include <stdx/span.hpp>
@@ -61,7 +62,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
     using FieldsTuple =
         decltype(stdx::make_indexed_tuple<name_for>(Fields{}...));
 
-    template <typename Field, detail::range R> constexpr static auto check() {
+    template <typename Field, stdx::range R> constexpr static auto check() {
         constexpr auto belongs = (std::is_same_v<typename Field::field_id,
                                                  typename Fields::field_id> or
                                   ...);
@@ -70,7 +71,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
                       "Field does not fit inside message!");
     }
 
-    template <range R, msg::field_value V>
+    template <stdx::range R, msg::field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
         using Field =
             std::remove_cvref_t<decltype(stdx::get<typename V::name_t>(
@@ -80,7 +81,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
                       static_cast<typename Field::value_type>(v.value));
     }
 
-    template <typename N, range R>
+    template <typename N, stdx::range R>
     constexpr static auto set_default(R &&r) -> void {
         using Field =
             std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
@@ -90,7 +91,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
             static_cast<typename Field::value_type>(Field::default_value));
     }
 
-    template <typename N, range R> constexpr static auto get(R &&r) {
+    template <typename N, stdx::range R> constexpr static auto get(R &&r) {
         using Field =
             std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
         check<Field, std::remove_cvref_t<R>>();
@@ -98,31 +99,31 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
     }
 
   public:
-    template <range R, typename... Ns>
+    template <stdx::range R, typename... Ns>
     constexpr static auto set(R &&r, field_name<Ns>...) -> void {
         (set_default<Ns>(r), ...);
     }
 
-    template <range R, msg::field_value... Vs>
+    template <stdx::range R, msg::field_value... Vs>
     constexpr static auto set(R &&r, Vs... vs) -> void {
         (set1(r, vs), ...);
     }
 
-    template <range R, typename... Fs>
+    template <stdx::range R, typename... Fs>
     constexpr static auto set(R &&r, Fs...) -> void {
         (set_default<typename Fs::name_t>(r), ...);
     }
 
-    template <range R, typename N>
+    template <stdx::range R, typename N>
     constexpr static auto get(R &&r, field_name<N>) {
         return get<N>(std::forward<R>(r));
     }
 
-    template <range R, typename F> constexpr static auto get(R &&r, F) {
+    template <stdx::range R, typename F> constexpr static auto get(R &&r, F) {
         return get<typename F::name_t>(std::forward<R>(r));
     }
 
-    template <detail::range R>
+    template <stdx::range R>
     [[nodiscard]] constexpr static auto describe(R &&r) {
         using msg_name =
             decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
@@ -152,7 +153,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
 };
 
 template <typename T>
-concept storage_like = range<T> and requires {
+concept storage_like = stdx::range<T> and requires {
     { capacity<T>() } -> std::same_as<std::size_t>;
     typename T::value_type;
 };

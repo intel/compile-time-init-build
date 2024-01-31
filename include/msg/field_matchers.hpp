@@ -134,7 +134,7 @@ struct rel_matcher_t {
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return RelOp{}(Field::extract(std::data(msg)), ExpectedValue);
+        return RelOp{}(extract_field(msg), ExpectedValue);
     }
 
     [[nodiscard]] constexpr auto describe() const {
@@ -145,11 +145,10 @@ struct rel_matcher_t {
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format(
-            "{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
-            static_cast<std::uint32_t>(Field::extract(std::data(msg))),
-            detail::to_string<RelOp>(),
-            sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+        return format("{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
+                      static_cast<std::uint32_t>(extract_field(msg)),
+                      detail::to_string<RelOp>(),
+                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
 
   private:
@@ -164,6 +163,15 @@ struct rel_matcher_t {
     tag_invoke(match::implies_t, rel_matcher_t,
                rel_matcher_t<RelOp, Field, OtherValue>) -> bool {
         return RelOp{}(ExpectedValue, OtherValue);
+    }
+
+    template <typename Msg>
+    [[nodiscard]] constexpr static auto extract_field(Msg const &msg) {
+        if constexpr (stdx::range<Msg>) {
+            return Field::extract(msg);
+        } else {
+            return Field::extract(std::data(msg));
+        }
     }
 };
 

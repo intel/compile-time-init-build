@@ -6,6 +6,7 @@
 
 #include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
+#include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -19,14 +20,6 @@
 #include <type_traits>
 
 namespace msg {
-namespace detail {
-template <typename T>
-concept range = requires(T &t) {
-    std::begin(t);
-    std::end(t);
-};
-}
-
 template <typename T>
 concept field_spec = std::unsigned_integral<decltype(T::size)> and
                      std::is_trivially_copyable_v<typename T::type> and
@@ -258,7 +251,7 @@ template <typename T>
 using integral_type_for = decltype(select_integral_type<T>());
 
 template <bits_locator... BLs> struct field_locator_t {
-    template <field_spec Spec, detail::range R>
+    template <field_spec Spec, stdx::range R>
     [[nodiscard]] constexpr static auto extract(R &&r) -> typename Spec::type {
         using raw_t = integral_type_for<typename Spec::type>;
         auto raw = raw_t{};
@@ -270,7 +263,7 @@ template <bits_locator... BLs> struct field_locator_t {
         return stdx::bit_cast<typename Spec::type>(raw);
     }
 
-    template <field_spec Spec, detail::range R>
+    template <field_spec Spec, stdx::range R>
     constexpr static auto insert(R &&r, typename Spec::type const &value)
         -> void {
         using raw_t = integral_type_for<typename Spec::type>;
@@ -400,12 +393,12 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using value_type = T;
     constexpr static auto default_value = DefaultValue;
 
-    template <detail::range R>
+    template <stdx::range R>
     [[nodiscard]] constexpr static auto extract(R &&r) -> value_type {
         return locator_t::template extract<spec_t>(std::forward<R>(r));
     }
 
-    template <detail::range R>
+    template <stdx::range R>
     constexpr static void insert(R &&r, value_type const &value) {
         locator_t::template insert<spec_t>(std::forward<R>(r), value);
     }
