@@ -316,7 +316,7 @@ struct test_msg_match_service
     : msg::indexed_service<msg_match_index_spec, test_msg_match_t> {};
 
 constexpr auto test_msg_match_callback =
-    msg::callback<"TestCallback", msg_defn>(
+    msg::callback<"TestCallback", msg_match_defn>(
         test_id_field::equal_to<0x80>, [](auto) { callback_success = true; });
 
 struct test_msg_match_project {
