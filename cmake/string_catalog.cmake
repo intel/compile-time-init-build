@@ -17,9 +17,10 @@ function(gen_str_catalog)
     add_custom_command(
         OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
         COMMAND
-            ${Python3_EXECUTABLE} ${SC_GEN_STR_CATALOG}
-            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt ${SC_OUTPUT_CPP}
-            ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
+            ${Python3_EXECUTABLE} ${SC_GEN_STR_CATALOG} --input
+            ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt --cpp_output
+            ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON} --xml_output
+            ${SC_OUTPUT_XML}
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/undefined_symbols.txt
                 ${SC_GEN_STR_CATALOG})
 

@@ -1,103 +1,21 @@
+import argparse
 import re
 import sys
 import json
 import xml.etree.ElementTree as et
 
-levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
-
-input_file = sys.argv[1]
-cpp_file = sys.argv[2]
-json_file = sys.argv[3]
-xml_file = sys.argv[4]
-
-# fwver_dash = sys.argv[5]
-# cust_name = sys.argv[6]
-# bit_mask_files = sys.argv[7:]
-
-catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))\s*$")
-
-string_re = re.compile(
-    "message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
-)
-
-string_id = 0
-cataloged_strings = set()
-
-out = open(cpp_file, "w")
-
-messages = []
-
-out.write(
-    """
-#include <log/catalog/catalog.hpp>
-
-"""
-)
 
 # https://stackoverflow.com/questions/174890/how-to-output-cdata-using-elementtree
 def _escape_cdata(text):
     try:
         if "&" in text:
             text = text.replace("&", "&amp;")
-        # if "<" in text:
-        # text = text.replace("<", "&lt;")
-        # if ">" in text:
-        # text = text.replace(">", "&gt;")
         return text
     except TypeError:
         raise TypeError("cannot serialize %r (type %s)" % (text, type(text).__name__))
 
 
-# https://stackoverflow.com/questions/749796/pretty-printing-xml-in-python
-# TODO switch to indent function on ElementTree when it is available in python
-def prettify(element, indent="  "):
-    queue = [(0, element)]  # (level, element)
-    while queue:
-        level, element = queue.pop(0)
-        children = [(level + 1, child) for child in list(element)]
-        if children:
-            element.text = "\n" + indent * (level + 1)  # for child open
-        if queue:
-            element.tail = "\n" + indent * queue[0][0]  # for sibling open
-        else:
-            element.tail = "\n" + indent * (level - 1)  # for parent close
-        queue[0:0] = children  # prepend so children come before siblings
-
-
-# with open(fwver_dash, "r") as fwVer:
-#     for line in fwVer:
-#         if 'PATCH_MAJOR_VERSION' in line:
-#             major = int(line.split('=')[1].split(';')[0],16)
-#         if 'PATCH_MINOR_VERSION' in line:
-#             minor = int(line.split('=')[1].split(';')[0],16)
-#     fwRuntimeVer = major << 16 | minor
-
 et._escape_cdata = _escape_cdata
-
-# client_name = cust_name.upper() + " SPARC FW" # FIXME: get from command line
-client_name = "CIB Framework FW"  # FIXME: get from command line
-
-syst_collateral = et.Element("syst:Collateral")
-syst_collateral.set("xmlns:syst", "http://www.mipi.org/1.0/sys-t")
-syst_collateral.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-syst_collateral.set(
-    "xsi:schemaLocation",
-    "http://www.mipi.org/1.0/sys-t https://www.mipi.org/schema/sys-t/sys-t_1-0.xsd",
-)
-syst_client = et.SubElement(syst_collateral, "syst:Client")
-syst_client.set("Name", client_name)
-syst_fwversion = et.SubElement(syst_collateral, "syst:FwVersion")
-syst_fwversion.set("FW_Version", "VERSION")  # FIXME: get from command line
-syst_guids = et.SubElement(syst_client, "syst:Guids")
-syst_guid = et.SubElement(syst_guids, "syst:Guid")
-syst_guid.set(
-    "ID", "{00000000-0017-0001-0000-000000000000}"
-)  # FIXME: get from command line
-syst_guid.set(
-    "Mask", "{00000000-FFFF-FFFF-8000-000000000000}"
-)  # FIXME: get from command line
-syst_short_message = et.SubElement(syst_client, "syst:Short32")
-syst_catalog_message = et.SubElement(syst_client, "syst:Catalog32")
 
 
 def find_arg_split_pos(s, start):
@@ -123,76 +41,197 @@ def split_args(s):
     return args
 
 
-with open(input_file, "r") as f:
-    for line in f:
-        catalog_m = catalog_re.match(line)
+catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))\s*$")
+string_re = re.compile(
+    "message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
+)
+string_id = 0
+levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
+catalogued_strings = set()
 
-        if catalog_m:
-            string_m = string_re.match(catalog_m.group(2))
-            catalog_type = catalog_m.group(1)
+
+def extract_message(num, line):
+    global string_id
+    global catalogued_strings
+
+    try:
+        catalog_m = catalog_re.match(line)
+        if catalog_m is None:
+            return None
+
+        string_m = string_re.match(catalog_m.group(2))
+        catalog_type = catalog_m.group(1)
+
+        if catalog_type not in catalogued_strings:
+            catalogued_strings.add(catalog_type)
+
             log_level = string_m.group(1)
             arg_tuple = string_m.group(2)
             string_tuple = string_m.group(3).replace("(char)", "")
             string_value = "".join(
                 [chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)]
             )
+            args = split_args(arg_tuple)
+            string_id += 1
 
-            if catalog_type not in cataloged_strings:
-                cataloged_strings.add(catalog_type)
-                out.write("/*\n")
-                out.write('    "' + string_value + '"\n')
-                out.write("\n")
-                out.write("   " + arg_tuple + "\n")
-                out.write(" */\n")
-                out.write(
-                    "template<> {} {{\n    return {};\n}}\n".format(
-                        catalog_type, string_id
-                    )
-                )
-                out.write("\n")
+            return (
+                (catalog_type, arg_tuple),
+                dict(
+                    level=levels[int(log_level)],
+                    msg=string_value,
+                    type="flow" if string_value.startswith("flow.") else "msg",
+                    id=string_id - 1,
+                    arg_types=args,
+                    arg_count=len(args),
+                ),
+            )
 
-                args = split_args(arg_tuple)
+    except Exception:
+        raise Exception(f"Couldn't extract catalog info at line {num} ({line})")
 
-                msg_type = "msg"
-                if string_value.startswith("flow."):
-                    msg_type = "flow"
 
-                messages.append(
-                    dict(
-                        level=levels[int(log_level)],
-                        msg=string_value,
-                        type=msg_type,
-                        id=string_id,
-                        arg_types=args,
-                        arg_count=len(args),
-                    )
-                )
+def read_input(filename):
+    with open(filename, "r") as f:
+        lines = [line.strip() for line in f]
+        return dict(
+            filter(
+                None, [extract_message(num + 1, line) for num, line in enumerate(lines)]
+            )
+        )
 
-                if len(args) == 0:
-                    syst_format = et.SubElement(syst_short_message, "syst:Format")
-                    syst_format.set("ID", "0x%08X" % string_id)
-                    syst_format.set("Mask", "0x0FFFFFFF")
-                    printf_string = string_value
-                else:
-                    syst_format = et.SubElement(syst_catalog_message, "syst:Format")
-                    syst_format.set("ID", "0x%08X" % string_id)
-                    syst_format.set("Mask", "0xFFFFFFFF")
-                    printf_string = re.sub(r"{}", r"%d", string_value)
-                    printf_string = re.sub(r"{:(.*?)}", r"%\1", printf_string)
-                syst_format.text = "<![CDATA[" + printf_string + "]]>"
 
-                string_id += 1
+def make_cpp_defn(types, msg):
+    catalog_type, arg_tuple = types
+    return f"""/*
+    "{msg["msg"]}"
+    {arg_tuple}
+ */
+template<> {catalog_type} {{
+    return {msg["id"]};
+}}"""
 
-str_catalog = dict(messages=messages)
 
-# for bit_mask_file in bit_mask_files:
-#     bit_mask_def = json.load(open(bit_mask_file))
-#     str_catalog.update(bit_mask_def)
+def write_cpp(messages, filename):
+    with open(filename, "w") as f:
+        f.write("#include <log/catalog/catalog.hpp>\n\n")
+        cpp_defns = [make_cpp_defn(k, v) for k, v in messages.items()]
+        f.write("\n".join(cpp_defns))
 
-json.dump(str_catalog, open(json_file, "w"), indent=4)
 
-prettify(syst_collateral, "    ")
-xml_string = et.tostring(syst_collateral, encoding="utf8", method="xml")
+def write_json(messages, filename):
+    str_catalog = dict(messages=list(messages.values()))
+    with open(filename, "w") as f:
+        json.dump(str_catalog, f, indent=4)
 
-with open(xml_file, "wb") as xf:
-    xf.write(xml_string)
+
+def write_xml(messages, filename, client_name, version, guid_id, guid_mask):
+    syst_collateral = et.Element("syst:Collateral")
+    syst_collateral.set("xmlns:syst", "http://www.mipi.org/1.0/sys-t")
+    syst_collateral.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+    syst_collateral.set(
+        "xsi:schemaLocation",
+        "http://www.mipi.org/1.0/sys-t https://www.mipi.org/schema/sys-t/sys-t_1-0.xsd",
+    )
+
+    syst_client = et.SubElement(syst_collateral, "syst:Client")
+    syst_client.set("Name", client_name)
+
+    syst_fwversion = et.SubElement(syst_collateral, "syst:FwVersion")
+    syst_fwversion.set("FW_Version", version)
+
+    syst_guids = et.SubElement(syst_client, "syst:Guids")
+    syst_guid = et.SubElement(syst_guids, "syst:Guid")
+    syst_guid.set("ID", f"{{{guid_id}}}")
+    syst_guid.set("Mask", f"{{{guid_mask}}}")
+
+    syst_short_message = et.SubElement(syst_client, "syst:Short32")
+    syst_catalog_message = et.SubElement(syst_client, "syst:Catalog32")
+
+    for msg in messages.values():
+        if msg["arg_count"] == 0:
+            syst_format = et.SubElement(syst_short_message, "syst:Format")
+            syst_format.set("ID", "0x%08X" % msg["id"])
+            syst_format.set("Mask", "0x0FFFFFFF")
+            printf_string = msg["msg"]
+        else:
+            syst_format = et.SubElement(syst_catalog_message, "syst:Format")
+            syst_format.set("ID", "0x%08X" % msg["id"])
+            syst_format.set("Mask", "0xFFFFFFFF")
+            printf_string = re.sub(r"{}", r"%d", msg["msg"])
+            printf_string = re.sub(r"{:(.*?)}", r"%\1", printf_string)
+        syst_format.text = "<![CDATA[" + printf_string + "]]>"
+
+    et.indent(syst_collateral, space="    ")
+    xml_string = et.tostring(syst_collateral, encoding="utf8", method="xml")
+    with open(filename, "wb") as xf:
+        xf.write(xml_string)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help=(
+            "Input filename: a file of undefined symbols produced by running"
+            "`nm -uC <archive>`."
+        ),
+    )
+    parser.add_argument(
+        "--cpp_output", type=str, help="Output filename for generated C++ code."
+    )
+    parser.add_argument(
+        "--json_output", type=str, help="Output filename for generated JSON."
+    )
+    parser.add_argument(
+        "--xml_output", type=str, help="Output filename for generated XML."
+    )
+    parser.add_argument(
+        "--client_name",
+        type=str,
+        default="CIB Framework FW",
+        help="Client name in the generated XML.",
+    )
+    parser.add_argument(
+        "--version",
+        type=str,
+        default="VERSION",
+        help="Version in the generated XML.",
+    )
+    parser.add_argument(
+        "--guid_id",
+        type=str,
+        default="00000000-0017-0001-0000-000000000000",
+        help="GUID ID in the generated XML.",
+    )
+    parser.add_argument(
+        "--guid_mask",
+        type=str,
+        default="00000000-FFFF-FFFF-8000-000000000000",
+        help="GUID mask in the generated XML.",
+    )
+    args = parser.parse_args()
+
+    try:
+        messages = read_input(args.input)
+    except Exception as e:
+        raise Exception(f"{str(e)} from file {args.input}")
+
+    if args.cpp_output:
+        write_cpp(messages, args.cpp_output)
+    if args.json_output:
+        write_json(messages, args.json_output)
+    if args.xml_output:
+        write_xml(
+            messages,
+            args.xml_output,
+            client_name=args.client_name,
+            version=args.version,
+            guid_id=args.guid_id,
+            guid_mask=args.guid_mask,
+        )
+
+
+if __name__ == "__main__":
+    main()
