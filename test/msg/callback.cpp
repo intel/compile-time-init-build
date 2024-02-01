@@ -232,3 +232,17 @@ TEST_CASE("alternative matcher syntax (multi-field)", "[callback]") {
                                match::and_t<msg::equal_to_t<id_field, 0x80>,
                                             msg::equal_to_t<field1, 1>>>);
 }
+
+TEST_CASE("alternative matcher syntax (value in set)", "[callback]") {
+    auto callback =
+        msg::callback<"cb", msg_defn>("id"_field.in<0x80, 0x90>, [] {});
+    static_assert(std::same_as<typename decltype(callback)::matcher_t,
+                               match::or_t<msg::equal_to_t<id_field, 0x80>,
+                                           msg::equal_to_t<id_field, 0x90>>>);
+}
+
+TEST_CASE("alternative matcher syntax (value in singleton)", "[callback]") {
+    auto callback = msg::callback<"cb", msg_defn>("id"_field.in<0x80>, [] {});
+    static_assert(std::same_as<typename decltype(callback)::matcher_t,
+                               msg::equal_to_t<id_field, 0x80>>);
+}
