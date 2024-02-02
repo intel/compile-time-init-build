@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import re
 import sys
@@ -41,63 +43,54 @@ def split_args(s):
     return args
 
 
-catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))\s*$")
 string_re = re.compile(
     "message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
 )
-string_id = 0
-levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
-catalogued_strings = set()
 
 
-def extract_message(num, line):
-    global string_id
-    global catalogued_strings
+def extract_message(line_num, catalog_m):
+    levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
 
     try:
-        catalog_m = catalog_re.match(line)
-        if catalog_m is None:
-            return None
-
-        string_m = string_re.match(catalog_m.group(2))
         catalog_type = catalog_m.group(1)
+        string_m = string_re.match(catalog_m.group(2))
 
-        if catalog_type not in catalogued_strings:
-            catalogued_strings.add(catalog_type)
+        log_level = string_m.group(1)
+        arg_tuple = string_m.group(2)
+        string_tuple = string_m.group(3).replace("(char)", "")
+        string_value = "".join(
+            (chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))
+        )
+        args = split_args(arg_tuple)
 
-            log_level = string_m.group(1)
-            arg_tuple = string_m.group(2)
-            string_tuple = string_m.group(3).replace("(char)", "")
-            string_value = "".join(
-                [chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)]
-            )
-            args = split_args(arg_tuple)
-            string_id += 1
-
-            return (
-                (catalog_type, arg_tuple),
-                dict(
-                    level=levels[int(log_level)],
-                    msg=string_value,
-                    type="flow" if string_value.startswith("flow.") else "msg",
-                    id=string_id - 1,
-                    arg_types=args,
-                    arg_count=len(args),
-                ),
-            )
+        return (
+            (catalog_type, arg_tuple),
+            dict(
+                level=levels[int(log_level)],
+                msg=string_value,
+                type="flow" if string_value.startswith("flow.") else "msg",
+                arg_types=args,
+                arg_count=len(args),
+            ),
+        )
 
     except Exception:
-        raise Exception(f"Couldn't extract catalog info at line {num} ({line})")
+        raise Exception(
+            f"Couldn't extract catalog info at line {line_num} ({catalog_m.group(0)})"
+        )
 
 
 def read_input(filename):
+    catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))$")
+
     with open(filename, "r") as f:
-        lines = [line.strip() for line in f]
-        return dict(
-            filter(
-                None, [extract_message(num + 1, line) for num, line in enumerate(lines)]
-            )
+        matching_lines = filter(
+            lambda p: p[1] is not None,
+            ((num + 1, catalog_re.match(line.strip())) for num, line in enumerate(f)),
         )
+        messages = (extract_message(*m) for m in matching_lines)
+        unique_messages = {i[0][0]: i for i in messages}.values()
+        return {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_messages)}
 
 
 def make_cpp_defn(types, msg):
@@ -114,7 +107,7 @@ template<> {catalog_type} {{
 def write_cpp(messages, filename):
     with open(filename, "w") as f:
         f.write("#include <log/catalog/catalog.hpp>\n\n")
-        cpp_defns = [make_cpp_defn(k, v) for k, v in messages.items()]
+        cpp_defns = (make_cpp_defn(k, v) for k, v in messages.items())
         f.write("\n".join(cpp_defns))
 
 
@@ -125,41 +118,43 @@ def write_json(messages, filename):
 
 
 def write_xml(messages, filename, client_name, version, guid_id, guid_mask):
-    syst_collateral = et.Element("syst:Collateral")
-    syst_collateral.set("xmlns:syst", "http://www.mipi.org/1.0/sys-t")
-    syst_collateral.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-    syst_collateral.set(
-        "xsi:schemaLocation",
-        "http://www.mipi.org/1.0/sys-t https://www.mipi.org/schema/sys-t/sys-t_1-0.xsd",
+    syst_collateral = et.Element(
+        "syst:Collateral",
+        attrib={
+            "xmlns:syst": "http://www.mipi.org/1.0/sys-t",
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+            "xsi:schemaLocation": "http://www.mipi.org/1.0/sys-t https://www.mipi.org/schema/sys-t/sys-t_1-0.xsd",
+        },
     )
 
-    syst_client = et.SubElement(syst_collateral, "syst:Client")
-    syst_client.set("Name", client_name)
+    syst_client = et.SubElement(
+        syst_collateral, "syst:Client", attrib={"Name": client_name}
+    )
 
-    syst_fwversion = et.SubElement(syst_collateral, "syst:FwVersion")
-    syst_fwversion.set("FW_Version", version)
+    syst_fwversion = et.SubElement(
+        syst_collateral, "syst:FwVersion", attrib={"FW_Version": version}
+    )
 
     syst_guids = et.SubElement(syst_client, "syst:Guids")
-    syst_guid = et.SubElement(syst_guids, "syst:Guid")
-    syst_guid.set("ID", f"{{{guid_id}}}")
-    syst_guid.set("Mask", f"{{{guid_mask}}}")
+    syst_guid = et.SubElement(
+        syst_guids,
+        "syst:Guid",
+        attrib={"ID": f"{{{guid_id}}}", "Mask": f"{{{guid_mask}}}"},
+    )
 
-    syst_short_message = et.SubElement(syst_client, "syst:Short32")
-    syst_catalog_message = et.SubElement(syst_client, "syst:Catalog32")
+    syst_short_msg = et.SubElement(syst_client, "syst:Short32")
+    syst_catalog_msg = et.SubElement(syst_client, "syst:Catalog32")
 
     for msg in messages.values():
-        if msg["arg_count"] == 0:
-            syst_format = et.SubElement(syst_short_message, "syst:Format")
-            syst_format.set("ID", "0x%08X" % msg["id"])
-            syst_format.set("Mask", "0x0FFFFFFF")
-            printf_string = msg["msg"]
-        else:
-            syst_format = et.SubElement(syst_catalog_message, "syst:Format")
-            syst_format.set("ID", "0x%08X" % msg["id"])
-            syst_format.set("Mask", "0xFFFFFFFF")
-            printf_string = re.sub(r"{}", r"%d", msg["msg"])
-            printf_string = re.sub(r"{:(.*?)}", r"%\1", printf_string)
-        syst_format.text = "<![CDATA[" + printf_string + "]]>"
+        syst_format = et.SubElement(
+            syst_short_msg if msg["arg_count"] == 0 else syst_catalog_msg,
+            "syst:Format",
+            attrib={"ID": "0x%08X" % msg["id"], "Mask": "0x0FFFFFFF"},
+        )
+        fmt_string = re.sub(r"{}", r"%d", msg["msg"])
+        if msg["arg_count"] != 0:
+            fmt_string = re.sub(r"{:(.*?)}", r"%\1", fmt_string)
+        syst_format.text = f"<![CDATA[{fmt_string}]]>"
 
     et.indent(syst_collateral, space="    ")
     xml_string = et.tostring(syst_collateral, encoding="utf8", method="xml")
@@ -167,7 +162,7 @@ def write_xml(messages, filename, client_name, version, guid_id, guid_mask):
         xf.write(xml_string)
 
 
-def main():
+def parse_cmdline():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input",
@@ -211,8 +206,11 @@ def main():
         default="00000000-FFFF-FFFF-8000-000000000000",
         help="GUID mask in the generated XML.",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main():
+    args = parse_cmdline()
     try:
         messages = read_input(args.input)
     except Exception as e:
