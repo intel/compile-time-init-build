@@ -6,10 +6,10 @@
 namespace {
 using namespace msg;
 
-using id_field = field<"id", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
-using field1 = field<"f1", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
-using field2 = field<"f2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
-using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 8_lsb},
+using id_field = field<"id", std::uint8_t>::located<at{0_dw, 31_msb, 24_lsb}>;
+using field1 = field<"f1", std::uint16_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+using field2 = field<"f2", std::uint8_t>::located<at{1_dw, 23_msb, 16_lsb}>;
+using field3 = field<"f3", std::uint16_t>::located<at{1_dw, 15_msb, 8_lsb},
                                                    at{1_dw, 7_msb, 0_lsb}>;
 
 using msg_defn =

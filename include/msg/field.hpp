@@ -371,6 +371,21 @@ template <typename R> constexpr auto capacity() -> std::size_t {
     }
 }
 
+[[nodiscard]] constexpr static auto to_string(std::integral auto v) {
+    constexpr auto hex_digits = sizeof(v) * 2;
+
+    if constexpr (hex_digits <= 8) {
+        constexpr auto hex_digits_sc = format("{}"_sc, sc::uint_<hex_digits>);
+        constexpr auto fmt_sc = "0x{:0"_sc + hex_digits_sc + "x}"_sc;
+        return format(fmt_sc, v);
+
+    } else {
+        return format("0x{:08x}{:08x}"_sc,
+                      static_cast<std::uint32_t>(v >> 32ull),
+                      static_cast<std::uint32_t>(v & 0xffffffff));
+    }
+}
+
 template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
           match::matcher M = match::always_t, auto... Ats>
     requires std::is_trivially_copyable_v<T> and
@@ -477,7 +492,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 msg::less_than_or_equal_to_t<field_t, NewLesserValue>, Ats...>;
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
-        return format("{}: 0x{:x}"_sc, spec_t::name, v);
+        return format("{}: {}"_sc, spec_t::name, to_string(v));
     }
 };
 } // namespace detail
