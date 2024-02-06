@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import itertools
+import json
 import re
 import sys
-import json
 import xml.etree.ElementTree as et
 
 
@@ -80,17 +81,23 @@ def extract_message(line_num, catalog_m):
         )
 
 
-def read_input(filename):
+def read_input(filenames):
     catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))$")
 
-    with open(filename, "r") as f:
-        matching_lines = filter(
-            lambda p: p[1] is not None,
-            ((num + 1, catalog_re.match(line.strip())) for num, line in enumerate(f)),
-        )
-        messages = (extract_message(*m) for m in matching_lines)
-        unique_messages = {i[0][0]: i for i in messages}.values()
-        return {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_messages)}
+    def read_file(filename):
+        with open(filename, "r") as f:
+            matching_lines = filter(
+                lambda p: p[1] is not None,
+                (
+                    (num + 1, catalog_re.match(line.strip()))
+                    for num, line in enumerate(f)
+                ),
+            )
+            return [extract_message(*m) for m in matching_lines]
+
+    messages = itertools.chain.from_iterable(read_file(f) for f in filenames)
+    unique_messages = {i[0][0]: i for i in messages}.values()
+    return {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_messages)}
 
 
 def make_cpp_defn(types, msg):
@@ -111,8 +118,11 @@ def write_cpp(messages, filename):
         f.write("\n".join(cpp_defns))
 
 
-def write_json(messages, filename):
+def write_json(messages, extra_inputs, filename):
     str_catalog = dict(messages=list(messages.values()))
+    for extra in extra_inputs:
+        with open(extra, "r") as f:
+            str_catalog.update(json.load(f))
     with open(filename, "w") as f:
         json.dump(str_catalog, f, indent=4)
 
@@ -167,9 +177,10 @@ def parse_cmdline():
     parser.add_argument(
         "--input",
         type=str,
+        nargs="+",
         required=True,
         help=(
-            "Input filename: a file of undefined symbols produced by running"
+            "Input filename(s): file(s) of undefined symbols produced by running"
             "`nm -uC <archive>`."
         ),
     )
@@ -181,6 +192,13 @@ def parse_cmdline():
     )
     parser.add_argument(
         "--xml_output", type=str, help="Output filename for generated XML."
+    )
+    parser.add_argument(
+        "--json_input",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Extra JSON inputs to copy into the output.",
     )
     parser.add_argument(
         "--client_name",
@@ -218,8 +236,10 @@ def main():
 
     if args.cpp_output:
         write_cpp(messages, args.cpp_output)
+
     if args.json_output:
-        write_json(messages, args.json_output)
+        write_json(messages, args.json_input, args.json_output)
+
     if args.xml_output:
         write_xml(
             messages,
