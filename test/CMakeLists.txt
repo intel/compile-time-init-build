@@ -73,9 +73,12 @@ add_tests(
     sc/string_constant
     seq/sequencer)
 
-add_library(catalog_lib log/catalog_lib.cpp)
-target_include_directories(catalog_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
-target_link_libraries(catalog_lib PRIVATE warnings cib)
+add_library(catalog1_lib log/catalog1_lib.cpp)
+add_library(catalog2_lib log/catalog2_lib.cpp)
+target_include_directories(catalog1_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
+target_include_directories(catalog2_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
+target_link_libraries(catalog1_lib PRIVATE warnings cib)
+target_link_libraries(catalog2_lib PRIVATE warnings cib)
 gen_str_catalog(
     GEN_STR_CATALOG
     ${CMAKE_SOURCE_DIR}/tools/gen_str_catalog.py
@@ -88,7 +91,10 @@ gen_str_catalog(
     OUTPUT_LIB
     catalog_strings
     INPUT_LIBS
-    catalog_lib)
+    catalog1_lib
+    catalog2_lib
+    INPUT_JSON
+    log/catalog_extra.json)
 
 add_unit_test(
     log_catalog_test
@@ -97,7 +103,8 @@ add_unit_test(
     log/catalog_app.cpp
     LIBRARIES
     warnings
-    catalog_lib
+    catalog1_lib
+    catalog2_lib
     catalog_strings)
 
 add_compile_fail_test(msg/fail/impossible_match_callback.cpp LIBRARIES warnings
