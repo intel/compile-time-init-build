@@ -10,16 +10,17 @@
 
 namespace sc {
 template <typename CharT, CharT... chars> struct string_constant {
+    using value_type = std::basic_string_view<CharT>;
+
   private:
-    using view_t = std::basic_string_view<CharT>;
     constexpr static std::array<CharT, sizeof...(chars)> storage{chars...};
 
     using size_type = int;
-    using const_iterator = typename view_t::const_iterator;
+    using const_iterator = typename value_type::const_iterator;
     constexpr static size_type npos = std::numeric_limits<size_type>::max();
 
   public:
-    constexpr static view_t value{storage.data(), sizeof...(chars)};
+    constexpr static value_type value{storage.data(), sizeof...(chars)};
 
     constexpr static auto begin() noexcept { return std::cbegin(storage); }
     constexpr static auto end() noexcept { return std::cend(storage); }

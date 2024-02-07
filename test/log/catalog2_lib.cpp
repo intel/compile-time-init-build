@@ -1,4 +1,5 @@
 #include "catalog_concurrency.hpp"
+#include "catalog_enums.hpp"
 
 #include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
@@ -16,9 +17,16 @@ struct test_log_args_destination {
 } // namespace
 
 auto log_two_rt_args() -> void;
+auto log_rt_enum_arg() -> void;
 
 auto log_two_rt_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     cfg.logger.log_msg<logging::level::TRACE>(
         format("D string with {} and {} placeholder"_sc, 1, 2));
+}
+
+auto log_rt_enum_arg() -> void {
+    auto cfg = logging::mipi::config{test_log_args_destination{}};
+    cfg.logger.log_msg<logging::level::TRACE>(
+        format("E string with {} placeholder"_sc, E::value));
 }
