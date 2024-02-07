@@ -2,7 +2,7 @@ function(gen_str_catalog)
     set(options "")
     set(oneValueArgs OUTPUT_CPP OUTPUT_XML OUTPUT_JSON GEN_STR_CATALOG
                      OUTPUT_LIB)
-    set(multiValueArgs INPUT_JSON INPUT_LIBS)
+    set(multiValueArgs INPUT_JSON INPUT_LIBS INPUT_HEADERS)
     cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}"
                           ${ARGN})
 
@@ -19,13 +19,15 @@ function(gen_str_catalog)
     endforeach()
 
     list(TRANSFORM SC_INPUT_JSON PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+    list(TRANSFORM SC_INPUT_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
     add_custom_command(
         OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
         COMMAND
             ${Python3_EXECUTABLE} ${SC_GEN_STR_CATALOG} --input ${UNDEFS}
-            --json_input ${SC_INPUT_JSON} --cpp_output ${SC_OUTPUT_CPP}
-            --json_output ${SC_OUTPUT_JSON} --xml_output ${SC_OUTPUT_XML}
+            --json_input ${SC_INPUT_JSON} --cpp_headers ${SC_INPUT_HEADERS}
+            --cpp_output ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON}
+            --xml_output ${SC_OUTPUT_XML}
         DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG})
 
     add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})

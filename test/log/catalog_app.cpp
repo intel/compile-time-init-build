@@ -10,6 +10,8 @@ extern int log_calls;
 extern auto log_zero_args() -> void;
 extern auto log_one_ct_arg() -> void;
 extern auto log_one_rt_arg() -> void;
+extern auto log_two_rt_args() -> void;
+extern auto log_rt_enum_arg() -> void;
 
 TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
@@ -31,6 +33,22 @@ TEST_CASE("log one runtime argument", "[catalog]") {
     log_calls = 0;
     test_critical_section::count = 0;
     log_one_rt_arg();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log two runtime arguments", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_two_rt_args();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log runtime enum argument", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_rt_enum_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
 }

@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
@@ -22,10 +23,12 @@
 namespace sc {
 namespace detail {
 template <typename T>
-concept compile_time_field = requires { T::value; };
+concept compile_time_field =
+    std::same_as<typename T::value_type,
+                 std::remove_cvref_t<decltype(T::value)>>;
 
 template <compile_time_field T> [[nodiscard]] CONSTEVAL auto field_value(T) {
-    if constexpr (std::is_enum_v<decltype(T::value)>) {
+    if constexpr (std::is_enum_v<typename T::value_type>) {
         return stdx::enum_as_string<T::value>();
     } else {
         return T::value;

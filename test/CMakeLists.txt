@@ -94,7 +94,9 @@ gen_str_catalog(
     catalog1_lib
     catalog2_lib
     INPUT_JSON
-    log/catalog_extra.json)
+    log/catalog_extra.json
+    INPUT_HEADERS
+    log/catalog_enums.hpp)
 
 add_unit_test(
     log_catalog_test

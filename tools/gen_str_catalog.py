@@ -111,9 +111,10 @@ template<> {catalog_type} {{
 }}"""
 
 
-def write_cpp(messages, filename):
+def write_cpp(messages, extra_headers, filename):
     with open(filename, "w") as f:
-        f.write("#include <log/catalog/catalog.hpp>\n\n")
+        f.write("\n".join(f'#include "{h}"' for h in extra_headers))
+        f.write("\n#include <log/catalog/catalog.hpp>\n\n")
         cpp_defns = (make_cpp_defn(k, v) for k, v in messages.items())
         f.write("\n".join(cpp_defns))
 
@@ -201,6 +202,13 @@ def parse_cmdline():
         help="Extra JSON inputs to copy into the output.",
     )
     parser.add_argument(
+        "--cpp_headers",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Extra C++ headers to include in the C++ output.",
+    )
+    parser.add_argument(
         "--client_name",
         type=str,
         default="CIB Framework FW",
@@ -235,7 +243,7 @@ def main():
         raise Exception(f"{str(e)} from file {args.input}")
 
     if args.cpp_output:
-        write_cpp(messages, args.cpp_output)
+        write_cpp(messages, args.cpp_headers, args.cpp_output)
 
     if args.json_output:
         write_json(messages, args.json_input, args.json_output)
