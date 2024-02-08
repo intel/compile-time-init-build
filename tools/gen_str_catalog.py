@@ -119,6 +119,39 @@ def write_cpp(messages, extra_headers, filename):
         f.write("\n".join(cpp_defns))
 
 
+def extract_enums(filename):
+    from clang.cindex import CursorKind, Index
+
+    def walk_up(node):
+        if node.semantic_parent.kind == CursorKind.TRANSLATION_UNIT:
+            yield node
+        else:
+            yield from (node, *walk_up(node.semantic_parent))
+
+    def fully_qualified(node):
+        return reversed(list(walk_up(node)))
+
+    def fq_name(node):
+        return "::".join(n.spelling for n in fully_qualified(node))
+
+    index = Index.create()
+    translation_unit = index.parse(filename)
+
+    enums = {}
+    for node in translation_unit.cursor.walk_preorder():
+        if node.kind == CursorKind.ENUM_DECL:
+            enums.update(
+                {
+                    fq_name(node): {
+                        e.spelling: e.enum_value
+                        for e in node.walk_preorder()
+                        if e.kind == CursorKind.ENUM_CONSTANT_DECL
+                    }
+                }
+            )
+    return enums
+
+
 def write_json(messages, extra_inputs, filename):
     str_catalog = dict(messages=list(messages.values()))
     for extra in extra_inputs:
@@ -128,7 +161,46 @@ def write_json(messages, extra_inputs, filename):
         json.dump(str_catalog, f, indent=4)
 
 
-def write_xml(messages, filename, client_name, version, guid_id, guid_mask):
+def serialize_guids(client_node, guid_id, guid_mask):
+    syst_guids = et.SubElement(client_node, "syst:Guids")
+    syst_guid = et.SubElement(
+        syst_guids,
+        "syst:Guid",
+        attrib={"ID": f"{{{guid_id}}}", "Mask": f"{{{guid_mask}}}"},
+    )
+
+
+def serialize_enums(client_node, enums):
+    syst_enums = et.SubElement(client_node, "syst:EnumDefinition")
+    for enum_name, (i, values) in enums.items():
+        syst_enum = et.SubElement(
+            syst_enums, "syst:Enum", attrib={"Name": enum_name, "ID": f"{i}"}
+        )
+        for name, value in values.items():
+            syst_enum_entry = et.SubElement(
+                syst_enum, "syst:EnumEntry", attrib={"Value": f"{value}", "Name": name}
+            )
+
+
+def serialize_messages(short_node, catalog_node, messages):
+    for msg in messages.values():
+        syst_format = et.SubElement(
+            short_node if msg["arg_count"] == 0 else catalog_node,
+            "syst:Format",
+            attrib={"ID": "0x%08X" % msg["id"], "Mask": "0x0FFFFFFF"},
+        )
+        if "enum_lookup" in msg:
+            syst_format.set(
+                "EnumLookup", f'{msg["enum_lookup"][0]}:{msg["enum_lookup"][1]}'
+            )
+
+        fmt_string = re.sub(r"{}", r"%d", msg["msg"])
+        if msg["arg_count"] != 0:
+            fmt_string = re.sub(r"{:(.*?)}", r"%\1", fmt_string)
+        syst_format.text = f"<![CDATA[{fmt_string}]]>"
+
+
+def write_xml(messages, enums, filename, client_name, version, guid_id, guid_mask):
     syst_collateral = et.Element(
         "syst:Collateral",
         attrib={
@@ -141,31 +213,16 @@ def write_xml(messages, filename, client_name, version, guid_id, guid_mask):
     syst_client = et.SubElement(
         syst_collateral, "syst:Client", attrib={"Name": client_name}
     )
-
     syst_fwversion = et.SubElement(
         syst_collateral, "syst:FwVersion", attrib={"FW_Version": version}
     )
 
-    syst_guids = et.SubElement(syst_client, "syst:Guids")
-    syst_guid = et.SubElement(
-        syst_guids,
-        "syst:Guid",
-        attrib={"ID": f"{{{guid_id}}}", "Mask": f"{{{guid_mask}}}"},
-    )
+    serialize_guids(syst_client, guid_id, guid_mask)
+    serialize_enums(syst_client, enums)
 
     syst_short_msg = et.SubElement(syst_client, "syst:Short32")
     syst_catalog_msg = et.SubElement(syst_client, "syst:Catalog32")
-
-    for msg in messages.values():
-        syst_format = et.SubElement(
-            syst_short_msg if msg["arg_count"] == 0 else syst_catalog_msg,
-            "syst:Format",
-            attrib={"ID": "0x%08X" % msg["id"], "Mask": "0x0FFFFFFF"},
-        )
-        fmt_string = re.sub(r"{}", r"%d", msg["msg"])
-        if msg["arg_count"] != 0:
-            fmt_string = re.sub(r"{:(.*?)}", r"%\1", fmt_string)
-        syst_format.text = f"<![CDATA[{fmt_string}]]>"
+    serialize_messages(syst_short_msg, syst_catalog_msg, messages)
 
     et.indent(syst_collateral, space="    ")
     xml_string = et.tostring(syst_collateral, encoding="utf8", method="xml")
@@ -242,15 +299,37 @@ def main():
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 
-    if args.cpp_output:
+    if args.cpp_output is not None:
         write_cpp(messages, args.cpp_headers, args.cpp_output)
 
-    if args.json_output:
+    if args.json_output is not None:
         write_json(messages, args.json_input, args.json_output)
 
-    if args.xml_output:
+    if args.xml_output is not None:
+        enums = {}
+        if args.cpp_output is not None:
+            try:
+                enums = {
+                    name: (i, value)
+                    for i, (name, value) in enumerate(
+                        extract_enums(args.cpp_output).items()
+                    )
+                }
+                for k, v in messages.items():
+                    for i, arg_type in enumerate(v["arg_types"]):
+                        if arg_type in enums:
+                            v.update({"enum_lookup": (i + 1, enums[arg_type][0])})
+            except Exception as e:
+                print(
+                    f"Couldn't extract enum info ({str(e)}), enum lookup will not be available"
+                )
+
+        else:
+            print("XML output without C++ output: enum lookup will not be available")
+
         write_xml(
             messages,
+            enums,
             args.xml_output,
             client_name=args.client_name,
             version=args.version,
