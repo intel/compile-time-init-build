@@ -21,13 +21,13 @@ auto log_rt_enum_arg() -> void;
 
 auto log_two_rt_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         format("D string with {} and {} placeholder"_sc, 1, 2));
 }
 
 auto log_rt_enum_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     using namespace ns;
-    cfg.logger.log_msg<logging::level::TRACE>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         format("E string with {} placeholder"_sc, E::value));
 }

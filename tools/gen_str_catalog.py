@@ -45,62 +45,76 @@ def split_args(s):
 
 
 string_re = re.compile(
-    "message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
+    "sc::message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
 )
 
 
-def extract_message(line_num, catalog_m):
+def extract_string_id(line_m):
     levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
 
+    catalog_type = line_m.group(1)
+    string_m = string_re.match(line_m.group(3))
+    log_level = string_m.group(1)
+    arg_tuple = string_m.group(2)
+    string_tuple = string_m.group(3).replace("(char)", "")
+    string_value = "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
+    args = split_args(arg_tuple)
+
+    return (
+        (catalog_type, arg_tuple),
+        dict(
+            level=levels[int(log_level)],
+            msg=string_value,
+            type="flow" if string_value.startswith("flow.") else "msg",
+            arg_types=args,
+            arg_count=len(args),
+        ),
+    )
+
+
+module_re = re.compile("sc::module_string<sc::undefined<void, char, (.*)>\s?>")
+
+
+def extract_module_id(line_m):
+    return module_re.match(line_m.group(3)).group(1)
+
+
+def extract(line_num, line_m):
     try:
-        catalog_type = catalog_m.group(1)
-        string_m = string_re.match(catalog_m.group(2))
-
-        log_level = string_m.group(1)
-        arg_tuple = string_m.group(2)
-        string_tuple = string_m.group(3).replace("(char)", "")
-        string_value = "".join(
-            (chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))
-        )
-        args = split_args(arg_tuple)
-
         return (
-            (catalog_type, arg_tuple),
-            dict(
-                level=levels[int(log_level)],
-                msg=string_value,
-                type="flow" if string_value.startswith("flow.") else "msg",
-                arg_types=args,
-                arg_count=len(args),
-            ),
+            extract_string_id(line_m)
+            if line_m.group(2) == "catalog"
+            else extract_module_id(line_m)
         )
-
     except Exception:
         raise Exception(
-            f"Couldn't extract catalog info at line {line_num} ({catalog_m.group(0)})"
+            f"Couldn't extract catalog info at line {line_num} ({line_m.group(0)})"
         )
 
 
 def read_input(filenames):
-    catalog_re = re.compile("^.+?(unsigned int catalog<(.+?)>\(\))$")
+    line_re = re.compile("^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
         with open(filename, "r") as f:
             matching_lines = filter(
                 lambda p: p[1] is not None,
-                (
-                    (num + 1, catalog_re.match(line.strip()))
-                    for num, line in enumerate(f)
-                ),
+                ((num + 1, line_re.match(line.strip())) for num, line in enumerate(f)),
             )
-            return [extract_message(*m) for m in matching_lines]
+            return [extract(*m) for m in matching_lines]
 
-    messages = itertools.chain.from_iterable(read_file(f) for f in filenames)
-    unique_messages = {i[0][0]: i for i in messages}.values()
-    return {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_messages)}
+    messages = list(itertools.chain.from_iterable(read_file(f) for f in filenames))
+    strings = filter(lambda x: not isinstance(x, str), messages)
+    modules = filter(lambda x: isinstance(x, str), messages)
+
+    unique_strings = {i[0][0]: i for i in strings}.values()
+    return (
+        set(modules),
+        {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_strings)},
+    )
 
 
-def make_cpp_defn(types, msg):
+def make_cpp_catalog_defn(types, msg):
     catalog_type, arg_tuple = types
     return f"""/*
     "{msg["msg"]}"
@@ -111,12 +125,29 @@ template<> {catalog_type} {{
 }}"""
 
 
-def write_cpp(messages, extra_headers, filename):
+def module_string(module):
+    string_tuple = module.replace("(char)", "")
+    return "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
+
+
+def make_cpp_module_defn(n, module):
+    return f"""/*
+    "{module_string(module)}"
+ */
+template<> unsigned int module<sc::module_string<sc::undefined<void, char, {module}>>>() {{
+    return {n};
+}}"""
+
+
+def write_cpp(messages, modules, extra_headers, filename):
     with open(filename, "w") as f:
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
         f.write("\n#include <log/catalog/catalog.hpp>\n\n")
-        cpp_defns = (make_cpp_defn(k, v) for k, v in messages.items())
-        f.write("\n".join(cpp_defns))
+        cpp_catalog_defns = (make_cpp_catalog_defn(k, v) for k, v in messages.items())
+        f.write("\n".join(cpp_catalog_defns))
+        f.write("\n\n")
+        cpp_module_defns = (make_cpp_module_defn(n, m) for n, m in enumerate(modules))
+        f.write("\n".join(cpp_module_defns))
 
 
 def extract_enums(filename):
@@ -182,6 +213,13 @@ def serialize_enums(client_node, enums):
             )
 
 
+def serialize_modules(client_node, modules):
+    syst_modules = et.SubElement(client_node, "syst:Modules")
+    for n, m in enumerate(modules):
+        syst_module = et.SubElement(syst_modules, "syst:Module", attrib={"ID": f"{n}"})
+        syst_module.text = f"<![CDATA[{module_string(m)}]]>"
+
+
 def serialize_messages(short_node, catalog_node, messages):
     for msg in messages.values():
         syst_format = et.SubElement(
@@ -200,7 +238,9 @@ def serialize_messages(short_node, catalog_node, messages):
         syst_format.text = f"<![CDATA[{fmt_string}]]>"
 
 
-def write_xml(messages, enums, filename, client_name, version, guid_id, guid_mask):
+def write_xml(
+    messages, modules, enums, filename, client_name, version, guid_id, guid_mask
+):
     syst_collateral = et.Element(
         "syst:Collateral",
         attrib={
@@ -219,6 +259,7 @@ def write_xml(messages, enums, filename, client_name, version, guid_id, guid_mas
 
     serialize_guids(syst_client, guid_id, guid_mask)
     serialize_enums(syst_client, enums)
+    serialize_modules(syst_client, modules)
 
     syst_short_msg = et.SubElement(syst_client, "syst:Short32")
     syst_catalog_msg = et.SubElement(syst_client, "syst:Catalog32")
@@ -295,12 +336,12 @@ def parse_cmdline():
 def main():
     args = parse_cmdline()
     try:
-        messages = read_input(args.input)
+        modules, messages = read_input(args.input)
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 
     if args.cpp_output is not None:
-        write_cpp(messages, args.cpp_headers, args.cpp_output)
+        write_cpp(messages, modules, args.cpp_headers, args.cpp_output)
 
     if args.json_output is not None:
         write_json(messages, args.json_input, args.json_output)
@@ -329,6 +370,7 @@ def main():
 
         write_xml(
             messages,
+            modules,
             enums,
             args.xml_output,
             client_name=args.client_name,

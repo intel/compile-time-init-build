@@ -25,7 +25,7 @@ namespace logging::fmt {
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level L, typename FilenameStringType,
+    template <logging::level L, typename ModuleId, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
         auto const currentTime =
@@ -35,8 +35,8 @@ template <typename TDestinations> struct log_handler {
 
         stdx::for_each(
             [&](auto &out) {
-                ::fmt::format_to(out, "{:>8}us {}: ", currentTime,
-                                 level_constant<L>{});
+                ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
+                                 level_constant<L>{}, ModuleId::value);
                 msg.apply(
                     [&]<typename StringType>(StringType, auto const &...args) {
                         ::fmt::format_to(out, StringType::value, args...);

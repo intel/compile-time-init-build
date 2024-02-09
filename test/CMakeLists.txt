@@ -39,6 +39,7 @@ add_tests(
     log/fmt_logger
     log/log
     log/mipi_encoder
+    log/module_id
     lookup/direct_array
     lookup/fast_hash
     lookup/input
