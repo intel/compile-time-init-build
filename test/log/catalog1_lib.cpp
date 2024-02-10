@@ -21,18 +21,18 @@ auto log_one_rt_arg() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         "A string with no placeholders"_sc);
 }
 
 auto log_one_ct_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         format("B string with {} placeholder"_sc, "one"_sc));
 }
 
 auto log_one_rt_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         format("C string with {} placeholder"_sc, 1));
 }

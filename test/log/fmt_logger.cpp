@@ -37,61 +37,86 @@ void operator delete(void *, std::size_t) noexcept;
 void operator delete(void *ptr, std::size_t) noexcept { return free(ptr); }
 #endif
 
-TEST_CASE("logging doesn't use dynamic memory", "[log]") {
+TEST_CASE("logging doesn't use dynamic memory", "[fmt_logger]") {
     buffer.reserve(100);
+    buffer.clear();
     allocation_happened.store(false);
     CIB_TRACE("Hello");
-    REQUIRE(not allocation_happened.load());
-    REQUIRE(buffer.substr(buffer.size() - std::size("Hello")) == "Hello\n");
+    CHECK(not allocation_happened.load());
+    CAPTURE(buffer);
+    CHECK(buffer.substr(buffer.size() - std::size("Hello")) == "Hello\n");
 }
 
-TEST_CASE("logging behavior can be properly overridden", "[log]") {
+TEST_CASE("logging behavior can be properly overridden", "[fmt_logger]") {
     buffer.reserve(100);
     buffer.clear();
     log_test_override();
-    REQUIRE(buffer.substr(buffer.size() - std::size("Hello")) == "Hello\n");
+    CAPTURE(buffer);
+    CHECK(buffer.substr(buffer.size() - std::size("Hello")) == "Hello\n");
 }
 
-TEST_CASE("log levels are properly represented", "[log]") {
+TEST_CASE("log levels are properly represented", "[fmt_logger]") {
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::TRACE>{});
-        REQUIRE(level == "TRACE");
+        CHECK(level == "TRACE");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::INFO>{});
-        REQUIRE(level == "INFO");
+        CHECK(level == "INFO");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::WARN>{});
-        REQUIRE(level == "WARN");
+        CHECK(level == "WARN");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::ERROR>{});
-        REQUIRE(level == "ERROR");
+        CHECK(level == "ERROR");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::FATAL>{});
-        REQUIRE(level == "FATAL");
+        CHECK(level == "FATAL");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::MAX>{});
-        REQUIRE(level == "UNKNOWN");
+        CHECK(level == "UNKNOWN");
     }
 }
 
-TEST_CASE("logging can use std::cout", "[log]") {
+TEST_CASE("log level is reported", "[fmt_logger]") {
+    buffer.clear();
+    CIB_TRACE("Hello");
+    CAPTURE(buffer);
+    CHECK(buffer.find("TRACE") != std::string::npos);
+}
+
+TEST_CASE("log module id is reported", "[fmt_logger]") {
+    buffer.clear();
+    CIB_TRACE("Hello");
+    CAPTURE(buffer);
+    CHECK(buffer.find("[default]") != std::string::npos);
+
+    {
+        CIB_LOG_MODULE("test");
+        buffer.clear();
+        CIB_TRACE("Hello");
+        CAPTURE(buffer);
+        CHECK(buffer.find("[test]") != std::string::npos);
+    }
+}
+
+TEST_CASE("logging can use std::cout", "[fmt_logger]") {
     [[maybe_unused]] auto cfg =
         logging::fmt::config{std::ostream_iterator<char>{std::cout}};
 }

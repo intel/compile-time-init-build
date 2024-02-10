@@ -18,7 +18,8 @@ constexpr auto to_message() {
     return [&]<template <typename...> typename Tuple, typename... Args,
                std::size_t... Is>(Tuple<Args...> const &,
                                   std::integer_sequence<std::size_t, Is...>) {
-        return message<L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+        return sc::message<
+            L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
     }(T{}, std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -29,38 +30,46 @@ template <logging::level L, typename Msg> constexpr auto to_message(Msg msg) {
         return to_message<L, Msg, stdx::tuple<>>();
     }
 }
+
+template <typename S> constexpr auto to_module() {
+    constexpr auto s = S::value;
+    using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
+    return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
+        return sc::module_string<sc::undefined<void, char_t, s[Is]...>>{};
+    }(std::make_integer_sequence<std::size_t, std::size(s)>{});
+}
 } // namespace
 
 namespace logging::mipi {
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level Level, typename FilenameStringType,
-              typename LineNumberType, typename MsgType>
+    template <logging::level Level, typename ModuleId,
+              typename FilenameStringType, typename LineNumberType,
+              typename MsgType>
     ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
                            MsgType const &msg) -> void {
-        log_msg<Level>(msg);
+        log_msg<Level, ModuleId>(msg);
     }
 
-    ALWAYS_INLINE auto log_id(string_id id) -> void {
-        dispatch_message<logging::level::TRACE>(id);
-    }
-
-    template <logging::level Level, typename Msg>
+    template <logging::level Level, typename ModuleId, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename StringType>(StringType, auto... args) {
             using Message = decltype(to_message<Level>(msg));
-            dispatch_message<Level>(catalog<Message>(),
+            using Module = decltype(to_module<ModuleId>());
+            dispatch_message<Level>(catalog<Message>(), module<Module>(),
                                     static_cast<std::uint32_t>(args)...);
         });
     }
 
   private:
-    CONSTEVAL static auto make_catalog32_header(logging::level level)
-        -> std::uint32_t {
-        return (0x1u << 24u) | // mipi sys-t subtype: id32_p32
-               (static_cast<std::uint32_t>(level) << 4u) |
-               0x3u; // mipi sys-t type: catalog
+    constexpr static auto make_catalog32_header(logging::level level,
+                                                module_id m) -> std::uint32_t {
+        constexpr auto type = 0x3u;    // catalog
+        constexpr auto subtype = 0x1u; // id32_p32
+
+        return (subtype << 24u) | (m << 16u) |
+               (static_cast<std::uint32_t>(level) << 4u) | type;
     }
 
     constexpr static auto make_short32_header(string_id id) -> std::uint32_t {
@@ -92,14 +101,15 @@ template <typename TDestinations> struct log_handler {
 
     template <logging::level Level, typename... MsgDataTypes>
     ALWAYS_INLINE auto dispatch_message(string_id id,
+                                        [[maybe_unused]] module_id m,
                                         MsgDataTypes &&...msg_data) -> void {
         if constexpr (sizeof...(msg_data) == 0u) {
             dispatch_pass_by_args(make_short32_header(id));
         } else if constexpr (sizeof...(msg_data) <= 2u) {
-            dispatch_pass_by_args(make_catalog32_header(Level), id,
+            dispatch_pass_by_args(make_catalog32_header(Level, m), id,
                                   std::forward<MsgDataTypes>(msg_data)...);
         } else {
-            std::array args = {make_catalog32_header(Level), id,
+            std::array args = {make_catalog32_header(Level, m), id,
                                std::forward<MsgDataTypes>(msg_data)...};
             dispatch_pass_by_buffer(args.data(), args.size());
         }
