@@ -74,8 +74,8 @@ add_tests(
     sc/string_constant
     seq/sequencer)
 
-add_library(catalog1_lib log/catalog1_lib.cpp)
-add_library(catalog2_lib log/catalog2_lib.cpp)
+add_library(catalog1_lib STATIC log/catalog1_lib.cpp)
+add_library(catalog2_lib OBJECT log/catalog2a_lib.cpp log/catalog2b_lib.cpp)
 target_include_directories(catalog1_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 target_include_directories(catalog2_lib PRIVATE ${CMAKE_SOURCE_DIR}/test/)
 target_link_libraries(catalog1_lib PRIVATE warnings cib)

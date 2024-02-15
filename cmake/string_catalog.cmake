@@ -12,10 +12,19 @@ function(gen_str_catalog)
     list(TRANSFORM UNDEFS APPEND ".txt")
 
     foreach(LIB UNDEF IN ZIP_LISTS SC_INPUT_LIBS UNDEFS)
-        add_custom_command(
-            OUTPUT ${UNDEF}
-            DEPENDS ${LIB}
-            COMMAND ${CMAKE_NM} -uC "$<TARGET_FILE:${LIB}>" > "${UNDEF}")
+        get_target_property(lib_type ${LIB} TYPE)
+        if(${lib_type} STREQUAL OBJECT_LIBRARY)
+            add_custom_command(
+                OUTPUT ${UNDEF}
+                DEPENDS ${LIB}
+                COMMAND ${CMAKE_NM} -uC "$<TARGET_OBJECTS:${LIB}>" > "${UNDEF}"
+                COMMAND_EXPAND_LISTS)
+        else()
+            add_custom_command(
+                OUTPUT ${UNDEF}
+                DEPENDS ${LIB}
+                COMMAND ${CMAKE_NM} -uC "$<TARGET_FILE:${LIB}>" > "${UNDEF}")
+        endif()
     endforeach()
 
     list(TRANSFORM SC_INPUT_JSON PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
