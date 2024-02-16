@@ -8,6 +8,7 @@
 #include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
+#include <stdx/iterator.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <algorithm>
@@ -363,14 +364,6 @@ using locator_for =
 
 template <at... Ats> constexpr inline auto field_size = (0u + ... + Ats.size());
 
-template <typename R> constexpr auto capacity() -> std::size_t {
-    if constexpr (requires { R::capacity(); }) {
-        return R::capacity();
-    } else {
-        return std::size(R{});
-    }
-}
-
 template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
           match::matcher M = match::always_t, auto... Ats>
     requires std::is_trivially_copyable_v<T> and
@@ -407,7 +400,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     template <typename DataType> constexpr static auto fits_inside() -> bool {
         constexpr auto bits_capacity =
             detail::bit_size<typename DataType::value_type>() *
-            capacity<DataType>();
+            stdx::ct_capacity_v<DataType>;
         return locator_t::template fits_inside<bits_capacity>();
     }
 

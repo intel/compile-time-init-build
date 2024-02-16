@@ -11,6 +11,7 @@
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
+#include <stdx/iterator.hpp>
 #include <stdx/span.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -258,7 +259,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
 
 template <typename T>
 concept storage_like = stdx::range<T> and requires {
-    { capacity<T>() } -> std::same_as<std::size_t>;
+    { stdx::ct_capacity_v<T> } -> stdx::same_as_unqualified<std::size_t>;
     typename T::value_type;
 };
 } // namespace detail
@@ -373,19 +374,19 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     template <detail::storage_like S>
     owner_t(S const &, auto &&...)
-        -> owner_t<std::array<typename S::value_type, detail::capacity<S>()>>;
+        -> owner_t<std::array<typename S::value_type, stdx::ct_capacity_v<S>>>;
     template <field_value... Vs> owner_t(Vs...) -> owner_t<default_storage_t>;
     template <typename S>
     owner_t(view_t<S> &, auto &&...)
-        -> owner_t<std::array<typename S::value_type, detail::capacity<S>()>>;
+        -> owner_t<std::array<typename S::value_type, stdx::ct_capacity_v<S>>>;
 
     template <detail::storage_like S>
     view_t(S const &)
         -> view_t<stdx::span<std::add_const_t<typename S::value_type>,
-                             detail::capacity<S>()>>;
+                             stdx::ct_capacity_v<S>>>;
     template <detail::storage_like S>
     view_t(S &)
-        -> view_t<stdx::span<typename S::value_type, detail::capacity<S>()>>;
+        -> view_t<stdx::span<typename S::value_type, stdx::ct_capacity_v<S>>>;
 
     template <typename T, std::size_t N>
         requires(std::is_const_v<T>)
@@ -396,10 +397,10 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     template <typename S>
     view_t(owner_t<S> const &) -> view_t<
-        stdx::span<typename S::value_type const, detail::capacity<S>()>>;
+        stdx::span<typename S::value_type const, stdx::ct_capacity_v<S>>>;
     template <typename S>
     view_t(owner_t<S> &, auto &&...)
-        -> view_t<stdx::span<typename S::value_type, detail::capacity<S>()>>;
+        -> view_t<stdx::span<typename S::value_type, stdx::ct_capacity_v<S>>>;
 
     using matcher_t = decltype(match::all(typename Fields::matcher_t{}...));
 };
