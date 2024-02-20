@@ -345,16 +345,20 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
         template <detail::storage_like S, field_value... Vs>
         explicit constexpr owner_t(S const &s, Vs... vs) {
-            std::copy(std::begin(s), std::end(s), std::begin(storage));
+            static_assert(std::is_same_v<typename S::value_type,
+                                         typename storage_t::value_type>,
+                          "Attempted to construct owning message with "
+                          "incompatible storage");
+
+            constexpr auto N = std::min(stdx::ct_capacity_v<S>,
+                                        stdx::ct_capacity_v<storage_t>);
+            std::copy_n(std::begin(s), N, std::begin(storage));
             this->set(vs...);
         }
 
         template <detail::storage_like S, field_value... Vs>
-        explicit constexpr owner_t(view_t<S> &s, Vs... vs) {
-            std::copy(std::begin(s.data()), std::end(s.data()),
-                      std::begin(storage));
-            this->set(vs...);
-        }
+        explicit constexpr owner_t(view_t<S> s, Vs... vs)
+            : owner_t{s.data(), vs...} {}
 
         [[nodiscard]] constexpr auto data() { return stdx::span{storage}; }
         [[nodiscard]] constexpr auto data() const {
