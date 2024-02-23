@@ -129,7 +129,17 @@ jobs:
   quality_checks_pass:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout target branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{github.base_ref}}
+
+      - name: Extract target branch SHA
+        run: echo "branch=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        id: target_branch
+
+      - name: Checkout PR branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install build tools
         run: |
@@ -145,10 +155,11 @@ jobs:
         env:
           CC: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang"
           CXX: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang++"
+          PR_TARGET_BRANCH: ${{ steps.target_branch.outputs.branch }}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}}
 
       - name: Run quality checks
-        run: cmake --build ${{github.workspace}}/build -t quality
+        run: cmake --build ${{github.workspace}}/build -t ci-quality
 
   sanitize:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
