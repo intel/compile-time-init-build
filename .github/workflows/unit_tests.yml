@@ -167,19 +167,31 @@ jobs:
       fail-fast: false
       matrix:
         sanitizer: [undefined, address, thread]
+        compiler: [clang, gcc]
+        include:
+          - compiler: clang
+            cc: "clang"
+            cxx: "clang++"
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
+            toolchain_root: "/usr/lib/llvm-17"
+          - compiler: gcc
+            cc: "gcc-12"
+            cxx: "g++-12"
+            install: sudo apt update && sudo apt install -y gcc-12
+            toolchain_root: "/usr"
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install build tools
         run: |
-          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
+          ${{ matrix.install }}
           sudo apt install -y ninja-build
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang"
-          CXX: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang++"
+          CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
+          CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
           SANITIZERS: ${{matrix.sanitizer}}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}}
 
