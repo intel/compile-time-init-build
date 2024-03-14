@@ -124,7 +124,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -j $(nproc) -C ${{matrix.build_type}}
+        run: ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
 
   quality_checks_pass:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
@@ -218,7 +218,7 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
-          ctest -j $(nproc) -E EXPECT_FAIL -T memcheck
+          ctest --output-on-failure -j $(nproc) -E "EXPECT_FAIL|PYTHON" -T memcheck
 
           LOGFILE=$(ls ./Testing/Temporary/LastDynamicAnalysis_*.log)
           FAILSIZE=$(du -c ./Testing/Temporary/MemoryChecker.* | tail -1 | cut -f1)
