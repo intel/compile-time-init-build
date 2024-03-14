@@ -23,7 +23,7 @@ add_versioned_package(
     NAME
     fmt
     GIT_TAG
-    10.2.0
+    10.2.1
     GITHUB_REPOSITORY
     fmtlib/fmt
     OPTIONS
