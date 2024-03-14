@@ -19,14 +19,14 @@ constexpr auto d = flow::action<"d">([] { actual += "d"; });
 using builder = flow::graph_builder<flow::impl>;
 } // namespace
 
-TEST_CASE("build and run empty flow", "[flow]") {
+TEST_CASE("build and run empty flow", "[graph_builder]") {
     auto g = flow::graph<>{};
     auto const flow = builder::build(g);
     REQUIRE(flow.has_value());
     flow.value()();
 }
 
-TEST_CASE("add single action", "[flow]") {
+TEST_CASE("add single action", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a);
     auto const flow = builder::build(g);
@@ -35,7 +35,7 @@ TEST_CASE("add single action", "[flow]") {
     CHECK(actual == "a");
 }
 
-TEST_CASE("two milestone linear before dependency", "[flow]") {
+TEST_CASE("two milestone linear before dependency", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> milestone0);
     auto const flow = builder::build(g);
@@ -44,7 +44,7 @@ TEST_CASE("two milestone linear before dependency", "[flow]") {
     CHECK(actual == "a");
 }
 
-TEST_CASE("actions get executed once", "[flow]") {
+TEST_CASE("actions get executed once", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}
                  .add(a >> milestone0)
@@ -55,7 +55,7 @@ TEST_CASE("actions get executed once", "[flow]") {
     CHECK(actual == "a");
 }
 
-TEST_CASE("two milestone linear after dependency", "[flow]") {
+TEST_CASE("two milestone linear after dependency", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}
                  .add(a >> milestone0)
@@ -66,7 +66,8 @@ TEST_CASE("two milestone linear after dependency", "[flow]") {
     CHECK(actual == "ab");
 }
 
-TEST_CASE("three milestone linear before and after dependency", "[flow]") {
+TEST_CASE("three milestone linear before and after dependency",
+          "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> b >> c);
     auto const flow = builder::build(g);
@@ -74,7 +75,7 @@ TEST_CASE("three milestone linear before and after dependency", "[flow]") {
     CHECK(actual == "abc");
 }
 
-TEST_CASE("just two actions in order", "[flow]") {
+TEST_CASE("just two actions in order", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> b);
     auto const flow = builder::build(g);
@@ -82,7 +83,7 @@ TEST_CASE("just two actions in order", "[flow]") {
     CHECK(actual == "ab");
 }
 
-TEST_CASE("insert action between two actions", "[flow]") {
+TEST_CASE("insert action between two actions", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> c).add(a >> b >> c);
     auto const flow = builder::build(g);
@@ -90,7 +91,7 @@ TEST_CASE("insert action between two actions", "[flow]") {
     CHECK(actual == "abc");
 }
 
-TEST_CASE("add single parallel 2", "[flow]") {
+TEST_CASE("add single parallel 2", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a && b);
     auto const flow = builder::build(g);
@@ -101,7 +102,7 @@ TEST_CASE("add single parallel 2", "[flow]") {
     CHECK(actual.size() == 2);
 }
 
-TEST_CASE("add single parallel 3", "[flow]") {
+TEST_CASE("add single parallel 3", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a && b && c);
     auto const flow = builder::build(g);
@@ -113,7 +114,7 @@ TEST_CASE("add single parallel 3", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
+TEST_CASE("add single parallel 3 with later dependency 1", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a && b && c).add(c >> a);
     auto const flow = builder::build(g);
@@ -126,7 +127,7 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
+TEST_CASE("add single parallel 3 with later dependency 2", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a && b && c).add(a >> c);
     auto const flow = builder::build(g);
@@ -139,7 +140,7 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add parallel rhs", "[flow]") {
+TEST_CASE("add parallel rhs", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> (b && c));
     auto const flow = builder::build(g);
@@ -153,7 +154,7 @@ TEST_CASE("add parallel rhs", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add parallel lhs", "[flow]") {
+TEST_CASE("add parallel lhs", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add((a && b) >> c);
     auto const flow = builder::build(g);
@@ -167,7 +168,7 @@ TEST_CASE("add parallel lhs", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add parallel in the middle", "[flow]") {
+TEST_CASE("add parallel in the middle", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a >> (b && c) >> d);
     auto const flow = builder::build(g);
@@ -187,7 +188,7 @@ TEST_CASE("add parallel in the middle", "[flow]") {
     CHECK(actual.size() == 4);
 }
 
-TEST_CASE("add dependency lhs", "[flow]") {
+TEST_CASE("add dependency lhs", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add((a >> b) && c);
     auto const flow = builder::build(g);
@@ -202,7 +203,7 @@ TEST_CASE("add dependency lhs", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("add dependency rhs", "[flow]") {
+TEST_CASE("add dependency rhs", "[graph_builder]") {
     actual.clear();
     auto g = flow::graph<>{}.add(a && (b >> c));
     auto const flow = builder::build(g);
@@ -217,7 +218,7 @@ TEST_CASE("add dependency rhs", "[flow]") {
     CHECK(actual.size() == 3);
 }
 
-TEST_CASE("alternate builder", "[flow]") {
+TEST_CASE("alternate builder", "[graph_builder]") {
     using alt_builder = flow::graphviz_builder;
     auto g = flow::graph<"debug">{}.add(a && (b >> c));
     auto const flow = alt_builder::build(g);

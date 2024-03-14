@@ -7,6 +7,8 @@
 #include <string_view>
 
 namespace flow {
+using VizFunctionPtr = auto (*)() -> std::string;
+
 struct graphviz_builder {
     template <typename Graph>
     [[nodiscard]] static auto build(Graph const &input) {
@@ -48,6 +50,26 @@ struct graphviz_builder {
         }
         output += "}";
         return output;
+    }
+
+    template <typename Initialized> class built_flow {
+        static auto built() {
+            auto const v = Initialized::value;
+            return build(v);
+        }
+
+        static auto run() -> std::string { return built(); }
+
+      public:
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr operator VizFunctionPtr() const { return run; }
+        auto operator()() const -> std::string { return run(); }
+        constexpr static bool active = true;
+    };
+
+    template <typename Initialized>
+    [[nodiscard]] constexpr static auto render() -> built_flow<Initialized> {
+        return {};
     }
 };
 } // namespace flow
