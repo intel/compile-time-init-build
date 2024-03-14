@@ -1,6 +1,7 @@
 #include <cib/cib.hpp>
 #include <cib/func_decl.hpp>
 #include <flow/flow.hpp>
+#include <flow/graphviz_builder.hpp>
 #include <log/fmt/logger.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -146,4 +147,29 @@ TEST_CASE("named flow logs milestones", "[flow]") {
     cib::nexus<MSNamedFlowConfig> nexus{};
     nexus.service<NamedTestFlow>();
     CHECK(log_buffer.find("flow.milestone(ms)") != std::string::npos);
+}
+
+namespace {
+template <stdx::ct_string Name = "">
+using alt_builder = flow::graph<Name, flow::graphviz_builder>;
+template <stdx::ct_string Name = "">
+struct alt_flow_service
+    : cib::builder_meta<alt_builder<Name>, flow::VizFunctionPtr> {};
+
+struct VizFlow : public alt_flow_service<"debug"> {};
+struct VizConfig {
+    constexpr static auto config =
+        cib::config(cib::exports<VizFlow>, cib::extend<VizFlow>(a));
+};
+} // namespace
+
+TEST_CASE("vizualize flow", "[flow]") {
+    cib::nexus<VizConfig> nexus{};
+    auto viz = nexus.service<VizFlow>();
+    auto expected = std::string{
+        R"__debug__(digraph debug {
+start -> a
+a -> end
+})__debug__"};
+    CHECK(viz == expected);
 }

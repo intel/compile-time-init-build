@@ -324,3 +324,59 @@ namespace example_component {
           SOME_ACTION && SOME_OTHER_ACTION));
 }
 ----
+
+=== Alternative flow builders
+
+The default flow service uses a graph builder that outputs the flow steps as an
+array of function pointers. Traversing the array and calling those functions
+ensures the correct relative ordering of flow steps in the graph, and this is
+what happens by default when we run the flow.
+
+[source,cpp]
+----
+// the default flow builder and service
+template <stdx::ct_string Name = "">
+using builder = flow::graph<Name, flow::graph_builder<impl>>;
+template <stdx::ct_string Name = "">
+struct service : cib::builder_meta<builder<Name>, flow::FunctionPtr> {};
+
+// declare a flow service
+struct MorningRoutine : public service<"MorningRoutine"> {};
+
+// add steps, etc, then at runtime, run the flow:
+nexus.service<"MorningRoutine">();
+----
+
+Here `graph_builder` is the type that renders the flow description into the
+array of function pointers, and `flow::FunctionPtr` is the type-erased interface
+(here a function taking and returning `void`) that is called to run a flow.
+
+But given a flow, other renderings are possible.
+
+[source,cpp]
+----
+// a flow builder and service that produces a graphviz rendering
+template <stdx::ct_string Name = "">
+using viz_builder = flow::graph<Name, flow::graphviz_builder>;
+template <stdx::ct_string Name = "">
+struct viz_service : cib::builder_meta<builder<Name>, flow::VizFunctionPtr> {};
+----
+
+Here, `viz_service` will produce a graphviz rendering of a flow using the
+`graphviz_builder`. `flow::VizFunctionPtr` is the type-erased interface once
+more, and it is defined to take `void` and return a `std::string`. When we "run"
+the flow, we get the graphviz rendering.
+
+[source,cpp]
+----
+// instead of the default flow::service, use the viz_service
+struct MorningRoutine : public viz_service<"MorningRoutine"> {};
+
+// add steps, etc, as before
+// this time, when we "run" the flow, we get a string representing the graphviz rendering
+auto graphviz_str = nexus.service<"MorningRoutine">();
+----
+
+`graphviz_builder` is available as a debugging aid. But in general, having the
+flow rendering separate from the flow definition enables any kind of rendering
+with correponding runtime behaviour.
