@@ -1,0 +1,174 @@
+
+== The `logging` library
+
+See code at
+https://github.com/intel/compile-time-init-build/tree/main/include/log.
+Everything in the logging library is in the `logging` namespace, although most
+user code will use macros.
+
+Logging in _cib_ is in two parts:
+
+- the interface, in https://github.com/intel/compile-time-init-build/tree/main/include/log/log.hpp[log.hpp]
+- an implementation, which can be specified at the top level
+
+Three possible logger implementations are provided:
+
+- one using fmt in https://github.com/intel/compile-time-init-build/tree/main/include/log/fmt/logger.hpp[fmt/logger.hpp]
+- one using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/mipi_encoder.hpp[catalog/mipi_encoder.hpp]
+- the default implementation: the null logger which accepts everything, but never produces output
+
+=== Log levels
+
+_cib_ offers 6 well-known and 2 user-defined log levels, according to the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec].
+
+[source,cpp]
+----
+enum level {
+    MAX = 0,
+    FATAL = 1,
+    ERROR = 2,
+    WARN = 3,
+    INFO = 4,
+    USER1 = 5,
+    USER2 = 6,
+    TRACE = 7
+};
+----
+
+NOTE: For backward compatibility, this is an unscoped enumeration.
+
+=== Log macros
+
+_cib_ log macros follow the log levels:
+
+[source,cpp]
+----
+CIB_TRACE(...);
+CIB_INFO(...);
+CIB_WARN(...);
+CIB_ERROR(...);
+CIB_FATAL(...);
+----
+
+Or `CIB_LOG(level, ...)` can be used equivalently to these where the level is
+explicit. `CIB_FATAL` causes a call to
+https://intel.github.io/cpp-std-extensions/#_panic_hpp[`stdx::panic`], and
+`CIB_ASSERT(expression)` is equivalent to `CIB_FATAL` in the case where the
+expression evaluates to `false`.
+
+=== Selecting a logger
+
+In order to use logging in a header, it suffices only to include
+https://github.com/intel/compile-time-init-build/tree/main/include/log/log.hpp[log.hpp]
+and use the macros. Header-only clients of logging do not need to know the
+implementation selected.
+
+To use logging in a translation unit, specialize the `logging::config` variable
+template. Left unspecialized, the null logger will be used.
+
+[source,cpp]
+----
+// use fmt logging to std::cout
+template <>
+inline auto logging::config<> = logging::fmt::config{std::ostream_iterator<char>{std::cout}};
+----
+
+The provided `fmt` implementation can output to multiple destinations by constructing
+`logging::fmt::config` with multiple `ostream` iterators.
+
+CAUTION: Be sure that each translation unit sees the same specialization of
+`logging::config`! Otherwise you will have an https://en.cppreference.com/w/cpp/language/definition[ODR violation].
+
+=== Implementing a logger
+
+Each logging implementation (configuration) provides a customization point: a
+`logger` object, which must implement `log`. Therefore providing a custom
+implementation is a matter of defining this structure appropriately.
+
+[source,cpp]
+----
+struct my_logger_config {
+  struct {
+    template <logging::level L, typename ModuleId,
+              typename File, typename Line, typename Msg>
+    auto log(File, Line, Msg const &msg) -> void {
+      // log according to my mechanism
+    }
+  } logger;
+};
+----
+
+Notice that the first two template parameters to log are the
+xref:logging.adoc#_log_levels[level] and the xref:logging.adoc#_modules[module
+ID]. The `ModuleId` type is a xref:sc.adoc#_string_constants[compile-time string].
+
+The first two runtime parameters receive preprocessor `\_​_FILE_​\_` and `__LINE_​_` values
+respectively. The `msg` argument is a structure containing a
+xref:sc.adoc#_formatting_strings[compile-time format string] and runtime
+arguments to be interpolated into it. It supports an `apply` function, so one
+way to implement `log` is:
+
+[source,cpp]
+----
+struct my_logger_config {
+  struct {
+    template <logging::level L, typename ModuleId,
+              typename File, typename Line, typename Msg>
+    auto log(File, Line, Msg const &msg) -> void {
+      msg.apply([] <typename Str> (Str, auto const&... args) {
+        std::print(Str::value, args...);
+      });
+    }
+  } logger;
+};
+----
+
+NOTE: `Str::value` here is a compile-time `std::string_view`.
+
+To use the custom implementation, as with any built-in choice of logger,
+specialize `logging::config`:
+
+[source,cpp]
+----
+template <>
+inline auto logging::config<> = my_logger_config{};
+----
+
+=== Modules
+
+It can be helpful to scope or filter log messages by associating them with
+module IDs. Several logging backends have support for this idea. Tagging every
+log call site gets verbose and error-prone, so instead the approach taken by
+_cib_ is to override log modules by using `CIB_LOG_MODULE` declarations at
+namespace, class or function scope.
+
+[source,cpp]
+----
+auto global_f() {
+  CIB_INFO("This log uses the default module ID");
+}
+
+namespace my_ns {
+CIB_LOG_MODULE("my_ns");
+CIB_INFO("This log uses my_ns as its module ID");
+
+struct my_struct {
+  CIB_LOG_MODULE("my_struct");
+
+  auto f() {
+    CIB_INFO("This log uses my_struct as its module ID");
+  }
+
+  auto g() {
+    CIB_LOG_MODULE("g");
+    CIB_INFO("This log uses g as its module ID");
+  }
+};
+}
+----
+
+=== String data
+
+On a constrained system, space for text can be at a premium. The `sc` library
+and the MIPI Sys-T logger combine to
+xref:sc.adoc#_efficient_logging_with_mipi_sys_t[solve this problem].
