@@ -8,7 +8,9 @@
 
 include::intro.adoc[]
 include::flows.adoc[]
+include::logging.adoc[]
 include::interrupts.adoc[]
 include::match.adoc[]
 include::message.adoc[]
+include::sc.adoc[]
 include::implementation_details.adoc[]

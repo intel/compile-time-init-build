@@ -24,3 +24,26 @@ It is tested with:
 
 * clang 9 thru 15
 * GCC 9 thru 12
+
+=== Dependencies
+
+This repository uses https://github.com/cpm-cmake/CPM.cmake[CPM] and a
+https://github.com/intel/cicd-repo-infrastructure[common CI/CD infrastructure].
+
+The library dependencies are:
+
+- https://github.com/boostorg/mp11[Boost.MP11]
+- https://github.com/intel/cpp-std-extensions[C++ std extensions (`stdx`)]
+- https://github.com/intel/cpp-baremetal-concurrency[Baremetal Concurrency]
+- https://github.com/fmtlib/fmt[fmt]
+
+=== Libraries
+
+_cib_ contains several libraries that work together:
+
+- xref:flow.adoc#_the_flow_library[`flow`]
+- xref:logging.adoc#_the_logging_library[`logging`]
+- xref:interrupt.adoc#_the_interrupt_library[`interrupt`]
+- xref:match.adoc#_the_match_library[`match`]
+- xref:message.adoc#_the_message_library[`message`]
+- xref:sc.adoc#_the_sc_string_constant_library[`sc` (string constant)]

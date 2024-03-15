@@ -349,7 +349,8 @@ nexus.service<"MorningRoutine">();
 
 Here `graph_builder` is the type that renders the flow description into the
 array of function pointers, and `flow::FunctionPtr` is the type-erased interface
-(here a function taking and returning `void`) that is called to run a flow.
+(here a function taking no arguments and returning `void`) that is called to run
+a flow.
 
 But given a flow, other renderings are possible.
 
@@ -364,7 +365,7 @@ struct viz_service : cib::builder_meta<builder<Name>, flow::VizFunctionPtr> {};
 
 Here, `viz_service` will produce a graphviz rendering of a flow using the
 `graphviz_builder`. `flow::VizFunctionPtr` is the type-erased interface once
-more, and it is defined to take `void` and return a `std::string`. When we "run"
+more, and it is defined to take no arguments and return a `std::string`. When we "run"
 the flow, we get the graphviz rendering.
 
 [source,cpp]
