@@ -72,19 +72,6 @@ concept field_location = requires(T const &t) {
 };
 
 namespace detail {
-template <typename T> CONSTEVAL auto bit_size() { return sizeof(T) * CHAR_BIT; }
-
-template <std::unsigned_integral T, auto BitSize = bit_size<T>()>
-    requires(BitSize <= bit_size<T>())
-CONSTEVAL auto bit_mask() -> T {
-    if constexpr (BitSize == 0u) {
-        return {};
-    } else {
-        return static_cast<T>(std::numeric_limits<T>::max() >>
-                              (bit_size<T>() - BitSize));
-    }
-}
-
 template <typename Name, typename T, std::uint32_t BitSize>
 struct field_spec_t {
     using type = T;
@@ -100,7 +87,7 @@ struct bits_locator_t {
 
     template <std::unsigned_integral T>
     [[nodiscard]] constexpr static auto fold(T value) -> T {
-        if constexpr (BitSize == bit_size<T>()) {
+        if constexpr (BitSize == stdx::bit_size<T>()) {
             return {};
         } else {
             return static_cast<T>(value >> BitSize);
@@ -109,7 +96,7 @@ struct bits_locator_t {
 
     template <std::unsigned_integral T>
     [[nodiscard]] constexpr static auto unfold(T value) -> T {
-        if constexpr (BitSize == bit_size<T>()) {
+        if constexpr (BitSize == stdx::bit_size<T>()) {
             return {};
         } else {
             return static_cast<T>(value << BitSize);
@@ -125,7 +112,7 @@ struct bits_locator_t {
         constexpr auto BaseIndex =
             DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
 
-        constexpr auto elem_size = bit_size<elem_t>();
+        constexpr auto elem_size = stdx::bit_size<elem_t>();
         constexpr auto max_idx = BaseIndex + Msb / elem_size;
         constexpr auto min_idx = BaseIndex + Lsb / elem_size;
 
@@ -135,7 +122,7 @@ struct bits_locator_t {
             constexpr auto current_idx = BaseIndex + CurrentMsb / elem_size;
             if constexpr (current_idx == max_idx and current_idx == min_idx) {
                 constexpr auto mask =
-                    bit_mask<T, CurrentMsb % elem_size + 1u>();
+                    stdx::bit_mask<T, CurrentMsb % elem_size>();
                 constexpr auto shift = Lsb % elem_size;
                 return (std::forward<Rng>(rng)[current_idx] & mask) >> shift;
             } else if constexpr (current_idx == min_idx) {
@@ -144,7 +131,7 @@ struct bits_locator_t {
                 return value | (std::forward<Rng>(rng)[current_idx] >> shift);
             } else if constexpr (current_idx == max_idx) {
                 constexpr auto mask =
-                    bit_mask<T, CurrentMsb % elem_size + 1u>();
+                    stdx::bit_mask<T, CurrentMsb % elem_size>();
                 constexpr auto NewMsb =
                     (CurrentMsb / elem_size) * elem_size - 1u;
                 MUSTTAIL return recurse.template operator()<NewMsb>(
@@ -171,47 +158,44 @@ struct bits_locator_t {
         constexpr auto BaseIndex =
             DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
 
-        constexpr auto elem_size = bit_size<elem_t>();
-        constexpr auto max_idx = BaseIndex + Msb / elem_size;
-        constexpr auto min_idx = BaseIndex + Lsb / elem_size;
+        constexpr auto elem_size = stdx::bit_size<elem_t>();
+        [[maybe_unused]] constexpr auto min_idx = BaseIndex + Lsb / elem_size;
+        [[maybe_unused]] constexpr auto max_idx = BaseIndex + Msb / elem_size;
 
         constexpr auto f =
             []<auto CurrentLsb, typename Rng>([[maybe_unused]] auto recurse,
                                               Rng &&rng, T value) -> void {
             constexpr auto current_idx = BaseIndex + CurrentLsb / elem_size;
 
-            if constexpr (current_idx == max_idx and current_idx == min_idx) {
-                constexpr auto shift = CurrentLsb % elem_size;
-                constexpr auto numbits = Msb - CurrentLsb + 1u;
-                constexpr auto value_mask = bit_mask<elem_t, numbits>()
-                                            << shift;
-                constexpr auto leftover_mask = ~value_mask;
-                auto &elem = std::forward<Rng>(rng)[current_idx];
-                elem &= leftover_mask;
-                elem |= static_cast<elem_t>(value << shift);
-            } else if constexpr (current_idx == min_idx) {
-                constexpr auto shift = CurrentLsb % elem_size;
-                constexpr auto numbits = elem_size - shift;
-                constexpr auto value_mask = bit_mask<elem_t, numbits>();
-                constexpr auto leftover_mask = bit_mask<elem_t, shift>();
-                auto &elem = std::forward<Rng>(rng)[current_idx];
-                elem &= leftover_mask;
-                elem |= static_cast<elem_t>((value & value_mask) << shift);
-                constexpr auto NewLsb = CurrentLsb + numbits;
-                MUSTTAIL return recurse.template operator()<NewLsb>(
-                    recurse, std::forward<Rng>(rng), value >> numbits);
-            } else if constexpr (current_idx == max_idx) {
-                constexpr auto numbits = Msb - CurrentLsb + 1u;
-                constexpr auto value_mask = bit_mask<elem_t, numbits>();
-                constexpr auto leftover_mask = ~value_mask;
+            if constexpr (current_idx == max_idx) {
+                constexpr auto lsb = CurrentLsb % elem_size;
+                constexpr auto msb = Msb % elem_size;
+                constexpr auto leftover_mask =
+                    ~stdx::bit_mask<elem_t, msb, lsb>();
 
                 auto &elem = std::forward<Rng>(rng)[current_idx];
                 elem &= leftover_mask;
-                elem |= static_cast<elem_t>(value);
+                elem |= static_cast<elem_t>(value << lsb);
+            } else if constexpr (current_idx == min_idx) {
+                constexpr auto lsb = CurrentLsb % elem_size;
+                constexpr auto numbits = elem_size - lsb;
+                constexpr auto value_mask =
+                    stdx::bit_mask<elem_t, numbits - 1>();
+                constexpr auto leftover_mask = ~(value_mask << lsb);
+
+                auto &elem = std::forward<Rng>(rng)[current_idx];
+                elem &= leftover_mask;
+                elem |= static_cast<elem_t>((value & value_mask) << lsb);
+
+                constexpr auto NewLsb = CurrentLsb + numbits;
+                MUSTTAIL return recurse.template operator()<NewLsb>(
+                    recurse, std::forward<Rng>(rng), value >> numbits);
             } else {
-                constexpr auto value_mask = bit_mask<elem_t, elem_size>();
+                constexpr auto value_mask = stdx::bit_mask<elem_t>();
+
                 auto &elem = std::forward<Rng>(rng)[current_idx];
                 elem = value & value_mask;
+
                 constexpr auto NewLsb = CurrentLsb + elem_size;
                 MUSTTAIL return recurse.template operator()<NewLsb>(
                     recurse, std::forward<Rng>(rng), value >> elem_size);
@@ -272,7 +256,7 @@ template <bits_locator... BLs> struct field_locator_t {
         auto const insert_bits = [&]<bits_locator B>() {
             B::insert(
                 std::forward<R>(r),
-                static_cast<raw_t>(raw & detail::bit_mask<raw_t, B::size>()));
+                static_cast<raw_t>(raw & stdx::bit_mask<raw_t, B::size - 1>()));
             raw = B::fold(raw);
         };
 
@@ -378,7 +362,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     }
     static_assert((... and Ats.valid()),
                   "Individual field location size cannot exceed 64 bits!");
-    static_assert(detail::bit_size<T>() >= (0u + ... + Ats.size()),
+    static_assert(stdx::bit_size<T>() >= (0u + ... + Ats.size()),
                   "Field size is smaller than sum of locations!");
 
   public:
@@ -399,7 +383,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     template <typename DataType> constexpr static auto fits_inside() -> bool {
         constexpr auto bits_capacity =
-            detail::bit_size<typename DataType::value_type>() *
+            stdx::bit_size<typename DataType::value_type>() *
             stdx::ct_capacity_v<DataType>;
         return locator_t::template fits_inside<bits_capacity>();
     }
