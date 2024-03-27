@@ -89,8 +89,6 @@ gen_str_catalog(
     ${CMAKE_CURRENT_BINARY_DIR}/strings.json
     OUTPUT_XML
     ${CMAKE_CURRENT_BINARY_DIR}/strings.xml
-    OUTPUT_LIB
-    catalog_strings
     INPUT_LIBS
     catalog1_lib
     catalog2_lib
@@ -99,6 +97,9 @@ gen_str_catalog(
     INPUT_HEADERS
     log/catalog_enums.hpp)
 
+add_library(catalog_strings STATIC ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp)
+target_link_libraries(catalog_strings PUBLIC cib)
+
 add_unit_test(
     log_catalog_test
     CATCH2
@@ -106,6 +107,7 @@ add_unit_test(
     log/catalog_app.cpp
     LIBRARIES
     warnings
+    cib
     catalog1_lib
     catalog2_lib
     catalog_strings)
