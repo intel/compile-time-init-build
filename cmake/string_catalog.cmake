@@ -38,7 +38,8 @@ function(gen_str_catalog)
             --cpp_output ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON}
             --xml_output ${SC_OUTPUT_XML}
         DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG})
-
-    add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})
-    target_link_libraries(${SC_OUTPUT_LIB} PUBLIC cib)
+    if(SC_OUTPUT_LIB)
+        add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})
+        target_link_libraries(${SC_OUTPUT_LIB} PUBLIC cib)
+    endif()
 endfunction()
