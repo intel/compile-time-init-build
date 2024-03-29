@@ -94,6 +94,8 @@ gen_str_catalog(
     catalog2_lib
     INPUT_JSON
     log/catalog_extra.json
+    STABLE_JSON
+    log/stable_strings.json
     INPUT_HEADERS
     log/catalog_enums.hpp)
 

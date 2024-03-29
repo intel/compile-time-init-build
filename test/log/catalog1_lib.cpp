@@ -8,10 +8,14 @@
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
 int log_calls{};
+std::uint32_t last_header{};
 
 namespace {
 struct test_log_args_destination {
-    auto log_by_args(std::uint32_t, auto...) -> void { ++log_calls; }
+    auto log_by_args(std::uint32_t hdr, auto...) -> void {
+        ++log_calls;
+        last_header = hdr;
+    }
 };
 } // namespace
 

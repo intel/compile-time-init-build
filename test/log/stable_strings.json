@@ -1,0 +1,13 @@
+{
+    "messages": [
+        {
+            "level": "TRACE",
+            "msg": "A string with no placeholders",
+            "type": "msg",
+            "arg_types": [],
+            "arg_count": 0,
+            "id": 42
+        }
+    ],
+    "extra_key": "extra_value"
+}
