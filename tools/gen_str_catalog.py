@@ -92,7 +92,11 @@ def extract(line_num, line_m):
         )
 
 
-def read_input(filenames):
+def stable_msg_key(msg):
+    return hash(msg["level"]) ^ hash(msg["msg"]) ^ hash("".join(msg["arg_types"]))
+
+
+def read_input(filenames, stable_ids):
     line_re = re.compile("^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
@@ -107,10 +111,20 @@ def read_input(filenames):
     strings = filter(lambda x: not isinstance(x, str), messages)
     modules = filter(lambda x: isinstance(x, str), messages)
 
+    old_ids = set(stable_ids.values())
+    id_gen = itertools.filterfalse(old_ids.__contains__, itertools.count(0))
+
+    def get_id(msg):
+        key = stable_msg_key(msg)
+        if key in stable_ids:
+            return stable_ids[key]
+        else:
+            return next(id_gen)
+
     unique_strings = {i[0][0]: i for i in strings}.values()
     return (
         set(modules),
-        {item[0]: {**item[1], "id": i} for i, item in enumerate(unique_strings)},
+        {item[0]: {**item[1], "id": get_id(item[1])} for item in unique_strings},
     )
 
 
@@ -190,6 +204,14 @@ def write_json(messages, extra_inputs, filename):
             str_catalog.update(json.load(f))
     with open(filename, "w") as f:
         json.dump(str_catalog, f, indent=4)
+
+
+def read_stable(stable_filenames):
+    stable_catalog = dict()
+    for filename in stable_filenames:
+        with open(filename, "r") as f:
+            stable_catalog.update(json.load(f))
+    return {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]}
 
 
 def serialize_guids(client_node, guid_id, guid_mask):
@@ -330,13 +352,22 @@ def parse_cmdline():
         default="00000000-FFFF-FFFF-8000-000000000000",
         help="GUID mask in the generated XML.",
     )
+    parser.add_argument(
+        "--stable_json",
+        type=str,
+        nargs="*",
+        default=[],
+        help="Input filename(s) for previously generated JSON; this is used to fix stable IDs.",
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_cmdline()
+
+    stable_ids = read_stable(args.stable_json)
     try:
-        modules, messages = read_input(args.input)
+        modules, messages = read_input(args.input, stable_ids)
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 
