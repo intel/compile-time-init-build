@@ -4,7 +4,6 @@ import argparse
 import itertools
 import json
 import re
-import sys
 import xml.etree.ElementTree as et
 
 
@@ -216,7 +215,7 @@ def read_stable(stable_filenames):
 
 def serialize_guids(client_node, guid_id, guid_mask):
     syst_guids = et.SubElement(client_node, "syst:Guids")
-    syst_guid = et.SubElement(
+    et.SubElement(
         syst_guids,
         "syst:Guid",
         attrib={"ID": f"{{{guid_id}}}", "Mask": f"{{{guid_mask}}}"},
@@ -230,7 +229,7 @@ def serialize_enums(client_node, enums):
             syst_enums, "syst:Enum", attrib={"Name": enum_name, "ID": f"{i}"}
         )
         for name, value in values.items():
-            syst_enum_entry = et.SubElement(
+            et.SubElement(
                 syst_enum, "syst:EnumEntry", attrib={"Value": f"{value}", "Name": name}
             )
 
@@ -275,9 +274,7 @@ def write_xml(
     syst_client = et.SubElement(
         syst_collateral, "syst:Client", attrib={"Name": client_name}
     )
-    syst_fwversion = et.SubElement(
-        syst_collateral, "syst:FwVersion", attrib={"FW_Version": version}
-    )
+    et.SubElement(syst_collateral, "syst:FwVersion", attrib={"FW_Version": version})
 
     serialize_guids(syst_client, guid_id, guid_mask)
     serialize_enums(syst_client, enums)
