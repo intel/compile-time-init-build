@@ -54,8 +54,8 @@ struct test_conc_policy {
            (static_cast<std::uint32_t>(level) << 4u) | 0x3u;
 }
 
-[[maybe_unused]] constexpr auto expected_header(logging::level level,
-                                                module_id m, size_t sz)
+[[maybe_unused]] constexpr auto expected_msg_header(logging::level level,
+                                                    module_id m, std::size_t sz)
     -> std::uint32_t {
     return sz > 0 ? expected_catalog32_header(level, m)
                   : expected_short32_header();
@@ -69,25 +69,45 @@ template <auto ExpectedId> struct test_log_id_destination {
 
 int num_log_args_calls{};
 
+constexpr auto check = [](auto value, auto expected) {
+    CHECK(value == expected);
+};
+
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_args_destination {
     template <typename... Args>
     auto log_by_args(std::uint32_t header, Args... args) {
         CHECK(header ==
-              expected_header(Level, module<ModuleId>(), sizeof...(Args)));
-        CHECK(((ExpectedArgs == args) and ...));
+              expected_msg_header(Level, module<ModuleId>(), sizeof...(Args)));
+        (check(args, ExpectedArgs), ...);
         ++num_log_args_calls;
     }
 };
 
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_buf_destination {
-    template <typename... Args>
     auto log_by_buf(std::uint32_t *buf, std::uint32_t size) const {
-        CHECK(size == 1 + sizeof...(ExpectedArgs));
-        CHECK(*buf++ == expected_header(Level, module<ModuleId>(),
-                                        sizeof...(ExpectedArgs)));
-        CHECK(((ExpectedArgs == *buf++) and ...));
+        REQUIRE(size == 1 + sizeof...(ExpectedArgs));
+        CHECK(*buf++ == expected_msg_header(Level, module<ModuleId>(),
+                                            sizeof...(ExpectedArgs)));
+        (check(*buf++, ExpectedArgs), ...);
+    }
+};
+
+template <auto Header, auto... ExpectedArgs>
+struct test_log_version_destination {
+    template <typename... Args>
+    auto log_by_args(std::uint32_t header, Args... args) {
+        CHECK(header == Header);
+        (check(args, ExpectedArgs), ...);
+        ++num_log_args_calls;
+    }
+
+    auto log_by_buf(std::uint32_t *buf, std::uint32_t size) const {
+        REQUIRE(size - 1 == sizeof...(ExpectedArgs));
+        CHECK(*buf++ == Header);
+        (check(*buf++, ExpectedArgs), ...);
+        ++num_log_args_calls;
     }
 };
 } // namespace
@@ -156,4 +176,42 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
         format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 4);
     CHECK(num_log_args_calls == 2);
+}
+
+TEST_CASE("log version information (compact32)", "[mipi]") {
+    test_critical_section::count = 0;
+    num_log_args_calls = 0;
+    auto cfg = logging::mipi::config{test_log_version_destination<
+        0b11'000000'1010'1011'1100'1101'0101'0000u>{}};
+    //     3      0    a    b    c    d    5
+    cfg.logger.log_build<0x3abcd5u>();
+    CHECK(test_critical_section::count == 2);
+    CHECK(num_log_args_calls == 1);
+}
+
+TEST_CASE("log version information (compact64)", "[mipi]") {
+    test_critical_section::count = 0;
+    num_log_args_calls = 0;
+    auto cfg = logging::mipi::config{
+        test_log_version_destination<0b11'000001'1010'1011'1100'1101'0101'0000u,
+                                     // 3      1    a    b    c    d    5
+                                     0b1'0010'0011'0100'0101'0110'00u>{}};
+    //                                 1    2    3    4    5    6
+    cfg.logger.log_build<0x1234'563a'bcd5u>();
+    CHECK(test_critical_section::count == 2);
+    CHECK(num_log_args_calls == 1);
+}
+
+TEST_CASE("log version information (long with string)", "[mipi]") {
+    test_critical_section::count = 0;
+    num_log_args_calls = 0;
+    auto cfg = logging::mipi::config{
+        test_log_version_destination<0b10'0000'0000'0000'0010'0000'0000u,
+                                     0x4321'000du, 0x5678'8765u, 0x65'68'1234u,
+                                     //                             e  h
+                                     0x6f'6c'6cu>{}};
+    //                                  o  l  l
+    cfg.logger.log_build<0x1234'5678'8765'4321ull, "hello">();
+    CHECK(test_critical_section::count == 2);
+    CHECK(num_log_args_calls == 1);
 }

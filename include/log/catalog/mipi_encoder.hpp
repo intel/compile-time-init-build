@@ -4,9 +4,13 @@
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
 
+#include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 
+#include <algorithm>
+#include <concepts>
 #include <cstdint>
 #include <utility>
 
@@ -60,6 +64,37 @@ template <typename TDestinations> struct log_handler {
             dispatch_message<Level>(catalog<Message>(), module<Module>(),
                                     static_cast<std::uint32_t>(args)...);
         });
+    }
+
+    template <auto Version, stdx::ct_string S = ""> auto log_build() -> void {
+        if constexpr (S.empty() and stdx::bit_width(Version) <= 22) {
+            dispatch_pass_by_args(((Version & 0x3'00'00'0u) << 10u) |
+                                  ((Version & 0xff'ff'fu) << 4u));
+        } else if constexpr (S.empty() and stdx::bit_width(Version) <= 54) {
+            constexpr auto subtype = 0x1u; // compact64
+            dispatch_pass_by_args(
+                static_cast<std::uint32_t>(((Version & 0x3'00'00'0u) << 10u) |
+                                           ((Version & 0xff'ff'fu) << 4u) |
+                                           (subtype << 24u)),
+                static_cast<std::uint32_t>((Version >> 22u) & 0xffff'ffffu));
+        } else {
+            constexpr std::uint32_t subtype = 0x2u; // long
+            constexpr std::uint32_t opt_len = 0x1u << 9u;
+            constexpr std::uint32_t len = S.size() + sizeof(std::uint64_t);
+            constexpr std::uint32_t byte_len = sizeof(std::uint32_t) + 2u + len;
+            constexpr std::uint32_t dword_len =
+                (byte_len + sizeof(std::uint32_t) - 1) / sizeof(std::uint32_t);
+
+            std::array<std::uint32_t, dword_len> args{};
+            args[0] = (subtype << 24u) | opt_len;
+            args[1] = stdx::to_le(len);
+            auto const ver = stdx::to_le(static_cast<std::uint64_t>(Version));
+            auto dest = stdx::bit_cast<std::uint8_t *>(&args[1]) + 2;
+            dest = std::copy_n(stdx::bit_cast<std::uint8_t const *>(&ver),
+                               sizeof(std::uint64_t), dest);
+            std::copy(std::cbegin(S.value), std::cend(S.value), dest);
+            dispatch_pass_by_buffer(args.data(), args.size());
+        }
     }
 
   private:
