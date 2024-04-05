@@ -63,7 +63,8 @@ template <typename Fmt> constexpr auto split_format_spec() {
     } else {
         constexpr auto spec_end = std::find_if(spec_start, std::end(fmt),
                                                [](auto c) { return c == '}'; });
-        constexpr auto len = std::distance(std::begin(fmt), spec_end) + 1;
+        constexpr auto len =
+            static_cast<int>(std::distance(std::begin(fmt), spec_end) + 1);
         return std::pair{fmt.substr(int_<0>, int_<len>), fmt.substr(int_<len>)};
     }
 }

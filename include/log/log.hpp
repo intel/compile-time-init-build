@@ -4,9 +4,21 @@
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
 
+#include <cstdint>
 #include <utility>
+
+namespace version {
+namespace null {
+struct config {
+    constexpr static auto build_id = std::uint64_t{};
+    constexpr static auto version_string = stdx::ct_string{""};
+};
+} // namespace null
+template <typename...> inline auto config = null::config{};
+} // namespace version
 
 namespace logging {
 namespace null {
@@ -67,3 +79,22 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
+
+namespace logging {
+template <typename... Ts> static auto log_version() -> void {
+    auto &l_cfg = config<Ts...>;
+    auto &v_cfg = ::version::config<Ts...>;
+    if constexpr (requires {
+                      l_cfg.logger.template log_build<v_cfg.build_id,
+                                                      v_cfg.version_string>();
+                  }) {
+        l_cfg.logger.template log_build<v_cfg.build_id, v_cfg.version_string>();
+    } else {
+        CIB_LOG(level::MAX, "Version: {} ({})", sc::uint_<v_cfg.build_id>,
+                stdx::ct_string_to_type<v_cfg.version_string,
+                                        sc::string_constant>());
+    }
+}
+} // namespace logging
+
+#define CIB_LOG_VERSION() logging::log_version()

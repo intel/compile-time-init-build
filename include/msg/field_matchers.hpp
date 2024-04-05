@@ -140,7 +140,7 @@ struct rel_matcher_t {
     [[nodiscard]] constexpr auto describe() const {
         return format("{} {} 0x{:x}"_sc, Field::name,
                       detail::to_string<RelOp>(),
-                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+                      sc::uint_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
 
     template <typename MsgType>
@@ -148,7 +148,7 @@ struct rel_matcher_t {
         return format("{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
                       static_cast<std::uint32_t>(extract_field(msg)),
                       detail::to_string<RelOp>(),
-                      sc::int_<static_cast<std::uint32_t>(ExpectedValue)>);
+                      sc::uint_<static_cast<std::uint32_t>(ExpectedValue)>);
     }
 
   private:

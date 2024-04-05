@@ -1,5 +1,7 @@
 #include <log/fmt/logger.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <atomic>
@@ -90,7 +92,19 @@ TEST_CASE("log levels are properly represented", "[fmt_logger]") {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
                        logging::level_constant<logging::level::MAX>{});
-        CHECK(level == "UNKNOWN");
+        CHECK(level == "MAX");
+    }
+    {
+        std::string level{};
+        fmt::format_to(std::back_inserter(level), "{}",
+                       logging::level_constant<logging::level::USER1>{});
+        CHECK(level == "USER1");
+    }
+    {
+        std::string level{};
+        fmt::format_to(std::back_inserter(level), "{}",
+                       logging::level_constant<logging::level::USER2>{});
+        CHECK(level == "USER2");
     }
 }
 
@@ -119,4 +133,20 @@ TEST_CASE("log module id is reported", "[fmt_logger]") {
 TEST_CASE("logging can use std::cout", "[fmt_logger]") {
     [[maybe_unused]] auto cfg =
         logging::fmt::config{std::ostream_iterator<char>{std::cout}};
+}
+
+namespace {
+struct version_config {
+    constexpr static auto build_id = std::uint64_t{1234};
+    constexpr static auto version_string = stdx::ct_string{"test version"};
+};
+} // namespace
+template <> inline auto version::config<> = version_config{};
+
+TEST_CASE("log version", "[fmt_logger]") {
+    buffer.clear();
+    CIB_LOG_VERSION();
+    CAPTURE(buffer);
+    CHECK(buffer.find("MAX [default]: Version: 1234 (test version)") !=
+          std::string::npos);
 }
