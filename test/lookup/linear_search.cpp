@@ -1,7 +1,7 @@
-#include "cx_value.hpp"
-
 #include <lookup/input.hpp>
 #include <lookup/linear_search_lookup.hpp>
+
+#include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
