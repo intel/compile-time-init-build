@@ -68,8 +68,9 @@ template <typename TDestinations> struct log_handler {
 
     template <auto Version, stdx::ct_string S = ""> auto log_build() -> void {
         if constexpr (S.empty() and stdx::bit_width(Version) <= 22) {
-            dispatch_pass_by_args(((Version & 0x3'00'00'0u) << 10u) |
-                                  ((Version & 0xff'ff'fu) << 4u));
+            dispatch_pass_by_args(
+                static_cast<std::uint32_t>(((Version & 0x3'00'00'0u) << 10u) |
+                                           ((Version & 0xff'ff'fu) << 4u)));
         } else if constexpr (S.empty() and stdx::bit_width(Version) <= 54) {
             constexpr auto subtype = 0x1u; // compact64
             dispatch_pass_by_args(

@@ -6,21 +6,13 @@
 #include <msg/message.hpp>
 
 #include <stdx/bitset.hpp>
+#include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
-
-#define CX_VALUE(...)                                                          \
-    [] {                                                                       \
-        struct {                                                               \
-            CONSTEVAL auto operator()() const noexcept { return __VA_ARGS__; } \
-            using cx_value_t [[maybe_unused]] = void;                          \
-        } val;                                                                 \
-        return val;                                                            \
-    }()
 
 namespace {
 using namespace msg;
@@ -164,5 +156,3 @@ TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
     CHECK(h.is_match(test_msg{"opcode_field"_field = 42}));
     CHECK(callbacks_called[1]);
 }
-
-#undef CX_VALUE

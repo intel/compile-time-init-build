@@ -3,6 +3,7 @@
 
 #include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <array>
 #include <cstddef>
@@ -33,5 +34,5 @@ input(V, A) -> input<typename A::value_type::key_type,
 template <typename V> input(V) -> input<V>;
 
 template <typename T>
-concept compile_time = requires { typename T::cx_value_t; };
+concept compile_time = stdx::is_cx_value_v<T>;
 } // namespace lookup

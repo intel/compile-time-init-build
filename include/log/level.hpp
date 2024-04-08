@@ -1,11 +1,15 @@
 #pragma once
 
+#include <stdx/type_traits.hpp>
+
+#include <array>
+#include <cstdint>
 #include <string_view>
 #include <type_traits>
 
 namespace logging {
 // enum assignment is according to Mipi_Sys-T Severity definition
-enum level {
+enum struct level : std::uint8_t {
     MAX = 0,
     FATAL = 1,
     ERROR = 2,
@@ -16,21 +20,14 @@ enum level {
     TRACE = 7
 };
 
-[[nodiscard]] constexpr auto to_text(level l) -> std::string_view {
-    switch (l) {
-    case level::TRACE:
-        return "TRACE";
-    case level::INFO:
-        return "INFO";
-    case level::WARN:
-        return "WARN";
-    case level::ERROR:
-        return "ERROR";
-    case level::FATAL:
-        return "FATAL";
-    default:
-        return "UNKNOWN";
-    }
+template <level L>
+[[nodiscard]] constexpr auto to_text() -> std::string_view
+    requires(L <= level::TRACE)
+{
+    using namespace std::string_view_literals;
+    constexpr std::array level_text{"MAX"sv,  "FATAL"sv, "ERROR"sv, "WARN"sv,
+                                    "INFO"sv, "USER1"sv, "USER2"sv, "TRACE"sv};
+    return level_text[stdx::to_underlying(L)];
 }
 
 template <level L> struct level_constant : std::integral_constant<level, L> {};

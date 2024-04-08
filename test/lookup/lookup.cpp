@@ -1,10 +1,9 @@
-#include "cx_value.hpp"
-
 #include <lookup/entry.hpp>
 #include <lookup/input.hpp>
 #include <lookup/lookup.hpp>
 
 #include <stdx/bitset.hpp>
+#include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 

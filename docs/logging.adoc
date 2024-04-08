@@ -23,7 +23,7 @@ _cib_ offers 6 well-known and 2 user-defined log levels, according to the https:
 
 [source,cpp]
 ----
-enum level {
+enum struct level {
     MAX = 0,
     FATAL = 1,
     ERROR = 2,
@@ -34,8 +34,6 @@ enum level {
     TRACE = 7
 };
 ----
-
-NOTE: For backward compatibility, this is an unscoped enumeration.
 
 === Log macros
 
