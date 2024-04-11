@@ -16,6 +16,7 @@
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
+#include <stdx/utility.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
@@ -270,6 +271,10 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     using default_storage_t = typename access_t::default_storage_t;
     using default_span_t = typename access_t::default_span_t;
     using default_const_span_t = typename access_t::default_const_span_t;
+    template <std::unsigned_integral T>
+    using size =
+        std::integral_constant<std::size_t,
+                               detail::storage_size<Fields...>::template in<T>>;
 
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;

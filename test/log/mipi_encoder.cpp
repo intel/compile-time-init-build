@@ -2,6 +2,7 @@
 #include <log/catalog/mipi_encoder.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/span.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -73,12 +74,30 @@ constexpr auto check = [](auto value, auto expected) {
     CHECK(value == expected);
 };
 
+constexpr auto check_at = [](stdx::span<std::uint8_t const> span, auto dw_idx,
+                             std::uint32_t expected) {
+    auto idx = dw_idx * sizeof(std::uint32_t);
+    auto sz = std::min(sizeof(std::uint32_t), span.size() - idx);
+
+    std::uint32_t actual{};
+    std::memcpy(&actual, &span[idx], sz);
+    CHECK(actual == stdx::to_le(expected));
+};
+
+template <std::uint32_t... Expected>
+constexpr auto check_buffer = [](stdx::span<std::uint8_t const> data) {
+    REQUIRE(data.size() > (sizeof...(Expected) - 1) * sizeof(std::uint32_t));
+    auto idx = std::size_t{};
+    (check_at(data, idx++, Expected), ...);
+};
+
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_args_destination {
     template <typename... Args>
     auto log_by_args(std::uint32_t header, Args... args) {
-        CHECK(header ==
-              expected_msg_header(Level, module<ModuleId>(), sizeof...(Args)));
+        constexpr auto Header =
+            expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
+        CHECK(header == Header);
         (check(args, ExpectedArgs), ...);
         ++num_log_args_calls;
     }
@@ -86,15 +105,15 @@ struct test_log_args_destination {
 
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_buf_destination {
-    auto log_by_buf(std::uint32_t *buf, std::uint32_t size) const {
-        REQUIRE(size == 1 + sizeof...(ExpectedArgs));
-        CHECK(*buf++ == expected_msg_header(Level, module<ModuleId>(),
-                                            sizeof...(ExpectedArgs)));
-        (check(*buf++, ExpectedArgs), ...);
+    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
+        constexpr auto Header =
+            expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
+        check_buffer<Header, ExpectedArgs...>(data);
+        ++num_log_args_calls;
     }
 };
 
-template <auto Header, auto... ExpectedArgs>
+template <std::uint32_t Header, std::uint32_t... ExpectedArgs>
 struct test_log_version_destination {
     template <typename... Args>
     auto log_by_args(std::uint32_t header, Args... args) {
@@ -103,10 +122,8 @@ struct test_log_version_destination {
         ++num_log_args_calls;
     }
 
-    auto log_by_buf(std::uint32_t *buf, std::uint32_t size) const {
-        REQUIRE(size - 1 == sizeof...(ExpectedArgs));
-        CHECK(*buf++ == Header);
-        (check(*buf++, ExpectedArgs), ...);
+    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
+        check_buffer<Header, ExpectedArgs...>(data);
         ++num_log_args_calls;
     }
 };

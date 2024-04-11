@@ -3,16 +3,20 @@
 #include <conc/concurrency.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
+#include <msg/message.hpp>
 
 #include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
+#include <stdx/utility.hpp>
 
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
 #include <utility>
+
+template <auto...> struct undef;
 
 namespace {
 template <logging::level L, typename S, typename T>
@@ -45,6 +49,62 @@ template <typename S> constexpr auto to_module() {
 } // namespace
 
 namespace logging::mipi {
+namespace defn {
+using msg::at;
+using msg::field;
+using msg::message;
+using msg::operator""_dw;
+using msg::operator""_msb;
+using msg::operator""_lsb;
+
+enum struct type : uint8_t { Build = 0, Short32 = 1, Catalog = 3 };
+enum struct build_subtype : uint8_t { Compact32 = 0, Compact64 = 1, Long = 2 };
+enum struct catalog_subtype : uint8_t { Id32_Pack32 = 1 };
+
+using type_f = field<"type", type>::located<at{0_dw, 3_msb, 0_lsb}>;
+using opt_len_f = field<"opt_len", bool>::located<at{0_dw, 9_msb, 9_lsb}>;
+using payload_len_f =
+    field<"payload_len", std::uint16_t>::located<at{1_dw, 15_msb, 0_lsb}>;
+
+using build_subtype_f =
+    field<"subtype", build_subtype>::located<at{0_dw, 29_msb, 24_lsb}>;
+using compact32_build_id_f =
+    field<"build_id", std::uint32_t>::located<at{0_dw, 31_msb, 30_lsb},
+                                              at{0_dw, 23_msb, 4_lsb}>;
+using compact64_build_id_f = field<"build_id", std::uint64_t>::located<
+    at{1_dw, 31_msb, 0_lsb}, at{0_dw, 31_msb, 30_lsb}, at{0_dw, 23_msb, 4_lsb}>;
+
+using normal_build_msg_t =
+    message<"normal_build", type_f::WithRequired<type::Build>,
+            opt_len_f::WithRequired<true>,
+            build_subtype_f::WithRequired<build_subtype::Long>, payload_len_f>;
+using compact32_build_msg_t =
+    message<"compact32_build", type_f::WithRequired<type::Build>,
+            build_subtype_f::WithRequired<build_subtype::Compact32>,
+            compact32_build_id_f>;
+using compact64_build_msg_t =
+    message<"compact64_build", type_f::WithRequired<type::Build>,
+            build_subtype_f::WithRequired<build_subtype::Compact64>,
+            compact64_build_id_f>;
+
+using short32_payload_f =
+    field<"payload", std::uint32_t>::located<at{0_dw, 31_msb, 4_lsb}>;
+using short32_msg_t =
+    message<"short32", type_f::WithRequired<type::Short32>, short32_payload_f>;
+
+using catalog_subtype_f =
+    field<"subtype", catalog_subtype>::located<at{0_dw, 29_msb, 24_lsb}>;
+using severity_f =
+    field<"severity", std::uint8_t>::located<at{0_dw, 6_msb, 4_lsb}>;
+using module_id_f =
+    field<"module_id", std::uint8_t>::located<at{0_dw, 22_msb, 16_lsb}>;
+
+using catalog_msg_t =
+    message<"catalog", type_f::WithRequired<type::Catalog>, severity_f,
+            module_id_f,
+            catalog_subtype_f::WithRequired<catalog_subtype::Id32_Pack32>>;
+} // namespace defn
+
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
@@ -67,51 +127,35 @@ template <typename TDestinations> struct log_handler {
     }
 
     template <auto Version, stdx::ct_string S = ""> auto log_build() -> void {
+        using namespace msg;
         if constexpr (S.empty() and stdx::bit_width(Version) <= 22) {
-            dispatch_pass_by_args(
-                static_cast<std::uint32_t>(((Version & 0x3'00'00'0u) << 10u) |
-                                           ((Version & 0xff'ff'fu) << 4u)));
+            owning<defn::compact32_build_msg_t> message{"build_id"_field =
+                                                            Version};
+            dispatch_pass_by_args(message.data()[0]);
         } else if constexpr (S.empty() and stdx::bit_width(Version) <= 54) {
-            constexpr auto subtype = 0x1u; // compact64
-            dispatch_pass_by_args(
-                static_cast<std::uint32_t>(((Version & 0x3'00'00'0u) << 10u) |
-                                           ((Version & 0xff'ff'fu) << 4u) |
-                                           (subtype << 24u)),
-                static_cast<std::uint32_t>((Version >> 22u) & 0xffff'ffffu));
+            owning<defn::compact64_build_msg_t> message{"build_id"_field =
+                                                            Version};
+            dispatch_pass_by_args(message.data()[0], message.data()[1]);
         } else {
-            constexpr std::uint32_t subtype = 0x2u; // long
-            constexpr std::uint32_t opt_len = 0x1u << 9u;
-            constexpr std::uint32_t len = S.size() + sizeof(std::uint64_t);
-            constexpr std::uint32_t byte_len = sizeof(std::uint32_t) + 2u + len;
-            constexpr std::uint32_t dword_len =
-                (byte_len + sizeof(std::uint32_t) - 1) / sizeof(std::uint32_t);
+            constexpr auto header_size =
+                defn::normal_build_msg_t::size<std::uint8_t>::value;
+            constexpr auto payload_len = S.size() + sizeof(std::uint64_t);
+            using storage_t =
+                std::array<std::uint8_t, header_size + payload_len>;
 
-            std::array<std::uint32_t, dword_len> args{};
-            args[0] = (subtype << 24u) | opt_len;
-            args[1] = stdx::to_le(len);
+            defn::normal_build_msg_t::owner_t<storage_t> message{
+                "payload_len"_field = payload_len};
+            auto dest = &message.data()[header_size];
+
             auto const ver = stdx::to_le(static_cast<std::uint64_t>(Version));
-            auto dest = stdx::bit_cast<std::uint8_t *>(&args[1]) + 2;
             dest = std::copy_n(stdx::bit_cast<std::uint8_t const *>(&ver),
                                sizeof(std::uint64_t), dest);
-            std::copy(std::cbegin(S.value), std::cend(S.value), dest);
-            dispatch_pass_by_buffer(args.data(), args.size());
+            std::copy_n(std::cbegin(S.value), S.size(), dest);
+            dispatch_pass_by_buffer(message.data());
         }
     }
 
   private:
-    constexpr static auto make_catalog32_header(logging::level level,
-                                                module_id m) -> std::uint32_t {
-        constexpr auto type = 0x3u;    // catalog
-        constexpr auto subtype = 0x1u; // id32_p32
-
-        return (subtype << 24u) | (m << 16u) |
-               (static_cast<std::uint32_t>(level) << 4u) | type;
-    }
-
-    constexpr static auto make_short32_header(string_id id) -> std::uint32_t {
-        return (id << 4u) | 1u;
-    }
-
     template <typename... MsgDataTypes>
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     NEVER_INLINE auto dispatch_pass_by_args(MsgDataTypes &&...msg_data)
@@ -125,29 +169,50 @@ template <typename TDestinations> struct log_handler {
             dests);
     }
 
-    NEVER_INLINE auto dispatch_pass_by_buffer(std::uint32_t *msg,
-                                              std::uint32_t msg_size) -> void {
+    NEVER_INLINE auto
+    dispatch_pass_by_buffer(stdx::span<std::uint8_t const> msg) -> void {
         stdx::for_each(
             [&]<typename Dest>(Dest &dest) {
                 conc::call_in_critical_section<Dest>(
-                    [&] { dest.log_by_buf(msg, msg_size); });
+                    [&] { dest.log_by_buf(msg); });
             },
             dests);
     }
 
-    template <logging::level Level, typename... MsgDataTypes>
+    template <logging::level Level, std::same_as<std::uint32_t>... MsgDataTypes>
     ALWAYS_INLINE auto dispatch_message(string_id id,
                                         [[maybe_unused]] module_id m,
-                                        MsgDataTypes &&...msg_data) -> void {
+                                        MsgDataTypes... msg_data) -> void {
+        using namespace msg;
         if constexpr (sizeof...(msg_data) == 0u) {
-            dispatch_pass_by_args(make_short32_header(id));
-        } else if constexpr (sizeof...(msg_data) <= 2u) {
-            dispatch_pass_by_args(make_catalog32_header(Level, m), id,
-                                  std::forward<MsgDataTypes>(msg_data)...);
+            owning<defn::short32_msg_t> message{"type"_field = 1,
+                                                "payload"_field = id};
+            dispatch_pass_by_args(message.data()[0]);
+        } else if constexpr (sizeof...(MsgDataTypes) <= 2u) {
+            owning<defn::catalog_msg_t> message{"severity"_field = Level,
+                                                "module_id"_field = m};
+            dispatch_pass_by_args(
+                message.data()[0], stdx::to_le(id),
+                stdx::to_le(std::forward<MsgDataTypes>(msg_data))...);
         } else {
-            std::array args = {make_catalog32_header(Level, m), id,
-                               std::forward<MsgDataTypes>(msg_data)...};
-            dispatch_pass_by_buffer(args.data(), args.size());
+            constexpr auto header_size =
+                defn::catalog_msg_t::size<std::uint8_t>::value;
+            constexpr auto payload_len =
+                (sizeof(id) + ... + sizeof(MsgDataTypes));
+            using storage_t =
+                std::array<std::uint8_t, header_size + payload_len>;
+
+            defn::catalog_msg_t::owner_t<storage_t> message{
+                "severity"_field = Level, "module_id"_field = m};
+
+            constexpr auto copy_arg = [](std::uint32_t arg, auto &dest) {
+                std::memcpy(dest, &arg, sizeof(std::uint32_t));
+                dest += sizeof(std::uint32_t);
+            };
+            auto dest = &message.data()[header_size];
+            copy_arg(stdx::to_le(id), dest);
+            (copy_arg(stdx::to_le(msg_data), dest), ...);
+            dispatch_pass_by_buffer(message.data());
         }
     }
 
