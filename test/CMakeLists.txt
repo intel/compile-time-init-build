@@ -129,3 +129,4 @@ add_compile_fail_test(msg/fail/owning_msg_incompatible_view.cpp LIBRARIES
                       warnings cib)
 add_compile_fail_test(msg/fail/message_dup_fieldnames.cpp LIBRARIES warnings
                       cib)
+add_compile_fail_test(msg/fail/view_upsize.cpp LIBRARIES warnings cib)
