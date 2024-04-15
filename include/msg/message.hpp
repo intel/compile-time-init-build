@@ -279,6 +279,10 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;
 
+    template <typename S>
+    constexpr static auto fits_inside =
+        (... and Fields::template fits_inside<S>());
+
     static_assert(
         boost::mp11::mp_is_set<boost::mp11::mp_transform<
             detail::name_for, boost::mp11::mp_list<Fields...>>>::value,
@@ -307,6 +311,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     template <typename Span> struct view_t : base<view_t<Span>> {
         using definition_t = message;
+        using span_t = Span;
 
         template <detail::storage_like S>
         // NOLINTNEXTLINE(google-explicit-constructor)
@@ -326,12 +331,20 @@ template <stdx::ct_string Name, typename... Fields> struct message {
             this->set(vs...);
         }
 
+        template <typename S>
+            requires(not std::same_as<S, span_t> and
+                     std::same_as<std::add_const_t<typename S::element_type>,
+                                  typename span_t::element_type> and
+                     span_t::extent <= S::extent)
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr view_t(view_t<S> const &s) : storage{s.data()} {}
+
         [[nodiscard]] constexpr auto data() const { return storage; }
 
       private:
-        static_assert((... and Fields::template fits_inside<Span>()),
+        static_assert(definition_t::fits_inside<span_t>,
                       "Fields overflow message storage!");
-        Span storage{};
+        span_t storage{};
     };
     using const_view_t = view_t<default_const_span_t>;
     using mutable_view_t = view_t<default_span_t>;
@@ -376,7 +389,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         }
 
       private:
-        static_assert((... and Fields::template fits_inside<storage_t>()),
+        static_assert(definition_t::fits_inside<storage_t>,
                       "Fields overflow message storage!");
         storage_t storage{};
     };
@@ -417,4 +430,11 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
 template <typename T> using const_view = typename T::const_view_t;
+
+template <typename V, typename Def>
+concept view_of = std::same_as<typename V::definition_t, Def> and
+                  Def::template fits_inside<typename V::span_t>;
+template <typename V, typename Def>
+concept const_view_of =
+    view_of<V, Def> and std::is_const_v<typename V::span_t::element_type>;
 } // namespace msg

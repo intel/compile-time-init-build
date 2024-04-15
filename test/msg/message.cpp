@@ -373,3 +373,25 @@ TEST_CASE("view with external custom storage (oversized)", "[message]") {
     msg_defn::view_t msg{arr};
     CHECK(0x80 == msg.get("id"_field));
 }
+
+TEST_CASE("implicitly downsize a message view", "[message]") {
+    auto const arr = std::array<std::uint32_t, 4>{0x8000'ba11, 0x0042'd00d};
+    msg_defn::view_t msg{arr};
+    static_assert(std::is_same_v<decltype(msg.data()),
+                                 stdx::span<std::uint32_t const, 4>>);
+    const_view<msg_defn> v = msg;
+    static_assert(
+        std::is_same_v<decltype(v.data()), stdx::span<std::uint32_t const, 2>>);
+    CHECK(msg.data()[0] == v.data()[0]);
+    CHECK(msg.data()[1] == v.data()[1]);
+}
+
+TEST_CASE("view_of concept", "[message]") {
+    auto const arr = std::array<std::uint32_t, 4>{0x8000'ba11, 0x0042'd00d};
+    msg_defn::view_t msg{arr};
+    static_assert(msg::view_of<decltype(msg), msg_defn>);
+
+    const_view<msg_defn> v = msg;
+    static_assert(msg::view_of<decltype(v), msg_defn>);
+    static_assert(msg::const_view_of<decltype(v), msg_defn>);
+}
