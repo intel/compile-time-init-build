@@ -51,6 +51,7 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)
+    add_subdirectory(tools)
 
     # Build single-header release.
     file(GLOB_RECURSE include_files
