@@ -145,9 +145,14 @@ template <typename Name> struct field_name {
 };
 } // namespace detail
 
+inline namespace literals {
 template <class T, T... chars> constexpr auto operator""_field() {
     return detail::field_name<sc::string_constant<T, chars...>>{};
 }
+template <class T, T... chars> constexpr auto operator""_f() {
+    return detail::field_name<sc::string_constant<T, chars...>>{};
+}
+} // namespace literals
 
 template <typename T>
 concept field_value = requires(T const &t) {
