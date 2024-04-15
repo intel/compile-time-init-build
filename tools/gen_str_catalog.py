@@ -7,20 +7,7 @@ import re
 import xml.etree.ElementTree as et
 
 
-# https://stackoverflow.com/questions/174890/how-to-output-cdata-using-elementtree
-def _escape_cdata(text):
-    try:
-        if "&" in text:
-            text = text.replace("&", "&amp;")
-        return text
-    except TypeError:
-        raise TypeError("cannot serialize %r (type %s)" % (text, type(text).__name__))
-
-
-et._escape_cdata = _escape_cdata
-
-
-def find_arg_split_pos(s, start):
+def find_arg_split_pos(s: str, start: int) -> int:
     angle_count = 0
     for i in range(start, len(s)):
         if s[i] == ">":
@@ -33,7 +20,7 @@ def find_arg_split_pos(s, start):
     return len(s)
 
 
-def split_args(s):
+def split_args(s: str) -> list[str]:
     args = []
     start = 0
     while start < len(s):
@@ -78,7 +65,7 @@ def extract_module_id(line_m):
     return module_re.match(line_m.group(3)).group(1)
 
 
-def extract(line_num, line_m):
+def extract(line_num: int, line_m):
     try:
         return (
             extract_string_id(line_m)
@@ -91,11 +78,11 @@ def extract(line_num, line_m):
         )
 
 
-def stable_msg_key(msg):
+def stable_msg_key(msg: dict):
     return hash(msg["level"]) ^ hash(msg["msg"]) ^ hash("".join(msg["arg_types"]))
 
 
-def read_input(filenames, stable_ids):
+def read_input(filenames: list[str], stable_ids):
     line_re = re.compile("^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
@@ -127,7 +114,7 @@ def read_input(filenames, stable_ids):
     )
 
 
-def make_cpp_catalog_defn(types, msg):
+def make_cpp_catalog_defn(types, msg) -> str:
     catalog_type, arg_tuple = types
     return f"""/*
     "{msg["msg"]}"
@@ -138,12 +125,12 @@ template<> {catalog_type} {{
 }}"""
 
 
-def module_string(module):
+def module_string(module) -> str:
     string_tuple = module.replace("(char)", "")
     return "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
 
 
-def make_cpp_module_defn(n, module):
+def make_cpp_module_defn(n: int, module) -> str:
     return f"""/*
     "{module_string(module)}"
  */
@@ -152,7 +139,7 @@ template<> unsigned int module<sc::module_string<sc::undefined<void, char, {modu
 }}"""
 
 
-def write_cpp(messages, modules, extra_headers, filename):
+def write_cpp(messages, modules, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
         f.write("\n#include <log/catalog/catalog.hpp>\n\n")
@@ -163,7 +150,7 @@ def write_cpp(messages, modules, extra_headers, filename):
         f.write("\n".join(cpp_module_defns))
 
 
-def extract_enums(filename):
+def extract_enums(filename: str):
     from clang.cindex import CursorKind, Index
 
     def walk_up(node):
@@ -196,7 +183,7 @@ def extract_enums(filename):
     return enums
 
 
-def write_json(messages, extra_inputs, filename):
+def write_json(messages, extra_inputs: list[str], filename: str):
     str_catalog = dict(messages=list(messages.values()))
     for extra in extra_inputs:
         with open(extra, "r") as f:
@@ -205,7 +192,7 @@ def write_json(messages, extra_inputs, filename):
         json.dump(str_catalog, f, indent=4)
 
 
-def read_stable(stable_filenames):
+def read_stable(stable_filenames: list[str]):
     stable_catalog = dict()
     for filename in stable_filenames:
         with open(filename, "r") as f:
@@ -213,7 +200,7 @@ def read_stable(stable_filenames):
     return {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]}
 
 
-def serialize_guids(client_node, guid_id, guid_mask):
+def serialize_guids(client_node: et.Element, guid_id: str, guid_mask: str):
     syst_guids = et.SubElement(client_node, "syst:Guids")
     et.SubElement(
         syst_guids,
@@ -222,7 +209,7 @@ def serialize_guids(client_node, guid_id, guid_mask):
     )
 
 
-def serialize_enums(client_node, enums):
+def serialize_enums(client_node: et.Element, enums):
     syst_enums = et.SubElement(client_node, "syst:EnumDefinition")
     for enum_name, (i, values) in enums.items():
         syst_enum = et.SubElement(
@@ -234,14 +221,14 @@ def serialize_enums(client_node, enums):
             )
 
 
-def serialize_modules(client_node, modules):
+def serialize_modules(client_node: et.Element, modules):
     syst_modules = et.SubElement(client_node, "syst:Modules")
     for n, m in enumerate(modules):
         syst_module = et.SubElement(syst_modules, "syst:Module", attrib={"ID": f"{n}"})
         syst_module.text = f"<![CDATA[{module_string(m)}]]>"
 
 
-def serialize_messages(short_node, catalog_node, messages):
+def serialize_messages(short_node: et.Element, catalog_node: et.Element, messages):
     for msg in messages.values():
         syst_format = et.SubElement(
             short_node if msg["arg_count"] == 0 else catalog_node,
@@ -260,7 +247,14 @@ def serialize_messages(short_node, catalog_node, messages):
 
 
 def write_xml(
-    messages, modules, enums, filename, client_name, version, guid_id, guid_mask
+    messages,
+    modules,
+    enums,
+    filename: str,
+    client_name: str,
+    version: str,
+    guid_id: str,
+    guid_mask: str,
 ):
     syst_collateral = et.Element(
         "syst:Collateral",
@@ -359,7 +353,18 @@ def parse_cmdline():
     return parser.parse_args()
 
 
+# https://stackoverflow.com/questions/174890/how-to-output-cdata-using-elementtree
+def _escape_cdata(text: str) -> str:
+    try:
+        if "&" in text:
+            text = text.replace("&", "&amp;")
+        return text
+    except TypeError:
+        raise TypeError("cannot serialize %r (type %s)" % (text, type(text).__name__))
+
+
 def main():
+    et._escape_cdata = _escape_cdata
     args = parse_cmdline()
 
     stable_ids = read_stable(args.stable_json)

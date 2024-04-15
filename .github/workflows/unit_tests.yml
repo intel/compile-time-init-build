@@ -151,6 +151,10 @@ jobs:
           sudo pip3 install --upgrade pip
           sudo pip3 install pyyaml cmake-format
 
+      - name: Install python quality tools
+        run: |
+          sudo pip3 install mypy
+
       - name: Configure CMake
         env:
           CC: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang"
