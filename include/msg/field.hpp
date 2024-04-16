@@ -279,21 +279,20 @@ enum struct dword_index_t : std::uint32_t {};
 enum struct msb_t : std::uint32_t {};
 enum struct lsb_t : std::uint32_t {};
 
-namespace literals {
+inline namespace literals {
 // NOLINTNEXTLINE(google-runtime-int)
 CONSTEVAL auto operator""_dw(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
 // NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL auto operator""_msb(unsigned long long int v) -> msb_t {
-    return static_cast<msb_t>(v);
-}
-// NOLINTNEXTLINE(google-runtime-int)
 CONSTEVAL auto operator""_lsb(unsigned long long int v) -> lsb_t {
     return static_cast<lsb_t>(v);
 }
+// NOLINTNEXTLINE(google-runtime-int)
+CONSTEVAL auto operator""_msb(unsigned long long int v) -> msb_t {
+    return static_cast<msb_t>(v);
+}
 } // namespace literals
-using namespace literals;
 
 template <typename...> struct at;
 
