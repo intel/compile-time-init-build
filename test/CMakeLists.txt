@@ -12,6 +12,13 @@ function(add_tests)
     endforeach()
 endfunction()
 
+add_versioned_package("gh:martinus/nanobench#9f871ad")
+add_versioned_package("gh:boost-ext/mph#57355e0")
+
+add_executable(pseudo_pext lookup/pseudo_pext.cpp)
+target_link_libraries(pseudo_pext cib mph nanobench)
+target_compile_options(pseudo_pext PUBLIC -O3 -march=native)
+
 add_unit_test(
     "flow_flow_test"
     CATCH2
@@ -45,6 +52,7 @@ add_tests(
     lookup/fast_hash
     lookup/input
     lookup/linear_search
+    lookup/pseudo_pext_lookup
     lookup/lookup
     lookup/strategies
     match/and
