@@ -19,6 +19,26 @@
 namespace lookup {
 
 namespace detail {
+constexpr auto as_raw_integral(auto v) {
+    static_assert(sizeof(v) <= 8);
+
+    if constexpr (sizeof(v) == 1) {
+        return std::bit_cast<std::uint8_t>(v);
+
+    } else if constexpr (sizeof(v) == 2) {
+        return std::bit_cast<std::uint16_t>(v);
+
+    } else if constexpr (sizeof(v) <= 4) {
+        return std::bit_cast<std::uint32_t>(v);
+
+    } else if constexpr (sizeof(v) <= 8) {
+        return std::bit_cast<std::uint64_t>(v);
+    }
+}
+
+template <typename T>
+using raw_integral_t = decltype(as_raw_integral(std::declval<T>()));
+
 template <typename T>
 constexpr auto compute_pack_coefficient(std::size_t dst, T const mask) -> T {
     constexpr auto t_digits = std::numeric_limits<T>::digits;
@@ -65,7 +85,7 @@ template <typename T> struct pseudo_pext_t {
 
     [[nodiscard]] constexpr auto operator()(T value) const -> T {
         auto const packed = (value & mask) * coefficient;
-        return (packed >> gap_bits) & final_mask;
+        return static_cast<T>(packed >> gap_bits) & final_mask;
     }
 };
 
@@ -94,26 +114,29 @@ CONSTEVAL auto with_mask(T const mask, std::array<T, S> const &keys)
 }
 
 template <typename T, typename V, std::size_t S>
-CONSTEVAL auto get_keys(std::array<entry<T, V>, S> const &entries)
-    -> std::array<T, S> {
-    std::array<T, S> new_keys{};
+CONSTEVAL auto get_keys(std::array<entry<T, V>, S> const &entries) {
+    using raw_t = detail::raw_integral_t<T>;
+    std::array<raw_t, S> new_keys{};
 
-    std::transform(entries.begin(), entries.end(), new_keys.begin(),
-                   [&](entry<T, V> e) { return e.key_; });
+    std::transform(
+        entries.begin(), entries.end(), new_keys.begin(),
+        [&](entry<T, V> e) { return detail::as_raw_integral(e.key_); });
 
     return new_keys;
 }
 
 template <typename T, typename V, std::size_t S>
 CONSTEVAL auto calc_pseudo_pext_mask(std::array<entry<T, V>, S> const &pairs)
-    -> T {
-    auto const t_digits = std::numeric_limits<T>::digits;
-    std::array<T, S> keys = get_keys(pairs);
+    -> detail::raw_integral_t<T> {
+    using raw_t = detail::raw_integral_t<T>;
 
-    auto mask = std::numeric_limits<T>::max();
+    auto const t_digits = std::numeric_limits<raw_t>::digits;
+    std::array<raw_t, S> keys = get_keys(pairs);
+
+    raw_t mask = std::numeric_limits<raw_t>::max();
     for (auto i = std::size_t{}; i < t_digits; i++) {
-        auto const try_mask = mask & ~(T{1} << i);
-        std::array<T, S> const try_keys = with_mask(try_mask, keys);
+        raw_t const try_mask = mask & ~static_cast<raw_t>(raw_t{1} << i);
+        std::array<raw_t, S> const try_keys = with_mask(try_mask, keys);
         if (keys_are_unique(try_keys)) {
             mask = try_mask;
         }
@@ -127,6 +150,7 @@ struct pseudo_pext_lookup {
     template <typename Key, typename Value, typename PextFunc, typename Storage>
     struct impl {
         using key_type = Key;
+        using raw_key_type = detail::raw_integral_t<key_type>;
         using value_type = Value;
 
         PextFunc pext_func;
@@ -135,8 +159,9 @@ struct pseudo_pext_lookup {
 
         [[nodiscard]] constexpr auto operator[](key_type key) const
             -> value_type {
-            auto const e = storage[pext_func(key)];
-            return detail::select(key, e.key_, e.value_, default_value);
+            auto const raw_key = detail::as_raw_integral(key);
+            auto const e = storage[pext_func(raw_key)];
+            return detail::select(raw_key, e.key_, e.value_, default_value);
         }
     };
 
@@ -144,18 +169,21 @@ struct pseudo_pext_lookup {
     [[nodiscard]] CONSTEVAL static auto make(compile_time auto i) {
         constexpr auto input = i();
         using key_type = typename decltype(input)::key_type;
+        using raw_key_type = detail::raw_integral_t<key_type>;
         using value_type = typename decltype(input)::value_type;
 
-        constexpr auto mask = detail::calc_pseudo_pext_mask(input.entries);
+        constexpr raw_key_type mask =
+            detail::calc_pseudo_pext_mask(input.entries);
         constexpr auto p = detail::pseudo_pext_t(mask);
         constexpr auto storage_size = 1 << std::popcount(mask);
         constexpr auto storage = [&]() {
-            std::array<entry<key_type, value_type>, storage_size> s{};
+            std::array<entry<raw_key_type, value_type>, storage_size> s{};
 
-            s.fill({0, input.default_value});
+            s.fill({raw_key_type{}, input.default_value});
 
             for (auto e : input.entries) {
-                s[p(e.key_)] = e;
+                raw_key_type const k = detail::as_raw_integral(e.key_);
+                s[p(k)] = {k, e.value_};
             }
 
             return s;
