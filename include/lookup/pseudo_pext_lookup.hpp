@@ -4,6 +4,7 @@
 #include <lookup/input.hpp>
 #include <lookup/strategy_failed.hpp>
 
+#include <stdx/bit.hpp>
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
 
@@ -41,7 +42,7 @@ constexpr auto compute_pack_coefficient(std::size_t dst, T const mask) -> T {
         prev_src_bit_set = curr_src_bit_set;
     }
 
-    return static_cast<T>(pack_coefficient.to_uint64_t());
+    return pack_coefficient.template to<T>();
 }
 
 template <typename T> struct pseudo_pext_t {
@@ -50,15 +51,16 @@ template <typename T> struct pseudo_pext_t {
     T final_mask;
     std::size_t gap_bits;
 
-    constexpr pseudo_pext_t(T mask_arg) {
-        mask = mask_arg;
+    constexpr explicit pseudo_pext_t(T mask_arg) : mask{mask_arg} {
         constexpr auto t_digits = std::numeric_limits<T>::digits;
         auto const num_bits_to_extract = std::popcount(mask);
         auto const left_padding = std::countl_zero(mask);
         gap_bits = static_cast<std::size_t>(t_digits - num_bits_to_extract -
                                             left_padding);
         coefficient = compute_pack_coefficient<T>(gap_bits, mask);
-        final_mask = (T{1} << num_bits_to_extract) - T{1};
+        auto const final_mask_msb =
+            static_cast<std::size_t>(num_bits_to_extract - 1);
+        final_mask = stdx::bit_mask<T>(final_mask_msb);
     }
 
     [[nodiscard]] constexpr auto operator()(T value) const -> T {
