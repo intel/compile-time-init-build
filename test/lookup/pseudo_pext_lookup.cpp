@@ -3,13 +3,22 @@
 
 #include <stdx/utility.hpp>
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("lookup with some entries", "[pseudo pext lookup]") {
-    constexpr auto lookup =
-        lookup::pseudo_pext_lookup::make(CX_VALUE(lookup::input{
-            0, std::array{lookup::entry{54u, 1}, lookup::entry{324u, 2},
-                          lookup::entry{64u, 3}}}));
+using pseudo_pext_direct = lookup::pseudo_pext_lookup<>;
+using pseudo_pext_indirect_1 = lookup::pseudo_pext_lookup<true, 1>;
+using pseudo_pext_indirect_2 = lookup::pseudo_pext_lookup<true, 2>;
+using pseudo_pext_indirect_3 = lookup::pseudo_pext_lookup<true, 3>;
+using pseudo_pext_indirect_4 = lookup::pseudo_pext_lookup<true, 4>;
+
+TEMPLATE_TEST_CASE("lookup with some entries", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4) {
+    constexpr auto lookup = TestType::make(CX_VALUE(lookup::input{
+        0, std::array{lookup::entry{54u, 1}, lookup::entry{324u, 2},
+                      lookup::entry{64u, 3}}}));
 
     CHECK(lookup[0] == 0);
     CHECK(lookup[54] == 1);
@@ -17,9 +26,12 @@ TEST_CASE("lookup with some entries", "[pseudo pext lookup]") {
     CHECK(lookup[64] == 3);
 }
 
-TEST_CASE("lookup with no entries", "[pseudo pext lookup]") {
+TEMPLATE_TEST_CASE("lookup with no entries", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4) {
     constexpr auto lookup =
-        lookup::pseudo_pext_lookup::make(CX_VALUE(lookup::input<uint32_t>{0}));
+        TestType::make(CX_VALUE(lookup::input<uint32_t>{0}));
 
     CHECK(lookup[0] == 0);
     CHECK(lookup[54] == 0);
@@ -27,12 +39,14 @@ TEST_CASE("lookup with no entries", "[pseudo pext lookup]") {
     CHECK(lookup[64] == 0);
 }
 
-TEST_CASE("lookup with non-integral values", "[pseudo pext lookup]") {
-    constexpr auto lookup =
-        lookup::pseudo_pext_lookup::make(CX_VALUE(lookup::input{
-            0.0, std::array{lookup::entry{54u, 3.4}, lookup::entry{324u, 5.2},
-                            lookup::entry{64u, 8.9}, lookup::entry{234u, 3.1},
-                            lookup::entry{91u, 0.41}}}));
+TEMPLATE_TEST_CASE("lookup with non-integral values", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4) {
+    constexpr auto lookup = TestType::make(CX_VALUE(lookup::input{
+        0.0, std::array{lookup::entry{54u, 3.4}, lookup::entry{324u, 5.2},
+                        lookup::entry{64u, 8.9}, lookup::entry{234u, 3.1},
+                        lookup::entry{91u, 0.41}}}));
 
     CHECK(lookup[0] == 0.0);
     CHECK(lookup[54] == 3.4);
@@ -42,8 +56,11 @@ TEST_CASE("lookup with non-integral values", "[pseudo pext lookup]") {
     CHECK(lookup[91] == 0.41);
 }
 
-TEST_CASE("lookup with uint8_t entries", "[pseudo pext lookup]") {
-    constexpr auto lookup = lookup::pseudo_pext_lookup::make(CX_VALUE(
+TEMPLATE_TEST_CASE("lookup with uint8_t entries", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4) {
+    constexpr auto lookup = TestType::make(CX_VALUE(
         lookup::input{0, std::array{lookup::entry<uint8_t, int8_t>{54u, 1},
                                     lookup::entry<uint8_t, int8_t>{124u, 2},
                                     lookup::entry<uint8_t, int8_t>{64u, 3}}}));
@@ -61,11 +78,13 @@ enum class some_key_t : uint16_t {
     GAMMA = 3u
 };
 
-TEST_CASE("lookup with scoped enum entries", "[pseudo pext lookup]") {
-    constexpr auto lookup =
-        lookup::pseudo_pext_lookup::make(CX_VALUE(lookup::input{
-            0, std::array{
-                   lookup::entry<some_key_t, int8_t>{some_key_t::ALPHA, 54},
+TEMPLATE_TEST_CASE("lookup with scoped enum entries", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4) {
+    constexpr auto lookup = TestType::make(CX_VALUE(lookup::input{
+        0,
+        std::array{lookup::entry<some_key_t, int8_t>{some_key_t::ALPHA, 54},
                    lookup::entry<some_key_t, int8_t>{some_key_t::BETA, 23},
                    lookup::entry<some_key_t, int8_t>{some_key_t::KAPPA, 87},
                    lookup::entry<some_key_t, int8_t>{some_key_t::GAMMA, 4}}}));

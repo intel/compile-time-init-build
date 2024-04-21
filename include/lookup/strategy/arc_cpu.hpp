@@ -19,5 +19,5 @@ using arc_cpu = strategies<
     // 9.39 cycles unrolled 4x
     linear_search_lookup<7>,
 
-    pseudo_pext_lookup>;
+    pseudo_pext_lookup<>>;
 } // namespace lookup::strategy
