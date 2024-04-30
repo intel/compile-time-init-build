@@ -48,7 +48,7 @@ The recommended way to use *cib* is with CMake and [CPM](https://github.com/cpm-
 With this method,add the following to your CMakeLists.txt:
 
 ```cmake
-CPMAddPackage("gh:intel/compile-time-init-build#047aab6)
+CPMAddPackage("gh:intel/compile-time-init-build#047aab6")
 target_link_libraries(your_target PRIVATE cib)
 ```
 
