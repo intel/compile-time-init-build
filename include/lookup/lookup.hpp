@@ -1,12 +1,18 @@
 #pragma once
+
 #include <lookup/input.hpp>
-#include <lookup/strategy/arc_cpu.hpp>
+#include <lookup/linear_search_lookup.hpp>
+#include <lookup/pseudo_pext_lookup.hpp>
+#include <lookup/strategies.hpp>
 
 #include <stdx/compiler.hpp>
 
 namespace lookup {
-// TODO: need a good way to make this extendable
 [[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
-    return lookup::strategy::arc_cpu::make(input);
+    return strategies<
+        linear_search_lookup<4>,
+        pseudo_pext_lookup<true, 2>
+    >::make(input);
 }
 } // namespace lookup
+

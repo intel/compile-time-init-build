@@ -459,3 +459,83 @@ struct pseudo_pext_lookup {
     }
 };
 } // namespace lookup
+
+
+// struct always_t {
+//     auto operator()(auto const &) const -> bool {
+//         return true;
+//     }
+// } always{};
+
+// struct never_t {
+//     auto operator()(auto const &) const -> bool {
+//         return false;
+//     }
+// } never{};
+
+
+// template <matcher M>
+// auto simplify(M const & m) -> M {
+//     return m;
+// }
+
+// template <matcher L, matcher R>
+// auto simplify(and_t<L, R> const & m) {
+//     auto l = simplify(m.lhs);
+//     auto r = simplify(m.rhs);
+//     if constexpr (/* l is a never_t or r is a never_t */) {
+//         return never;
+//     } else if constexpr (/* r is an always_t */) {
+//         return l;
+//     } else if constexpr (/* l is an always_t */) {
+//         return r;
+//     } else {
+//         return and_t{l, r};
+//     }
+// }
+
+// template <matcher M>
+// auto sum_of_products(M const & m) -> M {
+//     return m;
+// }
+
+
+// template <matcher M>
+// auto sum_of_products(not_t<M> const & n) {
+//     if constexpr (/* M is an and_t */) {
+//         return or_t{
+//             sum_of_products(negate(n.m.lhs)),
+//             sum_of_products(negate(n.m.rhs))};
+//     } else if constexpr (/* M is an or_t */) {
+//         return sum_of_products(and_t{
+//             sum_of_products(negate(n.m.lhs)),
+//             sum_of_products(negate(n.m.rhs))});
+//     } else {
+//         return n;
+//     }
+// }
+
+// template <matcher L, matcher R>
+// auto sum_of_products(and_t<L, R> const & m) {
+//     auto l = sum_of_products(m.lhs);
+//     auto r = sum_of_products(m.rhs);
+
+//     if constexpr (/* l is an or_t */) {
+//         auto lr = sum_of_products(and_t{l.lhs, r});
+//         auto rr = sum_of_products(and_t{l.rhs, r});
+//         return or_t{lr, rr};
+//     } else if constexpr (/* r is an or_t */) {
+//         auto ll = sum_of_products(and_t{l, r.lhs});
+//         auto lr = sum_of_products(and_t{l, r.rhs});
+//         return or_t{ll, lr};
+//     } else {
+//         return and_t{l, r};
+//     }
+// }
+
+// template <matcher L, matcher R>
+// auto sum_of_products(or_t<L, R> const & m) {
+//     auto l = sum_of_products(m.lhs);
+//     auto r = sum_of_products(m.rhs);
+//     return or_t{l, r};
+// }
