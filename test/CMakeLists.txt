@@ -41,13 +41,10 @@ add_tests(
     log/mipi_encoder
     log/mipi_logger
     log/module_id
-    lookup/direct_array
-    lookup/fast_hash
     lookup/input
     lookup/linear_search
     lookup/pseudo_pext_lookup
     lookup/lookup
-    lookup/strategies
     match/and
     match/constant
     match/equivalence
@@ -324,3 +321,9 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
             COMMENT "Running benchmark: ${TARGET_NAME}")
     endforeach()
 endforeach()
+
+
+# Create a target for the current configuration
+add_executable(handler_bench msg/handler_bench.cpp)
+target_link_libraries(handler_bench cib nanobench)
+target_compile_options(handler_bench PUBLIC -O3 -march=native -fconstexpr-steps=4000000000 -fbracket-depth=1024)
