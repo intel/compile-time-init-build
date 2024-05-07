@@ -342,7 +342,7 @@ TEST_CASE("describe a message", "[message]") {
     test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
     CIB_INFO("{}", msg.describe());
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("msg(id: 0x80, f1: 0xba11, f2: 0x42, f3: 0xd00d)") !=
+    CHECK(log_buffer.find("msg(f1: 0xba11, id: 0x80, f3: 0xd00d, f2: 0x42)") !=
           std::string::npos);
 }
 
@@ -394,4 +394,31 @@ TEST_CASE("view_of concept", "[message]") {
     const_view<msg_defn> v = msg;
     static_assert(msg::view_of<decltype(v), msg_defn>);
     static_assert(msg::const_view_of<decltype(v), msg_defn>);
+}
+
+TEST_CASE("message fields are canonically sorted by lsb", "[message]") {
+    using defn = message<"msg", field2, field1>;
+    static_assert(std::is_same_v<defn, message<"msg", field1, field2>>);
+    static_assert(std::is_same_v<defn, detail::message<"msg", field1, field2>>);
+}
+
+TEST_CASE("extend message with more fields", "[message]") {
+    using base_defn = message<"msg_base", id_field, field1>;
+    using defn = extend<base_defn, "msg", field2, field3>;
+    using expected_defn = message<"msg", id_field, field1, field2, field3>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("extend message with duplicate field", "[message]") {
+    using base_defn = message<"msg_base", id_field, field1>;
+    using defn = extend<base_defn, "msg", field1>;
+    using expected_defn = message<"msg", id_field, field1>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("extend message with new field constraint", "[message]") {
+    using base_defn = message<"msg_base", id_field, field1>;
+    using defn = extend<base_defn, "msg", field1::WithRequired<1>>;
+    using expected_defn = message<"msg", id_field, field1::WithRequired<1>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
 }

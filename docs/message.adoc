@@ -87,6 +87,55 @@ Here the message has only one field. `WithRequired<0x80>` is an alias
 specialization that expresses `my_field` with a matcher that is
 `equal_to_t<0x80>`.
 
+==== Field ordering
+
+Fields are canonically ordered within a message definition by their least
+significant bit, lowest to highest. Message definitions which differ only by
+declaration order of fields are therefore the same type.
+
+[source,cpp]
+----
+using field1 = field<"f1", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using field2 = field<"f2", std::uint32_t>::located<at{0_dw, 15_msb, 8_lsb}>;
+
+using message1_defn = message<"msg", field1, field2>;
+using message2_defn = message<"msg", field2, field1>;
+static_assert(std::same_as<message1_defn, message2_defn>);
+----
+
+==== Extending messages
+
+It is sometimes useful to extend a message definition with more fields, to avoid
+repetition. For example, with a partial message definition representing a
+header:
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using header_defn = message<"header", type_f>;
+----
+
+This definition can be extended with `extend`, giving a new name and some more fields:
+
+[source,cpp]
+----
+using payload_f = field<"payload", std::uint32_t>::located<at{0_dw, 15_msb, 8_lsb}>;
+
+// these two definitions are equivalent:
+using msg_defn = extend<header_defn, "msg", payload_f>; // extend the header with a payload
+using msg_alt_defn = message<"msg", type_f, payload_f>; // or define the entire message
+----
+
+Fields that exist in the base definition will be overridden by extension
+fields with the same name. This also means that extending a message definition
+in this way can add matchers to existing fields:
+
+[source,cpp]
+----
+using msg1_defn = extend<header_defn, "msg", type_f::WithRequired<1>, payload_f>;
+using msg2_defn = extend<header_defn, "msg", type_f::WithRequired<2>, payload_f>;
+----
+
 ==== Owning vs view types
 
 An owning message uses underlying storage: by default, this is a `std::array` of

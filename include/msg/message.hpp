@@ -154,13 +154,13 @@ template <class T, T... chars> constexpr auto operator""_f() {
 }
 } // namespace literals
 
+namespace detail {
 template <typename T>
-concept field_value = requires(T const &t) {
+concept some_field_value = requires(T const &t) {
     { t.value };
     typename T::name_t;
 };
 
-namespace detail {
 template <typename... Fields> struct storage_size {
     template <typename T>
     constexpr static std::size_t in =
@@ -182,7 +182,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
                       "Field does not fit inside message!");
     }
 
-    template <stdx::range R, msg::field_value V>
+    template <stdx::range R, some_field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
         using Field =
             std::remove_cvref_t<decltype(stdx::get<typename V::name_t>(
@@ -215,7 +215,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
         (set_default<Ns>(r), ...);
     }
 
-    template <stdx::range R, msg::field_value... Vs>
+    template <stdx::range R, some_field_value... Vs>
     constexpr static auto set(R &&r, Vs... vs) -> void {
         (set1(r, vs), ...);
     }
@@ -268,7 +268,37 @@ concept storage_like = stdx::range<T> and requires {
     { stdx::ct_capacity_v<T> } -> stdx::same_as_unqualified<std::size_t>;
     typename T::value_type;
 };
-} // namespace detail
+
+template <stdx::ct_string Name, typename... Fields> struct message;
+
+template <stdx::ct_string Name> struct msg_q {
+    template <typename... Fields> using fn = message<Name, Fields...>;
+};
+
+template <typename F1, typename F2>
+using field_sort_fn = std::bool_constant < F1::sort_key<F2::sort_key>;
+
+template <typename F1, typename F2>
+using name_equal_fn = std::is_same<name_for<F1>, name_for<F2>>;
+
+template <typename... Fields>
+using unique_by_name = boost::mp11::mp_unique_if<
+    boost::mp11::mp_sort<boost::mp11::mp_list<Fields...>, field_sort_fn>,
+    name_equal_fn>;
+
+template <stdx::ct_string Name, typename... Fields>
+using message_without_unique_field_names =
+    boost::mp11::mp_apply_q<detail::msg_q<Name>,
+                            detail::unique_by_name<Fields...>>;
+
+template <stdx::ct_string Name, typename... Fields>
+struct message_with_unique_field_names {
+    static_assert(boost::mp11::mp_is_set<boost::mp11::mp_transform<
+                      name_for, boost::mp11::mp_list<Fields...>>>::value,
+                  "Message contains fields with duplicate names");
+
+    using type = message_without_unique_field_names<Name, Fields...>;
+};
 
 template <stdx::ct_string Name, typename... Fields> struct message {
     using fields_t = stdx::type_list<Fields...>;
@@ -287,11 +317,6 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     template <typename S>
     constexpr static auto fits_inside =
         (... and Fields::template fits_inside<S>());
-
-    static_assert(
-        boost::mp11::mp_is_set<boost::mp11::mp_transform<
-            detail::name_for, boost::mp11::mp_list<Fields...>>>::value,
-        "Message contains fields with duplicate names");
 
     template <typename T> struct base {
         constexpr auto as_derived() const -> T const & {
@@ -322,7 +347,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         // NOLINTNEXTLINE(google-explicit-constructor)
         view_t(S const &s) : storage{s} {}
 
-        template <detail::storage_like S, field_value... Vs>
+        template <detail::storage_like S, some_field_value... Vs>
         constexpr explicit view_t(S &s, Vs... vs) : storage{s} {
             this->set(vs...);
         }
@@ -331,7 +356,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr view_t(owner_t<S> const &s) : storage{s.data()} {}
 
-        template <typename S, field_value... Vs>
+        template <typename S, some_field_value... Vs>
         explicit constexpr view_t(owner_t<S> &s, Vs... vs) : storage{s.data()} {
             this->set(vs...);
         }
@@ -361,12 +386,12 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
         constexpr owner_t() { this->set(Fields{}...); }
 
-        template <field_value... Vs>
+        template <some_field_value... Vs>
         explicit constexpr owner_t(Vs... vs) : owner_t{} {
             this->set(vs...);
         }
 
-        template <detail::storage_like S, field_value... Vs>
+        template <detail::storage_like S, some_field_value... Vs>
         explicit constexpr owner_t(S const &s, Vs... vs) {
             static_assert(std::is_same_v<typename S::value_type,
                                          typename storage_t::value_type>,
@@ -379,7 +404,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
             this->set(vs...);
         }
 
-        template <detail::storage_like S, field_value... Vs>
+        template <detail::storage_like S, some_field_value... Vs>
         explicit constexpr owner_t(view_t<S> s, Vs... vs)
             : owner_t{s.data(), vs...} {}
 
@@ -402,7 +427,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     template <detail::storage_like S>
     owner_t(S const &, auto &&...)
         -> owner_t<std::array<typename S::value_type, stdx::ct_capacity_v<S>>>;
-    template <field_value... Vs> owner_t(Vs...) -> owner_t<default_storage_t>;
+    template <some_field_value... Vs>
+    owner_t(Vs...) -> owner_t<default_storage_t>;
     template <typename S>
     owner_t(view_t<S> &, auto &&...)
         -> owner_t<std::array<typename S::value_type, stdx::ct_capacity_v<S>>>;
@@ -430,7 +456,18 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         -> view_t<stdx::span<typename S::value_type, stdx::ct_capacity_v<S>>>;
 
     using matcher_t = decltype(match::all(typename Fields::matcher_t{}...));
+
+    // NewFields go first because they override existing fields of the same name
+    // (see unique_by_name)
+    template <stdx::ct_string NewName, typename... NewFields>
+    using extension =
+        message_without_unique_field_names<NewName, NewFields..., Fields...>;
 };
+} // namespace detail
+
+template <stdx::ct_string Name, typename... Fields>
+using message =
+    typename detail::message_with_unique_field_names<Name, Fields...>::type;
 
 template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
@@ -442,4 +479,7 @@ concept view_of = std::same_as<typename V::definition_t, Def> and
 template <typename V, typename Def>
 concept const_view_of =
     view_of<V, Def> and std::is_const_v<typename V::span_t::element_type>;
+
+template <typename Def, stdx::ct_string Name, typename... Fields>
+using extend = typename Def::template extension<Name, Fields...>;
 } // namespace msg

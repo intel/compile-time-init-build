@@ -69,6 +69,7 @@ concept field_location = requires(T const &t) {
     { t.lsb() } -> std::same_as<std::uint32_t>;
     { t.size() } -> std::same_as<std::uint32_t>;
     { t.valid() } -> std::same_as<bool>;
+    { t.sort_key() } -> std::same_as<std::uint32_t>;
 };
 
 namespace detail {
@@ -315,6 +316,10 @@ template <> struct at<dword_index_t, msb_t, lsb_t> {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
+    [[nodiscard]] constexpr auto sort_key() const
+        -> std::underlying_type_t<lsb_t> {
+        return index() * 32u + stdx::to_underlying(lsb_);
+    }
 };
 
 template <> struct at<msb_t, lsb_t> {
@@ -334,6 +339,10 @@ template <> struct at<msb_t, lsb_t> {
     [[nodiscard]] constexpr auto valid() const -> bool {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
+    }
+    [[nodiscard]] constexpr auto sort_key() const
+        -> std::underlying_type_t<lsb_t> {
+        return stdx::to_underlying(lsb_);
     }
 };
 
@@ -368,6 +377,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using name_t = Name;
     using field_id = field_t<Name, T, T{}, match::always_t, Ats...>;
     using value_type = T;
+    constexpr static auto sort_key = std::min({Ats.sort_key()...});
     constexpr static auto default_value = DefaultValue;
 
     template <stdx::range R>
