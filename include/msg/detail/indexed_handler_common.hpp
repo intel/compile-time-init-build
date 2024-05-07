@@ -4,7 +4,7 @@
 #include <msg/handler_interface.hpp>
 
 #include <stdx/compiler.hpp>
-#include <stdx/concepts.hpp>
+#include <stdx/ranges.hpp>
 
 namespace msg {
 

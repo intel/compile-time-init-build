@@ -4,6 +4,7 @@
 #include <sc/format.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ranges.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
 
