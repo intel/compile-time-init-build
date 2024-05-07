@@ -17,7 +17,7 @@
 namespace msg::detail {
 
 template <std::size_t N>
-using smallest_storage_type = decltype(stdx::detail::select_storage<N, void>());
+using smallest_storage_type = decltype(stdx::smallest_uint<N, void>());
 
 // Captures RLE data for decoding and provides a mechanism to
 // get a single-use enumerator to step through bits in the encoded
