@@ -143,8 +143,6 @@ set(BENCH_ALG_NAMES
     bench_std_unordered_map
     bench_frozen_map
     bench_frozen_unordered_map
-    bench_mph_pext
-    bench_mph
     bench_pseudo_pext_direct
     bench_pseudo_pext_indirect_1
     bench_pseudo_pext_indirect_2
@@ -182,14 +180,6 @@ set(BENCH_DATASETS
     exp_800_uint16
     exp_900_uint16
     exp_1000_uint16
-    exp_2000_uint16
-    exp_3000_uint16
-    exp_4000_uint16
-    exp_5000_uint16
-    exp_6000_uint16
-    exp_7000_uint16
-    exp_8000_uint16
-    exp_9000_uint16
     exp_1_uint32
     exp_2_uint32
     exp_3_uint32
@@ -217,15 +207,7 @@ set(BENCH_DATASETS
     exp_700_uint32
     exp_800_uint32
     exp_900_uint32
-    exp_1000_uint32
-    exp_2000_uint32
-    exp_3000_uint32
-    exp_4000_uint32
-    exp_5000_uint32
-    exp_6000_uint32
-    exp_7000_uint32
-    exp_8000_uint32
-    exp_9000_uint32)
+    exp_1000_uint32)
 
 set(EXCLUDED_COMBINATIONS
     bench_mph_pext_exp_70_uint32
@@ -241,14 +223,6 @@ set(EXCLUDED_COMBINATIONS
     bench_mph_pext_exp_800_uint32
     bench_mph_pext_exp_900_uint32
     bench_mph_pext_exp_1000_uint32
-    bench_mph_pext_exp_2000_uint32
-    bench_mph_pext_exp_3000_uint32
-    bench_mph_pext_exp_4000_uint32
-    bench_mph_pext_exp_5000_uint32
-    bench_mph_pext_exp_6000_uint32
-    bench_mph_pext_exp_7000_uint32
-    bench_mph_pext_exp_8000_uint32
-    bench_mph_pext_exp_9000_uint32
     bench_mph_pext_exp_70_uint16
     bench_mph_pext_exp_80_uint16
     bench_mph_pext_exp_90_uint16
@@ -261,15 +235,7 @@ set(EXCLUDED_COMBINATIONS
     bench_mph_pext_exp_700_uint16
     bench_mph_pext_exp_800_uint16
     bench_mph_pext_exp_900_uint16
-    bench_mph_pext_exp_1000_uint16
-    bench_mph_pext_exp_2000_uint16
-    bench_mph_pext_exp_3000_uint16
-    bench_mph_pext_exp_4000_uint16
-    bench_mph_pext_exp_5000_uint16
-    bench_mph_pext_exp_6000_uint16
-    bench_mph_pext_exp_7000_uint16
-    bench_mph_pext_exp_8000_uint16
-    bench_mph_pext_exp_9000_uint16)
+    bench_mph_pext_exp_1000_uint16)
 
 # Create a custom target to build all the benchmark binaries
 add_custom_target(build_benchmarks)

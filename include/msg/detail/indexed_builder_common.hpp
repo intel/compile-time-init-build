@@ -68,7 +68,7 @@ struct temp_index {
     using field_type = FieldType;
     using key_type = typename field_type::value_type;
 
-    using value_t = stdx::bitset<CallbackCapacity, std::uint64_t>;
+    using value_t = stdx::bitset<CallbackCapacity, std::uint32_t>;
     stdx::cx_map<key_type, value_t, EntryCapacity> entries{};
     value_t default_value{};
     value_t negative_value{};
