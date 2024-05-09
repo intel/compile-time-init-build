@@ -10,7 +10,6 @@
 #include <msg/field.hpp>
 #include <msg/indexed_service.hpp>
 #include <msg/message.hpp>
-#include <msg/rle_indexed_service.hpp>
 #include <msg/service.hpp>
 
 #include <array>
@@ -31,7 +30,6 @@ using msg_defn = message<"bench_msg", big_f, med_f, small_a_f, small_b_f,
 using msg_t = owning<msg_defn>;
 
 
-struct test_rle_indexed_service : rle_indexed_service<index_spec<big_f, med_f, small_a_f>, msg_t> {};
 struct test_indexed_service : indexed_service<index_spec<big_f, med_f, small_a_f>, msg_t> {};
 struct test_service : service<msg_t> {};
 
@@ -594,7 +592,6 @@ void bench_handler() {
 }
 
 int main() {
-    // bench_handler<test_rle_indexed_service>();
     bench_handler<test_indexed_service>();
-    // bench_handler<test_service>();
+    bench_handler<test_service>();
 }
