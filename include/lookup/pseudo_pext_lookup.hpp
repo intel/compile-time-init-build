@@ -156,7 +156,7 @@ constexpr auto keys_are_unique(std::array<T, S> const &keys) -> bool {
 }
 
 template <typename T, std::size_t S>
-CONSTEVAL auto with_mask(T const mask,
+constexpr auto with_mask(T const mask,
                          std::array<T, S> const &keys) -> std::array<T, S> {
     std::array<T, S> new_keys{};
 
@@ -179,9 +179,9 @@ constexpr auto get_keys(std::array<entry<T, V>, S> const &entries) {
 }
 
 template <typename T, std::size_t S>
-constexpr auto remove_cheapest_bit(detail::raw_integral_t<T> mask,
-                                   std::array<T, S> keys)
-    -> detail::raw_integral_t<T> {
+constexpr auto
+remove_cheapest_bit(detail::raw_integral_t<T> mask,
+                    std::array<T, S> keys) -> detail::raw_integral_t<T> {
     using raw_t = detail::raw_integral_t<T>;
 
     auto const t_digits = std::numeric_limits<raw_t>::digits;
