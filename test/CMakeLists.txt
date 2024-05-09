@@ -58,7 +58,6 @@ add_tests(
     match/simplify_or
     match/sum_of_products
     msg/callback
-    msg/detail/rle_codec
     msg/field_extract
     msg/field_insert
     msg/field_matchers
@@ -67,7 +66,6 @@ add_tests(
     msg/indexed_builder
     msg/indexed_callback
     msg/indexed_handler
-    msg/rle_indexed_builder
     msg/message
     sc/format
     sc/string_constant
