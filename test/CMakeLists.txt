@@ -320,8 +320,9 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
     endforeach()
 endforeach()
 
-
 # Create a target for the current configuration
 add_executable(handler_bench msg/handler_bench.cpp)
 target_link_libraries(handler_bench cib nanobench)
-target_compile_options(handler_bench PUBLIC -O3 -march=native -fconstexpr-steps=4000000000 -fbracket-depth=1024)
+target_compile_options(
+    handler_bench PUBLIC -O3 -march=native -fconstexpr-steps=4000000000
+                         -fbracket-depth=1024)

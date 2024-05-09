@@ -47,7 +47,8 @@ struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
         return not index(msg).none();
     }
 
-    __attribute__((flatten)) auto handle(BaseMsgT const &msg, ExtraCallbackArgsT... args) const
+    __attribute__((flatten)) auto handle(BaseMsgT const &msg,
+                                         ExtraCallbackArgsT... args) const
         -> bool final {
         auto const callback_candidates = index(msg);
 

@@ -460,7 +460,6 @@ struct pseudo_pext_lookup {
 };
 } // namespace lookup
 
-
 // struct always_t {
 //     auto operator()(auto const &) const -> bool {
 //         return true;
@@ -472,7 +471,6 @@ struct pseudo_pext_lookup {
 //         return false;
 //     }
 // } never{};
-
 
 // template <matcher M>
 // auto simplify(M const & m) -> M {
@@ -498,7 +496,6 @@ struct pseudo_pext_lookup {
 // auto sum_of_products(M const & m) -> M {
 //     return m;
 // }
-
 
 // template <matcher M>
 // auto sum_of_products(not_t<M> const & n) {
