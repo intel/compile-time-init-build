@@ -31,7 +31,7 @@ def split_args(s: str) -> list[str]:
 
 
 string_re = re.compile(
-    "sc::message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
+    r"sc::message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
 )
 
 
@@ -58,7 +58,7 @@ def extract_string_id(line_m):
     )
 
 
-module_re = re.compile("sc::module_string<sc::undefined<void, char, (.*)>\s?>")
+module_re = re.compile(r"sc::module_string<sc::undefined<void, char, (.*)>\s?>")
 
 
 def extract_module_id(line_m):
@@ -83,7 +83,7 @@ def stable_msg_key(msg: dict):
 
 
 def read_input(filenames: list[str], stable_ids):
-    line_re = re.compile("^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
+    line_re = re.compile(r"^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
         with open(filename, "r") as f:
