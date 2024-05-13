@@ -15,6 +15,7 @@ extern auto log_one_ct_arg() -> void;
 extern auto log_one_rt_arg() -> void;
 extern auto log_two_rt_args() -> void;
 extern auto log_rt_enum_arg() -> void;
+extern auto log_with_non_default_module_id() -> void;
 
 TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
@@ -56,4 +57,16 @@ TEST_CASE("log runtime enum argument", "[catalog]") {
     log_rt_enum_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
+}
+
+TEST_CASE("log module ids change", "[catalog]") {
+    // subtype 1, severity 7, type 3
+    std::uint32_t expected_static = (1u << 24u) | (7u << 4u) | 3u;
+    log_one_rt_arg();
+    CHECK((last_header & expected_static) == expected_static);
+
+    auto default_header = last_header;
+    log_with_non_default_module_id();
+    CHECK((last_header & expected_static) == expected_static);
+    CHECK((last_header ^ default_header) == (1u << 16u));
 }
