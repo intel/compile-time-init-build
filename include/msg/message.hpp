@@ -449,8 +449,9 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     view_t(stdx::span<T, N>, auto &&...) -> view_t<stdx::span<T, N>>;
 
     template <typename S>
-    view_t(owner_t<S> const &) -> view_t<
-        stdx::span<typename S::value_type const, stdx::ct_capacity_v<S>>>;
+    view_t(owner_t<S> const &)
+        -> view_t<
+            stdx::span<typename S::value_type const, stdx::ct_capacity_v<S>>>;
     template <typename S>
     view_t(owner_t<S> &, auto &&...)
         -> view_t<stdx::span<typename S::value_type, stdx::ct_capacity_v<S>>>;

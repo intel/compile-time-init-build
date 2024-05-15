@@ -176,7 +176,7 @@ struct commute_component_t {
 
 struct daily_routine_component_t {
     constexpr static auto DAILY_ROUTINES = flow::action<"Daily Routines">([]() {
-        static const auto ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+        static auto const ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
         static bool daysRoutineComplete = false;
         static uint32_t dayCount = 1;

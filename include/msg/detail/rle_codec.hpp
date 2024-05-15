@@ -65,8 +65,8 @@ template <typename BitSetType> class rle_decoder {
         //
         // Returns the new current_bit (or num_bits if we pass the end of the
         // data) after the bits are consumed.
-        constexpr auto advance(std::size_t bits, std::size_t current_bit)
-            -> std::size_t {
+        constexpr auto advance(std::size_t bits,
+                               std::size_t current_bit) -> std::size_t {
             while (bits > 0 && current_bit < num_bits) {
                 // more available than we are consuming?
                 if (bits < current_run) {
@@ -110,8 +110,8 @@ template <typename BitSetType> class rle_decoder {
         }
     };
 
-    [[nodiscard]] constexpr auto make_chunk_enumerator() const
-        -> chunk_enumerator {
+    [[nodiscard]] constexpr auto
+    make_chunk_enumerator() const -> chunk_enumerator {
         return chunk_enumerator{rle_data};
     }
 
@@ -126,8 +126,8 @@ template <typename BitSetType> struct rle_codec {
     // assume worst case of each bitmap being alternating bit values
     using max_rle_data_type = stdx::cx_vector<std::byte, num_bits * 2>;
 
-    constexpr static auto encode(bitset_type const &bitset)
-        -> max_rle_data_type {
+    constexpr static auto
+    encode(bitset_type const &bitset) -> max_rle_data_type {
         max_rle_data_type data{};
         std::size_t count{0};
         bool last{false};

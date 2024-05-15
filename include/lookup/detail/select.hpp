@@ -24,8 +24,8 @@ constexpr inline auto fallback_select_lt(K lhs, K rhs, T first, T second) -> T {
 #if defined(__arc__) or defined(_ARC) or defined(_ARCOMPACT)
 template <typename K, typename T>
     requires(sizeof(T) <= 4) and (sizeof(K) <= 4)
-static inline auto optimized_select(K raw_lhs, K raw_rhs, T first, T second)
-    -> T {
+static inline auto optimized_select(K raw_lhs, K raw_rhs, T first,
+                                    T second) -> T {
     T result = second;
     auto const lhs = static_cast<std::uint32_t>(raw_lhs);
     auto const rhs = static_cast<std::uint32_t>(raw_rhs);
@@ -45,8 +45,8 @@ static inline auto optimized_select(K raw_lhs, K raw_rhs, T first, T second)
 
 template <typename K, typename T>
     requires(sizeof(T) <= 4) and (sizeof(K) <= 4)
-static inline auto optimized_select_lt(K raw_lhs, K raw_rhs, T first, T second)
-    -> T {
+static inline auto optimized_select_lt(K raw_lhs, K raw_rhs, T first,
+                                       T second) -> T {
     T result = second;
     auto const lhs = static_cast<std::uint32_t>(raw_lhs);
     auto const rhs = static_cast<std::uint32_t>(raw_rhs);

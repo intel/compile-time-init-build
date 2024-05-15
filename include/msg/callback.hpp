@@ -27,8 +27,8 @@ struct callback {
         return matcher(view);
     }
 
-    [[nodiscard]] auto handle(auto const &data, ExtraArgs const &...args) const
-        -> bool {
+    [[nodiscard]] auto handle(auto const &data,
+                              ExtraArgs const &...args) const -> bool {
         auto view = typename Msg::view_t{data};
         if (matcher(view)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "

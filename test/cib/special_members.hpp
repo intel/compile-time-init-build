@@ -6,8 +6,8 @@ struct move_only {
     constexpr move_only(move_only &&) = default;
     constexpr auto operator=(move_only &&) noexcept -> move_only & = default;
 
-    friend constexpr auto operator==(move_only const &lhs, move_only const &rhs)
-        -> bool {
+    friend constexpr auto operator==(move_only const &lhs,
+                                     move_only const &rhs) -> bool {
         return lhs.value == rhs.value;
     }
 

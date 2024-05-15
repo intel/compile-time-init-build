@@ -48,8 +48,8 @@ struct fast_hash_lookup {
             }
         }
 
-        [[nodiscard]] constexpr auto operator[](key_type const key) const
-            -> value_type {
+        [[nodiscard]] constexpr auto
+        operator[](key_type const key) const -> value_type {
             auto const idx = index(key);
 
             if constexpr (SearchLen > 0) {

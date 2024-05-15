@@ -65,10 +65,11 @@ struct indexed_builder
 
         constexpr auto baked_indices =
             temp_indices.apply([&]<typename... I>(I...) {
-                return indices{
+                return indices {
                     index{typename I::field_type{},
                           make_index_lookup.template operator()<I>(
-                              entry_index_seq.template operator()<I>())}...};
+                              entry_index_seq.template operator()<I>())}...
+                };
             });
 
         constexpr auto num_callbacks = BuilderValue::value.callbacks.size();

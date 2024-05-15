@@ -36,9 +36,8 @@ template <matcher L, matcher R> struct and_t : bin_op_t<and_t, " and ", L, R> {
         }
     }
 
-    [[nodiscard]] friend constexpr auto tag_invoke(cost_t,
-                                                   std::type_identity<and_t>)
-        -> std::size_t {
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(cost_t, std::type_identity<and_t>) -> std::size_t {
         return cost(std::type_identity<L>{}) + cost(std::type_identity<R>{}) +
                1u;
     }
@@ -73,8 +72,8 @@ template <matcher L, matcher R> struct and_t : bin_op_t<and_t, " and ", L, R> {
 template <matcher L, matcher R> and_t(L, R) -> and_t<L, R>;
 
 template <match::matcher L, match::matcher R>
-[[nodiscard]] constexpr auto operator&(L const &lhs, R const &rhs)
-    -> match::and_t<L, R> {
+[[nodiscard]] constexpr auto operator&(L const &lhs,
+                                       R const &rhs) -> match::and_t<L, R> {
     return {lhs, rhs};
 }
 
