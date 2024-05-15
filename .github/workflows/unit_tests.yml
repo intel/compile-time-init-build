@@ -13,7 +13,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 17
+  DEFAULT_LLVM_VERSION: 18
   DEFAULT_GCC_VERSION: 12
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 13, 14, 15, 16, 17]
+        version: [12, 13, 14, 15, 16, 17, 18]
         cxx_standard: [20]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
@@ -36,6 +36,15 @@ jobs:
             cc: "clang"
             cxx: "clang++"
             cxx_flags: "-stdlib=libstdc++"
+          - version: 18
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18
+            toolchain_root: "/usr/lib/llvm-18"
+          - version: 18
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18 && sudo apt install -y libc++-18-dev libc++abi-18-dev
+            cxx_flags: "-stdlib=libc++"
           - version: 17
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
@@ -87,6 +96,8 @@ jobs:
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: gcc
+            version: 18
           - compiler: gcc
             version: 17
           - compiler: gcc
@@ -176,8 +187,8 @@ jobs:
           - compiler: clang
             cc: "clang"
             cxx: "clang++"
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
-            toolchain_root: "/usr/lib/llvm-17"
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18
+            toolchain_root: "/usr/lib/llvm-18"
           - compiler: gcc
             cc: "gcc-12"
             cxx: "g++-12"
@@ -208,7 +219,7 @@ jobs:
       - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
 
       - name: Install build tools
-        run: sudo apt update && sudo apt install -y gcc-12 ninja-build valgrind
+        run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
 
       - name: Configure CMake
         env:
