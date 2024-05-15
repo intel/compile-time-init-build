@@ -7,8 +7,8 @@
 namespace match {
 constexpr inline class simplify_t {
     template <matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, M const &m)
-        -> M {
+    [[nodiscard]] friend constexpr auto tag_invoke(simplify_t,
+                                                   M const &m) -> M {
         return m;
     }
 

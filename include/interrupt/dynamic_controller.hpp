@@ -203,7 +203,7 @@ template <typename Root> struct dynamic_controller {
     template <bool Enable, typename... Fields>
     static inline void enable_by_field() {
         conc::call_in_critical_section<dynamic_controller>([] {
-            [[maybe_unused]] const auto enable = []<typename F>() -> void {
+            [[maybe_unused]] auto const enable = []<typename F>() -> void {
                 using R = typename F::RegisterType;
                 if constexpr (Enable) {
                     dynamic_enables<R> |= F::get_mask();

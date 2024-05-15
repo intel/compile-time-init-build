@@ -103,8 +103,8 @@ CONSTEVAL auto keys_are_unique(std::array<T, S> const &keys) -> bool {
 }
 
 template <typename T, std::size_t S>
-CONSTEVAL auto with_mask(T const mask, std::array<T, S> const &keys)
-    -> std::array<T, S> {
+CONSTEVAL auto with_mask(T const mask,
+                         std::array<T, S> const &keys) -> std::array<T, S> {
     std::array<T, S> new_keys{};
 
     std::transform(keys.begin(), keys.end(), new_keys.begin(),
@@ -157,8 +157,8 @@ struct pseudo_pext_lookup {
         Value default_value;
         Storage storage;
 
-        [[nodiscard]] constexpr auto operator[](key_type key) const
-            -> value_type {
+        [[nodiscard]] constexpr auto
+        operator[](key_type key) const -> value_type {
             auto const raw_key = detail::as_raw_integral(key);
             auto const e = storage[pext_func(raw_key)];
             return detail::select(raw_key, e.key_, e.value_, default_value);

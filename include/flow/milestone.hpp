@@ -16,8 +16,8 @@ struct rt_node {
     FunctionPtr log_name;
 
   private:
-    friend constexpr auto operator==(rt_node const &, rt_node const &)
-        -> bool = default;
+    friend constexpr auto operator==(rt_node const &,
+                                     rt_node const &) -> bool = default;
 };
 
 template <stdx::ct_string Name> struct ct_node : rt_node {

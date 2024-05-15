@@ -250,8 +250,8 @@ template <bits_locator... BLs> struct field_locator_t {
     }
 
     template <field_spec Spec, stdx::range R>
-    constexpr static auto insert(R &&r, typename Spec::type const &value)
-        -> void {
+    constexpr static auto insert(R &&r,
+                                 typename Spec::type const &value) -> void {
         using raw_t = integral_type_for<typename Spec::type>;
         auto raw = stdx::bit_cast<raw_t>(value);
         auto const insert_bits = [&]<bits_locator B>() {
@@ -302,8 +302,8 @@ template <> struct at<dword_index_t, msb_t, lsb_t> {
     msb_t msb_{};
     lsb_t lsb_{};
 
-    [[nodiscard]] constexpr auto index() const
-        -> std::underlying_type_t<dword_index_t> {
+    [[nodiscard]] constexpr auto
+    index() const -> std::underlying_type_t<dword_index_t> {
         return stdx::to_underlying(index_);
     }
     [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
@@ -316,8 +316,8 @@ template <> struct at<dword_index_t, msb_t, lsb_t> {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
-    [[nodiscard]] constexpr auto sort_key() const
-        -> std::underlying_type_t<lsb_t> {
+    [[nodiscard]] constexpr auto
+    sort_key() const -> std::underlying_type_t<lsb_t> {
         return index() * 32u + stdx::to_underlying(lsb_);
     }
 };
@@ -326,8 +326,8 @@ template <> struct at<msb_t, lsb_t> {
     msb_t msb_{};
     lsb_t lsb_{};
 
-    [[nodiscard]] constexpr auto index() const
-        -> std::underlying_type_t<lsb_t> {
+    [[nodiscard]] constexpr auto
+    index() const -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_) / 32u;
     }
     [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
@@ -340,8 +340,8 @@ template <> struct at<msb_t, lsb_t> {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
-    [[nodiscard]] constexpr auto sort_key() const
-        -> std::underlying_type_t<lsb_t> {
+    [[nodiscard]] constexpr auto
+    sort_key() const -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_);
     }
 };

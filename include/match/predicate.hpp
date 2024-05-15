@@ -14,8 +14,8 @@ template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
     using is_matcher = void;
     [[no_unique_address]] P pred;
 
-    [[nodiscard]] constexpr auto operator()(auto const &event) const
-        -> decltype(pred(event)) {
+    [[nodiscard]] constexpr auto
+    operator()(auto const &event) const -> decltype(pred(event)) {
         return pred(event);
     }
 

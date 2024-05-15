@@ -9,4 +9,4 @@ namespace cib {
 template <stdx::ct_string Name, typename... Args>
 constexpr auto func_decl =
     [](Args... args) -> void { cib_func<Name>(args...); };
-}
+} // namespace cib
