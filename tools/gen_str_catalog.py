@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from functools import partial
 import itertools
 import json
 import re
@@ -61,6 +62,11 @@ def extract_string_id(line_m):
 module_re = re.compile(r"sc::module_string<sc::undefined<void, char, (.*)>\s?>")
 
 
+def module_string(module) -> str:
+    string_tuple = module.replace("(char)", "")
+    return "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
+
+
 def extract_module_id(line_m):
     return module_re.match(line_m.group(3)).group(1)
 
@@ -82,6 +88,10 @@ def stable_msg_key(msg: dict):
     return hash(msg["level"]) ^ hash(msg["msg"]) ^ hash("".join(msg["arg_types"]))
 
 
+def stable_module_key(module: str):
+    return module_string(module)
+
+
 def read_input(filenames: list[str], stable_ids):
     line_re = re.compile(r"^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
 
@@ -97,20 +107,29 @@ def read_input(filenames: list[str], stable_ids):
     strings = filter(lambda x: not isinstance(x, str), messages)
     modules = filter(lambda x: isinstance(x, str), messages)
 
-    old_ids = set(stable_ids.values())
-    id_gen = itertools.filterfalse(old_ids.__contains__, itertools.count(0))
-
-    def get_id(msg):
-        key = stable_msg_key(msg)
+    def get_id(stable_ids, key_fn, gen, obj):
+        key = key_fn(obj)
         if key in stable_ids:
             return stable_ids[key]
         else:
-            return next(id_gen)
+            return next(gen)
+
+    stable_msg_ids, stable_module_ids = stable_ids
+
+    old_msg_ids = set(stable_msg_ids.values())
+    msg_id_gen = itertools.filterfalse(old_msg_ids.__contains__, itertools.count(0))
+    get_msg_id = partial(get_id, stable_msg_ids, stable_msg_key, msg_id_gen)
+
+    old_module_ids = set(stable_module_ids.values())
+    module_id_gen = itertools.filterfalse(
+        old_module_ids.__contains__, itertools.count(0)
+    )
+    get_module_id = partial(get_id, stable_module_ids, stable_module_key, module_id_gen)
 
     unique_strings = {i[0][0]: i for i in strings}.values()
     return (
-        set(modules),
-        {item[0]: {**item[1], "id": get_id(item[1])} for item in unique_strings},
+        {m: {"string": module_string(m), "id": get_module_id(m)} for m in set(modules)},
+        {item[0]: {**item[1], "id": get_msg_id(item[1])} for item in unique_strings},
     )
 
 
@@ -125,16 +144,11 @@ template<> {catalog_type} {{
 }}"""
 
 
-def module_string(module) -> str:
-    string_tuple = module.replace("(char)", "")
-    return "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
-
-
-def make_cpp_module_defn(n: int, module) -> str:
+def make_cpp_module_defn(m: str, text: str, n: int) -> str:
     return f"""/*
-    "{module_string(module)}"
+    "{text}"
  */
-template<> unsigned int module<sc::module_string<sc::undefined<void, char, {module}>>>() {{
+template<> unsigned int module<sc::module_string<sc::undefined<void, char, {m}>>>() {{
     return {n};
 }}"""
 
@@ -146,7 +160,9 @@ def write_cpp(messages, modules, extra_headers: list[str], filename: str):
         cpp_catalog_defns = (make_cpp_catalog_defn(k, v) for k, v in messages.items())
         f.write("\n".join(cpp_catalog_defns))
         f.write("\n\n")
-        cpp_module_defns = (make_cpp_module_defn(n, m) for n, m in enumerate(modules))
+        cpp_module_defns = (
+            make_cpp_module_defn(k, m["string"], m["id"]) for k, m in modules.items()
+        )
         f.write("\n".join(cpp_module_defns))
 
 
@@ -183,8 +199,8 @@ def extract_enums(filename: str):
     return enums
 
 
-def write_json(messages, extra_inputs: list[str], filename: str):
-    str_catalog = dict(messages=list(messages.values()))
+def write_json(messages, modules, extra_inputs: list[str], filename: str):
+    str_catalog = dict(messages=list(messages.values()), modules=list(modules.values()))
     for extra in extra_inputs:
         with open(extra, "r") as f:
             str_catalog.update(json.load(f))
@@ -197,7 +213,10 @@ def read_stable(stable_filenames: list[str]):
     for filename in stable_filenames:
         with open(filename, "r") as f:
             stable_catalog.update(json.load(f))
-    return {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]}
+    return (
+        {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]},
+        {m["string"]: m["id"] for m in stable_catalog["modules"]},
+    )
 
 
 def serialize_guids(client_node: et.Element, guid_id: str, guid_mask: str):
@@ -223,9 +242,11 @@ def serialize_enums(client_node: et.Element, enums):
 
 def serialize_modules(client_node: et.Element, modules):
     syst_modules = et.SubElement(client_node, "syst:Modules")
-    for n, m in enumerate(modules):
-        syst_module = et.SubElement(syst_modules, "syst:Module", attrib={"ID": f"{n}"})
-        syst_module.text = f"<![CDATA[{module_string(m)}]]>"
+    for m in modules.values():
+        syst_module = et.SubElement(
+            syst_modules, "syst:Module", attrib={"ID": f"{m['id']}"}
+        )
+        syst_module.text = f"<![CDATA[{m['string']}]]>"
 
 
 def serialize_messages(short_node: et.Element, catalog_node: et.Element, messages):
@@ -377,7 +398,7 @@ def main():
         write_cpp(messages, modules, args.cpp_headers, args.cpp_output)
 
     if args.json_output is not None:
-        write_json(messages, args.json_input, args.json_output)
+        write_json(messages, modules, args.json_input, args.json_output)
 
     if args.xml_output is not None:
         enums = {}

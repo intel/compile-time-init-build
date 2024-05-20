@@ -16,6 +16,7 @@ extern auto log_one_rt_arg() -> void;
 extern auto log_two_rt_args() -> void;
 extern auto log_rt_enum_arg() -> void;
 extern auto log_with_non_default_module_id() -> void;
+extern auto log_with_fixed_module_id() -> void;
 
 TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
@@ -69,4 +70,12 @@ TEST_CASE("log module ids change", "[catalog]") {
     log_with_non_default_module_id();
     CHECK((last_header & expected_static) == expected_static);
     CHECK((last_header ^ default_header) == (1u << 16u));
+}
+
+TEST_CASE("log with fixed module id", "[catalog]") {
+    std::uint32_t expected_static = (1u << 24u) | (7u << 4u) | 3u;
+
+    log_with_fixed_module_id();
+    CHECK((last_header & expected_static) == expected_static);
+    CHECK((last_header & ~expected_static) == (17u << 16u));
 }

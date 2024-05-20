@@ -9,5 +9,11 @@
             "id": 42
         }
     ],
+    "modules": [
+        {
+            "string": "fixed",
+            "id": 17
+        }
+    ],
     "extra_key": "extra_value"
 }
