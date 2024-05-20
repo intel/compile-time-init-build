@@ -23,6 +23,7 @@ auto log_zero_args() -> void;
 auto log_one_ct_arg() -> void;
 auto log_one_rt_arg() -> void;
 auto log_with_non_default_module_id() -> void;
+auto log_with_fixed_module_id() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
@@ -47,4 +48,11 @@ auto log_with_non_default_module_id() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
         format("ModuleID string with {} placeholder"_sc, 1));
+}
+
+auto log_with_fixed_module_id() -> void {
+    CIB_LOG_MODULE("fixed");
+    auto cfg = logging::mipi::config{test_log_args_destination{}};
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+        format("Fixed ModuleID string with {} placeholder"_sc, 1));
 }
