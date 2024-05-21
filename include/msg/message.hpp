@@ -197,9 +197,7 @@ template <stdx::ct_string Name, typename... Fields> class message_access {
         using Field =
             std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
         check<Field, std::remove_cvref_t<R>>();
-        Field::insert(
-            std::forward<R>(r),
-            static_cast<typename Field::value_type>(Field::default_value));
+        Field::insert_default(std::forward<R>(r));
     }
 
     template <typename N, stdx::range R> constexpr static auto get(R &&r) {
@@ -384,10 +382,34 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         using definition_t = message;
         using storage_t = Storage;
 
-        constexpr owner_t() { this->set(Fields{}...); }
+        constexpr owner_t() {
+            using uninit_fields =
+                boost::mp11::mp_remove_if<boost::mp11::mp_list<Fields...>,
+                                          has_default_value_t>;
+            static_assert(boost::mp11::mp_empty<uninit_fields>::value,
+                          "All fields must be initialized or defaulted");
+            this->set(Fields{}...);
+        }
 
-        template <some_field_value... Vs>
-        explicit constexpr owner_t(Vs... vs) : owner_t{} {
+        template <some_field_value... Vs> explicit constexpr owner_t(Vs... vs) {
+            using defaulted_fields = boost::mp11::mp_transform<
+                name_for,
+                boost::mp11::mp_copy_if<boost::mp11::mp_list<Fields...>,
+                                        has_default_value_t>>;
+            using initialized_fields =
+                boost::mp11::mp_transform<name_for,
+                                          boost::mp11::mp_list<Vs...>>;
+
+            using all_fields =
+                boost::mp11::mp_transform<name_for,
+                                          boost::mp11::mp_list<Fields...>>;
+            using uninit_fields =
+                boost::mp11::mp_set_difference<all_fields, defaulted_fields,
+                                               initialized_fields>;
+            static_assert(boost::mp11::mp_empty<uninit_fields>::value,
+                          "All fields must be initialized or defaulted");
+
+            this->set(Fields{}...);
             this->set(vs...);
         }
 

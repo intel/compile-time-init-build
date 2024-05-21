@@ -12,11 +12,11 @@ using test_id_field =
     msg::field<"test_id_field",
                std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
 
-using msg_defn = message<"test_msg", test_id_field::WithRequired<0x80>>;
+using msg_defn = message<"test_msg", test_id_field::with_required<0x80>>;
 using test_msg_t = owning<msg_defn>;
 
 constexpr auto test_callback = msg::callback<"test_callback", msg_defn>(
-    test_id_field::equal_to<0x81>, [](auto) {});
+    msg::equal_to<test_id_field, 0x81>, [](auto) {});
 
 using index_spec = msg::index_spec<test_id_field>;
 struct test_service : msg::indexed_service<index_spec, test_msg_t> {};

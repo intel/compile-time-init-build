@@ -23,7 +23,7 @@ using msg_defn = message<"msg", id_field, field1, field2, field3>;
 using test_msg_t = msg::owning<msg_defn>;
 using msg_view_t = msg::const_view<msg_defn>;
 
-constexpr auto id_match = id_field::equal_to<0x80>;
+constexpr auto id_match = msg::equal_to<id_field, 0x80>;
 
 bool callback_success;
 

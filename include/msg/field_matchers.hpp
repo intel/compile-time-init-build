@@ -178,13 +178,26 @@ struct rel_matcher_t {
 template <typename Field, auto ExpectedValue>
 using less_than_t = rel_matcher_t<std::less<>, Field, ExpectedValue>;
 template <typename Field, auto ExpectedValue>
+constexpr auto less_than = less_than_t<Field, ExpectedValue>{};
+
+template <typename Field, auto ExpectedValue>
 using less_than_or_equal_to_t =
     rel_matcher_t<std::less_equal<>, Field, ExpectedValue>;
 template <typename Field, auto ExpectedValue>
+constexpr auto less_than_or_equal_to =
+    less_than_or_equal_to_t<Field, ExpectedValue>{};
+
+template <typename Field, auto ExpectedValue>
 using greater_than_t = rel_matcher_t<std::greater<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+constexpr auto greater_than = greater_than_t<Field, ExpectedValue>{};
+
 template <typename Field, auto ExpectedValue>
 using greater_than_or_equal_to_t =
     rel_matcher_t<std::greater_equal<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+constexpr auto greater_than_or_equal_to =
+    greater_than_or_equal_to_t<Field, ExpectedValue>{};
 
 template <typename Field, auto X, decltype(X) Y>
 [[nodiscard]] constexpr auto
@@ -218,6 +231,8 @@ tag_invoke(match::implies_t, greater_than_t<Field, X> const &,
 
 template <typename Field, auto ExpectedValue>
 using equal_to_t = rel_matcher_t<std::equal_to<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+constexpr auto equal_to = equal_to_t<Field, ExpectedValue>{};
 
 template <typename Field, auto X, typename RelOp, decltype(X) Y>
 [[nodiscard]] constexpr auto
@@ -235,6 +250,8 @@ constexpr auto tag_invoke(index_terms_t, equal_to_t<Field, X> const &,
 
 template <typename Field, auto ExpectedValue>
 using not_equal_to_t = rel_matcher_t<std::not_equal_to<>, Field, ExpectedValue>;
+template <typename Field, auto ExpectedValue>
+constexpr auto not_equal_to = not_equal_to_t<Field, ExpectedValue>{};
 
 template <typename Field, auto X>
 constexpr auto tag_invoke(index_not_terms_t, not_equal_to_t<Field, X> const &,
@@ -296,4 +313,11 @@ tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, X> const &,
 template <typename Field, auto... ExpectedValues>
 using in_t =
     decltype((equal_to_t<Field, ExpectedValues>{} or ... or match::never));
+template <typename Field, auto... ExpectedValues>
+constexpr auto in = in_t<Field, ExpectedValues...>{};
+
+template <typename Field>
+using equal_default_t = equal_to_t<Field, Field::default_value>;
+template <typename Field>
+constexpr auto equal_default = equal_default_t<Field>{};
 } // namespace msg

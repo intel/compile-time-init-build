@@ -75,22 +75,22 @@ using compact64_build_id_f = field<"build_id", std::uint64_t>::located<
     at{1_dw, 31_msb, 0_lsb}, at{0_dw, 31_msb, 30_lsb}, at{0_dw, 23_msb, 4_lsb}>;
 
 using normal_build_msg_t =
-    message<"normal_build", type_f::WithRequired<type::Build>,
-            opt_len_f::WithRequired<true>,
-            build_subtype_f::WithRequired<build_subtype::Long>, payload_len_f>;
+    message<"normal_build", type_f::with_required<type::Build>,
+            opt_len_f::with_required<true>,
+            build_subtype_f::with_required<build_subtype::Long>, payload_len_f>;
 using compact32_build_msg_t =
-    message<"compact32_build", type_f::WithRequired<type::Build>,
-            build_subtype_f::WithRequired<build_subtype::Compact32>,
+    message<"compact32_build", type_f::with_required<type::Build>,
+            build_subtype_f::with_required<build_subtype::Compact32>,
             compact32_build_id_f>;
 using compact64_build_msg_t =
-    message<"compact64_build", type_f::WithRequired<type::Build>,
-            build_subtype_f::WithRequired<build_subtype::Compact64>,
+    message<"compact64_build", type_f::with_required<type::Build>,
+            build_subtype_f::with_required<build_subtype::Compact64>,
             compact64_build_id_f>;
 
 using short32_payload_f =
     field<"payload", std::uint32_t>::located<at{0_dw, 31_msb, 4_lsb}>;
 using short32_msg_t =
-    message<"short32", type_f::WithRequired<type::Short32>, short32_payload_f>;
+    message<"short32", type_f::with_required<type::Short32>, short32_payload_f>;
 
 using catalog_subtype_f =
     field<"subtype", catalog_subtype>::located<at{0_dw, 29_msb, 24_lsb}>;
@@ -100,9 +100,9 @@ using module_id_f =
     field<"module_id", std::uint8_t>::located<at{0_dw, 22_msb, 16_lsb}>;
 
 using catalog_msg_t =
-    message<"catalog", type_f::WithRequired<type::Catalog>, severity_f,
+    message<"catalog", type_f::with_required<type::Catalog>, severity_f,
             module_id_f,
-            catalog_subtype_f::WithRequired<catalog_subtype::Id32_Pack32>>;
+            catalog_subtype_f::with_required<catalog_subtype::Id32_Pack32>>;
 } // namespace defn
 
 template <typename TDestinations> struct log_handler {
@@ -185,8 +185,7 @@ template <typename TDestinations> struct log_handler {
                                         MsgDataTypes... msg_data) -> void {
         using namespace msg;
         if constexpr (sizeof...(msg_data) == 0u) {
-            owning<defn::short32_msg_t> message{"type"_field = 1,
-                                                "payload"_field = id};
+            owning<defn::short32_msg_t> message{"payload"_field = id};
             dispatch_pass_by_args(message.data()[0]);
         } else if constexpr (sizeof...(MsgDataTypes) <= 2u) {
             owning<defn::catalog_msg_t> message{"severity"_field = Level,

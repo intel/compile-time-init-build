@@ -78,12 +78,12 @@ For example, a message type looks like this:
 ----
 using my_message_defn = msg::message<
     "my_message",                      // name
-    my_field::WithRequired<0x80>>;     // field(s)
+    my_field::with_required<0x80>>;     // field(s)
 
 using my_message = msg::owning<my_message_defn>;
 ----
 
-Here the message has only one field. `WithRequired<0x80>` is an alias
+Here the message has only one field. `with_required<0x80>` is an alias
 specialization that expresses `my_field` with a matcher that is
 `equal_to_t<0x80>`.
 
@@ -132,8 +132,8 @@ in this way can add matchers to existing fields:
 
 [source,cpp]
 ----
-using msg1_defn = extend<header_defn, "msg", type_f::WithRequired<1>, payload_f>;
-using msg2_defn = extend<header_defn, "msg", type_f::WithRequired<2>, payload_f>;
+using msg1_defn = extend<header_defn, "msg", type_f::with_required<1>, payload_f>;
+using msg2_defn = extend<header_defn, "msg", type_f::with_required<2>, payload_f>;
 ----
 
 ==== Owning vs view types

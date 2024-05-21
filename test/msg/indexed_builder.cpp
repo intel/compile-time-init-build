@@ -34,7 +34,7 @@ struct test_service : indexed_service<index_spec, test_msg_t> {};
 bool callback_success;
 
 constexpr auto test_callback = callback<"TestCallback", msg_defn>(
-    test_id_field::in<0x80>, [](auto) { callback_success = true; });
+    msg::in<test_id_field, 0x80>, [](auto) { callback_success = true; });
 
 struct test_project {
     constexpr static auto config = cib::config(
@@ -90,7 +90,7 @@ TEST_CASE("match output failure", "[handler_builder]") {
 
 namespace {
 constexpr auto test_callback_equals = msg::callback<"TestCallback", msg_defn>(
-    test_id_field::equal_to<0x80>, [](auto) { callback_success = true; });
+    msg::equal_to<test_id_field, 0x80>, [](auto) { callback_success = true; });
 
 struct test_project_equals {
     constexpr static auto config =
@@ -117,14 +117,15 @@ TEST_CASE("build handler field equal_to", "[indexed_builder]") {
 namespace {
 constexpr auto test_callback_multi_field =
     msg::callback<"test_callback_multi_field", msg_defn>(
-        test_id_field::in<0x80, 0x42> and test_opcode_field::equal_to<1>,
+        msg::in<test_id_field, 0x80, 0x42> and
+            msg::equal_to<test_opcode_field, 1>,
         [](auto) { callback_success = true; });
 
 bool callback_success_single_field;
 
 constexpr auto test_callback_single_field =
     msg::callback<"test_callback_single_field", msg_defn>(
-        test_id_field::equal_to<0x50>,
+        msg::equal_to<test_id_field, 0x50>,
         [](auto) { callback_success_single_field = true; });
 
 struct test_project_multi_field {
@@ -196,7 +197,7 @@ TEST_CASE("message matching partial index but not callback matcher",
 namespace {
 constexpr auto test_callback_not_single_field =
     msg::callback<"test_callback_not_single_field", msg_defn>(
-        not test_id_field::equal_to<0x50>,
+        not msg::equal_to<test_id_field, 0x50>,
         [](auto) { callback_success_single_field = true; });
 
 struct test_project_not_single_field {
@@ -227,7 +228,8 @@ TEST_CASE("build handler not single field", "[indexed_builder]") {
 namespace {
 constexpr auto test_callback_not_multi_field =
     msg::callback<"test_callback_multi_field", msg_defn>(
-        not test_id_field::in<0x80, 0x42> and test_opcode_field::equal_to<1>,
+        not msg::in<test_id_field, 0x80, 0x42> and
+            msg::equal_to<test_opcode_field, 1>,
         [](auto) { callback_success = true; });
 
 struct test_project_not_multi_field {
@@ -277,7 +279,8 @@ TEST_CASE("build handler not multi fields", "[indexed_builder]") {
 namespace {
 constexpr auto test_callback_disjunction =
     msg::callback<"test_callback_multi_field", msg_defn>(
-        test_id_field::equal_to<0x80> or test_opcode_field::equal_to<1>,
+        msg::equal_to<test_id_field, 0x80> or
+            msg::equal_to<test_opcode_field, 1>,
         [](auto) { callback_success = true; });
 
 struct test_project_disjunction {
@@ -308,7 +311,7 @@ TEST_CASE("build handler disjunction", "[indexed_builder]") {
 }
 
 namespace {
-using msg_match_defn = message<"test_msg", test_id_field::WithRequired<0x80>>;
+using msg_match_defn = message<"test_msg", test_id_field::with_default<0x80>>;
 using test_msg_match_t = owning<msg_match_defn>;
 
 using msg_match_index_spec = msg::index_spec<test_id_field>;
@@ -317,7 +320,8 @@ struct test_msg_match_service
 
 constexpr auto test_msg_match_callback =
     msg::callback<"TestCallback", msg_match_defn>(
-        test_id_field::equal_to<0x80>, [](auto) { callback_success = true; });
+        msg::equal_to<test_id_field, 0x80>,
+        [](auto) { callback_success = true; });
 
 struct test_msg_match_project {
     constexpr static auto config = cib::config(
@@ -332,8 +336,7 @@ TEST_CASE("match output success (message matcher)", "[handler_builder]") {
     test_nexus.init();
 
     callback_success = false;
-    cib::service<test_msg_match_service>->handle(
-        test_msg_match_t{"test_id_field"_field = 0x80});
+    cib::service<test_msg_match_service>->handle(test_msg_match_t{});
     CHECK(callback_success);
 
     callback_success = false;
@@ -345,7 +348,8 @@ TEST_CASE("match output success (message matcher)", "[handler_builder]") {
 namespace {
 constexpr auto test_callback_impossible =
     msg::callback<"test_callback_impossible", msg_defn>(
-        test_id_field::equal_to<0x80> and test_id_field::equal_to<0x81>,
+        msg::equal_to<test_id_field, 0x80> and
+            msg::equal_to<test_id_field, 0x81>,
         [](auto) { callback_success = true; });
 
 struct test_project_impossible {
@@ -366,7 +370,7 @@ int callback_extra_arg{};
 
 constexpr auto test_callback_extra_args =
     msg::callback<"test_callback_extra_args", msg_defn, int>(
-        test_id_field::equal_to<0x80>, [](auto, int i) {
+        msg::equal_to<test_id_field, 0x80>, [](auto, int i) {
             callback_success = true;
             callback_extra_arg = i;
         });

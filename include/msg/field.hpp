@@ -1,5 +1,6 @@
 #pragma once
 
+#include <match/constant.hpp>
 #include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
 #include <sc/format.hpp>
@@ -356,12 +357,48 @@ using locator_for =
 
 template <at... Ats> constexpr inline auto field_size = (0u + ... + Ats.size());
 
-template <typename Name, typename T = std::uint32_t, T DefaultValue = T{},
+template <typename T, T V = T{}> struct with_default {
+    constexpr static auto default_value = V;
+    template <typename F> using default_matcher_t = msg::equal_to_t<F, V>;
+    using is_mutable_t = void;
+    template <T X> constexpr static auto is_compatible_value = true;
+};
+
+template <typename T, T V = T{}> struct with_const_default {
+    constexpr static auto default_value = V;
+    template <typename F> using default_matcher_t = msg::equal_to_t<F, V>;
+    template <T X> constexpr static auto is_compatible_value = X == V;
+};
+
+struct without_default {
+    template <typename F> using default_matcher_t = match::never_t;
+    using is_mutable_t = void;
+    template <auto X> constexpr static auto is_compatible_value = true;
+};
+
+template <typename T>
+concept has_default_value = requires { T::default_value; };
+
+template <typename T>
+using has_default_value_t = std::bool_constant<has_default_value<T>>;
+
+template <typename T>
+concept is_mutable_value = requires { typename T::is_mutable_t; };
+
+template <auto V, typename D>
+concept compatible_with_default = D::template is_compatible_value<V>;
+
+template <typename Name, typename T = std::uint32_t, auto... Ats>
+struct field_id_t {};
+
+template <typename Name, typename T = std::uint32_t,
+          typename Default = detail::with_default<T>,
           match::matcher M = match::always_t, auto... Ats>
     requires std::is_trivially_copyable_v<T> and
                  (... and field_location<decltype(Ats)>)
 class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
-                public detail::locator_for<Ats...> {
+                public detail::locator_for<Ats...>,
+                public Default {
     using spec_t = field_spec_t<Name, T, detail::field_size<Ats...>>;
     using locator_t = detail::locator_for<Ats...>;
 
@@ -375,10 +412,10 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
   public:
     using name_t = Name;
-    using field_id = field_t<Name, T, T{}, match::always_t, Ats...>;
+    using field_id = field_id_t<Name, T, Ats...>;
     using value_type = T;
+    using matcher_t = M;
     constexpr static auto sort_key = std::min({Ats.sort_key()...});
-    constexpr static auto default_value = DefaultValue;
 
     template <stdx::range R>
     [[nodiscard]] constexpr static auto extract(R &&r) -> value_type {
@@ -387,7 +424,16 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     template <stdx::range R>
     constexpr static void insert(R &&r, value_type const &value) {
+        static_assert(is_mutable_value<field_t>,
+                      "Can't change a field with a required value!");
         locator_t::template insert<spec_t>(std::forward<R>(r), value);
+    }
+
+    template <stdx::range R> constexpr static void insert_default(R &&r) {
+        if constexpr (has_default_value<Default>) {
+            locator_t::template insert<spec_t>(std::forward<R>(r),
+                                               Default::default_value);
+        }
     }
 
     template <typename DataType> constexpr static auto fits_inside() -> bool {
@@ -401,80 +447,84 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
         return locator_t::template extent_in<U>();
     }
 
-    using matcher_t = M;
-
-    template <T expected_value>
-    constexpr static msg::equal_to_t<field_t, expected_value> equal_to{};
-
-    constexpr static msg::equal_to_t<field_t, DefaultValue> match_default{};
-
-    template <T... expected_values>
-    constexpr static msg::in_t<field_t, expected_values...> in{};
-
-    template <T expected_value>
-    constexpr static msg::greater_than_t<field_t, expected_value>
-        greater_than{};
-
-    template <T expected_value>
-    constexpr static msg::greater_than_or_equal_to_t<field_t, expected_value>
-        greater_than_or_equal_to{};
-
-    template <T expected_value>
-    constexpr static msg::less_than_t<field_t, expected_value> less_than{};
-
-    template <T expected_value>
-    constexpr static msg::less_than_or_equal_to_t<field_t, expected_value>
-        less_than_or_equal_to{};
-
-    template <T NewDefaultValue>
-    using WithDefault = field_t<Name, T, NewDefaultValue, M, Ats...>;
-
-    template <typename NewMatcher>
-    using WithMatch = field_t<Name, T, DefaultValue, NewMatcher, Ats...>;
-
-    template <T NewRequiredValue>
-    using WithRequired =
-        field_t<Name, T, NewRequiredValue,
-                msg::equal_to_t<field_t, NewRequiredValue>, Ats...>;
-
-    template <T... PotentialValues>
-    using WithIn =
-        field_t<Name, T, T{}, msg::in_t<field_t, PotentialValues...>, Ats...>;
-
-    template <T NewGreaterValue>
-    using WithGreaterThan =
-        field_t<Name, T, NewGreaterValue,
-                msg::greater_than_t<field_t, NewGreaterValue>, Ats...>;
-
-    template <T NewGreaterValue>
-    using WithGreaterThanOrEqualTo =
-        field_t<Name, T, NewGreaterValue,
-                msg::greater_than_or_equal_to_t<field_t, NewGreaterValue>,
-                Ats...>;
-
-    template <T NewLesserValue>
-    using WithLessThan =
-        field_t<Name, T, NewLesserValue,
-                msg::less_than_or_equal_to_t<field_t, NewLesserValue>, Ats...>;
-
-    template <T NewLesserValue>
-    using WithLessThanOrEqualTo =
-        field_t<Name, T, NewLesserValue,
-                msg::less_than_or_equal_to_t<field_t, NewLesserValue>, Ats...>;
-
     [[nodiscard]] constexpr static auto describe(value_type v) {
         return format("{}: 0x{:x}"_sc, spec_t::name, v);
     }
+
+    // ======================================================================
+    // default construction values
+    template <T V>
+    using with_default =
+        field_t<Name, T, detail::with_default<T, V>, M, Ats...>;
+
+    template <T V>
+    using with_const_default =
+        field_t<Name, T, detail::with_const_default<T, V>, M, Ats...>;
+
+    using without_default =
+        field_t<Name, T, detail::without_default, M, Ats...>;
+
+    // ======================================================================
+    // matcher values
+    template <typename NewMatcher>
+    using with_matcher = field_t<Name, T, Default, NewMatcher, Ats...>;
+
+    template <T V>
+        requires compatible_with_default<V, Default>
+    using with_equal_to =
+        field_t<Name, T, Default, msg::equal_to_t<field_t, V>, Ats...>;
+
+    template <T... Vs>
+        requires(... or compatible_with_default<Vs, Default>)
+    using with_in =
+        field_t<Name, T, Default, msg::in_t<field_t, Vs...>, Ats...>;
+
+    template <T V>
+    using with_greater_than =
+        field_t<Name, T, Default, msg::greater_than_t<field_t, V>, Ats...>;
+
+    template <T V>
+    using with_greater_than_or_equal_to =
+        field_t<Name, T, Default, msg::greater_than_or_equal_to_t<field_t, V>,
+                Ats...>;
+
+    template <T V>
+    using with_less_than =
+        field_t<Name, T, Default, msg::less_than_or_equal_to_t<field_t, V>,
+                Ats...>;
+
+    template <T V>
+    using with_less_than_or_equal_to =
+        field_t<Name, T, Default, msg::less_than_or_equal_to_t<field_t, V>,
+                Ats...>;
+
+    // ======================================================================
+    // "const value" for construction and matching
+    template <T V>
+    using with_required = field_t<Name, T, detail::with_const_default<T, V>,
+                                  msg::equal_to_t<field_t, V>, Ats...>;
+
+    // ======================================================================
+    // legacy aliases
+    template <typename X> using WithMatch = with_matcher<X>;
+    template <T... Vs> using WithIn = with_in<Vs...>;
+    template <T V> using WithGreaterThan = with_greater_than<V>;
+    template <T V>
+    using WithGreaterThanOrEqualTo = with_greater_than_or_equal_to<V>;
+    template <T V> using WithLessThan = with_less_than<V>;
+    template <T V> using WithLessThanOrEqualTo = with_less_than_or_equal_to<V>;
+    template <T V> using WithRequired = with_required<V>;
 };
 } // namespace detail
 
 template <stdx::ct_string Name, typename T = std::uint32_t,
-          T DefaultValue = T{}, match::matcher M = match::always_t>
+          typename Default = detail::with_default<T>,
+          match::matcher M = match::always_t>
 struct field {
     template <auto... Ats>
         requires(... and field_location<decltype(Ats)>)
     using located = detail::field_t<
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
-        DefaultValue, M, Ats...>;
+        Default, M, Ats...>;
 };
 } // namespace msg
