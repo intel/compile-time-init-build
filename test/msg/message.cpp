@@ -13,7 +13,7 @@ using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 8_lsb},
                                                    at{1_dw, 7_msb, 0_lsb}>;
 
 using msg_defn =
-    message<"msg", id_field::WithRequired<0x80>, field1, field2, field3>;
+    message<"msg", id_field::with_required<0x80>, field1, field2, field3>;
 using test_msg = owning<msg_defn>;
 
 std::string log_buffer{};
@@ -119,19 +119,20 @@ TEST_CASE("view with external storage (alternate value_type)", "[message]") {
 
 TEST_CASE("view with mutable external storage", "[message]") {
     auto arr = typename msg_defn::default_storage_t{0x8000'ba11, 0x0042'd00d};
-    mutable_view<msg_defn> msg{arr, "id"_field = 0x81};
+    mutable_view<msg_defn> msg{arr, "f2"_field = 0x41};
+    CHECK(0x0041'd00d == arr[1]);
 
     msg.set("f1"_field = 0);
-    CHECK(0x8100'0000 == arr[0]);
+    CHECK(0x8000'0000 == arr[0]);
 }
 
 TEST_CASE("view constructed from span (mutable)", "[message]") {
     auto arr = typename msg_defn::default_storage_t{0x8000'ba11, 0x0042'd00d};
     auto s = stdx::span{arr};
-    msg_defn::view_t msg{s, "id"_field = 0x81};
+    msg_defn::view_t msg{s, "f2"_field = 0x41};
 
     msg.set("f1"_field = 0);
-    CHECK(0x8100'0000 == arr[0]);
+    CHECK(0x8000'0000 == arr[0]);
 }
 
 TEST_CASE("view constructed from span (const)", "[message]") {
@@ -155,8 +156,8 @@ TEST_CASE("view constructed from read-only owning message", "[message]") {
 
 TEST_CASE("view constructed from mutable owning message", "[message]") {
     test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
-    msg_defn::view_t view{msg, "id"_field = 0x81};
-    CHECK(0x81 == msg.get("id"_field));
+    msg_defn::view_t view{msg, "f2"_field = 0x41};
+    CHECK(0x41 == msg.get("f2"_field));
 
     view.set("f1"_field = 0xba12);
     CHECK(0xba12 == msg.get("f1"_field));
@@ -209,133 +210,133 @@ TEST_CASE("mutable view from owning message", "[message]") {
 TEST_CASE("equal_to matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(id_field::equal_to<0x80>(msg));
-    CHECK(field1::equal_to<0xba11>(msg));
-    CHECK(field2::equal_to<0x42>(msg));
-    CHECK(field3::equal_to<0xd00d>(msg));
+    CHECK(msg::equal_to<id_field, 0x80>(msg));
+    CHECK(msg::equal_to<field1, 0xba11>(msg));
+    CHECK(msg::equal_to<field2, 0x42>(msg));
+    CHECK(msg::equal_to<field3, 0xd00d>(msg));
 
-    CHECK(not id_field::equal_to<0x0>(msg));
-    CHECK(not field1::equal_to<0x0>(msg));
-    CHECK(not field2::equal_to<0x0>(msg));
-    CHECK(not field3::equal_to<0x0>(msg));
+    CHECK(not msg::equal_to<id_field, 0x0>(msg));
+    CHECK(not msg::equal_to<field1, 0x0>(msg));
+    CHECK(not msg::equal_to<field2, 0x0>(msg));
+    CHECK(not msg::equal_to<field3, 0x0>(msg));
 }
 
 TEST_CASE("default matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x0, 0x00}};
 
-    CHECK(id_field::match_default(msg));
-    CHECK(field1::match_default(msg));
-    CHECK(field2::match_default(msg));
-    CHECK(field3::match_default(msg));
+    CHECK(msg::equal_default<id_field>(msg));
+    CHECK(msg::equal_default<field1>(msg));
+    CHECK(msg::equal_default<field2>(msg));
+    CHECK(msg::equal_default<field3>(msg));
 }
 
 TEST_CASE("default matcher (no match)", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(not id_field::match_default(msg));
-    CHECK(not field1::match_default(msg));
-    CHECK(not field2::match_default(msg));
-    CHECK(not field3::match_default(msg));
+    CHECK(not msg::equal_default<id_field>(msg));
+    CHECK(not msg::equal_default<field1>(msg));
+    CHECK(not msg::equal_default<field2>(msg));
+    CHECK(not msg::equal_default<field3>(msg));
 }
 
 TEST_CASE("in matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK((id_field::in<0x80>(msg)));
-    CHECK((field1::in<0xba11>(msg)));
-    CHECK((field2::in<0x42>(msg)));
-    CHECK((field3::in<0xd00d>(msg)));
+    CHECK(msg::in<id_field, 0x80>(msg));
+    CHECK(msg::in<field1, 0xba11>(msg));
+    CHECK(msg::in<field2, 0x42>(msg));
+    CHECK(msg::in<field3, 0xd00d>(msg));
 
-    CHECK(not id_field::in<0x11>(msg));
-    CHECK(not field1::in<0x1111>(msg));
-    CHECK(not field2::in<0x11>(msg));
-    CHECK(not field3::in<0x1111>(msg));
+    CHECK(not msg::in<id_field, 0x11>(msg));
+    CHECK(not msg::in<field1, 0x1111>(msg));
+    CHECK(not msg::in<field2, 0x11>(msg));
+    CHECK(not msg::in<field3, 0x1111>(msg));
 
-    CHECK(id_field::in<0x80, 0x0>(msg));
-    CHECK(field1::in<0xba11, 0x0>(msg));
-    CHECK(field2::in<0x42, 0x0>(msg));
-    CHECK(field3::in<0xd00d, 0x0>(msg));
+    CHECK(msg::in<id_field, 0x80, 0x0>(msg));
+    CHECK(msg::in<field1, 0xba11, 0x0>(msg));
+    CHECK(msg::in<field2, 0x42, 0x0>(msg));
+    CHECK(msg::in<field3, 0xd00d, 0x0>(msg));
 
-    CHECK(not id_field::in<0x11, 0x0>(msg));
-    CHECK(not field1::in<0x1111, 0x0>(msg));
-    CHECK(not field2::in<0x11, 0x0>(msg));
-    CHECK(not field3::in<0x1111, 0x0>(msg));
+    CHECK(not msg::in<id_field, 0x11, 0x0>(msg));
+    CHECK(not msg::in<field1, 0x1111, 0x0>(msg));
+    CHECK(not msg::in<field2, 0x11, 0x0>(msg));
+    CHECK(not msg::in<field3, 0x1111, 0x0>(msg));
 
-    CHECK(id_field::in<0x80, 0x0, 0xE>(msg));
-    CHECK(field1::in<0xba11, 0x0, 0xEEEE>(msg));
-    CHECK(field2::in<0x42, 0x0, 0xEE>(msg));
-    CHECK(field3::in<0xd00d, 0x0, 0xEEEE>(msg));
+    CHECK(msg::in<id_field, 0x80, 0x0, 0xE>(msg));
+    CHECK(msg::in<field1, 0xba11, 0x0, 0xEEEE>(msg));
+    CHECK(msg::in<field2, 0x42, 0x0, 0xEE>(msg));
+    CHECK(msg::in<field3, 0xd00d, 0x0, 0xEEEE>(msg));
 
-    CHECK(not id_field::in<0x11, 0x0, 0xE>(msg));
-    CHECK(not field1::in<0x1111, 0x0, 0xEEEE>(msg));
-    CHECK(not field2::in<0x11, 0x0, 0xEE>(msg));
-    CHECK(not field3::in<0x1111, 0x0, 0xEEEE>(msg));
+    CHECK(not msg::in<id_field, 0x11, 0x0, 0xE>(msg));
+    CHECK(not msg::in<field1, 0x1111, 0x0, 0xEEEE>(msg));
+    CHECK(not msg::in<field2, 0x11, 0x0, 0xEE>(msg));
+    CHECK(not msg::in<field3, 0x1111, 0x0, 0xEEEE>(msg));
 }
 
 TEST_CASE("greater_than matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(not id_field::greater_than<0x80>(msg));
-    CHECK(not field1::greater_than<0xba11>(msg));
-    CHECK(not field2::greater_than<0x42>(msg));
-    CHECK(not field3::greater_than<0xd00d>(msg));
+    CHECK(not msg::greater_than<id_field, 0x80>(msg));
+    CHECK(not msg::greater_than<field1, 0xba11>(msg));
+    CHECK(not msg::greater_than<field2, 0x42>(msg));
+    CHECK(not msg::greater_than<field3, 0xd00d>(msg));
 
-    CHECK(id_field::greater_than<0x11>(msg));
-    CHECK(field1::greater_than<0x1111>(msg));
-    CHECK(field2::greater_than<0x11>(msg));
-    CHECK(field3::greater_than<0x1111>(msg));
+    CHECK(msg::greater_than<id_field, 0x11>(msg));
+    CHECK(msg::greater_than<field1, 0x1111>(msg));
+    CHECK(msg::greater_than<field2, 0x11>(msg));
+    CHECK(msg::greater_than<field3, 0x1111>(msg));
 }
 
 TEST_CASE("greater_than_or_equal_to matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(not id_field::greater_than_or_equal_to<0xEE>(msg));
-    CHECK(not field1::greater_than_or_equal_to<0xEEEE>(msg));
-    CHECK(not field2::greater_than_or_equal_to<0xEE>(msg));
-    CHECK(not field3::greater_than_or_equal_to<0xEEEE>(msg));
+    CHECK(not msg::greater_than_or_equal_to<id_field, 0xEE>(msg));
+    CHECK(not msg::greater_than_or_equal_to<field1, 0xEEEE>(msg));
+    CHECK(not msg::greater_than_or_equal_to<field2, 0xEE>(msg));
+    CHECK(not msg::greater_than_or_equal_to<field3, 0xEEEE>(msg));
 
-    CHECK(id_field::greater_than_or_equal_to<0x80>(msg));
-    CHECK(field1::greater_than_or_equal_to<0xba11>(msg));
-    CHECK(field2::greater_than_or_equal_to<0x42>(msg));
-    CHECK(field3::greater_than_or_equal_to<0xd00d>(msg));
+    CHECK(msg::greater_than_or_equal_to<id_field, 0x80>(msg));
+    CHECK(msg::greater_than_or_equal_to<field1, 0xba11>(msg));
+    CHECK(msg::greater_than_or_equal_to<field2, 0x42>(msg));
+    CHECK(msg::greater_than_or_equal_to<field3, 0xd00d>(msg));
 
-    CHECK(id_field::greater_than_or_equal_to<0x11>(msg));
-    CHECK(field1::greater_than_or_equal_to<0x1111>(msg));
-    CHECK(field2::greater_than_or_equal_to<0x11>(msg));
-    CHECK(field3::greater_than_or_equal_to<0x1111>(msg));
+    CHECK(msg::greater_than_or_equal_to<id_field, 0x11>(msg));
+    CHECK(msg::greater_than_or_equal_to<field1, 0x1111>(msg));
+    CHECK(msg::greater_than_or_equal_to<field2, 0x11>(msg));
+    CHECK(msg::greater_than_or_equal_to<field3, 0x1111>(msg));
 }
 
 TEST_CASE("less_than matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(not id_field::less_than<0x80>(msg));
-    CHECK(not field1::less_than<0xba11>(msg));
-    CHECK(not field2::less_than<0x42>(msg));
-    CHECK(not field3::less_than<0xd00d>(msg));
+    CHECK(not msg::less_than<id_field, 0x80>(msg));
+    CHECK(not msg::less_than<field1, 0xba11>(msg));
+    CHECK(not msg::less_than<field2, 0x42>(msg));
+    CHECK(not msg::less_than<field3, 0xd00d>(msg));
 
-    CHECK(id_field::less_than<0xEE>(msg));
-    CHECK(field1::less_than<0xEEEE>(msg));
-    CHECK(field2::less_than<0xEE>(msg));
-    CHECK(field3::less_than<0xEEEE>(msg));
+    CHECK(msg::less_than<id_field, 0xEE>(msg));
+    CHECK(msg::less_than<field1, 0xEEEE>(msg));
+    CHECK(msg::less_than<field2, 0xEE>(msg));
+    CHECK(msg::less_than<field3, 0xEEEE>(msg));
 }
 
 TEST_CASE("less_than_or_equal_to matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 
-    CHECK(id_field::less_than_or_equal_to<0xEE>(msg));
-    CHECK(field1::less_than_or_equal_to<0xEEEE>(msg));
-    CHECK(field2::less_than_or_equal_to<0xEE>(msg));
-    CHECK(field3::less_than_or_equal_to<0xEEEE>(msg));
+    CHECK(msg::less_than_or_equal_to<id_field, 0xEE>(msg));
+    CHECK(msg::less_than_or_equal_to<field1, 0xEEEE>(msg));
+    CHECK(msg::less_than_or_equal_to<field2, 0xEE>(msg));
+    CHECK(msg::less_than_or_equal_to<field3, 0xEEEE>(msg));
 
-    CHECK(id_field::less_than_or_equal_to<0x80>(msg));
-    CHECK(field1::less_than_or_equal_to<0xba11>(msg));
-    CHECK(field2::less_than_or_equal_to<0x42>(msg));
-    CHECK(field3::less_than_or_equal_to<0xd00d>(msg));
+    CHECK(msg::less_than_or_equal_to<id_field, 0x80>(msg));
+    CHECK(msg::less_than_or_equal_to<field1, 0xba11>(msg));
+    CHECK(msg::less_than_or_equal_to<field2, 0x42>(msg));
+    CHECK(msg::less_than_or_equal_to<field3, 0xd00d>(msg));
 
-    CHECK(not id_field::less_than_or_equal_to<0x11>(msg));
-    CHECK(not field1::less_than_or_equal_to<0x1111>(msg));
-    CHECK(not field2::less_than_or_equal_to<0x11>(msg));
-    CHECK(not field3::less_than_or_equal_to<0x1111>(msg));
+    CHECK(not msg::less_than_or_equal_to<id_field, 0x11>(msg));
+    CHECK(not msg::less_than_or_equal_to<field1, 0x1111>(msg));
+    CHECK(not msg::less_than_or_equal_to<field2, 0x11>(msg));
+    CHECK(not msg::less_than_or_equal_to<field3, 0x1111>(msg));
 }
 
 TEST_CASE("describe a message", "[message]") {
@@ -418,7 +419,7 @@ TEST_CASE("extend message with duplicate field", "[message]") {
 
 TEST_CASE("extend message with new field constraint", "[message]") {
     using base_defn = message<"msg_base", id_field, field1>;
-    using defn = extend<base_defn, "msg", field1::WithRequired<1>>;
-    using expected_defn = message<"msg", id_field, field1::WithRequired<1>>;
+    using defn = extend<base_defn, "msg", field1::with_required<1>>;
+    using expected_defn = message<"msg", id_field, field1::with_required<1>>;
     static_assert(std::is_same_v<defn, expected_defn>);
 }

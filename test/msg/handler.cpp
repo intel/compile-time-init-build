@@ -25,7 +25,7 @@ using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
 using msg_defn = message<"msg", id_field, field1, field2, field3>;
 
-template <auto V> constexpr auto id_match = id_field::equal_to<V>;
+template <auto V> constexpr auto id_match = msg::equal_to_t<id_field, V>{};
 
 std::string log_buffer{};
 } // namespace
