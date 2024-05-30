@@ -124,11 +124,27 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build
 
+      - name: Restore CPM cache
+        id: cpm-cache-restore
+        uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+
       - name: Configure CMake
         env:
           CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
           CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_CXX_FLAGS_INIT=${{matrix.cxx_flags}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_CXX_FLAGS_INIT=${{matrix.cxx_flags}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCPM_SOURCE_CACHE=~/cpm-cache
+
+      - name: Save CPM cache
+        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
 
       - name: Build Unit Tests
         run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
@@ -166,12 +182,28 @@ jobs:
         run: |
           sudo pip3 install mypy
 
+      - name: Restore CPM cache
+        id: cpm-cache-restore
+        uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+
       - name: Configure CMake
         env:
           CC: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang"
           CXX: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang++"
           PR_TARGET_BRANCH: ${{ steps.target_branch.outputs.branch }}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
+
+      - name: Save CPM cache
+        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
 
       - name: Run quality checks
         run: cmake --build ${{github.workspace}}/build -t ci-quality
@@ -203,12 +235,28 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build
 
+      - name: Restore CPM cache
+        id: cpm-cache-restore
+        uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+
       - name: Configure CMake
         env:
           CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
           CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
           SANITIZERS: ${{matrix.sanitizer}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
+
+      - name: Save CPM cache
+        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
 
       - name: Build Unit Tests
         run: cmake --build ${{github.workspace}}/build -t unit_tests
@@ -221,11 +269,27 @@ jobs:
       - name: Install build tools
         run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
 
+      - name: Restore CPM cache
+        id: cpm-cache-restore
+        uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+
       - name: Configure CMake
         env:
           CC: "/usr/bin/gcc-${{env.DEFAULT_GCC_VERSION}}"
           CXX: "/usr/bin/g++-${{env.DEFAULT_GCC_VERSION}}"
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
+
+      - name: Save CPM cache
+        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/cpm-cache
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
 
       - name: Build Unit Tests
         run: cmake --build ${{github.workspace}}/build -t build_unit_tests
