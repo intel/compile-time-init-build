@@ -207,6 +207,14 @@ TEST_CASE("mutable view from owning message", "[message]") {
     CHECK(0xba11 == msg.get("f1"_field));
 }
 
+TEST_CASE("owning from view", "[message]") {
+    test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
+    auto v = msg.as_mutable_view();
+    auto o = v.as_owning();
+    static_assert(std::is_same_v<decltype(o), test_msg>);
+    CHECK(msg == o);
+}
+
 TEST_CASE("equal_to matcher", "[message]") {
     test_msg msg{std::array<uint32_t, 2>{0x8000ba11, 0x0042d00d}};
 

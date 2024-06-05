@@ -369,6 +369,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
         [[nodiscard]] constexpr auto data() const { return storage; }
 
+        [[nodiscard]] constexpr auto as_owning() { return owner_t{*this}; }
+
       private:
         static_assert(definition_t::fits_inside<span_t>,
                       "Fields overflow message storage!");
@@ -444,6 +446,11 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         static_assert(definition_t::fits_inside<storage_t>,
                       "Fields overflow message storage!");
         storage_t storage{};
+
+        friend constexpr auto operator==(owner_t const &lhs,
+                                         owner_t const &rhs) -> bool {
+            return lhs.storage == rhs.storage;
+        }
     };
 
     template <detail::storage_like S>
