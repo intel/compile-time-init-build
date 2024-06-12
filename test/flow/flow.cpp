@@ -12,13 +12,12 @@
 std::string actual = {};
 
 namespace {
+using namespace flow::literals;
+
 constexpr auto a = flow::action<"a">([] { actual += "a"; });
 constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
-constexpr auto e = flow::action<"e">();
-
-constexpr auto ms = flow::milestone<"ms">();
 
 struct TestFlowAlpha : public flow::service<> {};
 struct TestFlowBeta : public flow::service<> {};
@@ -76,17 +75,18 @@ TEST_CASE("add multi action through cib::nexus, run through cib::service",
 }
 
 namespace {
-struct SingleFlowSingleActionFuncDeclConfig {
+struct FlowFuncDeclConfig {
     constexpr static auto config =
-        cib::config(cib::exports<TestFlowAlpha>, cib::extend<TestFlowAlpha>(e));
+        cib::config(cib::exports<TestFlowAlpha>,
+                    cib::extend<TestFlowAlpha>("e"_action >> "f"_action));
 };
 } // namespace
 
-TEST_CASE("add single action using func_decl through cib::nexus", "[flow]") {
+TEST_CASE("add actions using func_decl through cib::nexus", "[flow]") {
     actual.clear();
-    cib::nexus<SingleFlowSingleActionFuncDeclConfig> nexus{};
+    cib::nexus<FlowFuncDeclConfig> nexus{};
     nexus.service<TestFlowAlpha>();
-    CHECK(actual == "e");
+    CHECK(actual == "ef");
 }
 
 namespace {
@@ -102,8 +102,9 @@ struct NamedFlowConfig {
 };
 
 struct MSNamedFlowConfig {
-    constexpr static auto config = cib::config(cib::exports<NamedTestFlow>,
-                                               cib::extend<NamedTestFlow>(ms));
+    constexpr static auto config =
+        cib::config(cib::exports<NamedTestFlow>,
+                    cib::extend<NamedTestFlow>("ms"_milestone));
 };
 
 std::string log_buffer{};

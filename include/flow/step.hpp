@@ -5,6 +5,7 @@
 #include <log/log.hpp>
 #include <sc/string_constant.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -48,7 +49,29 @@ template <stdx::ct_string Name> [[nodiscard]] constexpr auto action() {
     return action<Name>(cib::func_decl<Name>);
 }
 
+template <stdx::ct_string Name> [[nodiscard]] constexpr auto step() {
+    return action<Name>(cib::func_decl<Name>);
+}
+
 template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
     return detail::make_node<Name, "milestone", decltype([] {})>();
 }
+
+inline namespace literals {
+template <class T, T... Cs> [[nodiscard]] constexpr auto operator""_action() {
+    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
+    return action<S>();
+}
+
+template <class T, T... Cs> [[nodiscard]] constexpr auto operator""_step() {
+    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
+    return action<S>();
+}
+
+template <class T, T... Cs>
+[[nodiscard]] constexpr auto operator""_milestone() {
+    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
+    return milestone<S>();
+}
+} // namespace literals
 } // namespace flow
