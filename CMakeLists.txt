@@ -9,9 +9,11 @@ project(
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
 include(cmake/get_cpm.cmake)
-cpmaddpackage("gh:intel/cicd-repo-infrastructure#main")
 if(PROJECT_IS_TOP_LEVEL)
+    cpmaddpackage("gh:intel/cicd-repo-infrastructure#main")
     update_versioned_package("gh:intel/cicd-repo-infrastructure#main")
+else()
+    cpmaddpackage("gh:intel/cicd-repo-infrastructure#3e2bef0")
 endif()
 
 find_package(
