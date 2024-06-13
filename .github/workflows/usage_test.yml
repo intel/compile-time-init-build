@@ -1,0 +1,40 @@
+name: Usage Test
+permissions: read-all
+
+on:
+  workflow_dispatch:
+  merge_group:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  USER_LLVM_VERSION: 14
+  USER_CMAKE_VERSION: 3.25
+
+jobs:
+  usage_test:
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Install compiler
+        run: sudo apt update && sudo apt-get install -y clang-${{env.USER_LLVM_VERSION}}
+
+      - name: Install cmake
+        run: |
+          pip3 install --upgrade pip
+          pip3 install --force cmake==${{env.USER_CMAKE_VERSION}}
+
+      - name: Configure CMake
+        working-directory: ${{github.workspace}}/usage_test
+        env:
+          CC: "/usr/lib/llvm-${{env.USER_LLVM_VERSION}}/bin/clang"
+          CXX: "/usr/lib/llvm-${{env.USER_LLVM_VERSION}}/bin/clang++"
+        run: ~/.local/bin/cmake -B build
+
+      - name: Build
+        working-directory: ${{github.workspace}}/usage_test
+        run: ~/.local/bin/cmake --build build
