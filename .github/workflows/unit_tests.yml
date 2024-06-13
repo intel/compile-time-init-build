@@ -117,7 +117,7 @@ jobs:
             stdlib: libc++
 
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
         run: |
@@ -157,7 +157,7 @@ jobs:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{github.base_ref}}
 
@@ -166,7 +166,7 @@ jobs:
         id: target_branch
 
       - name: Checkout PR branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
         run: |
@@ -228,7 +228,7 @@ jobs:
             toolchain_root: "/usr"
 
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
         run: |
@@ -264,7 +264,7 @@ jobs:
   valgrind:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
         run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
