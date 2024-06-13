@@ -43,13 +43,12 @@ template <typename N> struct matching_name {
 
 template <typename Name, typename RelOp, auto V> struct matcher_maker {
     using is_matcher_maker = void;
-    using name_t = Name;
 
     template <typename Msg>
     constexpr static auto make_matcher() -> match::matcher auto {
         using fields_t = typename Msg::fields_t;
         using index_t =
-            boost::mp11::mp_find_if_q<fields_t, matching_name<name_t>>;
+            boost::mp11::mp_find_if_q<fields_t, matching_name<Name>>;
         static_assert(index_t::value < boost::mp11::mp_size<fields_t>::value,
                       "Named field not in message!");
         return rel_matcher_t<RelOp, boost::mp11::mp_at<fields_t, index_t>, V>{};
@@ -91,6 +90,32 @@ template <msg::matcher_maker... Ts> struct mm_or_t {
 
 template <msg::matcher_maker T, msg::matcher_maker U>
 constexpr auto operator or(T, U) -> mm_or_t<T, U> {
+    return {};
+}
+
+template <match::matcher M> struct matcher_wrapper {
+    using is_matcher_maker = void;
+
+    template <typename>
+    constexpr static auto make_matcher() -> match::matcher auto {
+        return M{};
+    }
+};
+
+template <match::matcher T, msg::matcher_maker U>
+constexpr auto operator and(T, U) -> mm_and_t<matcher_wrapper<T>, U> {
+    return {};
+}
+template <msg::matcher_maker T, match::matcher U>
+constexpr auto operator and(T, U) -> mm_and_t<T, matcher_wrapper<U>> {
+    return {};
+}
+template <match::matcher T, msg::matcher_maker U>
+constexpr auto operator or(T, U) -> mm_or_t<matcher_wrapper<T>, U> {
+    return {};
+}
+template <msg::matcher_maker T, match::matcher U>
+constexpr auto operator or(T, U) -> mm_or_t<T, matcher_wrapper<U>> {
     return {};
 }
 

@@ -246,3 +246,40 @@ TEST_CASE("alternative matcher syntax (value in singleton)", "[callback]") {
     static_assert(std::same_as<typename decltype(callback)::matcher_t,
                                msg::equal_to_t<id_field, 0x80>>);
 }
+
+TEST_CASE("alternative matcher syntax (and-combine matcher with matcher maker)",
+          "[callback]") {
+    auto cb1 = msg::callback<"cb", msg_defn>(
+        id_match and "f1"_field == msg::constant<1>,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto cb2 = msg::callback<"cb", msg_defn>(
+        "f1"_field == msg::constant<1> and id_match,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg_match =
+        msg::owning<msg_defn>{"id"_field = 0x80, "f1"_field = 1};
+
+    dispatched = false;
+    CHECK(cb1.handle(msg_match));
+    CHECK(dispatched);
+    dispatched = false;
+    CHECK(cb2.handle(msg_match));
+    CHECK(dispatched);
+}
+
+TEST_CASE("alternative matcher syntax (or-combine matcher with matcher maker)",
+          "[callback]") {
+    auto cb1 = msg::callback<"cb", msg_defn>(
+        id_match or "id"_field == msg::constant<0x81>,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto cb2 = msg::callback<"cb", msg_defn>(
+        "id"_field == msg::constant<0x81> or id_match,
+        [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg_match = msg::owning<msg_defn>{"id"_field = 0x80};
+
+    dispatched = false;
+    CHECK(cb1.handle(msg_match));
+    CHECK(dispatched);
+    dispatched = false;
+    CHECK(cb2.handle(msg_match));
+    CHECK(dispatched);
+}
