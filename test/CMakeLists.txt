@@ -247,11 +247,7 @@ add_custom_target(run_benchmarks)
 
 foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
     foreach(BENCH_DATASET ${BENCH_DATASETS})
-        list(FIND EXCLUDED_COMBINATIONS "${BENCH_ALG_NAME}_${BENCH_DATASET}"
-             EXCLUDE_INDEX)
-
-        if(NOT EXCLUDE_INDEX EQUAL -1)
-            # Skip this combination
+        if("${BENCH_ALG_NAME}_${BENCH_DATASET}" IN_LIST EXCLUDED_COMBINATIONS)
             continue()
         endif()
 
@@ -260,7 +256,9 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
                        "${BENCH_ALG_NAME}_${BENCH_DATASET}")
 
         # Create a target for the current configuration
-        add_executable(benchmark_${TARGET_NAME} lookup/pseudo_pext.cpp)
+        add_executable(benchmark_${TARGET_NAME} EXCLUDE_FROM_ALL
+                       lookup/pseudo_pext.cpp)
+        target_compile_features(benchmark_${TARGET_NAME} PRIVATE cxx_std_23)
         target_link_libraries(benchmark_${TARGET_NAME} cib mph frozen-headers
                               nanobench)
         target_compile_options(
@@ -287,7 +285,7 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
 endforeach()
 
 # Create a target for the current configuration
-add_executable(handler_bench msg/handler_bench.cpp)
+add_executable(handler_bench EXCLUDE_FROM_ALL msg/handler_bench.cpp)
 target_link_libraries(handler_bench cib nanobench)
 target_compile_options(
     handler_bench PUBLIC -O3 -march=native -fconstexpr-steps=4000000000
