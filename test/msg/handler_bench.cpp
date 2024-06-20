@@ -40,7 +40,7 @@ uint64_t volatile *cb_count_ptr = &cb_count;
 
 template <uint32_t B, uint32_t M, uint32_t S>
 constexpr auto cb = callback<"callback", msg_defn>(
-    big_f::in<B> and med_f::in<M> and small_a_f::in<S>,
+    "big"_f.in<B> and "med"_f.in<M> and "small_a"_f.in<S>,
     [](auto) { (*cb_count_ptr) = 0; });
 
 template <typename T> struct test_project {

@@ -377,26 +377,6 @@ template <auto data, typename T> void bench_frozen_map(auto name) {
         });
 }
 
-// template<auto data, typename T>
-// void run_suite(auto heading) {
-//     printf("## %s\n", heading);
-//     printf("\n");
-//     bench_std_map<data, T>("std::map");
-//     printf("\n");
-//     bench_std_unordered_map<data, T>("std::unordered_map");
-//     bench_frozen<data, T>("frozen");
-
-//     printf("\n");
-//     bench_mph_pext<data, T>("mph pext");
-
-//     bench_pseudo_pext<data, T, false, 1>("direct pseudo_pext");
-//     bench_pseudo_pext<data, T, true, 1>("indirect pseudo_pext");
-//     bench_pseudo_pext<data, T, true, 2>("indirect pseudo_pext, search_len =
-//     2"); bench_pseudo_pext<data, T, true, 3>("indirect pseudo_pext,
-//     search_len = 3"); bench_pseudo_pext<data, T, true, 4>("indirect
-//     pseudo_pext, search_len = 4");
-// }
-
 int main() {
     printf("\n\n\ndataset:   %s\n", QBENCH_DATASET);
     printf("algorithm: %s\n", QALG_NAME);
