@@ -10,8 +10,7 @@ project(
 
 include(cmake/get_cpm.cmake)
 if(PROJECT_IS_TOP_LEVEL)
-    cpmaddpackage("gh:intel/cicd-repo-infrastructure#main")
-    update_versioned_package("gh:intel/cicd-repo-infrastructure#main")
+    cpmaddpackage("gh:intel/cicd-repo-infrastructure#dev")
 else()
     cpmaddpackage("gh:intel/cicd-repo-infrastructure#3e2bef0")
 endif()
