@@ -16,7 +16,7 @@ template <auto L> struct fmt::formatter<logging::level_constant<L>> {
     }
 
     template <typename FormatContext>
-    auto format(logging::level_constant<L>, FormatContext &ctx) {
+    auto format(logging::level_constant<L>, FormatContext &ctx) const {
         return ::fmt::format_to(ctx.out(), logging::to_text<L>());
     }
 };
