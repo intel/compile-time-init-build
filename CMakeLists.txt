@@ -24,7 +24,7 @@ include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
 fmt_recipe(11.0.0)
-add_versioned_package("gh:intel/cpp-std-extensions#44bd39b")
+add_versioned_package("gh:intel/cpp-std-extensions#a51e2bf")
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#8d49b6d")
 
 add_library(cib INTERFACE)
