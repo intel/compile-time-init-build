@@ -29,8 +29,8 @@ template <auto N> using bitset = stdx::bitset<N, std::uint32_t>;
 }
 
 TEST_CASE("a linear lookup with non-integer values", "[lookup]") {
-    constexpr auto lookup =
-        lookup::linear_search_lookup<25>::make(CX_VALUE(lookup::input{
+    constexpr auto lookup = lookup::linear_search_lookup<25>::make(
+        CX_VALUE(lookup::input<int, bitset<32>, 2>{
             bitset<32>{},
             std::array{
                 lookup::entry{42, bitset<32>{stdx::place_bits, 0}},
@@ -42,9 +42,9 @@ TEST_CASE("a linear lookup with non-integer values", "[lookup]") {
 }
 
 TEST_CASE("a lookup with some entries", "[lookup]") {
-    constexpr auto lookup = lookup::make(CX_VALUE(
-        lookup::input{0, std::array{lookup::entry{0, 13}, lookup::entry{6, 42},
-                                    lookup::entry{89, 10}}}));
+    constexpr auto lookup = lookup::make(CX_VALUE(lookup::input<int, int, 3>{
+        0, std::array{lookup::entry{0, 13}, lookup::entry{6, 42},
+                      lookup::entry{89, 10}}}));
     static_assert(lookup[0] == 13);
     static_assert(lookup[1] == 0);
     static_assert(lookup[5] == 0);
@@ -56,9 +56,9 @@ TEST_CASE("a lookup with some entries", "[lookup]") {
 }
 
 TEST_CASE("a lookup with some entries and non-zero default", "[lookup]") {
-    constexpr auto lookup = lookup::make(CX_VALUE(
-        lookup::input{5, std::array{lookup::entry{1, 13}, lookup::entry{6, 42},
-                                    lookup::entry{89, 10}}}));
+    constexpr auto lookup = lookup::make(CX_VALUE(lookup::input<int, int, 3>{
+        5, std::array{lookup::entry{1, 13}, lookup::entry{6, 42},
+                      lookup::entry{89, 10}}}));
     static_assert(lookup[0] == 5);
     static_assert(lookup[1] == 13);
     static_assert(lookup[5] == 5);
@@ -70,12 +70,13 @@ TEST_CASE("a lookup with some entries and non-zero default", "[lookup]") {
 }
 
 TEST_CASE("a lookup with some sequential entries", "[lookup]") {
-    constexpr auto lookup = lookup::make(CX_VALUE(lookup::input{
-        1u, std::array{lookup::entry{0u, 13u}, lookup::entry{1u, 42u},
-                       lookup::entry{2u, 10u}, lookup::entry{3u, 76u},
-                       lookup::entry{4u, 25u}, lookup::entry{5u, 82u},
-                       lookup::entry{6u, 18u}, lookup::entry{7u, 87u},
-                       lookup::entry{8u, 55u}, lookup::entry{9u, 11u}}}));
+    constexpr auto lookup =
+        lookup::make(CX_VALUE(lookup::input<std::uint32_t, std::uint32_t, 10>{
+            1u, std::array{lookup::entry{0u, 13u}, lookup::entry{1u, 42u},
+                           lookup::entry{2u, 10u}, lookup::entry{3u, 76u},
+                           lookup::entry{4u, 25u}, lookup::entry{5u, 82u},
+                           lookup::entry{6u, 18u}, lookup::entry{7u, 87u},
+                           lookup::entry{8u, 55u}, lookup::entry{9u, 11u}}}));
     static_assert(lookup[0] == 13);
     static_assert(lookup[1] == 42);
     static_assert(lookup[2] == 10);
