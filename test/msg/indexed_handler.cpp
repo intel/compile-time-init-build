@@ -53,7 +53,7 @@ TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
         msg::callback_args<test_msg>,
         msg::indices{msg::index{
             opcode_field{},
-            lookup::make(CX_VALUE(lookup::input{
+            lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
                 bitset<32>{}, std::array{lookup::entry{
                                   42u, bitset<32>{stdx::place_bits, 0}}}}))}},
         std::array<void (*)(test_msg const &), 1>{
@@ -79,21 +79,24 @@ TEST_CASE("create handler with multiple indices and callbacks",
         msg::indices{
             msg::index{
                 opcode_field{},
-                lookup::make(CX_VALUE(lookup::input{
-                    bitset<32>{},
-                    std::array{
-                        entry{0u, bitset<32>{stdx::place_bits, 0, 1, 2, 3}},
-                        entry{1u, bitset<32>{stdx::place_bits, 4, 5, 6, 7}},
-                        entry{2u, bitset<32>{stdx::place_bits, 8}}}}))},
-            msg::index{sub_opcode_field{},
-                       lookup::make(CX_VALUE(lookup::input{
-                           bitset<32>{stdx::place_bits, 8},
-                           std::array{
-                               entry{0u, bitset<32>{stdx::place_bits, 0, 4, 8}},
-                               entry{1u, bitset<32>{stdx::place_bits, 1, 5, 8}},
-                               entry{2u, bitset<32>{stdx::place_bits, 2, 6, 8}},
-                               entry{3u, bitset<32>{stdx::place_bits, 3, 7, 8}},
-                           }}))}},
+                lookup::make(
+                    CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 3>{
+                        bitset<32>{},
+                        std::array{
+                            entry{0u, bitset<32>{stdx::place_bits, 0, 1, 2, 3}},
+                            entry{1u, bitset<32>{stdx::place_bits, 4, 5, 6, 7}},
+                            entry{2u, bitset<32>{stdx::place_bits, 8}}}}))},
+            msg::index{
+                sub_opcode_field{},
+                lookup::make(
+                    CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 4>{
+                        bitset<32>{stdx::place_bits, 8},
+                        std::array{
+                            entry{0u, bitset<32>{stdx::place_bits, 0, 4, 8}},
+                            entry{1u, bitset<32>{stdx::place_bits, 1, 5, 8}},
+                            entry{2u, bitset<32>{stdx::place_bits, 2, 6, 8}},
+                            entry{3u, bitset<32>{stdx::place_bits, 3, 7, 8}},
+                        }}))}},
         std::array<void (*)(test_msg const &), 9>{
             [](test_msg const &) { callbacks_called.set(0); },
             [](test_msg const &) { callbacks_called.set(1); },
@@ -145,7 +148,7 @@ TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
         msg::callback_args<test_msg, std::size_t>,
         msg::indices{msg::index{
             opcode_field{},
-            lookup::make(CX_VALUE(lookup::input{
+            lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
                 bitset<32>{}, std::array{lookup::entry{
                                   42u, bitset<32>{stdx::place_bits, 0}}}}))}},
         std::array<void (*)(test_msg const &, std::size_t), 1>{
