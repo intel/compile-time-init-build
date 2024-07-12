@@ -98,6 +98,10 @@ TEST_CASE(
     using impl_t =
         interrupt::shared_sub_irq_impl<flow_config_t<std::true_type>,
                                        active_sub_impl_t, inactive_sub_impl_t>;
-    CHECK(impl_t::get_interrupt_enables() ==
-          stdx::tuple{enable_field_t<17>{}, enable_field_t<0>{}});
+
+    auto expected = stdx::tuple{enable_field_t<0>{}, enable_field_t<17>{}};
+    auto actual = impl_t::get_interrupt_enables();
+
+    CHECK(std::size(expected) == std::size(actual));
+    CHECK(expected == actual);
 }

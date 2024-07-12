@@ -86,7 +86,12 @@ struct shared_sub_irq_impl : Config {
     using Config::status_field;
 
     [[nodiscard]] static auto get_interrupt_enables() {
-        return stdx::tuple_cat(Subs::get_interrupt_enables()...);
+        if constexpr (active) {
+            return stdx::tuple_cat(stdx::make_tuple(enable_field),
+                                   Subs::get_interrupt_enables()...);
+        } else {
+            return stdx::tuple{};
+        }
     }
 
     static auto run() -> void {
