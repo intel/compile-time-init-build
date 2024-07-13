@@ -135,7 +135,7 @@ TEST_CASE("match and dispatch only one callback with uint8_t storage",
 }
 
 TEST_CASE("dispatch with extra args", "[handler]") {
-    auto callback = msg::callback<"cb", msg_defn, int>(
+    auto callback = msg::callback<"cb", msg_defn>(
         id_match<0x80>, [](msg::const_view<msg_defn>, int value) {
             dispatched = true;
             CHECK(value == 0xcafe);

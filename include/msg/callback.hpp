@@ -20,15 +20,16 @@ namespace detail {
  * and handling incoming messages.
  */
 template <stdx::ct_string Name, typename Msg, match::matcher M,
-          stdx::callable F, typename... ExtraArgs>
+          stdx::callable F>
 struct callback {
     [[nodiscard]] auto is_match(auto const &data) const -> bool {
         auto view = typename Msg::view_t{data};
         return matcher(view);
     }
 
+    template <typename... Args>
     [[nodiscard]] auto handle(auto const &data,
-                              ExtraArgs const &...args) const -> bool {
+                              Args const &...args) const -> bool {
         auto view = typename Msg::view_t{data};
         if (matcher(view)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
@@ -54,22 +55,21 @@ struct callback {
     using callable_t = F;
 
     template <match::matcher NewM>
-    using rebind_matcher = callback<Name, Msg, NewM, F, ExtraArgs...>;
+    using rebind_matcher = callback<Name, Msg, NewM, F>;
 
     constexpr static auto name = Name;
     [[no_unique_address]] matcher_t matcher;
     [[no_unique_address]] callable_t callable;
 };
 
-template <stdx::ct_string Name, typename Msg, typename... ExtraArgs>
-struct callback_construct_t {
+template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
     template <match::matcher M, stdx::callable F>
     [[nodiscard]] constexpr auto operator()(M, F &&f) const {
         using ::operator and;
         using matcher_t =
             decltype(match::sum_of_products(M{} and typename Msg::matcher_t{}));
-        return callback<Name, Msg, matcher_t, std::remove_cvref_t<F>,
-                        ExtraArgs...>{matcher_t{}, std::forward<F>(f)};
+        return callback<Name, Msg, matcher_t, std::remove_cvref_t<F>>{
+            matcher_t{}, std::forward<F>(f)};
     }
 
     template <msg::matcher_maker M, stdx::callable F>
@@ -86,7 +86,6 @@ struct callback_construct_t {
 };
 } // namespace detail
 
-template <stdx::ct_string Name, typename Msg, typename... ExtraArgs>
-constexpr inline auto callback =
-    detail::callback_construct_t<Name, Msg, ExtraArgs...>{};
+template <stdx::ct_string Name, typename Msg>
+constexpr inline auto callback = detail::callback_construct_t<Name, Msg>{};
 } // namespace msg

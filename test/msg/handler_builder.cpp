@@ -84,7 +84,7 @@ namespace {
 int callback_extra_arg{};
 
 constexpr auto test_callback_extra_args =
-    msg::callback<"cb", msg_defn, int>(id_match, [](msg_view_t, int i) {
+    msg::callback<"cb", msg_defn>(id_match, [](msg_view_t, int i) {
         callback_success = true;
         callback_extra_arg = i;
     });
