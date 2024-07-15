@@ -1,5 +1,5 @@
 function(gen_str_catalog)
-    set(options "")
+    set(options FORGET_OLD_IDS)
     set(oneValueArgs OUTPUT_CPP OUTPUT_XML OUTPUT_JSON GEN_STR_CATALOG
                      OUTPUT_LIB)
     set(multiValueArgs INPUT_JSON INPUT_LIBS INPUT_HEADERS STABLE_JSON)
@@ -31,6 +31,10 @@ function(gen_str_catalog)
     list(TRANSFORM SC_STABLE_JSON PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
     list(TRANSFORM SC_INPUT_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
+    if(SC_FORGET_OLD_IDS)
+        set(FORGET_ARG "--forget_old_ids")
+    endif()
+
     add_custom_command(
         OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
         COMMAND
@@ -38,6 +42,7 @@ function(gen_str_catalog)
             --json_input ${SC_INPUT_JSON} --cpp_headers ${SC_INPUT_HEADERS}
             --cpp_output ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON}
             --xml_output ${SC_OUTPUT_XML} --stable_json ${SC_STABLE_JSON}
+            ${FORGET_ARG}
         DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG} ${SC_STABLE_JSON}
         COMMAND_EXPAND_LISTS)
     if(SC_OUTPUT_LIB)

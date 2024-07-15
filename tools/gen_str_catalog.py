@@ -199,8 +199,14 @@ def extract_enums(filename: str):
     return enums
 
 
-def write_json(messages, modules, extra_inputs: list[str], filename: str):
+def write_json(messages, modules, extra_inputs: list[str], filename: str, stable_ids):
     str_catalog = dict(messages=list(messages.values()), modules=list(modules.values()))
+    for msg in stable_ids.get("messages"):
+        if not msg in str_catalog["messages"]:
+            str_catalog["messages"].append(msg)
+    for mod in stable_ids.get("modules"):
+        if not mod in str_catalog["modules"]:
+            str_catalog["modules"].append(mod)
     for extra in extra_inputs:
         with open(extra, "r") as f:
             str_catalog.update(json.load(f))
@@ -213,10 +219,7 @@ def read_stable(stable_filenames: list[str]):
     for filename in stable_filenames:
         with open(filename, "r") as f:
             stable_catalog.update(json.load(f))
-    return (
-        {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]},
-        {m["string"]: m["id"] for m in stable_catalog["modules"]},
-    )
+    return stable_catalog
 
 
 def serialize_guids(client_node: et.Element, guid_id: str, guid_mask: str):
@@ -371,6 +374,11 @@ def parse_cmdline():
         default=[],
         help="Input filename(s) for previously generated JSON; this is used to fix stable IDs.",
     )
+    parser.add_argument(
+        "--forget_old_ids",
+        action="store_true",
+        help="When on, stable IDs from a previous run are forgotten. By default, those strings are remembered in the output so that they will not be reused in future.",
+    )
     return parser.parse_args()
 
 
@@ -388,8 +396,12 @@ def main():
     et._escape_cdata = _escape_cdata
     args = parse_cmdline()
 
-    stable_ids = read_stable(args.stable_json)
+    stable_catalog = read_stable(args.stable_json)
     try:
+        stable_ids = (
+            {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]},
+            {m["string"]: m["id"] for m in stable_catalog["modules"]},
+        )
         modules, messages = read_input(args.input, stable_ids)
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
@@ -397,8 +409,14 @@ def main():
     if args.cpp_output is not None:
         write_cpp(messages, modules, args.cpp_headers, args.cpp_output)
 
+    stable_output = dict(messages=[], modules=[])
+    if not args.forget_old_ids:
+        stable_output = dict(
+            messages=stable_catalog["messages"], modules=stable_catalog["modules"]
+        )
+
     if args.json_output is not None:
-        write_json(messages, modules, args.json_input, args.json_output)
+        write_json(messages, modules, args.json_input, args.json_output, stable_output)
 
     if args.xml_output is not None:
         enums = {}

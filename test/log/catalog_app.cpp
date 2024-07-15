@@ -34,6 +34,8 @@ TEST_CASE("log one compile-time argument", "[catalog]") {
     log_one_ct_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
+    // ID 0 is reserved by stable input
+    CHECK(last_header >> 4u != 0);
 }
 
 TEST_CASE("log one runtime argument", "[catalog]") {
