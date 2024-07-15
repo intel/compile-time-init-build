@@ -9,7 +9,7 @@
 
 namespace lookup {
 [[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
-    return strategies<linear_search_lookup<4>,
+    return strategies<linear_search_lookup<100>,
                       pseudo_pext_lookup<true, 2>>::make(input);
 }
 } // namespace lookup
