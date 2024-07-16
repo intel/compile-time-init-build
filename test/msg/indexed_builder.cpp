@@ -369,7 +369,7 @@ namespace {
 int callback_extra_arg{};
 
 constexpr auto test_callback_extra_args =
-    msg::callback<"test_callback_extra_args", msg_defn, int>(
+    msg::callback<"test_callback_extra_args", msg_defn>(
         msg::equal_to<test_id_field, 0x80>, [](auto, int i) {
             callback_success = true;
             callback_extra_arg = i;
