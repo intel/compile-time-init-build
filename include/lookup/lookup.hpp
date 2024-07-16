@@ -10,6 +10,6 @@
 namespace lookup {
 [[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
     return strategies<linear_search_lookup<4>,
-                      pseudo_pext_lookup<true, 2>>::make(input);
+                      pseudo_pext_lookup<true, 1>>::make(input);
 }
 } // namespace lookup
