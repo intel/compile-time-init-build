@@ -2,6 +2,14 @@
     "messages": [
         {
             "level": "TRACE",
+            "msg": "An old string that can't be reused",
+            "type": "msg",
+            "arg_types": [],
+            "arg_count": 0,
+            "id": 0
+        },
+        {
+            "level": "TRACE",
             "msg": "A string with no placeholders",
             "type": "msg",
             "arg_types": [],
@@ -10,6 +18,10 @@
         }
     ],
     "modules": [
+        {
+            "string": "old_stable",
+            "id": 42
+        },
         {
             "string": "fixed",
             "id": 17
