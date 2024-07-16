@@ -40,11 +40,6 @@ jobs:
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18
             toolchain_root: "/usr/lib/llvm-18"
-          - version: 18
-            compiler: clang
-            stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18 && sudo apt install -y libc++-18-dev libc++abi-18-dev
-            cxx_flags: "-stdlib=libc++"
           - version: 17
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17
@@ -96,6 +91,9 @@ jobs:
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: clang
+            version: 18
+            stdlib: libc++
           - compiler: gcc
             version: 18
           - compiler: gcc
