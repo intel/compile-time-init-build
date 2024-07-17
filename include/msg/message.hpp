@@ -377,10 +377,12 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
         template <typename S>
         // NOLINTNEXTLINE(google-explicit-constructor)
-        constexpr view_t(owner_t<S> const &s) : storage{s.data()} {}
+        constexpr view_t(owner_t<S> const &s LIFETIMEBOUND)
+            : storage{s.data()} {}
 
         template <typename S, some_field_value... Vs>
-        explicit constexpr view_t(owner_t<S> &s, Vs... vs) : storage{s.data()} {
+        explicit constexpr view_t(owner_t<S> &s LIFETIMEBOUND, Vs... vs)
+            : storage{s.data()} {
             this->set(vs...);
         }
 
@@ -457,13 +459,17 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         explicit constexpr owner_t(view_t<S> s, Vs... vs)
             : owner_t{s.data(), vs...} {}
 
-        [[nodiscard]] constexpr auto data() { return stdx::span{storage}; }
-        [[nodiscard]] constexpr auto data() const {
+        [[nodiscard]] constexpr auto data() LIFETIMEBOUND {
+            return stdx::span{storage};
+        }
+        [[nodiscard]] constexpr auto data() const LIFETIMEBOUND {
             return stdx::span{storage};
         }
 
-        [[nodiscard]] constexpr auto as_mutable_view() { return view_t{*this}; }
-        [[nodiscard]] constexpr auto as_const_view() const {
+        [[nodiscard]] constexpr auto as_mutable_view() LIFETIMEBOUND {
+            return view_t{*this};
+        }
+        [[nodiscard]] constexpr auto as_const_view() const LIFETIMEBOUND {
             return view_t{*this};
         }
 
