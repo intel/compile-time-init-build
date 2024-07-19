@@ -94,7 +94,15 @@ gen_str_catalog(
     STABLE_JSON
     log/stable_strings.json
     INPUT_HEADERS
-    log/catalog_enums.hpp)
+    log/catalog_enums.hpp
+    CLIENT_NAME
+    "test"
+    VERSION
+    "test version"
+    GUID_ID
+    "01234567-89ab-cdef-0123-456789abcdef"
+    GUID_MASK
+    "ffffffff-ffff-ffff-ffff-ffffffffffff")
 
 add_library(catalog_strings STATIC ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp)
 target_link_libraries(catalog_strings PUBLIC cib)
