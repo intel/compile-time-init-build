@@ -48,8 +48,7 @@ CIB_ERROR(...);
 CIB_FATAL(...);
 ----
 
-Or `CIB_LOG(level, ...)` can be used equivalently to these where the level is
-explicit. `CIB_FATAL` causes a call to
+`CIB_FATAL` causes a call to
 https://intel.github.io/cpp-std-extensions/#_panic_hpp[`stdx::panic`], and
 `CIB_ASSERT(expression)` is equivalent to `CIB_FATAL` in the case where the
 expression evaluates to `false`.
@@ -132,6 +131,30 @@ template <>
 inline auto logging::config<> = my_logger_config{};
 ----
 
+=== Flavored logs
+
+There is not always just one logging backend in an application. For example, you
+might want regular logs and secure logs. Providing more backends is possible by specializing
+`logging::config` with custom types.
+
+[source,cpp]
+----
+struct secure_tag;
+
+template <>
+inline auto logging::config<secure_tag> = my_logger_config{};
+----
+
+And this backend can be most easily used by defining macros in terms of the
+`CIB_LOG` macro:
+
+[source,cpp]
+----
+#define SECURE_TRACE(...) CIB_LOG(secure_tag, logging::level::TRACE, __VA_ARGS__)
+#define SECURE_INFO(...) CIB_LOG(secure_tag, logging::level::INFO, __VA_ARGS__)
+// etc
+----
+
 === Modules
 
 It can be helpful to scope or filter log messages by associating them with
@@ -170,3 +193,46 @@ struct my_struct {
 On a constrained system, space for text can be at a premium. The `sc` library
 and the MIPI Sys-T logger combine to
 xref:sc.adoc#_efficient_logging_with_mipi_sys_t[solve this problem].
+
+=== Version logging
+
+To provide version information in a log, specialize the `version::config`
+variable template. The configuration should provide a `build_id` and a
+`version_string`.
+
+[source,cpp]
+----
+struct my_version_config {
+    constexpr static auto build_id = std::uint64_t{1234};
+    constexpr static auto version_string = stdx::ct_string{"version"};
+};
+
+template <> inline auto version::config<> = my_version_config{};
+----
+
+Then use `CIB_LOG_VERSION()` to log the version. If the logging config provides
+a `log_build` function, that will be used. Otherwise a text string will be
+logged.
+
+[source,cpp]
+----
+struct my_logger_config {
+  struct {
+    template <auto Version, stdx::ct_string S = ""> auto log_build() -> void {
+      // log the build version according to my mechanism
+    }
+  } logger;
+};
+template <>
+inline auto logging::config<> = my_logger_config{};
+
+CIB_LOG_VERSION(); // calls my_logger_config::log_build
+----
+
+The easiest way to flavor the version logging is to define a macro in terms of
+`CIB_LOG_V`:
+
+[source,cpp]
+----
+#define LOG_SECURE_VERSION(...) CIB_LOG_V(secure_tag)
+----

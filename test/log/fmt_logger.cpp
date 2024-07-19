@@ -150,3 +150,32 @@ TEST_CASE("log version", "[fmt_logger]") {
     CHECK(buffer.find("MAX [default]: Version: 1234 (test version)") !=
           std::string::npos);
 }
+
+namespace {
+struct secure_t;
+std::string secure_buffer{};
+} // namespace
+
+template <>
+inline auto logging::config<secure_t> =
+    logging::fmt::config{std::back_inserter(secure_buffer)};
+
+TEST_CASE("logging can be flavored", "[fmt_logger]") {
+    buffer.clear();
+    secure_buffer.clear();
+    CIB_LOG(secure_t, logging::level::TRACE, "Hello");
+    CAPTURE(secure_buffer);
+    CHECK(secure_buffer.substr(secure_buffer.size() - std::size("Hello")) ==
+          "Hello\n");
+    CHECK(buffer.empty());
+}
+
+TEST_CASE("log version can be flavored", "[fmt_logger]") {
+    buffer.clear();
+    secure_buffer.clear();
+    CIB_LOG_V(secure_t);
+    CAPTURE(secure_buffer);
+    CHECK(secure_buffer.find("MAX [default]: Version: 1234 (test version)") !=
+          std::string::npos);
+    CHECK(buffer.empty());
+}
