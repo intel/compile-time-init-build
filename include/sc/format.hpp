@@ -100,12 +100,4 @@ constexpr auto format(Fmt, Args... args) {
         return lazy_string_format{r[0_idx] + r[1_idx], r[2_idx]};
     }
 }
-
-template <typename T> struct formatter {
-    constexpr explicit formatter(T) {}
-
-    template <typename... Ts> constexpr auto operator()(Ts &&...args) {
-        return format(T{}, std::forward<Ts>(args)...);
-    }
-};
 } // namespace sc
