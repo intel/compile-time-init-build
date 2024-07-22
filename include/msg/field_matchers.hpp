@@ -162,7 +162,8 @@ struct rel_matcher_t {
     [[nodiscard]] friend constexpr auto
     tag_invoke(match::implies_t, rel_matcher_t,
                rel_matcher_t<RelOp, Field, OtherValue>) -> bool {
-        return RelOp{}(ExpectedValue, OtherValue);
+        return ExpectedValue == OtherValue or
+               RelOp{}(ExpectedValue, OtherValue);
     }
 
     template <typename Msg>

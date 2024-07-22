@@ -54,6 +54,12 @@ TEST_CASE("negate not_equal_to", "[field matchers]") {
         std::is_same_v<decltype(n), msg::equal_to_t<test_field, 5> const>);
 }
 
+TEST_CASE("less_than X implies less_than Y (X == Y)", "[field matchers]") {
+    constexpr auto m = msg::less_than_t<test_field, 5>{};
+    constexpr auto n = msg::less_than_t<test_field, 5>{};
+    static_assert(match::implies(m, n));
+}
+
 TEST_CASE("less_than X implies less_than Y (X <= Y)", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_field, 5>{};
     constexpr auto n = msg::less_than_t<test_field, 6>{};
