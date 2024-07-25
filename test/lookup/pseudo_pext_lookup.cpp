@@ -6,6 +6,8 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+
 using pseudo_pext_direct = lookup::pseudo_pext_lookup<>;
 using pseudo_pext_indirect_1 = lookup::pseudo_pext_lookup<true, 1>;
 using pseudo_pext_indirect_2 = lookup::pseudo_pext_lookup<true, 2>;
@@ -97,4 +99,31 @@ TEMPLATE_TEST_CASE("lookup with scoped enum entries", "[pseudo pext lookup]",
     CHECK(lookup[some_key_t::BETA] == 23);
     CHECK(lookup[some_key_t::KAPPA] == 87);
     CHECK(lookup[some_key_t::GAMMA] == 4);
+}
+
+
+
+using val_t = std::array<std::uint32_t, 4>;
+constexpr static auto a = val_t{0, 1, 2, 3};
+constexpr static auto b = val_t{4, 5, 6, 7};
+constexpr static auto c = val_t{8, 9, 10, 11};
+constexpr static auto d = val_t{12, 13, 14, 15};
+
+TEMPLATE_TEST_CASE("lookup with std::array values", "[pseudo pext lookup]",
+                   pseudo_pext_direct, pseudo_pext_indirect_1,
+                   pseudo_pext_indirect_2, pseudo_pext_indirect_3,
+                   pseudo_pext_indirect_4
+) {
+
+    constexpr auto lookup =
+        TestType::make(CX_VALUE(lookup::input<std::uint32_t, val_t, 3>{
+            a, std::array{lookup::entry{54u, b}, lookup::entry{324u, c},
+                          lookup::entry{64u, d}}}));
+
+
+
+    CHECK(lookup[0] == a);
+    CHECK(lookup[54] == b);
+    CHECK(lookup[324] == c);
+    CHECK(lookup[64] == d);
 }
