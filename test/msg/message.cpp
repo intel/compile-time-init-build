@@ -3,6 +3,14 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <string>
+#include <type_traits>
+
 namespace {
 using namespace msg;
 
@@ -212,7 +220,18 @@ TEST_CASE("owning from view", "[message]") {
     auto v = msg.as_mutable_view();
     auto o = v.as_owning();
     static_assert(std::is_same_v<decltype(o), test_msg>);
-    CHECK(msg == o);
+    CHECK(std::equal(msg.data().begin(), msg.data().end(), o.data().begin()));
+}
+
+TEST_CASE("const view from mutable view", "[message]") {
+    test_msg msg{};
+    auto mv = msg.as_mutable_view();
+    auto v = mv.as_const_view();
+    static_assert(
+        std::is_same_v<decltype(v.data()),
+                       typename test_msg::definition_t::default_const_span_t>);
+    msg.set("f1"_field = 0xba11);
+    CHECK(0xba11 == v.get("f1"_field));
 }
 
 TEST_CASE("equal_to matcher", "[message]") {
@@ -430,4 +449,54 @@ TEST_CASE("extend message with new field constraint", "[message]") {
     using defn = extend<base_defn, "msg", field1::with_required<1>>;
     using expected_defn = message<"msg", id_field, field1::with_required<1>>;
     static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("message equivalence (owning)", "[message]") {
+    test_msg m1{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
+    test_msg m2{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
+    CHECK(equivalent(m1, m2));
+    test_msg other{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00f};
+    CHECK(not equivalent(m1, other));
+}
+
+TEST_CASE("message equivalence (owning/const_view)", "[message]") {
+    owning<msg_defn> m{"f1"_field = 0xba11, "f2"_field = 0x42,
+                       "f3"_field = 0xd00d};
+    auto cv = m.as_const_view();
+    CHECK(equivalent(m, cv));
+    CHECK(equivalent(cv, m));
+
+    owning<msg_defn> other{"f1"_field = 0xba11, "f2"_field = 0x42,
+                           "f3"_field = 0xd00f};
+    CHECK(not equivalent(other, cv));
+    CHECK(not equivalent(cv, other));
+}
+
+TEST_CASE("message equivalence (owning/mutable_view)", "[message]") {
+    owning<msg_defn> m{"f1"_field = 0xba11, "f2"_field = 0x42,
+                       "f3"_field = 0xd00d};
+    auto mv = m.as_mutable_view();
+    CHECK(equivalent(m, mv));
+    CHECK(equivalent(mv, m));
+
+    owning<msg_defn> other{"f1"_field = 0xba11, "f2"_field = 0x42,
+                           "f3"_field = 0xd00f};
+    CHECK(not equivalent(other, mv));
+    CHECK(not equivalent(mv, other));
+}
+
+TEST_CASE("message equivalence (views)", "[message]") {
+    owning<msg_defn> m{"f1"_field = 0xba11, "f2"_field = 0x42,
+                       "f3"_field = 0xd00d};
+    auto cv1 = m.as_const_view();
+    auto mv1 = m.as_mutable_view();
+    CHECK(equivalent(cv1, cv1));
+    CHECK(equivalent(mv1, mv1));
+    CHECK(equivalent(cv1, mv1));
+    CHECK(equivalent(mv1, cv1));
+
+    owning<msg_defn> other{"f1"_field = 0xba11, "f2"_field = 0x42,
+                           "f3"_field = 0xd00f};
+    auto cv2 = other.as_const_view();
+    CHECK(not equivalent(cv1, cv2));
 }

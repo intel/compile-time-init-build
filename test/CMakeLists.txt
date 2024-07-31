@@ -131,6 +131,8 @@ add_compile_fail_test(msg/fail/owning_msg_incompatible_storage.cpp LIBRARIES
                       warnings cib)
 add_compile_fail_test(msg/fail/owning_msg_incompatible_view.cpp LIBRARIES
                       warnings cib)
+add_compile_fail_test(msg/fail/message_cmp_owner.cpp LIBRARIES warnings cib)
+add_compile_fail_test(msg/fail/message_cmp_view.cpp LIBRARIES warnings cib)
 add_compile_fail_test(msg/fail/message_const_field_write.cpp LIBRARIES warnings
                       cib)
 add_compile_fail_test(msg/fail/message_dangling_view.cpp LIBRARIES warnings cib)
