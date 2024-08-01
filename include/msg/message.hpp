@@ -397,11 +397,40 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         [[nodiscard]] constexpr auto data() const { return storage; }
 
         [[nodiscard]] constexpr auto as_owning() { return owner_t{*this}; }
+        [[nodiscard]] constexpr auto as_const_view() const {
+            using cv_t =
+                view_t<stdx::span<std::add_const_t<typename Span::value_type>,
+                                  stdx::ct_capacity_v<Span>>>;
+            return cv_t{*this};
+        }
 
       private:
         static_assert(definition_t::fits_inside<span_t>,
                       "Fields overflow message storage!");
         span_t storage{};
+
+        friend constexpr auto operator==(view_t, view_t) -> bool {
+            static_assert(stdx::always_false_v<Span>,
+                          "Equality is not defined for messages: "
+                          "consider using equivalent() instead.");
+            return false;
+        }
+
+        using const_span_t =
+            stdx::span<std::add_const_t<typename Span::value_type>,
+                       stdx::ct_capacity_v<Span>>;
+        using mutable_span_t =
+            stdx::span<typename Span::value_type, stdx::ct_capacity_v<Span>>;
+
+        friend constexpr auto equiv(view_t lhs,
+                                    view_t<const_span_t> rhs) -> bool {
+            return (... and (lhs.get(Fields{}) == rhs.get(Fields{})));
+        }
+
+        friend constexpr auto equiv(view_t lhs,
+                                    view_t<mutable_span_t> rhs) -> bool {
+            return equiv(lhs, rhs.as_const_view());
+        }
     };
     using const_view_t = view_t<default_const_span_t>;
     using mutable_view_t = view_t<default_span_t>;
@@ -478,9 +507,27 @@ template <stdx::ct_string Name, typename... Fields> struct message {
                       "Fields overflow message storage!");
         storage_t storage{};
 
-        friend constexpr auto operator==(owner_t const &lhs,
-                                         owner_t const &rhs) -> bool {
-            return lhs.storage == rhs.storage;
+        friend constexpr auto operator==(owner_t const &,
+                                         owner_t const &) -> bool {
+            static_assert(stdx::always_false_v<Storage>,
+                          "Equality is not defined for messages: "
+                          "consider using equivalent() instead.");
+            return false;
+        }
+
+        using const_span_t = stdx::span<typename Storage::value_type const,
+                                        stdx::ct_capacity_v<Storage>>;
+        using mutable_span_t = stdx::span<typename Storage::value_type,
+                                          stdx::ct_capacity_v<Storage>>;
+
+        friend constexpr auto equiv(owner_t const &lhs,
+                                    view_t<const_span_t> rhs) -> bool {
+            return (... and (lhs.get(Fields{}) == rhs.get(Fields{})));
+        }
+
+        friend constexpr auto equiv(owner_t const &lhs,
+                                    view_t<mutable_span_t> rhs) -> bool {
+            return equiv(lhs, rhs.as_const_view());
         }
     };
 
@@ -518,8 +565,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     using matcher_t = decltype(match::all(typename Fields::matcher_t{}...));
 
-    // NewFields go first because they override existing fields of the same name
-    // (see unique_by_name)
+    // NewFields go first because they override existing fields of the same
+    // name (see unique_by_name)
     template <stdx::ct_string NewName, typename... NewFields>
     using extension =
         message_without_unique_field_names<NewName, NewFields..., Fields...>;
@@ -534,6 +581,16 @@ template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
 template <typename T> using const_view = typename T::const_view_t;
 
+template <typename M>
+concept messagelike =
+    requires { typename std::remove_cvref_t<M>::definition_t; };
+template <typename M>
+concept viewlike =
+    messagelike<M> and requires { typename std::remove_cvref_t<M>::span_t; };
+template <typename M>
+concept owninglike =
+    messagelike<M> and requires { typename std::remove_cvref_t<M>::storage_t; };
+
 template <typename V, typename Def>
 concept view_of = std::same_as<typename V::definition_t, Def> and
                   Def::template fits_inside<typename V::span_t>;
@@ -543,4 +600,26 @@ concept const_view_of =
 
 template <typename Def, stdx::ct_string Name, typename... Fields>
 using extend = typename Def::template extension<Name, Fields...>;
+
+template <owninglike O,
+          view_of<typename std::remove_cvref_t<O>::definition_t> V>
+constexpr auto equivalent(O &&o, V v) -> bool {
+    return equiv(std::forward<O>(o), v);
+}
+
+template <owninglike O,
+          view_of<typename std::remove_cvref_t<O>::definition_t> V>
+constexpr auto equivalent(V v, O &&o) -> bool {
+    return equiv(std::forward<O>(o), v);
+}
+
+template <viewlike V1, view_of<typename V1::definition_t> V2>
+constexpr auto equivalent(V1 v1, V2 v2) -> bool {
+    return equiv(v1, v2);
+}
+
+template <owninglike O1, owninglike O2>
+constexpr auto equivalent(O1 const &lhs, O2 const &rhs) {
+    return equiv(lhs, rhs.as_const_view());
+}
 } // namespace msg

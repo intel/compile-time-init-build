@@ -192,6 +192,22 @@ auto data = msg.data();
 
 This always returns a (const-observing) `stdx::span` over the underlying data.
 
+=== Message equivalence
+
+Equality (`operator==`) is not defined on messages. A general definition of
+equality is problematic, but that doesn't mean we can't have a useful notion of
+equivalence that is spelled differently:
+
+[source,cpp]
+----
+auto m1 = my_message{"my_field"_field = 42};
+auto m2 = my_message{"my_field"_field = 0x2a};
+assert(equivalent(m1.as_const_view(), m2.as_mutable_view()));
+----
+
+Equivalence means that all fields hold the same values. It is defined for all
+combinations of owning messages, const views and mutable views.
+
 === Handling messages with callbacks
 
 _cib_ contains an implementation of a basic message handler which can be used in
