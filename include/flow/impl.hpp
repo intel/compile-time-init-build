@@ -81,16 +81,16 @@ class impl : public interface {
     /**
      * Execute the entire flow in order.
      */
-    auto operator()() const -> void final {
+    __attribute__((flatten)) auto operator()() const -> void final {
         constexpr auto name =
             stdx::ct_string_to_type<Name, sc::string_constant>();
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.start({})", name);
         }
 
-        for (auto const func : functionPtrs) {
-            func();
-        }
+        [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+            (functionPtrs[Is](), ...);
+        }(std::make_index_sequence<capacity>{});
 
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.end({})", name);
