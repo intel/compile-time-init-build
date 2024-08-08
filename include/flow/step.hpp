@@ -58,19 +58,16 @@ template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
 }
 
 inline namespace literals {
-template <class T, T... Cs> [[nodiscard]] constexpr auto operator""_action() {
-    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
+template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_action() {
     return action<S>();
 }
 
-template <class T, T... Cs> [[nodiscard]] constexpr auto operator""_step() {
-    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
+template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_step() {
     return action<S>();
 }
 
-template <class T, T... Cs>
+template <stdx::ct_string S>
 [[nodiscard]] constexpr auto operator""_milestone() {
-    constexpr auto S = stdx::ct_string<sizeof...(Cs) + 1U>{{Cs..., 0}};
     return milestone<S>();
 }
 } // namespace literals
