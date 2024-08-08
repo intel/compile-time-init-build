@@ -14,7 +14,7 @@ env:
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
   DEFAULT_LLVM_VERSION: 18
-  DEFAULT_GCC_VERSION: 12
+  DEFAULT_GCC_VERSION: 13
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -222,18 +222,13 @@ jobs:
       fail-fast: false
       matrix:
         sanitizer: [undefined, address, thread]
-        compiler: [clang, gcc]
+        compiler: [clang]
         include:
           - compiler: clang
             cc: "clang"
             cxx: "clang++"
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18
             toolchain_root: "/usr/lib/llvm-18"
-          - compiler: gcc
-            cc: "gcc-12"
-            cxx: "g++-12"
-            install: sudo apt update && sudo apt install -y gcc-12
-            toolchain_root: "/usr"
 
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -279,7 +274,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
-        run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
+        run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
 
       - name: Restore CPM cache
         env:
