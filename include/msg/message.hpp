@@ -171,11 +171,13 @@ template <typename Name> struct field_name {
 } // namespace detail
 
 inline namespace literals {
-template <class T, T... chars> constexpr auto operator""_field() {
-    return detail::field_name<sc::string_constant<T, chars...>>{};
+template <stdx::ct_string S> constexpr auto operator""_field() {
+    using Name = decltype(stdx::ct_string_to_type<S, sc::string_constant>());
+    return detail::field_name<Name>{};
 }
-template <class T, T... chars> constexpr auto operator""_f() {
-    return detail::field_name<sc::string_constant<T, chars...>>{};
+template <stdx::ct_string S> constexpr auto operator""_f() {
+    using Name = decltype(stdx::ct_string_to_type<S, sc::string_constant>());
+    return detail::field_name<Name>{};
 }
 } // namespace literals
 
