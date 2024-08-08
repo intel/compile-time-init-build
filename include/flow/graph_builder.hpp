@@ -147,7 +147,8 @@ struct graph_builder {
         constexpr static auto built() {
             constexpr auto v = Initialized::value;
             constexpr auto built = build(v);
-            static_assert(built.has_value());
+            static_assert(built.has_value(),
+                          "Topological sort failed: cycle in flow");
             return *built;
         }
 
