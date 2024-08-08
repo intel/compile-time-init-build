@@ -274,7 +274,9 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Install build tools
-        run: sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
 
       - name: Restore CPM cache
         env:

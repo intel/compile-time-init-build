@@ -119,6 +119,7 @@ add_unit_test(
     catalog2_lib
     catalog_strings)
 
+add_compile_fail_test(flow/fail/cyclic_flow.cpp LIBRARIES warnings cib)
 add_compile_fail_test(msg/fail/callback_bad_field_name.cpp LIBRARIES warnings
                       cib)
 add_compile_fail_test(msg/fail/field_location.cpp LIBRARIES warnings cib)
