@@ -2,6 +2,7 @@
 #include <msg/message.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_templated.hpp>
 
 #include <algorithm>
 #include <array>
@@ -499,4 +500,41 @@ TEST_CASE("message equivalence (views)", "[message]") {
                            "f3"_field = 0xd00f};
     auto cv2 = other.as_const_view();
     CHECK(not equivalent(cv1, cv2));
+}
+
+namespace {
+template <typename View>
+struct MsgEquivMatcher : Catch::Matchers::MatcherGenericBase {
+    MsgEquivMatcher(View v) : view{v} {}
+
+    template <typename OtherMsg> bool match(OtherMsg const &other) const {
+        return msg::equivalent(view, other);
+    }
+
+    std::string describe() const override {
+        return "Equivalent: " + Catch::rangeToString(view.data());
+    }
+
+  private:
+    View view;
+};
+
+template <typename Msg>
+auto MsgEquiv(Msg const &msg) -> MsgEquivMatcher<typename Msg::const_view_t> {
+    return {msg.as_const_view()};
+}
+} // namespace
+
+TEST_CASE("message equivalence matcher", "[message]") {
+    owning<msg_defn> m{"f1"_field = 0xba11, "f2"_field = 0x42,
+                       "f3"_field = 0xd00d};
+    auto cv1 = m.as_const_view();
+    auto mv1 = m.as_mutable_view();
+
+    CHECK_THAT(cv1, MsgEquiv(m));
+    CHECK_THAT(mv1, MsgEquiv(m));
+
+    owning<msg_defn> m2{"f1"_field = 0xba12, "f2"_field = 0x42,
+                        "f3"_field = 0xd00d};
+    CHECK_THAT(m2, not MsgEquiv(m));
 }
