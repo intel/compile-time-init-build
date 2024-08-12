@@ -399,11 +399,12 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         [[nodiscard]] constexpr auto data() const { return storage; }
 
         [[nodiscard]] constexpr auto as_owning() { return owner_t{*this}; }
+
+        using const_view_t =
+            view_t<stdx::span<std::add_const_t<typename Span::value_type>,
+                              stdx::ct_capacity_v<Span>>>;
         [[nodiscard]] constexpr auto as_const_view() const {
-            using cv_t =
-                view_t<stdx::span<std::add_const_t<typename Span::value_type>,
-                                  stdx::ct_capacity_v<Span>>>;
-            return cv_t{*this};
+            return const_view_t{*this};
         }
 
       private:
@@ -500,6 +501,10 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         [[nodiscard]] constexpr auto as_mutable_view() LIFETIMEBOUND {
             return view_t{*this};
         }
+
+        using const_view_t =
+            view_t<stdx::span<std::add_const_t<typename Storage::value_type>,
+                              stdx::ct_capacity_v<Storage>>>;
         [[nodiscard]] constexpr auto as_const_view() const LIFETIMEBOUND {
             return view_t{*this};
         }
