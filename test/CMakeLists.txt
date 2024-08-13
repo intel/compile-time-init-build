@@ -67,6 +67,7 @@ add_tests(
     msg/indexed_callback
     msg/indexed_handler
     msg/message
+    msg/send
     sc/format
     sc/string_constant
     seq/sequencer)
