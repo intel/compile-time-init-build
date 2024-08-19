@@ -45,10 +45,14 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
     template <std::convertible_to<func_ptr_t>... Fs>
     // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     [[nodiscard]] constexpr auto add(Fs &&...fs) const {
-        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return callback<NumFuncs + sizeof...(Fs), ArgTypes...>{
-                {funcs[Is]..., std::forward<Fs>(fs)...}};
-        }(std::make_index_sequence<NumFuncs>{});
+        callback<NumFuncs + sizeof...(Fs), ArgTypes...> cb;
+        auto i = std::size_t{};
+        while (i < NumFuncs) {
+            cb.funcs[i] = funcs[i];
+            ++i;
+        }
+        ((cb.funcs[i++] = std::forward<Fs>(fs)), ...);
+        return cb;
     }
 
     /**
