@@ -61,7 +61,6 @@ struct graphviz_builder {
         static auto run() -> std::string { return built(); }
 
       public:
-        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr operator VizFunctionPtr() const { return run; }
         auto operator()() const -> std::string { return run(); }
         constexpr static bool active = true;

@@ -163,7 +163,6 @@ template <typename TDestinations> struct log_handler {
 
   private:
     template <typename... MsgDataTypes>
-    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     NEVER_INLINE auto
     dispatch_pass_by_args(MsgDataTypes &&...msg_data) -> void {
         stdx::for_each(
