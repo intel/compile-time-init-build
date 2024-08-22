@@ -14,7 +14,6 @@ struct lazy_string_format {
     constexpr lazy_string_format(StringConstant, ArgTuple newArgs)
         : args{newArgs} {}
 
-    // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
     template <typename F> constexpr auto apply(F &&f) const {
         return args.apply(
             [&](auto const &...as) { return std::forward<F>(f)(str, as...); });
