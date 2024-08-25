@@ -83,7 +83,7 @@ struct field_spec_t {
     constexpr static auto size = BitSize;
 };
 
-template <std::uint32_t DWordIndex, std::uint32_t BitSize, std::uint32_t Lsb>
+template <std::uint32_t Index, std::uint32_t BitSize, std::uint32_t Lsb>
 struct bits_locator_t {
     constexpr static auto size = BitSize;
 
@@ -112,7 +112,7 @@ struct bits_locator_t {
         constexpr auto Msb = Lsb + BitSize - 1u;
 
         constexpr auto BaseIndex =
-            DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
+            Index * sizeof(std::uint32_t) / sizeof(elem_t);
 
         constexpr auto elem_size = stdx::bit_size<elem_t>();
         constexpr auto max_idx = BaseIndex + Msb / elem_size;
@@ -158,7 +158,7 @@ struct bits_locator_t {
         constexpr auto Msb = Lsb + BitSize - 1u;
 
         constexpr auto BaseIndex =
-            DWordIndex * sizeof(std::uint32_t) / sizeof(elem_t);
+            Index * sizeof(std::uint32_t) / sizeof(elem_t);
 
         constexpr auto elem_size = stdx::bit_size<elem_t>();
         [[maybe_unused]] constexpr auto min_idx = BaseIndex + Lsb / elem_size;
@@ -209,13 +209,13 @@ struct bits_locator_t {
     template <std::uint32_t NumBits>
     constexpr static auto fits_inside() -> bool {
         constexpr auto Msb = Lsb + BitSize - 1;
-        return DWordIndex * 32 + Msb <= NumBits;
+        return Index * 32 + Msb <= NumBits;
     }
 
     template <typename T> constexpr static auto extent_in() -> std::size_t {
         constexpr auto msb = Lsb + BitSize - 1;
         constexpr auto msb_extent = (msb + CHAR_BIT - 1) / CHAR_BIT;
-        constexpr auto base_extent = DWordIndex * sizeof(std::uint32_t);
+        constexpr auto base_extent = Index * sizeof(std::uint32_t);
         constexpr auto extent = base_extent + msb_extent;
         return (extent + sizeof(T) - 1) / sizeof(T);
     }
@@ -277,12 +277,19 @@ template <bits_locator... BLs> struct field_locator_t {
 };
 } // namespace detail
 
+enum struct byte_index_t : std::uint32_t {};
 enum struct dword_index_t : std::uint32_t {};
 enum struct msb_t : std::uint32_t {};
 enum struct lsb_t : std::uint32_t {};
 
 inline namespace literals {
 // NOLINTNEXTLINE(google-runtime-int)
+CONSTEVAL auto operator""_bi(unsigned long long int v) -> byte_index_t {
+    return static_cast<byte_index_t>(v);
+}
+CONSTEVAL auto operator""_dwi(unsigned long long int v) -> dword_index_t {
+    return static_cast<dword_index_t>(v);
+}
 CONSTEVAL auto operator""_dw(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
@@ -315,6 +322,32 @@ template <> struct at<dword_index_t, msb_t, lsb_t> {
     }
     [[nodiscard]] constexpr auto valid() const -> bool {
         return size() <= 64 and
+               stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
+    }
+    [[nodiscard]] constexpr auto
+    sort_key() const -> std::underlying_type_t<lsb_t> {
+        return index() * 32u + stdx::to_underlying(lsb_);
+    }
+};
+
+template <> struct at<byte_index_t, msb_t, lsb_t> {
+    byte_index_t index_{};
+    msb_t msb_{};
+    lsb_t lsb_{};
+
+    [[nodiscard]] constexpr auto
+    index() const -> std::underlying_type_t<byte_index_t> {
+        return stdx::to_underlying(index_) / 4;
+    }
+    [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
+        return (stdx::to_underlying(index_) * 8) % 32 +
+               stdx::to_underlying(lsb_);
+    }
+    [[nodiscard]] constexpr auto size() const -> std::underlying_type_t<lsb_t> {
+        return stdx::to_underlying(msb_) - stdx::to_underlying(lsb_) + 1;
+    }
+    [[nodiscard]] constexpr auto valid() const -> bool {
+        return size() <= 8 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
     [[nodiscard]] constexpr auto

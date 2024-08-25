@@ -70,6 +70,34 @@ TEST_CASE("across multiple storage elements", "[field insert]") {
     CHECK(0b111u == data[2]);
 }
 
+TEST_CASE("with byte index", "[field insert]") {
+    using F = field<"", std::uint32_t>::located<
+        at{0_bi, 7_msb, 2_lsb}, at{1_bi, 7_msb, 0_lsb}, at{2_bi, 1_msb, 0_lsb}>;
+    std::array<std::uint8_t, 3> data{
+        0b0000'0010u,
+        0b0000'0000u,
+        0b0000'0100u,
+    };
+    F::insert(data, 0b11'1010'1010'1010'11u);
+    CHECK(0b1110'1010u == data[0]);
+    CHECK(0b1010'1010u == data[1]);
+    CHECK(0b0000'0111u == data[2]);
+}
+
+TEST_CASE("with byte index, at order", "[field insert]") {
+    using F = field<"", std::uint32_t>::located<
+        at{2_bi, 1_msb, 0_lsb}, at{1_bi, 7_msb, 0_lsb}, at{0_bi, 7_msb, 2_lsb}>;
+    std::array<std::uint8_t, 3> data{
+        0b0000'0010u,
+        0b0000'0000u,
+        0b0000'0100u,
+    };
+    F::insert(data, 0b11'1010'1010'1010'11u);
+    CHECK(0b1010'1110u == data[0]);
+    CHECK(0b1010'1010u == data[1]);
+    CHECK(0b0000'0111u == data[2]);
+}
+
 TEST_CASE("without dword index", "[field insert]") {
     using F = field<"", std::uint32_t>::located<at{17_msb, 2_lsb}>;
     std::array<std::uint8_t, 3> data{

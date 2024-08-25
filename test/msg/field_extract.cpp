@@ -61,12 +61,34 @@ TEST_CASE("across multiple storage elements", "[field extract]") {
     CHECK(0b11'1010'1010'1010'11u == F::extract(data));
 }
 
+TEST_CASE("with byte index", "[field extract]") {
+    using F = field<"", std::uint32_t>::located<
+        at{0_bi, 7_msb, 2_lsb}, at{1_bi, 7_msb, 0_lsb}, at{2_bi, 1_msb, 0_lsb}>;
+    std::array<std::uint8_t, 3> data{
+        0b1010'1110u,
+        0b1010'1010u,
+        0b0000'0111u,
+    };
+    CHECK(0b1010'11'1010'1010'11u == F::extract(data));
+}
+
+TEST_CASE("with byte index, at order", "[field extract]") {
+    using F = field<"", std::uint32_t>::located<
+        at{2_bi, 1_msb, 0_lsb}, at{1_bi, 7_msb, 0_lsb}, at{0_bi, 7_msb, 2_lsb}>;
+    std::array<std::uint8_t, 3> data{
+        0b1010'1110u,
+        0b1010'1010u,
+        0b0000'0111u,
+    };
+    CHECK(0b11'1010'1010'1010'11u == F::extract(data));
+}
+
 TEST_CASE("without dword index", "[field extract]") {
     using F = field<"", std::uint32_t>::located<at{17_msb, 2_lsb}>;
     std::array<std::uint8_t, 3> data{
         0b1010'1110u,
         0b1010'1010u,
-        0b111u,
+        0b0000'0111u,
     };
     CHECK(0b11'1010'1010'1010'11u == F::extract(data));
 }
