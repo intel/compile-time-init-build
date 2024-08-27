@@ -7,14 +7,12 @@
 namespace cib::detail {
 template <typename... Components>
 struct components : public detail::config_item {
-    template <typename... Args>
-    [[nodiscard]] constexpr auto extends_tuple(Args const &...args) const {
-        return stdx::tuple_cat(Components::config.extends_tuple(args...)...);
+    [[nodiscard]] constexpr auto extends_tuple() const {
+        return stdx::tuple_cat(Components::config.extends_tuple()...);
     }
 
-    template <typename... Args>
-    [[nodiscard]] constexpr auto exports_tuple(Args const &...args) const {
-        return stdx::tuple_cat(Components::config.exports_tuple(args...)...);
+    [[nodiscard]] constexpr auto exports_tuple() const {
+        return stdx::tuple_cat(Components::config.exports_tuple()...);
     }
 };
 } // namespace cib::detail
