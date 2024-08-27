@@ -15,9 +15,7 @@ struct extend : public config_item {
 
     CONSTEVAL explicit extend(Args const &...args) : args_tuple{args...} {}
 
-    template <typename... InitArgs>
-    [[nodiscard]] constexpr auto
-    extends_tuple(InitArgs const &...) const -> stdx::tuple<extend> {
+    [[nodiscard]] constexpr auto extends_tuple() const -> stdx::tuple<extend> {
         return {*this};
     }
 };

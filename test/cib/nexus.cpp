@@ -99,16 +99,17 @@ TEST_CASE("configuration with multiple components, services, and features") {
     }
 }
 
-struct SimpleConditionalComponent {
+template <auto V> struct SimpleConditionalComponent {
+
     constexpr static auto config = cib::config(cib::conditional(
-        []<typename Arg>(Arg) { return Arg::value == 42; },
+        []() { return V == 42; },
         cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; })));
 };
 
 template <int ConditionalValue> struct ConditionalTestProject {
-    constexpr static auto config =
-        cib::config(cib::args<ConditionalValue>, cib::exports<TestCallback<0>>,
-                    cib::components<SimpleConditionalComponent>);
+    constexpr static auto config = cib::config(
+        cib::exports<TestCallback<0>>,
+        cib::components<SimpleConditionalComponent<ConditionalValue>>);
 };
 
 TEST_CASE("configuration with one conditional component") {
@@ -131,21 +132,20 @@ TEST_CASE("configuration with one conditional component") {
     }
 }
 
-template <int Id> struct ConditionalComponent {
-    constexpr static auto config = cib::config(
-        cib::conditional([]<typename Arg>(Arg) { return Arg::value == Id; },
-                         cib::extend<TestCallback<Id>>(
-                             []() { is_callback_invoked<Id> = true; })));
+template <int EnId, int Id> struct ConditionalComponent {
+    constexpr static auto config = cib::config(cib::conditional(
+        []() { return EnId == Id; }, cib::extend<TestCallback<Id>>([]() {
+            is_callback_invoked<Id> = true;
+        })));
 };
 
 template <int EnabledId> struct ConditionalConfig {
     constexpr static auto config = cib::config(
-        cib::args<EnabledId>,
-
         cib::exports<TestCallback<0>, TestCallback<1>, TestCallback<2>>,
 
-        cib::components<ConditionalComponent<0>, ConditionalComponent<1>,
-                        ConditionalComponent<2>>);
+        cib::components<ConditionalComponent<EnabledId, 0>,
+                        ConditionalComponent<EnabledId, 1>,
+                        ConditionalComponent<EnabledId, 2>>);
 };
 
 TEST_CASE("configuration with conditional features") {

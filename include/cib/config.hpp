@@ -12,13 +12,6 @@
 
 namespace cib {
 /**
- * List of arguments to configure compile-time initialization of components.
- *
- * @see cib::conditional
- */
-template <auto... Args> constexpr static detail::args<Args...> args{};
-
-/**
  * Container for project and component configuration declarations.
  *
  * Each component or project type must contain a static constexpr "config"
@@ -32,13 +25,7 @@ template <auto... Args> constexpr static detail::args<Args...> args{};
  */
 template <typename... Configs>
 [[nodiscard]] CONSTEVAL auto config(Configs const &...configs) {
-    return detail::config{args<>, configs...};
-}
-
-template <auto... Args, typename... Configs>
-[[nodiscard]] CONSTEVAL auto config(detail::args<Args...> config_args,
-                                    Configs const &...configs) {
-    return detail::config{config_args, configs...};
+    return detail::config{configs...};
 }
 
 /**
@@ -63,10 +50,6 @@ constexpr static detail::exports<Services...> exports{};
  *
  * @tparam Service
  *      Type name of the service to extend.
- *
- * @tparam ServiceTemplateArgs
- *      Template arguments to be passed to the service's
- *      builder add function.
  *
  * @param args
  *      Value arguments to be passed to the service's builder add function.
