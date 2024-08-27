@@ -149,7 +149,14 @@ struct graph_builder {
             constexpr auto built = build(v);
             static_assert(built.has_value(),
                           "Topological sort failed: cycle in flow");
-            return *built;
+
+            constexpr auto functionPtrs = built->functionPtrs;
+            constexpr auto size = functionPtrs.size();
+            constexpr auto name = built->name;
+
+            return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+                return detail::inlined_func_list<name, functionPtrs[Is]...>{};
+            }(std::make_index_sequence<size>{});
         }
 
         constexpr static auto run() { built()(); }

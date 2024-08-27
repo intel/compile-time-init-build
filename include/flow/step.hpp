@@ -27,16 +27,20 @@ template <stdx::ct_string Name> struct ct_node : rt_node {
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
 };
 
+template <stdx::ct_string Name, stdx::ct_string Type>
+static void log_name_func() {
+    CIB_TRACE("flow.{}({})",
+              stdx::ct_string_to_type<Type, sc::string_constant>(),
+              stdx::ct_string_to_type<Name, sc::string_constant>());
+}
+
 namespace detail {
 template <stdx::ct_string Name, stdx::ct_string Type, typename F>
 [[nodiscard]] constexpr auto make_node() {
-    return ct_node<Name>{
-        {.run = F{}, .log_name = [] {
-             CIB_TRACE("flow.{}({})",
-                       stdx::ct_string_to_type<Type, sc::string_constant>(),
-                       stdx::ct_string_to_type<Name, sc::string_constant>());
-         }}};
+    return ct_node<Name>{{.run = F{}, .log_name = log_name_func<Name, Type>}};
 }
+
+constexpr auto empty_func = []() {};
 } // namespace detail
 
 template <stdx::ct_string Name, typename F>
@@ -54,7 +58,7 @@ template <stdx::ct_string Name> [[nodiscard]] constexpr auto step() {
 }
 
 template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
-    return detail::make_node<Name, "milestone", decltype([] {})>();
+    return detail::make_node<Name, "milestone", decltype(detail::empty_func)>();
 }
 
 inline namespace literals {
