@@ -274,6 +274,8 @@ template <bits_locator... BLs> struct field_locator_t {
     template <typename T> constexpr static auto extent_in() -> std::size_t {
         return std::max({std::size_t{}, BLs::template extent_in<T>()...});
     }
+
+    constexpr static auto size = (std::size_t{} + ... + BLs::size);
 };
 } // namespace detail
 
@@ -449,6 +451,10 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
         return format("{}: 0x{:x}"_sc, spec_t::name, v);
+    }
+
+    constexpr static auto can_hold(value_type v) -> bool {
+        return locator_t::size >= static_cast<std::size_t>(stdx::bit_width(v));
     }
 
     // ======================================================================
