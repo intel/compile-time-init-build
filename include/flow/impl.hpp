@@ -13,11 +13,6 @@
 #include <type_traits>
 
 namespace flow {
-// NOLINTNEXTLINE(cppcoreguidelines-virtual-class-destructor)
-struct interface {
-    virtual auto operator()() const -> void {}
-};
-
 /**
  * flow::impl is a constant representation of a series of Milestones and actions
  * to be executed in a specific order.
@@ -35,8 +30,7 @@ struct interface {
  *
  * @see flow::builder
  */
-template <stdx::ct_string Name, std::size_t NumSteps>
-class impl : public interface {
+template <stdx::ct_string Name, std::size_t NumSteps> class impl {
   private:
     constexpr static bool loggingEnabled = not Name.empty();
 
@@ -48,11 +42,13 @@ class impl : public interface {
         }
     }();
 
+  public:
     stdx::cx_vector<FunctionPtr, capacity> functionPtrs{};
 
-  public:
     using node_t = rt_node;
     constexpr static bool active = capacity > 0;
+
+    constexpr static auto name = Name;
 
     /**
      * Create a new flow::impl of Milestones.
@@ -77,24 +73,29 @@ class impl : public interface {
                            [](auto const &milestone) { return milestone.run; });
         }
     }
+};
 
-    /**
-     * Execute the entire flow in order.
-     */
-    __attribute__((flatten)) auto operator()() const -> void final {
+namespace detail {
+template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
+    constexpr static auto active = sizeof...(FuncPtrs) > 0;
+
+    __attribute__((flatten, always_inline)) auto operator()() const -> void {
+        constexpr static bool loggingEnabled = not Name.empty();
+
         constexpr auto name =
             stdx::ct_string_to_type<Name, sc::string_constant>();
+
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.start({})", name);
         }
 
-        [this]<std::size_t... Is>(std::index_sequence<Is...>) {
-            (functionPtrs[Is](), ...);
-        }(std::make_index_sequence<capacity>{});
+        (FuncPtrs(), ...);
 
         if constexpr (loggingEnabled) {
             CIB_TRACE("flow.end({})", name);
         }
     }
 };
+} // namespace detail
+
 } // namespace flow
