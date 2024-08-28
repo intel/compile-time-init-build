@@ -44,11 +44,11 @@ Actions are added to the flow inside a component's `cib::config`.
 struct morning {
   constexpr auto config = cib::config(
     cib::extend<MorningRoutine>(
-        WAKE_UP >>
-        selfcare::SHOWER >>
-        selfcare::GET_DRESSED >>
-        food::MAKE_COFFEE >>
-        food::DRINK_COFFEE));
+        *WAKE_UP >>
+        *selfcare::SHOWER >>
+        *selfcare::GET_DRESSED >>
+        *food::MAKE_COFFEE >>
+        *food::DRINK_COFFEE));
 };
 ----
 
@@ -57,6 +57,17 @@ example `WAKE_UP >> SHOWER` means you need to wake up first before you can take
 a shower. The flow library will order actions in a flow to respect these
 dependencies. The actions will be executed in an order that respects all given
 dependencies.
+
+The `*` operator is used to explicitly add an action to the
+flow. Without the `*` operator an action is just a reference.
+A compile-time error will be triggered if an action is referenced without ever
+being explicitly added to the flow. If an action is added under a compile-time
+or runtime conditional, and the conditional is false, then it is as if the
+action was never added at all.
+
+The behavior of the `*` operator ensures that merely referencing an 
+action to create an ordering dependency doesn't unintentionally add the action
+to the flow.
 
 If we only use the `morning` component in our project, the `MorningRoutine` flow
 graph would look like the following:
@@ -93,11 +104,11 @@ struct childcare {
   constexpr auto config = cib::config(
       cib::extend<MorningRoutine>(
           food::MAKE_COFFEE >>          // this step exists in the MorningRoutine flow
-          PACK_SCHOOL_LUNCHES >>        // new
+          *PACK_SCHOOL_LUNCHES >>       // new
           food::DRINK_COFFEE >>         // existing
-          food::MAKE_BREAKFAST >>       // new
-          food::EAT_BREAKFAST >>        // new
-          SEND_KIDS_TO_SCHOOL));        // new
+          *food::MAKE_BREAKFAST >>      // new
+          *food::EAT_BREAKFAST >>       // new
+          *SEND_KIDS_TO_SCHOOL));       // new
 };
 ----
 
@@ -140,7 +151,7 @@ struct exercise {
   constexpr auto config = cib::config(
       cib::extend<MorningRoutine>(
           morning::WAKE_UP >>
-          RIDE_STATIONARY_BIKE >>
+          *RIDE_STATIONARY_BIKE >>
           selfcare::SHOWER));
 };
 ----
@@ -321,7 +332,47 @@ namespace example_component {
   constexpr auto config = cib::config(
       cib::extend<MyFlow>(
           // no order requirement between these actions
-          SOME_ACTION && SOME_OTHER_ACTION));
+          *SOME_ACTION && *SOME_OTHER_ACTION));
+}
+----
+
+==== `operator*`
+
+Explicitly add an action to the flow. Actions used in flow extensions without
+the `*` will be treated as references only and will not be added to the
+flow at that location. It is a compilation error if an action is not added 
+with a `*` in exactly one location in the overall config.
+
+Actions can be added and ordered all at once:
+
+[source,cpp]
+----
+namespace example_component {
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(
+          // Add both actions and create an ordering between them.
+          *SOME_ACTION >> *SOME_OTHER_ACTION));
+}
+----
+
+Actions can also be added and ordered seperately:
+
+[source,cpp]
+----
+namespace other_component {
+  constexpr auto INIT_SOMETHING = ...
+
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(*INIT_SOMETHING));
+}
+
+namespace example_component {
+  constexpr auto DO_A_THING = ...
+
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(
+          other_component::INIT_SOMETHING >> 
+          *DO_A_THING));
 }
 ----
 

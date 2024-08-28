@@ -9,7 +9,7 @@
 
 namespace seq {
 template <stdx::ct_string Name = "">
-using builder = flow::graph<Name, flow::graph_builder<impl>>;
+using builder = flow::graph<Name, flow::graph_builder<Name, impl>>;
 
 template <stdx::ct_string Name = "">
 struct service : cib::builder_meta<builder<Name>, flow::FunctionPtr> {};

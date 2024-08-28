@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cib/detail/runtime_conditional.hpp>
 #include <cib/func_decl.hpp>
 #include <flow/common.hpp>
+#include <flow/subgraph_identity.hpp>
 #include <log/log.hpp>
 #include <sc/string_constant.hpp>
 
@@ -21,23 +23,50 @@ struct rt_node {
                                      rt_node const &) -> bool = default;
 };
 
-template <stdx::ct_string Name> struct ct_node : rt_node {
-    using is_node = void;
+template <stdx::ct_string Type, stdx::ct_string Name,
+          subgraph_identity Identity, typename Cond, typename F>
+struct ct_node : rt_node {
+    using is_subgraph = void;
+    using type_t =
+        decltype(stdx::ct_string_to_type<Type, sc::string_constant>());
+
     using name_t =
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+
+    constexpr static auto ct_name = Name;
+
+    constexpr static auto identity = Identity;
+
+    constexpr static auto condition = Cond{};
+
+    constexpr static auto run_func = [] {
+        if (condition) {
+            F{}();
+        }
+    };
+
+    constexpr static auto log_func = [] {
+        if (condition) {
+            CIB_TRACE("flow.{}({})", type_t{}, name_t{});
+        }
+    };
+
+    constexpr ct_node() : rt_node{run_func, log_func} {}
+
+    constexpr auto operator*() const {
+        if constexpr (Identity == subgraph_identity::REFERENCE) {
+            return ct_node<Type, Name, subgraph_identity::VALUE, Cond, F>{};
+        } else {
+            return ct_node{};
+        }
+    }
 };
 
-template <stdx::ct_string Name, stdx::ct_string Type>
-static void log_name_func() {
-    CIB_TRACE("flow.{}({})",
-              stdx::ct_string_to_type<Type, sc::string_constant>(),
-              stdx::ct_string_to_type<Name, sc::string_constant>());
-}
-
 namespace detail {
-template <stdx::ct_string Name, stdx::ct_string Type, typename F>
+template <stdx::ct_string Type, stdx::ct_string Name, typename F>
 [[nodiscard]] constexpr auto make_node() {
-    return ct_node<Name>{{.run = F{}, .log_name = log_name_func<Name, Type>}};
+    return ct_node<Type, Name, subgraph_identity::REFERENCE,
+                   cib::detail::always_condition_t, F>{};
 }
 
 constexpr auto empty_func = []() {};
@@ -46,7 +75,7 @@ constexpr auto empty_func = []() {};
 template <stdx::ct_string Name, typename F>
     requires(stdx::is_function_object_v<F> and std::is_empty_v<F>)
 [[nodiscard]] constexpr auto action(F const &) {
-    return detail::make_node<Name, "action", F>();
+    return detail::make_node<"action", Name, F>();
 }
 
 template <stdx::ct_string Name> [[nodiscard]] constexpr auto action() {
@@ -58,7 +87,7 @@ template <stdx::ct_string Name> [[nodiscard]] constexpr auto step() {
 }
 
 template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
-    return detail::make_node<Name, "milestone", decltype(detail::empty_func)>();
+    return detail::make_node<"milestone", Name, decltype(detail::empty_func)>();
 }
 
 inline namespace literals {
@@ -75,4 +104,17 @@ template <stdx::ct_string S>
     return milestone<S>();
 }
 } // namespace literals
+
+template <typename Cond, stdx::ct_string Type, stdx::ct_string Name,
+          subgraph_identity Identity, typename NodeCond, typename F>
+constexpr auto
+make_runtime_conditional(Cond, ct_node<Type, Name, Identity, NodeCond, F>) {
+    if constexpr (Identity == subgraph_identity::VALUE) {
+        return ct_node<Type, Name, Identity, decltype(NodeCond{} and Cond{}),
+                       F>{};
+    } else {
+        return ct_node<Type, Name, Identity, NodeCond, F>{};
+    }
+}
+
 } // namespace flow

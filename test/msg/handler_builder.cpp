@@ -36,6 +36,16 @@ struct test_project {
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
 
+template <bool V>
+constexpr auto when_feature_enabled =
+    cib::runtime_condition<"feature_a_enabled">([] { return V; });
+
+template <bool V> struct runtime_condition_project {
+    constexpr static auto config = cib::config(
+        cib::exports<test_service>,
+        when_feature_enabled<V>(cib::extend<test_service>(test_callback)));
+};
+
 std::string log_buffer{};
 } // namespace
 
@@ -50,6 +60,33 @@ TEST_CASE("build handler", "[handler_builder]") {
     callback_success = false;
     cib::service<test_service>->handle(test_msg_t{"id"_field = 0x80});
     CHECK(callback_success);
+}
+
+TEST_CASE("build handler (no match)", "[handler_builder]") {
+    cib::nexus<test_project> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{"id"_field = 0x70});
+    CHECK(not callback_success);
+}
+
+TEST_CASE("true runtime condition", "[handler_builder]") {
+    cib::nexus<runtime_condition_project<true>> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{"id"_field = 0x80});
+    CHECK(callback_success);
+}
+
+TEST_CASE("false runtime condition", "[handler_builder]") {
+    cib::nexus<runtime_condition_project<false>> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(test_msg_t{"id"_field = 0x80});
+    CHECK(not callback_success);
 }
 
 TEST_CASE("match output success", "[handler_builder]") {
