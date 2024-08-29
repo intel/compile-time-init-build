@@ -32,9 +32,6 @@ constexpr callback_args_t<BaseMsgT, ExtraCallbackArgsT...> callback_args{};
 template <typename IndexT, typename CallbacksT, typename BaseMsgT,
           typename... ExtraCallbackArgsT>
 struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
-    using callback_func_t = void (*)(BaseMsgT const &,
-                                     ExtraCallbackArgsT... args);
-
     IndexT index;
     CallbacksT callback_entries;
 
@@ -52,16 +49,14 @@ struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
            ExtraCallbackArgsT... args) const -> bool final {
         auto const callback_candidates = index(msg);
 
-        for_each([&](auto i) { callback_entries[i](msg, args...); },
+        bool handled{};
+        for_each([&](auto i) { handled |= callback_entries[i](msg, args...); },
                  callback_candidates);
 
-        bool const candidates_found = !callback_candidates.none();
-
-        if (not candidates_found) {
+        if (not handled) {
             CIB_ERROR("None of the registered callbacks claimed this message.");
         }
-
-        return candidates_found;
+        return handled;
     }
 };
 
