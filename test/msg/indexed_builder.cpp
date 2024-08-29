@@ -68,8 +68,8 @@ TEST_CASE("match output success", "[handler_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    cib::service<test_service>->handle(
-        test_msg_t{"test_id_field"_field = 0x80});
+    CHECK(cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80}));
     CAPTURE(log_buffer);
     CHECK(log_buffer.find("Incoming message matched") != std::string::npos);
     CHECK(log_buffer.find("[TestCallback]") != std::string::npos);
@@ -81,8 +81,8 @@ TEST_CASE("match output failure", "[handler_builder]") {
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
 
-    cib::service<test_service>->handle(
-        test_msg_t{"test_id_field"_field = 0x81});
+    CHECK(not cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x81}));
     CHECK(log_buffer.find(
               "None of the registered callbacks claimed this message") !=
           std::string::npos);
@@ -189,8 +189,8 @@ TEST_CASE("message matching partial index but not callback matcher",
 
     log_buffer.clear();
     callback_success = false;
-    cib::service<partially_indexed_test_service>->handle(test_msg_t{
-        "test_id_field"_field = 0x80, "test_opcode_field"_field = 2});
+    CHECK(not cib::service<partially_indexed_test_service>->handle(test_msg_t{
+        "test_id_field"_field = 0x80, "test_opcode_field"_field = 2}));
     CHECK(not callback_success);
 }
 

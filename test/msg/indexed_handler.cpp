@@ -34,6 +34,8 @@ using msg_defn =
     message<"test_msg", opcode_field, sub_opcode_field, field_3, field_4>;
 using test_msg = owning<msg_defn>;
 
+using callback_t = auto (*)(test_msg const &) -> bool;
+
 template <auto N> using bitset = stdx::bitset<N, std::uint32_t>;
 
 bitset<32> callbacks_called{};
@@ -45,7 +47,7 @@ TEST_CASE("create empty handler", "[indexed_handler]") {
         msg::indices{msg::index{
             opcode_field{}, lookup::make(CX_VALUE(
                                 lookup::input<std::uint32_t, bitset<32>>{}))}},
-        std::array<void (*)(test_msg const &), 0>{}};
+        std::array<callback_t, 0>{}};
 }
 
 TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
@@ -56,8 +58,10 @@ TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
             lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
                 bitset<32>{}, std::array{lookup::entry{
                                   42u, bitset<32>{stdx::place_bits, 0}}}}))}},
-        std::array<void (*)(test_msg const &), 1>{
-            [](test_msg const &) { callbacks_called.set(0); }}};
+        std::array<callback_t, 1>{[](test_msg const &) {
+            callbacks_called.set(0);
+            return true;
+        }}};
 
     callbacks_called.reset();
     CHECK(h.handle(test_msg{"opcode_field"_field = 42}));
@@ -97,16 +101,42 @@ TEST_CASE("create handler with multiple indices and callbacks",
                             entry{2u, bitset<32>{stdx::place_bits, 2, 6, 8}},
                             entry{3u, bitset<32>{stdx::place_bits, 3, 7, 8}},
                         }}))}},
-        std::array<void (*)(test_msg const &), 9>{
-            [](test_msg const &) { callbacks_called.set(0); },
-            [](test_msg const &) { callbacks_called.set(1); },
-            [](test_msg const &) { callbacks_called.set(2); },
-            [](test_msg const &) { callbacks_called.set(3); },
-            [](test_msg const &) { callbacks_called.set(4); },
-            [](test_msg const &) { callbacks_called.set(5); },
-            [](test_msg const &) { callbacks_called.set(6); },
-            [](test_msg const &) { callbacks_called.set(7); },
-            [](test_msg const &) { callbacks_called.set(8); }}};
+        std::array<callback_t, 9>{[](test_msg const &) {
+                                      callbacks_called.set(0);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(1);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(2);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(3);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(4);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(5);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(6);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(7);
+                                      return true;
+                                  },
+                                  [](test_msg const &) {
+                                      callbacks_called.set(8);
+                                      return true;
+                                  }}};
 
     auto const check_msg = [&](std::uint32_t op, std::uint32_t sub_op,
                                std::size_t callback_index) {
@@ -151,8 +181,11 @@ TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
             lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
                 bitset<32>{}, std::array{lookup::entry{
                                   42u, bitset<32>{stdx::place_bits, 0}}}}))}},
-        std::array<void (*)(test_msg const &, std::size_t), 1>{
-            [](test_msg const &, std::size_t i) { callbacks_called.set(i); }}};
+        std::array<auto (*)(test_msg const &, std::size_t)->bool, 1>{
+            [](test_msg const &, std::size_t i) {
+                callbacks_called.set(i);
+                return true;
+            }}};
 
     callbacks_called.reset();
     CHECK(h.handle(test_msg{"opcode_field"_field = 42}, std::size_t{1}));

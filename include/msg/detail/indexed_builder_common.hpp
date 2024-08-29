@@ -141,12 +141,12 @@ struct indexed_builder_base {
                        ExtraCallbackArgsT...>{new_callbacks};
     }
 
-    using callback_func_t = void (*)(BaseMsgT const &,
-                                     ExtraCallbackArgsT... args);
+    using callback_func_t = auto (*)(BaseMsgT const &,
+                                     ExtraCallbackArgsT... args) -> bool;
 
     template <typename BuilderValue, std::size_t I>
     constexpr static auto invoke_callback(BaseMsgT const &data,
-                                          ExtraCallbackArgsT... args) {
+                                          ExtraCallbackArgsT... args) -> bool {
         // FIXME: incomplete message callback invocation...
         //        1) bit_cast message argument
         constexpr auto cb = IndexSpec{}.apply([&]<typename... Indices>(
@@ -173,7 +173,9 @@ struct indexed_builder_base {
                 stdx::ct_string_to_type<cb.name, sc::string_constant>(),
                 orig_cb.matcher.describe(), cb.matcher.describe());
             cb.callable(view, args...);
+            return true;
         }
+        return false;
     }
 
     template <typename BuilderValue, std::size_t... Is>
