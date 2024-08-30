@@ -93,7 +93,7 @@ TEST_CASE("log mismatch when no match", "[handler]") {
 
 TEST_CASE("match and dispatch only one callback", "[handler]") {
     auto callback1 = msg::callback<"cb1", msg_defn>(
-        id_match<0x80>, [&](msg::const_view<msg_defn>) { CHECK(false); });
+        id_match<0x80>, [](msg::const_view<msg_defn>) { CHECK(false); });
     auto callback2 = msg::callback<"cb2", msg_defn>(
         id_match<0x44>, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg = std::array{0x4400ba11u, 0x0042d00du};
@@ -105,6 +105,25 @@ TEST_CASE("match and dispatch only one callback", "[handler]") {
     dispatched = false;
     CHECK(handler.handle(msg));
     CHECK(dispatched);
+}
+
+TEST_CASE("dispatch all callbacks that match", "[handler]") {
+    int count{};
+
+    auto callback1 = msg::callback<"cb1", msg_defn>(
+        id_match<0x80>, [](msg::const_view<msg_defn>) { CHECK(false); });
+    auto callback2 = msg::callback<"cb2", msg_defn>(
+        id_match<0x44>, [&](msg::const_view<msg_defn>) { ++count; });
+    auto callback3 = msg::callback<"cb3", msg_defn>(
+        id_match<0x44>, [&](msg::const_view<msg_defn>) { ++count; });
+    auto const msg = std::array{0x4400ba11u, 0x0042d00du};
+
+    auto callbacks = stdx::make_tuple(callback1, callback2, callback3);
+    static auto handler =
+        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+
+    CHECK(handler.handle(msg));
+    CHECK(count == 2);
 }
 
 namespace {

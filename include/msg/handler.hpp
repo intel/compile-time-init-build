@@ -21,8 +21,10 @@ struct handler : handler_interface<BaseMsg, ExtraCallbackArgs...> {
 
     auto handle(BaseMsg const &msg,
                 ExtraCallbackArgs... args) const -> bool final {
-        bool const found_valid_callback = stdx::any_of(
-            [&](auto &callback) { return callback.handle(msg, args...); },
+        auto const found_valid_callback = stdx::apply(
+            [&](auto &...cbs) -> bool {
+                return (0u | ... | cbs.handle(msg, args...));
+            },
             callbacks);
         if (!found_valid_callback) {
             CIB_ERROR("None of the registered callbacks claimed this message:");
