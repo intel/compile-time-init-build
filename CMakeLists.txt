@@ -221,32 +221,32 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(tools)
 
     # Build single-header release.
-    file(GLOB_RECURSE include_files
-         "${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*.hpp")
-    add_custom_command(
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
-                ${include_files}
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-                ${CMAKE_CURRENT_BINARY_DIR}/include/cib
-        COMMAND
-            ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp >
-            ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
+    include(cmake/single_header.cmake)
+    gen_single_header(
+        TARGET
+        release_header
+        GEN_HEADER
+        ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py
+        SOURCE_TARGET
+        cib
+        SOURCE_FILESET
+        cib
+        INPUT_HEADER
+        ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp
+        OUTPUT_HEADER
+        ${CMAKE_BINARY_DIR}/include/cib/cib.hpp)
 
-    add_custom_target(release_header
-                      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
-endif()
+    if(DEFINED ENV{SINGLE_HEADER})
+        add_dependencies(cib release_header)
 
-if(DEFINED ENV{SINGLE_HEADER})
-    add_dependencies(cib release_header)
-
-    target_include_directories(
-        cib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+        target_include_directories(
+            cib
+            INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
-else()
-    target_include_directories(
-        cib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+    else()
+        target_include_directories(
+            cib
+            INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
+    endif()
 endif()
