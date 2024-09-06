@@ -30,9 +30,180 @@ add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#113eeff")
 
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
-target_include_directories(cib INTERFACE include)
 target_link_libraries_system(cib INTERFACE async concurrency
                              fmt::fmt-header-only stdx)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              cib
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/cib/builder_meta.hpp
+              include/cib/built.hpp
+              include/cib/callback.hpp
+              include/cib/cib.hpp
+              include/cib/config.hpp
+              include/cib/detail/components.hpp
+              include/cib/detail/conditional.hpp
+              include/cib/detail/config_details.hpp
+              include/cib/detail/config_item.hpp
+              include/cib/detail/exports.hpp
+              include/cib/detail/extend.hpp
+              include/cib/detail/nexus_details.hpp
+              include/cib/func_decl.hpp
+              include/cib/nexus.hpp
+              include/cib/top.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              flow
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/flow/builder.hpp
+              include/flow/common.hpp
+              include/flow/detail/par.hpp
+              include/flow/detail/seq.hpp
+              include/flow/detail/walk.hpp
+              include/flow/flow.hpp
+              include/flow/graph_builder.hpp
+              include/flow/graphviz_builder.hpp
+              include/flow/impl.hpp
+              include/flow/run.hpp
+              include/flow/step.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              interrupt
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/interrupt/concepts.hpp
+              include/interrupt/config.hpp
+              include/interrupt/dynamic_controller.hpp
+              include/interrupt/fwd.hpp
+              include/interrupt/hal.hpp
+              include/interrupt/impl.hpp
+              include/interrupt/manager.hpp
+              include/interrupt/policies.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              log
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/log/catalog/catalog.hpp
+              include/log/catalog/mipi_encoder.hpp
+              include/log/fmt/logger.hpp
+              include/log/level.hpp
+              include/log/log.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              lookup
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/lookup/detail/select.hpp
+              include/lookup/entry.hpp
+              include/lookup/input.hpp
+              include/lookup/linear_search_lookup.hpp
+              include/lookup/lookup.hpp
+              include/lookup/pseudo_pext_lookup.hpp
+              include/lookup/strategies.hpp
+              include/lookup/strategy_failed.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              match
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/match/and.hpp
+              include/match/bin_op.hpp
+              include/match/concepts.hpp
+              include/match/constant.hpp
+              include/match/cost.hpp
+              include/match/implies.hpp
+              include/match/negate.hpp
+              include/match/not.hpp
+              include/match/ops.hpp
+              include/match/or.hpp
+              include/match/predicate.hpp
+              include/match/simplify.hpp
+              include/match/sum_of_products.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              msg
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/msg/callback.hpp
+              include/msg/detail/indexed_builder_common.hpp
+              include/msg/detail/indexed_handler_common.hpp
+              include/msg/detail/separate_sum_terms.hpp
+              include/msg/field.hpp
+              include/msg/field_matchers.hpp
+              include/msg/handler_builder.hpp
+              include/msg/handler.hpp
+              include/msg/handler_interface.hpp
+              include/msg/indexed_builder.hpp
+              include/msg/indexed_handler.hpp
+              include/msg/indexed_service.hpp
+              include/msg/message.hpp
+              include/msg/send.hpp
+              include/msg/service.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              sc
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/sc/format.hpp
+              include/sc/fwd.hpp
+              include/sc/lazy_string_format.hpp
+              include/sc/string_constant.hpp)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              seq
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/seq/builder.hpp
+              include/seq/impl.hpp
+              include/seq/step.hpp)
 
 target_compile_options(
     cib
@@ -50,32 +221,32 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(tools)
 
     # Build single-header release.
-    file(GLOB_RECURSE include_files
-         "${CMAKE_CURRENT_SOURCE_DIR}/include/cib/*.hpp")
-    add_custom_command(
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
-                ${include_files}
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-                ${CMAKE_CURRENT_BINARY_DIR}/include/cib
-        COMMAND
-            ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/tools/gen_release_header.py
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/cib/cib.hpp >
-            ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
+    include(cmake/single_header.cmake)
+    gen_single_header(
+        TARGET
+        release_header
+        GEN_HEADER
+        ${CMAKE_SOURCE_DIR}/tools/gen_release_header.py
+        SOURCE_TARGET
+        cib
+        SOURCE_FILESET
+        cib
+        INPUT_HEADER
+        ${CMAKE_SOURCE_DIR}/include/cib/cib.hpp
+        OUTPUT_HEADER
+        ${CMAKE_BINARY_DIR}/include/cib/cib.hpp)
 
-    add_custom_target(release_header
-                      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/include/cib/cib.hpp)
-endif()
+    if(DEFINED ENV{SINGLE_HEADER})
+        add_dependencies(cib release_header)
 
-if(DEFINED ENV{SINGLE_HEADER})
-    add_dependencies(cib release_header)
-
-    target_include_directories(
-        cib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+        target_include_directories(
+            cib
+            INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
-else()
-    target_include_directories(
-        cib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+    else()
+        target_include_directories(
+            cib
+            INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
                       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
+    endif()
 endif()
