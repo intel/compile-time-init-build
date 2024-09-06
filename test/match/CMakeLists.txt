@@ -1,0 +1,13 @@
+add_tests(
+    and
+    constant
+    equivalence
+    implies
+    not
+    or
+    predicate
+    simplify_and
+    simplify_custom
+    simplify_not
+    simplify_or
+    sum_of_products)
