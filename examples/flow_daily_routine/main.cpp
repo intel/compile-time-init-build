@@ -95,14 +95,10 @@ struct self_care_component_t {
     // Extend flow services
     constexpr static auto config = cib::config(
 
-        cib::extend<morning_routine_t>(self_care_component_t::WAKE_UP >>
-                                       self_care_component_t::EXERCISE >>
-                                       self_care_component_t::TAKE_BATH),
+        cib::extend<morning_routine_t>(*WAKE_UP >> *EXERCISE >> *TAKE_BATH),
 
-        cib::extend<evening_routine_t>(self_care_component_t::EXERCISE >>
-                                       self_care_component_t::TAKE_BATH >>
-                                       self_care_component_t::RELAX >>
-                                       self_care_component_t::GO_TO_BED));
+        cib::extend<evening_routine_t>(*EXERCISE >> *TAKE_BATH >> *RELAX >>
+                                       *GO_TO_BED));
 };
 
 struct food_component_t {
@@ -119,10 +115,10 @@ struct food_component_t {
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(self_care_component_t::TAKE_BATH >>
-                                       food_component_t::BREAKFAST),
+                                       *BREAKFAST),
 
         cib::extend<evening_routine_t>(self_care_component_t::RELAX >>
-                                       food_component_t::DINNER >>
+                                       *DINNER >>
                                        self_care_component_t::GO_TO_BED));
 };
 
@@ -141,16 +137,13 @@ struct dress_up_component_t {
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(
-            self_care_component_t::WAKE_UP >>
-            dress_up_component_t::GET_READY_FOR_EXERCISE >>
+            self_care_component_t::WAKE_UP >> *GET_READY_FOR_EXERCISE >>
             self_care_component_t::EXERCISE >>
-            self_care_component_t::TAKE_BATH >>
-            dress_up_component_t::GET_READY_TO_WORK >>
+            self_care_component_t::TAKE_BATH >> *GET_READY_TO_WORK >>
             food_component_t::BREAKFAST),
 
-        cib::extend<evening_routine_t>(
-            dress_up_component_t::GET_READY_FOR_EXERCISE >>
-            self_care_component_t::EXERCISE));
+        cib::extend<evening_routine_t>(*GET_READY_FOR_EXERCISE >>
+                                       self_care_component_t::EXERCISE));
 };
 
 struct commute_component_t {
@@ -167,11 +160,10 @@ struct commute_component_t {
     constexpr static auto config = cib::config(
 
         cib::extend<morning_routine_t>(food_component_t::BREAKFAST >>
-                                       commute_component_t::GO_TO_OFFICE),
+                                       *GO_TO_OFFICE),
 
         cib::extend<evening_routine_t>(
-            commute_component_t::RETURN_HOME >>
-            dress_up_component_t::GET_READY_FOR_EXERCISE));
+            *RETURN_HOME >> dress_up_component_t::GET_READY_FOR_EXERCISE));
 };
 
 struct daily_routine_component_t {
@@ -206,7 +198,7 @@ struct daily_routine_component_t {
 
         // we need to extend the MainLoop as cib::top implements
         // MainLoop service
-        cib::extend<cib::MainLoop>(DAILY_ROUTINES));
+        cib::extend<cib::MainLoop>(*DAILY_ROUTINES));
 };
 
 struct person_routine_proj {

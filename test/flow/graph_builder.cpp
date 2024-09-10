@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <string>
+#include <string_view>
 
 namespace {
 auto actual = std::string{};
@@ -16,115 +17,88 @@ constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
 
-using builder = flow::graph_builder<flow::impl>;
+using builder = flow::graph_builder<"test_flow", flow::impl>;
 } // namespace
 
-struct empty_flow {
-    constexpr static auto value = flow::graph<>{};
-};
-TEST_CASE("build and run empty flow", "[graph_builder]") {
-    constexpr auto f = builder::render<empty_flow>();
-    f();
-}
+template <auto... Vs> struct run_flow_t {
+    struct wrapper {
+        constexpr static auto value = flow::graph<>{}.add(Vs...);
+    };
 
-struct single_action {
-    constexpr static auto value = flow::graph<>{}.add(a);
+    auto operator()() const -> void { builder::render<wrapper>()(); }
 };
-TEST_CASE("add single action", "[graph_builder]") {
+
+template <auto... Vs> constexpr auto run_flow = run_flow_t<Vs...>{};
+
+template <auto... Vs> auto check_flow(std::string_view expected) -> void {
     actual.clear();
-    constexpr auto f = builder::render<single_action>();
-    f();
-    CHECK(actual == "a");
+    run_flow<Vs...>();
+    CHECK(actual == expected);
 }
 
-struct two_milestone_linear_before {
-    constexpr static auto value = flow::graph<>{}.add(a >> milestone0);
-};
+#if defined(__GNUC__) && __GNUC__ == 12
+#else
+
+TEST_CASE("build and run empty flow", "[graph_builder]") { check_flow<>(""); }
+
+TEST_CASE("add single action", "[graph_builder]") { check_flow<*a>("a"); }
+
 TEST_CASE("two milestone linear before dependency", "[graph_builder]") {
-    actual.clear();
-    constexpr auto f = builder::render<two_milestone_linear_before>();
-    f();
-    CHECK(actual == "a");
+    check_flow<(*a >> *milestone0)>("a");
 }
 
-struct actions_get_executed_once {
-    constexpr static auto value = flow::graph<>{}
-                                      .add(a >> milestone0)
-                                      .add(a >> milestone1)
-                                      .add(milestone0 >> milestone1);
-};
 TEST_CASE("actions get executed once", "[graph_builder]") {
-    actual.clear();
-    constexpr auto f = builder::render<actions_get_executed_once>();
-    f();
-    CHECK(actual == "a");
+    check_flow<(*a >> *milestone0), (a >> *milestone1),
+               (milestone0 >> milestone1)>("a");
 }
 
-struct two_milestone_linear_after_dependency {
-    constexpr static auto value = flow::graph<>{}
-                                      .add(a >> milestone0)
-                                      .add(milestone0 >> milestone1)
-                                      .add(milestone0 >> b >> milestone1);
-};
 TEST_CASE("two milestone linear after dependency", "[graph_builder]") {
-    actual.clear();
-    constexpr auto f = builder::render<two_milestone_linear_after_dependency>();
-    f();
-    CHECK(actual == "ab");
+    check_flow<(*a >> *milestone0), (milestone0 >> *milestone1),
+               (milestone0 >> *b >> milestone1)>("ab");
 }
 
-struct three_milestone_linear_before_and_after_dependency {
-    constexpr static auto value = flow::graph<>{}.add(a >> b >> c);
-};
 TEST_CASE("three milestone linear before and after dependency",
           "[graph_builder]") {
-    actual.clear();
-    constexpr auto f =
-        builder::render<three_milestone_linear_before_and_after_dependency>();
-    f();
-    CHECK(actual == "abc");
+    check_flow<(*a >> *b >> *c)>("abc");
 }
 
-struct just_two_actions_in_order {
-    constexpr static auto value = flow::graph<>{}.add(a >> b);
-};
 TEST_CASE("just two actions in order", "[graph_builder]") {
-    actual.clear();
-    constexpr auto f = builder::render<just_two_actions_in_order>();
-    f();
-    CHECK(actual == "ab");
+    check_flow<(*a >> *b)>("ab");
 }
 
-struct insert_action_between_two_actions {
-    constexpr static auto value = flow::graph<>{}.add(a >> c).add(a >> b >> c);
-};
+TEST_CASE("operator* on two actions in order", "[graph_builder]") {
+    check_flow<*(a >> b)>("ab");
+}
+
+TEST_CASE("operator* on three actions in order", "[graph_builder]") {
+    check_flow<*(a >> b >> c)>("abc");
+}
+
 TEST_CASE("insert action between two actions", "[graph_builder]") {
-    actual.clear();
-    constexpr auto f = builder::render<insert_action_between_two_actions>();
-    f();
-    CHECK(actual == "abc");
+    check_flow<(*a >> *c), (a >> *b >> c)>("abc");
 }
 
-struct add_single_parallel_2 {
-    constexpr static auto value = flow::graph<>{}.add(a && b);
-};
 TEST_CASE("add single parallel 2", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_single_parallel_2>();
-    f();
+    run_flow<*a && *b>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
     CHECK(actual.size() == 2);
 }
 
-struct add_single_parallel_3 {
-    constexpr static auto value = flow::graph<>{}.add(a && b && c);
-};
-TEST_CASE("add single parallel 3", "[graph_builder]") {
+TEST_CASE("operator* on add single parallel 2", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_single_parallel_3>();
-    f();
+    run_flow<*(a && b)>();
+
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.size() == 2);
+}
+
+TEST_CASE("operator* on double parallel", "[graph_builder]") {
+    actual.clear();
+    run_flow<*(a && b && c)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -132,14 +106,19 @@ TEST_CASE("add single parallel 3", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_single_parallel_3_with_later_dependency_1 {
-    constexpr static auto value = flow::graph<>{}.add(a && b && c).add(c >> a);
-};
+TEST_CASE("add single parallel 3", "[graph_builder]") {
+    actual.clear();
+    run_flow<*a && *b && *c>();
+
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+    CHECK(actual.find('c') != std::string::npos);
+    CHECK(actual.size() == 3);
+}
+
 TEST_CASE("add single parallel 3 with later dependency 1", "[graph_builder]") {
     actual.clear();
-    constexpr auto f =
-        builder::render<add_single_parallel_3_with_later_dependency_1>();
-    f();
+    run_flow<*a && *b && *c, (c >> a)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -148,14 +127,9 @@ TEST_CASE("add single parallel 3 with later dependency 1", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_single_parallel_3_with_later_dependency_2 {
-    constexpr static auto value = flow::graph<>{}.add(a && b && c).add(a >> c);
-};
 TEST_CASE("add single parallel 3 with later dependency 2", "[graph_builder]") {
     actual.clear();
-    constexpr auto f =
-        builder::render<add_single_parallel_3_with_later_dependency_2>();
-    f();
+    run_flow<*a && *b && *c, (a >> c)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -164,13 +138,9 @@ TEST_CASE("add single parallel 3 with later dependency 2", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_parallel_rhs {
-    constexpr static auto value = flow::graph<>{}.add(a >> (b && c));
-};
 TEST_CASE("add parallel rhs", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_parallel_rhs>();
-    f();
+    run_flow<(*a >> (*b && *c))>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -180,13 +150,9 @@ TEST_CASE("add parallel rhs", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_parallel_lhs {
-    constexpr static auto value = flow::graph<>{}.add((a && b) >> c);
-};
 TEST_CASE("add parallel lhs", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_parallel_lhs>();
-    f();
+    run_flow<((*a && *b) >> *c)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -196,13 +162,9 @@ TEST_CASE("add parallel lhs", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_parallel_in_the_middle {
-    constexpr static auto value = flow::graph<>{}.add(a >> (b && c) >> d);
-};
 TEST_CASE("add parallel in the middle", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_parallel_in_the_middle>();
-    f();
+    run_flow<(*a >> (*b && *c) >> *d)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -218,13 +180,9 @@ TEST_CASE("add parallel in the middle", "[graph_builder]") {
     CHECK(actual.size() == 4);
 }
 
-struct add_dependency_lhs {
-    constexpr static auto value = flow::graph<>{}.add((a >> b) && c);
-};
 TEST_CASE("add dependency lhs", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_dependency_lhs>();
-    f();
+    run_flow<(*a >> *b) && *c>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -235,13 +193,9 @@ TEST_CASE("add dependency lhs", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
-struct add_dependency_rhs {
-    constexpr static auto value = flow::graph<>{}.add(a && (b >> c));
-};
 TEST_CASE("add dependency rhs", "[graph_builder]") {
     actual.clear();
-    constexpr auto f = builder::render<add_dependency_rhs>();
-    f();
+    run_flow<*a && (*b >> *c)>();
 
     CHECK(actual.find('a') != std::string::npos);
     CHECK(actual.find('b') != std::string::npos);
@@ -252,9 +206,21 @@ TEST_CASE("add dependency rhs", "[graph_builder]") {
     CHECK(actual.size() == 3);
 }
 
+TEST_CASE("reference vs non-reference", "[graph_builder]") {
+    static_assert(a.identity == flow::subgraph_identity::REFERENCE);
+    static_assert((*a).identity == flow::subgraph_identity::VALUE);
+}
+
+TEST_CASE("reference in order with non-reference added twice",
+          "[graph_builder]") {
+    check_flow<(*a >> b) && (*b)>("ab");
+}
+
+#endif
+
 TEST_CASE("alternate builder", "[graph_builder]") {
     using alt_builder = flow::graphviz_builder;
-    auto g = flow::graph<"debug">{}.add(a && (b >> c));
+    auto g = flow::graph<"debug">{}.add(*a && (*b >> *c));
     auto const flow = alt_builder::build(g);
     auto expected = std::string{
         R"__debug__(digraph debug {

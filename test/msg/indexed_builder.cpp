@@ -41,6 +41,16 @@ struct test_project {
         cib::exports<test_service>, cib::extend<test_service>(test_callback));
 };
 
+template <bool V>
+constexpr auto when_feature_enabled =
+    cib::runtime_condition<"feature_a_enabled">([] { return V; });
+
+template <bool V> struct runtime_condition_project {
+    constexpr static auto config = cib::config(
+        cib::exports<test_service>,
+        when_feature_enabled<V>(cib::extend<test_service>(test_callback)));
+};
+
 std::string log_buffer{};
 } // namespace
 
@@ -63,7 +73,27 @@ TEST_CASE("build handler", "[indexed_builder]") {
     CHECK(not callback_success);
 }
 
-TEST_CASE("match output success", "[handler_builder]") {
+TEST_CASE("true runtime condition", "[indexed_builder]") {
+    cib::nexus<runtime_condition_project<true>> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
+    CHECK(callback_success);
+}
+
+TEST_CASE("false runtime condition", "[indexed_builder]") {
+    cib::nexus<runtime_condition_project<false>> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
+    CHECK(not callback_success);
+}
+
+TEST_CASE("match output success", "[indexed_builder]") {
     log_buffer.clear();
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
@@ -76,7 +106,7 @@ TEST_CASE("match output success", "[handler_builder]") {
     CHECK(log_buffer.find("[test_id_field == 0x80]") != std::string::npos);
 }
 
-TEST_CASE("match output failure", "[handler_builder]") {
+TEST_CASE("match output failure", "[indexed_builder]") {
     log_buffer.clear();
     cib::nexus<test_project> test_nexus{};
     test_nexus.init();
@@ -330,7 +360,7 @@ struct test_msg_match_project {
 };
 } // namespace
 
-TEST_CASE("match output success (message matcher)", "[handler_builder]") {
+TEST_CASE("match output success (message matcher)", "[indexed_builder]") {
     log_buffer.clear();
     cib::nexus<test_msg_match_project> test_nexus{};
     test_nexus.init();
@@ -384,7 +414,7 @@ struct test_project_extra_args {
 };
 } // namespace
 
-TEST_CASE("handle extra arguments", "[handler_builder]") {
+TEST_CASE("handle extra arguments", "[indexed_builder]") {
     cib::nexus<test_project_extra_args> test_nexus{};
     test_nexus.init();
 

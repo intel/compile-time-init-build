@@ -7,6 +7,7 @@
 #include <cib/detail/config_item.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/extend.hpp>
+#include <cib/detail/runtime_conditional.hpp>
 
 #include <stdx/compiler.hpp>
 
@@ -22,6 +23,7 @@ namespace cib {
  * @see cib::extend
  * @see cib::exports
  * @see cib::conditional
+ * @see cib::runtime_conditional
  */
 template <typename... Configs>
 [[nodiscard]] CONSTEVAL auto config(Configs const &...configs) {
@@ -72,4 +74,10 @@ template <typename Predicate, typename... Configs>
                                          Configs const &...configs) {
     return detail::conditional<Predicate, Configs...>{configs...};
 }
+
+template <stdx::ct_string Name>
+constexpr auto runtime_condition = []<typename P>(P) {
+    static_assert(std::is_default_constructible_v<P>);
+    return detail::runtime_condition<Name, P>{};
+};
 } // namespace cib

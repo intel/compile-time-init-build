@@ -12,7 +12,12 @@
 namespace match {
 template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
     using is_matcher = void;
-    [[no_unique_address]] P pred;
+
+    constexpr static P pred{};
+
+    constexpr predicate_t(P) {}
+
+    constexpr predicate_t() {}
 
     [[nodiscard]] constexpr auto
     operator()(auto const &event) const -> decltype(pred(event)) {
