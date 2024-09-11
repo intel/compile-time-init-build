@@ -7,19 +7,19 @@
 
 namespace msg {
 
-template <typename Callbacks, typename BaseMsg, typename... ExtraCallbackArgs>
-struct handler : handler_interface<BaseMsg, ExtraCallbackArgs...> {
+template <typename Callbacks, typename MsgBase, typename... ExtraCallbackArgs>
+struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
     Callbacks callbacks{};
 
     constexpr explicit handler(Callbacks new_callbacks)
         : callbacks{new_callbacks} {}
 
-    auto is_match(BaseMsg const &msg) const -> bool final {
+    auto is_match(MsgBase const &msg) const -> bool final {
         return stdx::any_of(
             [&](auto &callback) { return callback.is_match(msg); }, callbacks);
     }
 
-    auto handle(BaseMsg const &msg,
+    auto handle(MsgBase const &msg,
                 ExtraCallbackArgs... args) const -> bool final {
         auto const found_valid_callback = stdx::apply(
             [&](auto &...cbs) -> bool {

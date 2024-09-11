@@ -629,8 +629,8 @@ constexpr auto equivalent(O1 const &lhs, O2 const &rhs) {
 }
 
 template <typename Msg, typename F, typename S, typename... Args>
-constexpr auto call_with_message(F &&f, S &&s,
-                                 Args &&...args) -> decltype(auto) {
+__attribute__((flatten, always_inline)) constexpr auto
+call_with_message(F &&f, S &&s, Args &&...args) -> decltype(auto) {
     if constexpr (requires {
                       std::forward<F>(f)(std::forward<S>(s),
                                          std::forward<Args>(args)...);
