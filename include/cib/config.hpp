@@ -2,9 +2,9 @@
 
 #include <cib/builder_meta.hpp>
 #include <cib/detail/components.hpp>
-#include <cib/detail/conditional.hpp>
 #include <cib/detail/config_details.hpp>
 #include <cib/detail/config_item.hpp>
+#include <cib/detail/constexpr_conditional.hpp>
 #include <cib/detail/exports.hpp>
 #include <cib/detail/extend.hpp>
 #include <cib/detail/runtime_conditional.hpp>
@@ -22,8 +22,8 @@ namespace cib {
  * @see cib::components
  * @see cib::extend
  * @see cib::exports
- * @see cib::conditional
- * @see cib::runtime_conditional
+ * @see cib::constexpr_condition
+ * @see cib::runtime_condition
  */
 template <typename... Configs>
 [[nodiscard]] CONSTEVAL auto config(Configs const &...configs) {
@@ -61,19 +61,11 @@ template <typename Service, typename... Args>
     return detail::extend<Service, Args...>{args...};
 }
 
-/**
- * Include configs based on predicate.
- *
- * If predicate evaluates to true, then the configs will be added to the
- * configuration. Otherwise the configs contained in this conditional
- * will not be added.
- */
-template <typename Predicate, typename... Configs>
-    requires std::is_default_constructible_v<Predicate>
-[[nodiscard]] CONSTEVAL auto conditional(Predicate const &,
-                                         Configs const &...configs) {
-    return detail::conditional<Predicate, Configs...>{configs...};
-}
+template <stdx::ct_string Name>
+constexpr auto constexpr_condition = []<typename P>(P) {
+    static_assert(std::is_default_constructible_v<P>);
+    return detail::constexpr_condition<Name, P>{};
+};
 
 template <stdx::ct_string Name>
 constexpr auto runtime_condition = []<typename P>(P) {

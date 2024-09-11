@@ -61,7 +61,7 @@ dependencies.
 The `*` operator is used to explicitly add an action to the
 flow. Without the `*` operator an action is just a reference.
 A compile-time error will be triggered if an action is referenced without ever
-being explicitly added to the flow. If an action is added under a compile-time
+being explicitly added to the flow. If an action is added under a constexpr
 or runtime conditional, and the conditional is false, then it is as if the
 action was never added at all.
 

@@ -48,7 +48,8 @@ target_sources(
               include/cib/cib.hpp
               include/cib/config.hpp
               include/cib/detail/components.hpp
-              include/cib/detail/conditional.hpp
+              include/cib/detail/constexpr_conditional.hpp
+              include/cib/detail/runtime_conditional.hpp
               include/cib/detail/config_details.hpp
               include/cib/detail/config_item.hpp
               include/cib/detail/exports.hpp
