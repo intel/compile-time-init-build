@@ -24,6 +24,20 @@ using msg_defn = message<"msg", id_field, field1, field2, field3>;
 
 constexpr auto id_match = msg::equal_to<id_field, 0x80>;
 
+constexpr struct custom_match_t {
+    using is_matcher = void;
+
+    [[nodiscard]] constexpr auto operator()(msg::owning<msg_defn>) const {
+        return true;
+    }
+
+    [[nodiscard]] constexpr static auto describe() { return "custom"_sc; }
+
+    [[nodiscard]] constexpr static auto describe_match(msg::owning<msg_defn>) {
+        return describe();
+    }
+} custom_match;
+
 std::string log_buffer{};
 } // namespace
 
@@ -31,8 +45,14 @@ template <>
 inline auto logging::config<> =
     logging::fmt::config{std::back_inserter(log_buffer)};
 
-TEST_CASE("callback matches message", "[callback]") {
+TEST_CASE("callback matches message by view", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(id_match, [] {});
+    auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
+    CHECK(callback.is_match(msg_match));
+}
+
+TEST_CASE("callback matches message by owning", "[callback]") {
+    auto callback = msg::callback<"cb", msg_defn>(custom_match, [] {});
     auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
     CHECK(callback.is_match(msg_match));
 }
@@ -50,7 +70,7 @@ TEST_CASE("callback matches message (typed message)", "[callback]") {
     CHECK(callback.is_match(msg_match));
 }
 
-TEST_CASE("callback logs mismatch (raw)", "[callback]") {
+TEST_CASE("callback logs mismatch by view (raw)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(id_match, [] {});
     auto const msg_nomatch = std::array{0x8100ba11u, 0x0042d00du};
     CHECK(not callback.is_match(msg_nomatch));
@@ -59,6 +79,16 @@ TEST_CASE("callback logs mismatch (raw)", "[callback]") {
     callback.log_mismatch(msg_nomatch);
     CAPTURE(log_buffer);
     CHECK(log_buffer.find("cb - F:(id (0x81) == 0x80)") != std::string::npos);
+}
+
+TEST_CASE("callback logs mismatch by owning (raw)", "[callback]") {
+    auto callback = msg::callback<"cb", msg_defn>(custom_match, [] {});
+    auto const msg_nomatch = std::array{0x8100ba11u, 0x0042d00du};
+
+    log_buffer.clear();
+    callback.log_mismatch(msg_nomatch);
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("cb - F:(custom)") != std::string::npos);
 }
 
 TEST_CASE("callback logs mismatch (typed)", "[callback]") {
@@ -72,9 +102,19 @@ TEST_CASE("callback logs mismatch (typed)", "[callback]") {
     CHECK(log_buffer.find("cb - F:(id (0x81) == 0x80)") != std::string::npos);
 }
 
-TEST_CASE("callback handles message (raw)", "[callback]") {
+TEST_CASE("callback handles message by view (raw)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         id_match, [](msg::const_view<msg_defn>) { dispatched = true; });
+    auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
+
+    dispatched = false;
+    CHECK(callback.handle(msg_match));
+    CHECK(dispatched);
+}
+
+TEST_CASE("callback handles message by owning (raw)", "[callback]") {
+    auto callback = msg::callback<"cb", msg_defn>(
+        id_match, [](msg::owning<msg_defn>) { dispatched = true; });
     auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
 
     dispatched = false;
