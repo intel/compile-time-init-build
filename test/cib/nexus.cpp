@@ -100,9 +100,10 @@ TEST_CASE("configuration with multiple components, services, and features") {
 }
 
 template <auto V> struct SimpleConditionalComponent {
+    constexpr static auto when_v_is_42 =
+        cib::constexpr_condition<"when_v_is_42">([]() { return V == 42; });
 
-    constexpr static auto config = cib::config(cib::conditional(
-        []() { return V == 42; },
+    constexpr static auto config = cib::config(when_v_is_42(
         cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; })));
 };
 
@@ -112,7 +113,7 @@ template <int ConditionalValue> struct ConditionalTestProject {
         cib::components<SimpleConditionalComponent<ConditionalValue>>);
 };
 
-TEST_CASE("configuration with one conditional component") {
+TEST_CASE("configuration with one constexpr conditional component") {
     is_callback_invoked<0> = false;
 
     SECTION("invoke with argument match") {
@@ -133,10 +134,13 @@ TEST_CASE("configuration with one conditional component") {
 }
 
 template <int EnId, int Id> struct ConditionalComponent {
-    constexpr static auto config = cib::config(cib::conditional(
-        []() { return EnId == Id; }, cib::extend<TestCallback<Id>>([]() {
-            is_callback_invoked<Id> = true;
-        })));
+    constexpr static auto when_id_matches =
+        cib::constexpr_condition<"when_id_matches">(
+            []() { return EnId == Id; });
+
+    constexpr static auto config =
+        cib::config(when_id_matches(cib::extend<TestCallback<Id>>(
+            []() { is_callback_invoked<Id> = true; })));
 };
 
 template <int EnabledId> struct ConditionalConfig {
@@ -148,7 +152,7 @@ template <int EnabledId> struct ConditionalConfig {
                         ConditionalComponent<EnabledId, 2>>);
 };
 
-TEST_CASE("configuration with conditional features") {
+TEST_CASE("configuration with constexpr conditional features") {
     is_callback_invoked<0> = false;
     is_callback_invoked<1> = false;
     is_callback_invoked<2> = false;
