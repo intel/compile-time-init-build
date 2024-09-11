@@ -24,31 +24,32 @@ template <stdx::ct_string Name, typename Msg, match::matcher M,
           stdx::callable F>
 struct callback {
     [[nodiscard]] auto is_match(auto const &data) const -> bool {
-        auto view = typename Msg::view_t{data};
-        return matcher(view);
+        return msg::call_with_message<Msg>(matcher, data);
     }
 
     template <typename... Args>
-    [[nodiscard]] auto handle(auto const &data,
-                              Args const &...args) const -> bool {
-        auto view = typename Msg::view_t{data};
-        if (matcher(view)) {
+    [[nodiscard]] auto handle(auto const &data, Args &&...args) const -> bool {
+        if (msg::call_with_message<Msg>(matcher, data)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
                      "callback",
                      stdx::ct_string_to_type<Name, sc::string_constant>(),
                      matcher.describe());
-            callable(view, args...);
+            msg::call_with_message<Msg>(callable, data,
+                                        std::forward<Args>(args)...);
             return true;
         }
         return false;
     }
 
     auto log_mismatch(auto const &data) const -> void {
-        auto view = typename Msg::view_t{data};
-
         CIB_INFO("    {} - F:({})",
                  stdx::ct_string_to_type<Name, sc::string_constant>(),
-                 matcher.describe_match(view));
+                 msg::call_with_message<Msg>(
+                     [&]<typename T>(T &&t) -> decltype(matcher.describe_match(
+                                                std::forward<T>(t))) {
+                         return matcher.describe_match(std::forward<T>(t));
+                     },
+                     data));
     }
 
     using msg_t = Msg;

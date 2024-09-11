@@ -627,4 +627,26 @@ template <owninglike O1, owninglike O2>
 constexpr auto equivalent(O1 const &lhs, O2 const &rhs) {
     return equiv(lhs, rhs.as_const_view());
 }
+
+template <typename Msg, typename F, typename S, typename... Args>
+constexpr auto call_with_message(F &&f, S &&s,
+                                 Args &&...args) -> decltype(auto) {
+    if constexpr (requires {
+                      std::forward<F>(f)(std::forward<S>(s),
+                                         std::forward<Args>(args)...);
+                  }) {
+        return std::forward<F>(f)(std::forward<S>(s),
+                                  std::forward<Args>(args)...);
+    } else if constexpr (requires {
+                             std::forward<F>(f)(
+                                 typename Msg::view_t{std::forward<S>(s)},
+                                 std::forward<Args>(args)...);
+                         }) {
+        return std::forward<F>(f)(typename Msg::view_t{std::forward<S>(s)},
+                                  std::forward<Args>(args)...);
+    } else {
+        return std::forward<F>(f)(typename Msg::owner_t{std::forward<S>(s)},
+                                  std::forward<Args>(args)...);
+    }
+}
 } // namespace msg
