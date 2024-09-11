@@ -5,6 +5,7 @@
 #include <cib/detail/extend.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/concepts.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -47,7 +48,11 @@ struct runtime_conditional : config_item {
     }
 };
 
-template <stdx::ct_string Name, typename... Ps> // FIXME: concept for Ps
+template <typename T>
+concept runtime_predicate =
+    std::default_initializable<T> and stdx::predicate<T>;
+
+template <stdx::ct_string Name, runtime_predicate... Ps>
 struct runtime_condition {
     constexpr static auto predicates = stdx::make_tuple(Ps{}...);
 
