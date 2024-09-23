@@ -16,7 +16,7 @@ env:
 
 jobs:
   usage_test:
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
