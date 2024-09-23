@@ -17,13 +17,13 @@
 
 namespace msg {
 // TODO: needs index configuration
-template <typename IndexSpec, typename CallbacksT, typename BaseMsgT,
-          typename... ExtraCallbackArgsT>
+template <typename IndexSpec, typename Callbacks, typename MsgBase,
+          typename... ExtraCallbackArgs>
 struct indexed_builder
-    : indexed_builder_base<indexed_builder, IndexSpec, CallbacksT, BaseMsgT,
-                           ExtraCallbackArgsT...> {
-    using base_t = indexed_builder_base<indexed_builder, IndexSpec, CallbacksT,
-                                        BaseMsgT, ExtraCallbackArgsT...>;
+    : indexed_builder_base<indexed_builder, IndexSpec, Callbacks, MsgBase,
+                           ExtraCallbackArgs...> {
+    using base_t = indexed_builder_base<indexed_builder, IndexSpec, Callbacks,
+                                        MsgBase, ExtraCallbackArgs...>;
 
     template <typename I, auto E>
     static CONSTEVAL auto get_entry(auto const &indices) {
@@ -73,14 +73,12 @@ struct indexed_builder
             });
 
         constexpr auto num_callbacks = BuilderValue::value.callbacks.size();
-        constexpr std::array<typename base_t::callback_func_t, num_callbacks>
-            callback_array =
-                base_t::template create_callback_array<BuilderValue>(
-                    std::make_index_sequence<num_callbacks>{});
+        constexpr auto callback_array =
+            base_t::template create_callback_array<BuilderValue>(
+                std::make_index_sequence<num_callbacks>{});
 
-        return indexed_handler{
-            callback_args_t<BaseMsgT, ExtraCallbackArgsT...>{}, baked_indices,
-            callback_array};
+        return make_indexed_handler<MsgBase, ExtraCallbackArgs...>(
+            baked_indices, callback_array);
     }
 };
 

@@ -1,11 +1,11 @@
 #pragma once
 
 namespace msg {
-template <typename MsgBaseT, typename... ExtraCallbackArgsT>
+template <typename MsgBase, typename... ExtraCallbackArgs>
 struct handler_interface {
-    virtual auto is_match(MsgBaseT const &msg) const -> bool = 0;
+    virtual auto is_match(MsgBase const &msg) const -> bool = 0;
 
-    virtual auto handle(MsgBaseT const &msg,
-                        ExtraCallbackArgsT... extra_args) const -> bool = 0;
+    virtual auto handle(MsgBase const &msg,
+                        ExtraCallbackArgs... extra_args) const -> bool = 0;
 };
 } // namespace msg

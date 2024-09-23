@@ -2,9 +2,14 @@
 
 #include <log/log.hpp>
 #include <msg/handler_interface.hpp>
+#include <msg/message.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/ranges.hpp>
+
+#include <iterator>
+#include <type_traits>
+#include <utility>
 
 namespace msg {
 
@@ -23,30 +28,25 @@ template <typename Field, typename Lookup> struct index {
     }
 };
 
-template <typename BaseMsgT, typename... ExtraCallbackArgsT>
-struct callback_args_t {};
+template <typename Index, typename Callbacks, typename MsgBase,
+          typename... ExtraCallbackArgs>
+struct indexed_handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
+    Index index;
+    Callbacks callback_entries;
 
-template <typename BaseMsgT, typename... ExtraCallbackArgsT>
-constexpr callback_args_t<BaseMsgT, ExtraCallbackArgsT...> callback_args{};
+    template <typename Idx, typename CBs>
+    constexpr explicit indexed_handler(Idx &&idx, CBs &&cbs)
+        : index{std::forward<Idx>(idx)},
+          callback_entries{std::forward<CBs>(cbs)} {}
 
-template <typename IndexT, typename CallbacksT, typename BaseMsgT,
-          typename... ExtraCallbackArgsT>
-struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
-    IndexT index;
-    CallbacksT callback_entries;
-
-    constexpr explicit indexed_handler(
-        callback_args_t<BaseMsgT, ExtraCallbackArgsT...>, IndexT new_index,
-        CallbacksT new_callbacks)
-        : index{new_index}, callback_entries{new_callbacks} {}
-
-    auto is_match(BaseMsgT const &msg) const -> bool final {
+    // This function may lie... it may claim to match when it doesn't because
+    // there are further conditions on the non-indexed parts of the matcher
+    auto is_match(MsgBase const &msg) const -> bool final {
         return not index(msg).none();
     }
 
     __attribute__((flatten)) auto
-    handle(BaseMsgT const &msg,
-           ExtraCallbackArgsT... args) const -> bool final {
+    handle(MsgBase const &msg, ExtraCallbackArgs... args) const -> bool final {
         auto const callback_candidates = index(msg);
 
         bool handled{};
@@ -60,4 +60,11 @@ struct indexed_handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
     }
 };
 
+template <typename MsgBase, typename... ExtraCallbackArgs>
+constexpr auto make_indexed_handler = []<typename Idx, typename CBs>(
+                                          Idx &&idx, CBs &&cbs) {
+    return indexed_handler<std::remove_cvref_t<Idx>, std::remove_cvref_t<CBs>,
+                           MsgBase, ExtraCallbackArgs...>{
+        std::forward<Idx>(idx), std::forward<CBs>(cbs)};
+};
 } // namespace msg

@@ -7,9 +7,9 @@
 #include <stdx/tuple.hpp>
 
 namespace msg {
-template <typename MsgBaseT, typename... ExtraCallbackArgsT>
+template <typename MsgBase, typename... ExtraCallbackArgs>
 struct service
     : cib::builder_meta<
-          handler_builder<stdx::tuple<>, MsgBaseT, ExtraCallbackArgsT...>,
-          handler_interface<MsgBaseT, ExtraCallbackArgsT...> const *> {};
+          handler_builder<stdx::tuple<>, MsgBase, ExtraCallbackArgs...>,
+          handler_interface<MsgBase, ExtraCallbackArgs...> const *> {};
 } // namespace msg

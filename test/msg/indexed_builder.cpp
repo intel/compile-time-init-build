@@ -28,7 +28,7 @@ using msg_defn = message<"test_msg", test_id_field, test_opcode_field,
                          test_field_2, test_field_3>;
 using test_msg_t = owning<msg_defn>;
 
-using index_spec = index_spec<test_id_field, test_opcode_field>;
+using index_spec = msg::index_spec<test_id_field, test_opcode_field>;
 struct test_service : indexed_service<index_spec, test_msg_t> {};
 
 bool callback_success;
@@ -422,4 +422,70 @@ TEST_CASE("handle extra arguments", "[indexed_builder]") {
         test_msg_t{"test_id_field"_field = 0x80}, 42);
     CHECK(callback_success);
     CHECK(callback_extra_arg == 42);
+}
+
+namespace {
+using base_storage_t = msg_defn::default_storage_t;
+struct raw_service : indexed_service<index_spec, base_storage_t> {};
+
+int callback_count{};
+
+constexpr auto raw_view_callback = callback<"raw view", msg_defn>(
+    msg::in<test_id_field, 0x80>,
+    [](msg::const_view<msg_defn>) { ++callback_count; });
+
+struct raw_view_project {
+    constexpr static auto config = cib::config(
+        cib::exports<raw_service>, cib::extend<raw_service>(raw_view_callback));
+};
+} // namespace
+
+TEST_CASE("handle raw message by view", "[indexed_builder]") {
+    cib::nexus<raw_view_project> test_nexus{};
+    test_nexus.init();
+
+    callback_count = 0;
+    CHECK(cib::service<raw_service>->handle(
+        std::array{0x8000ba11u, 0x0042d00du}));
+    CHECK(callback_count == 1);
+}
+
+namespace {
+constexpr auto raw_owning_callback = callback<"raw owning", msg_defn>(
+    msg::in<test_id_field, 0x80>,
+    [](msg::owning<msg_defn>) { ++callback_count; });
+
+struct raw_owning_project {
+    constexpr static auto config =
+        cib::config(cib::exports<raw_service>,
+                    cib::extend<raw_service>(raw_owning_callback));
+};
+} // namespace
+
+TEST_CASE("handle raw message by owning", "[indexed_builder]") {
+    cib::nexus<raw_owning_project> test_nexus{};
+    test_nexus.init();
+
+    callback_count = 0;
+    CHECK(cib::service<raw_service>->handle(
+        std::array{0x8000ba11u, 0x0042d00du}));
+    CHECK(callback_count == 1);
+}
+
+namespace {
+struct raw_mixed_project {
+    constexpr static auto config = cib::config(
+        cib::exports<raw_service>,
+        cib::extend<raw_service>(raw_view_callback, raw_owning_callback));
+};
+} // namespace
+
+TEST_CASE("handle raw message by mixture of callbacks", "[indexed_builder]") {
+    cib::nexus<raw_mixed_project> test_nexus{};
+    test_nexus.init();
+
+    callback_count = 0;
+    CHECK(cib::service<raw_service>->handle(
+        std::array{0x8000ba11u, 0x0042d00du}));
+    CHECK(callback_count == 2);
 }

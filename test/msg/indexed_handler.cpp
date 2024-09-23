@@ -24,14 +24,11 @@ using sub_opcode_field =
     msg::field<"sub_opcode_field",
                std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
 
-using field_3 =
-    msg::field<"field_3", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
-
-using field_4 =
-    msg::field<"field_5", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
+using field2 = field<"f2", std::uint32_t>::located<at{1_dw, 23_msb, 16_lsb}>;
+using field3 = field<"f3", std::uint32_t>::located<at{1_dw, 15_msb, 0_lsb}>;
 
 using msg_defn =
-    message<"test_msg", opcode_field, sub_opcode_field, field_3, field_4>;
+    message<"test_msg", opcode_field, sub_opcode_field, field2, field3>;
 using test_msg = owning<msg_defn>;
 
 using callback_t = auto (*)(test_msg const &) -> bool;
@@ -42,17 +39,15 @@ bitset<32> callbacks_called{};
 } // namespace
 
 TEST_CASE("create empty handler", "[indexed_handler]") {
-    [[maybe_unused]] constexpr auto h = msg::indexed_handler{
-        msg::callback_args<test_msg>,
+    [[maybe_unused]] constexpr auto h = msg::make_indexed_handler<test_msg>(
         msg::indices{msg::index{
             opcode_field{}, lookup::make(CX_VALUE(
                                 lookup::input<std::uint32_t, bitset<32>>{}))}},
-        std::array<callback_t, 0>{}};
+        std::array<callback_t, 0>{});
 }
 
 TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
-    constexpr auto h = msg::indexed_handler{
-        msg::callback_args<test_msg>,
+    constexpr auto h = msg::make_indexed_handler<test_msg>(
         msg::indices{msg::index{
             opcode_field{},
             lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
@@ -61,7 +56,7 @@ TEST_CASE("create handler with one index and callback", "[indexed_handler]") {
         std::array<callback_t, 1>{[](test_msg const &) {
             callbacks_called.set(0);
             return true;
-        }}};
+        }});
 
     callbacks_called.reset();
     CHECK(h.handle(test_msg{"opcode_field"_field = 42}));
@@ -78,8 +73,7 @@ TEST_CASE("create handler with multiple indices and callbacks",
           "[indexed_handler]") {
     using lookup::entry;
 
-    constexpr auto h = msg::indexed_handler{
-        msg::callback_args<test_msg>,
+    constexpr auto h = msg::make_indexed_handler<test_msg>(
         msg::indices{
             msg::index{
                 opcode_field{},
@@ -136,7 +130,7 @@ TEST_CASE("create handler with multiple indices and callbacks",
                                   [](test_msg const &) {
                                       callbacks_called.set(8);
                                       return true;
-                                  }}};
+                                  }});
 
     auto const check_msg = [&](std::uint32_t op, std::uint32_t sub_op,
                                std::size_t callback_index) {
@@ -174,8 +168,7 @@ TEST_CASE("create handler with multiple indices and callbacks",
 }
 
 TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
-    constexpr auto h = msg::indexed_handler{
-        msg::callback_args<test_msg, std::size_t>,
+    constexpr auto h = msg::make_indexed_handler<test_msg, std::size_t>(
         msg::indices{msg::index{
             opcode_field{},
             lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
@@ -185,10 +178,33 @@ TEST_CASE("create handler with extra callback arg", "[indexed_handler]") {
             [](test_msg const &, std::size_t i) {
                 callbacks_called.set(i);
                 return true;
-            }}};
+            }});
 
     callbacks_called.reset();
     CHECK(h.handle(test_msg{"opcode_field"_field = 42}, std::size_t{1}));
     CHECK(h.is_match(test_msg{"opcode_field"_field = 42}));
     CHECK(callbacks_called[1]);
+}
+
+TEST_CASE("separate handler input from callback parameter type",
+          "[indexed_handler]") {
+    using base_storage_t = msg_defn::default_storage_t;
+    using view_callback_t = auto (*)(msg::const_view<msg_defn>)->bool;
+
+    constexpr auto h = msg::make_indexed_handler<base_storage_t>(
+        msg::indices{msg::index{
+            opcode_field{},
+            lookup::make(CX_VALUE(lookup::input<std::uint32_t, bitset<32>, 1>{
+                bitset<32>{}, std::array{lookup::entry{
+                                  0x80u, bitset<32>{stdx::place_bits, 0}}}}))}},
+        std::array<view_callback_t, 1>{[](msg::const_view<msg_defn>) {
+            callbacks_called.set(0);
+            return true;
+        }});
+
+    callbacks_called.reset();
+    auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
+    CHECK(h.is_match(msg_match));
+    CHECK(h.handle(msg_match));
+    CHECK(callbacks_called[0]);
 }

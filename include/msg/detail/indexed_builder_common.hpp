@@ -127,28 +127,26 @@ template <typename... Fields>
 using index_spec = decltype(stdx::make_indexed_tuple<get_field_type>(
     temp_index<Fields, 512, 256>{}...));
 
-template <template <typename, typename, typename, typename...> typename ParentT,
-          typename IndexSpec, typename CallbacksT, typename BaseMsgT,
-          typename... ExtraCallbackArgsT>
+template <template <typename, typename, typename, typename...> typename Parent,
+          typename IndexSpec, typename Callbacks, typename MsgBase,
+          typename... ExtraCallbackArgs>
 struct indexed_builder_base {
-    CallbacksT callbacks;
+    Callbacks callbacks;
 
     template <typename... Ts> [[nodiscard]] constexpr auto add(Ts... ts) {
         auto new_callbacks =
             stdx::tuple_cat(callbacks, separate_sum_terms(ts)...);
         using new_callbacks_t = decltype(new_callbacks);
-        return ParentT<IndexSpec, new_callbacks_t, BaseMsgT,
-                       ExtraCallbackArgsT...>{new_callbacks};
+        return Parent<IndexSpec, new_callbacks_t, MsgBase,
+                      ExtraCallbackArgs...>{new_callbacks};
     }
 
-    using callback_func_t = auto (*)(BaseMsgT const &,
-                                     ExtraCallbackArgsT... args) -> bool;
+    using callback_func_t = auto (*)(MsgBase const &,
+                                     ExtraCallbackArgs... args) -> bool;
 
     template <typename BuilderValue, std::size_t I>
-    constexpr static auto invoke_callback(BaseMsgT const &data,
-                                          ExtraCallbackArgsT... args) -> bool {
-        // FIXME: incomplete message callback invocation...
-        //        1) bit_cast message argument
+    constexpr static auto invoke_callback(MsgBase const &data,
+                                          ExtraCallbackArgs... args) -> bool {
         constexpr auto cb = IndexSpec{}.apply([&]<typename... Indices>(
                                                   Indices...) {
             constexpr auto orig_cb =
@@ -164,15 +162,14 @@ struct indexed_builder_base {
                 "Indexed callback has matcher that is never matched!");
         }
 
-        auto view = typename CB::msg_t::view_t{data};
-
-        if (cb.matcher(view)) {
+        using msg_t = typename CB::msg_t;
+        if (msg::call_with_message<msg_t>(cb.matcher, data)) {
             CIB_INFO(
                 "Incoming message matched [{}], because [{}] (collapsed to "
                 "[{}]), executing callback",
                 stdx::ct_string_to_type<cb.name, sc::string_constant>(),
                 orig_cb.matcher.describe(), cb.matcher.describe());
-            cb.callable(view, args...);
+            msg::call_with_message<msg_t>(cb.callable, data, args...);
             return true;
         }
         return false;

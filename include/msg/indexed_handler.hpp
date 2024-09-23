@@ -6,12 +6,12 @@
 
 namespace msg {
 
-template <typename... IndicesT> struct indices : IndicesT... {
-    CONSTEVAL explicit indices(IndicesT... index_args)
-        : IndicesT{index_args}... {}
+template <typename... Indices> struct indices : Indices... {
+    CONSTEVAL explicit indices(Indices... index_args)
+        : Indices{index_args}... {}
 
     constexpr auto operator()(auto const &data) const {
-        return (this->IndicesT::operator()(data) & ...);
+        return (this->Indices::operator()(data) & ...);
     }
 };
 
