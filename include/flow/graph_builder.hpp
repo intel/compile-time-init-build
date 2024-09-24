@@ -9,6 +9,7 @@
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_set.hpp>
 #include <stdx/cx_vector.hpp>
+#include <stdx/span.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
@@ -20,7 +21,6 @@
 #include <cstddef>
 #include <iterator>
 #include <optional>
-#include <span>
 #include <utility>
 
 namespace flow {
@@ -186,9 +186,9 @@ struct graph_builder {
         if (not g.empty()) {
             return {};
         }
-        return std::optional<Output>{
-            std::in_place,
-            std::span{std::cbegin(ordered_list), std::size(ordered_list)}};
+        using span_t =
+            stdx::span<typename Graph::key_type const, Graph::capacity()>;
+        return std::optional<Output>{std::in_place, span_t{ordered_list}};
     }
 
     constexpr static void check_for_missing_nodes(auto nodes,
