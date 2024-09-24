@@ -5,11 +5,11 @@
 #include <log/log.hpp>
 
 #include <stdx/cx_vector.hpp>
+#include <stdx/span.hpp>
 
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
-#include <span>
 #include <type_traits>
 
 namespace flow {
@@ -60,8 +60,8 @@ template <stdx::ct_string Name, std::size_t NumSteps> class impl {
      *
      * @see flow::builder
      */
-    constexpr explicit(true) impl(std::span<node_t const> newMilestones) {
-        CIB_ASSERT(NumSteps >= std::size(newMilestones));
+    constexpr explicit(true)
+        impl(stdx::span<node_t const, NumSteps> newMilestones) {
         if constexpr (loggingEnabled) {
             for (auto const &milestone : newMilestones) {
                 functionPtrs.push_back(milestone.log_name);

@@ -1,15 +1,14 @@
 #pragma once
 
-#include <log/log.hpp>
 #include <seq/step.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
+#include <stdx/span.hpp>
 
 #include <array>
 #include <cstddef>
 #include <iterator>
-#include <span>
 
 namespace seq {
 enum struct direction { FORWARD = 0, BACKWARD = 1 };
@@ -24,8 +23,7 @@ template <stdx::ct_string, std::size_t NumSteps> struct impl {
 
     using node_t = rt_step;
 
-    constexpr explicit(true) impl(std::span<node_t const> steps) {
-        CIB_ASSERT(NumSteps >= std::size(steps));
+    constexpr explicit(true) impl(stdx::span<node_t const, NumSteps> steps) {
         for (auto const &step : steps) {
             _forward_steps.push_back(step.forward_ptr);
             _backward_steps.push_back(step.backward_ptr);
