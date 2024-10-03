@@ -58,7 +58,7 @@ a shower. The flow library will order actions in a flow to respect these
 dependencies. The actions will be executed in an order that respects all given
 dependencies.
 
-The `*` operator is used to explicitly add an action to the
+The `\*` operator is used to explicitly add an action to the
 flow. Without the `*` operator an action is just a reference.
 A compile-time error will be triggered if an action is referenced without ever
 being explicitly added to the flow. If an action is added under a constexpr
