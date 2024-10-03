@@ -24,9 +24,9 @@ include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
 fmt_recipe(10.2.1)
-add_versioned_package("gh:intel/cpp-std-extensions#2fc35c7")
-add_versioned_package("gh:intel/cpp-baremetal-concurrency#fef18ca")
-add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#113eeff")
+add_versioned_package("gh:intel/cpp-std-extensions#67120f7")
+add_versioned_package("gh:intel/cpp-baremetal-concurrency#630d8bc")
+add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#9ea96f9")
 
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)

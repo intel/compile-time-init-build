@@ -3,12 +3,14 @@
 #include <async/completion_tags.hpp>
 #include <async/concepts.hpp>
 #include <async/connect.hpp>
+#include <async/debug_context.hpp>
 #include <async/schedulers/trigger_scheduler.hpp>
 #include <async/start.hpp>
 #include <async/then.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -121,4 +123,14 @@ template <stdx::ct_string Name, _send_recv::valid_send_action S, typename F,
     return std::forward<S>(s) |
            then_receive<Name>(std::forward<F>(f), std::forward<Args>(args)...);
 }
+
+struct send_t;
 } // namespace msg
+
+template <typename... Ts>
+struct async::debug::context_for<msg::_send_recv::op_state<Ts...>> {
+    using tag = msg::send_t;
+    constexpr static auto name = stdx::ct_string{"msg_send"};
+    using type = msg::_send_recv::op_state<Ts...>;
+    using children = stdx::type_list<>;
+};
