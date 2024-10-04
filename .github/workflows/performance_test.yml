@@ -8,21 +8,28 @@ on:
     branches: [ main ]
 
 env:
+  DEBIAN_FRONTEND: noninteractive
+  CMAKE_GENERATOR: Ninja
   BUILD_TYPE: Release
+  LLVM_VERSION: 18
 
 jobs:
   performance_test:
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
       - name: Install compiler
-        run: sudo apt update && sudo apt-get install -y clang-14
+        run: sudo apt update && sudo apt install -y clang-${{env.LLVM_VERSION}}
+
+      - name: Install build tools
+        run: |
+          sudo apt install -y ninja-build
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-14/bin/clang"
-          CXX: "/usr/lib/llvm-14/bin/clang++"
+          CC: "/usr/lib/llvm-${{env.LLVM_VERSION}}/bin/clang"
+          CXX: "/usr/lib/llvm-${{env.LLVM_VERSION}}/bin/clang++"
           CXX_STANDARD: 20
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
