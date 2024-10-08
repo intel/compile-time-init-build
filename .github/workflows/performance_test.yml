@@ -51,7 +51,7 @@ jobs:
           echo "</details>" >> $GITHUB_STEP_SUMMARY
 
       - name: 'Upload Compilation Trace'
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         with:
           name: compilation_trace.json
           path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
