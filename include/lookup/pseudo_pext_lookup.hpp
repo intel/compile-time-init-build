@@ -122,7 +122,7 @@ constexpr auto count_duplicates(std::array<T, S> keys) -> std::size_t {
     return dups;
 }
 
-/// count the length of the longest run of identical values (n log n)
+/// count the length of the longest run of identical values (n)
 template <typename T, std::size_t S>
 constexpr auto count_longest_run(std::array<T, S> keys) -> std::size_t {
     std::sort(keys.begin(), keys.end());
@@ -138,8 +138,11 @@ constexpr auto count_longest_run(std::array<T, S> keys) -> std::size_t {
 
             if (curr_value == prev_value) {
                 current_run++;
-            } else {
-                longest_run = std::max(longest_run, current_run);
+            }
+
+            longest_run = std::max(longest_run, current_run);
+
+            if (curr_value != prev_value) {
                 current_run = 0;
             }
 
@@ -241,7 +244,7 @@ constexpr auto calc_pseudo_pext_mask(std::array<entry<T, V>, S> const &pairs,
     while (max_search_len > 1 && std::popcount(mask) > 4) {
         auto try_mask = remove_cheapest_bit(mask, keys);
         auto current_longest_run = count_longest_run(with_mask(try_mask, keys));
-        if (current_longest_run < max_search_len) {
+        if (current_longest_run <= max_search_len) {
             mask = try_mask;
             prev_longest_run = current_longest_run;
         } else {
@@ -249,7 +252,7 @@ constexpr auto calc_pseudo_pext_mask(std::array<entry<T, V>, S> const &pairs,
         }
     }
 
-    return std::make_tuple(mask, std::size_t{});
+    return std::make_tuple(mask, prev_longest_run);
 }
 
 } // namespace detail
