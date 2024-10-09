@@ -98,3 +98,39 @@ TEMPLATE_TEST_CASE("lookup with scoped enum entries", "[pseudo pext lookup]",
     CHECK(lookup[some_key_t::KAPPA] == 87);
     CHECK(lookup[some_key_t::GAMMA] == 4);
 }
+
+TEST_CASE("pbt regression 0", "[pseudo pext lookup]") {
+    constexpr auto lookup = lookup::pseudo_pext_lookup<true, 2>::make(
+        CX_VALUE(lookup::input<std::uint16_t, std::uint16_t, 5>{
+            0, std::array<lookup::entry<std::uint16_t, std::uint16_t>, 5>{
+                   lookup::entry<std::uint16_t, std::uint16_t>{1, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{3, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{11, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{16, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{0, 1}}}));
+
+    CHECK(lookup[1] == 0);
+    CHECK(lookup[3] == 0);
+    CHECK(lookup[11] == 0);
+    CHECK(lookup[16] == 0);
+    CHECK(lookup[0] == 1);
+}
+
+TEST_CASE("pbt regression 1", "[pseudo pext lookup]") {
+    constexpr auto lookup = lookup::pseudo_pext_lookup<true, 2>::make(
+        CX_VALUE(lookup::input<std::uint16_t, std::uint16_t, 6>{
+            0, std::array<lookup::entry<std::uint16_t, std::uint16_t>, 6>{
+                   lookup::entry<std::uint16_t, std::uint16_t>{1, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{3, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{4, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{15, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{30, 0},
+                   lookup::entry<std::uint16_t, std::uint16_t>{31, 1}}}));
+
+    CHECK(lookup[1] == 0);
+    CHECK(lookup[3] == 0);
+    CHECK(lookup[4] == 0);
+    CHECK(lookup[15] == 0);
+    CHECK(lookup[30] == 0);
+    CHECK(lookup[31] == 1);
+}
