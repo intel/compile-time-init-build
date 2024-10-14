@@ -11,3 +11,7 @@
 CMakePresets.json
 /toolchains
 mull.yml
+__pycache__
+.mypy_cache
+.pytest_cache
+.hypothesis
