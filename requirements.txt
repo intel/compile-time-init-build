@@ -1,0 +1,11 @@
+pytest==8.3.3
+pytest-forked==1.6.0
+pytest-xdist==3.6.1
+hypothesis==6.112.5
+attrs==24.2.0
+execnet==2.1.1
+pluggy==1.5.0
+sortedcontainers==2.4.0
+iniconfig==2.0.0
+packaging==24.1
+py==1.11.0

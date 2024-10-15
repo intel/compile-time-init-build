@@ -84,3 +84,5 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
                     QBENCH_DATASET="${BENCH_DATASET}")
     endforeach()
 endforeach()
+
+add_subdirectory(pbt)
