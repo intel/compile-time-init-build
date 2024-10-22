@@ -8,10 +8,11 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 
 namespace seq {
-enum struct direction { FORWARD = 0, BACKWARD = 1 };
+enum struct direction : std::uint8_t { FORWARD, BACKWARD };
 
 template <stdx::ct_string, std::size_t NumSteps> struct impl {
     stdx::cx_vector<func_ptr, NumSteps> _forward_steps{};

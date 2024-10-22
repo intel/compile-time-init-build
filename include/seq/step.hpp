@@ -7,8 +7,10 @@
 
 #include <stdx/ct_string.hpp>
 
+#include <cstdint>
+
 namespace seq {
-enum struct status { NOT_DONE = 0, DONE = 1 };
+enum struct status : std::uint8_t { NOT_DONE, DONE };
 
 using func_ptr = auto (*)() -> status;
 using log_func_ptr = auto (*)() -> void;
