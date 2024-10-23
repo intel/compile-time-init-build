@@ -4,11 +4,11 @@
 
 namespace cib::detail {
 struct config_item {
-    [[nodiscard]] constexpr auto extends_tuple() const -> stdx::tuple<> {
+    [[nodiscard]] constexpr static auto extends_tuple() -> stdx::tuple<> {
         return {};
     }
 
-    [[nodiscard]] constexpr auto exports_tuple() const -> stdx::tuple<> {
+    [[nodiscard]] constexpr static auto exports_tuple() -> stdx::tuple<> {
         return {};
     }
 };

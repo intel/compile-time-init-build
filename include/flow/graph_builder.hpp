@@ -297,7 +297,8 @@ struct graph_builder {
         constexpr static auto run() { built()(); }
 
       public:
-        constexpr operator FunctionPtr() const { return run; }
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr explicit(false) operator FunctionPtr() const { return run; }
         constexpr auto operator()() const -> void { run(); }
         constexpr static bool active = decltype(built())::active;
     };

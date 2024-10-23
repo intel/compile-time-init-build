@@ -127,7 +127,7 @@ template <typename Name, typename T> struct field_value {
 template <typename Name> struct field_name {
     using name_t = Name;
 
-    // NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature)
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     template <typename T> constexpr auto operator=(T value) {
         return field_value<Name, T>{value};
     }
@@ -369,6 +369,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         using span_t = Span;
 
         template <detail::storage_like S>
+        // NOLINTNEXTLINE(google-explicit-constructor)
         explicit(false) view_t(S const &s) : storage{s} {}
 
         template <detail::storage_like S, some_field_value... Vs>
@@ -377,6 +378,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         }
 
         template <typename S>
+        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr explicit(false) view_t(owner_t<S> const &s LIFETIMEBOUND)
             : storage{s.data()} {}
 
@@ -391,6 +393,7 @@ template <stdx::ct_string Name, typename... Fields> struct message {
                      std::same_as<std::add_const_t<typename S::element_type>,
                                   typename span_t::element_type> and
                      span_t::extent <= S::extent)
+        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr explicit(false) view_t(view_t<S> const &s)
             : storage{s.data()} {}
 

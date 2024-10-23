@@ -16,9 +16,8 @@
 #include <cstdint>
 #include <utility>
 
-template <auto...> struct undef;
-
-namespace {
+namespace logging::mipi {
+namespace detail {
 template <logging::level L, typename S, typename T>
 constexpr auto to_message() {
     constexpr auto s = S::value;
@@ -46,9 +45,8 @@ template <typename S> constexpr auto to_module() {
         return sc::module_string<sc::undefined<void, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
-} // namespace
+} // namespace detail
 
-namespace logging::mipi {
 namespace defn {
 using msg::at;
 using msg::dword_index_t;
@@ -125,8 +123,8 @@ template <typename TDestinations> struct log_handler {
     template <logging::level Level, typename ModuleId, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename StringType>(StringType, auto... args) {
-            using Message = decltype(to_message<Level>(msg));
-            using Module = decltype(to_module<ModuleId>());
+            using Message = decltype(detail::to_message<Level>(msg));
+            using Module = decltype(detail::to_module<ModuleId>());
             dispatch_message<Level>(catalog<Message>(), module<Module>(),
                                     static_cast<std::uint32_t>(args)...);
         });

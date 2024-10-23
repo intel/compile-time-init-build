@@ -15,9 +15,8 @@ template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
 
     constexpr static P pred{};
 
-    constexpr predicate_t(P) {}
-
-    constexpr predicate_t() {}
+    constexpr predicate_t() = default;
+    constexpr explicit(true) predicate_t(P) {}
 
     [[nodiscard]] constexpr auto
     operator()(auto const &event) const -> decltype(pred(event)) {
@@ -34,7 +33,7 @@ template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
 };
 
 template <stdx::ct_string Name = "<predicate>", stdx::callable P>
-constexpr auto predicate(P &&p) -> predicate_t<Name, std::remove_cvref_t<P>> {
-    return {std::forward<P>(p)};
+constexpr auto predicate(P &&p) {
+    return predicate_t<Name, std::remove_cvref_t<P>>{std::forward<P>(p)};
 }
 } // namespace match

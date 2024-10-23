@@ -10,11 +10,12 @@
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
 
+#include <cstdint>
 #include <limits>
 #include <type_traits>
 
 namespace interrupt {
-enum class resource_status { OFF = 0, ON = 1 };
+enum class resource_status : std::uint8_t { OFF, ON };
 
 template <typename Irq>
 concept has_enable_field = requires { Irq::enable_field; };

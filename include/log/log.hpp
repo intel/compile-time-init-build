@@ -62,6 +62,8 @@ template <stdx::ct_string S> struct module_id_t {
 
 using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+
 #define CIB_DO_PRAGMA(X) _Pragma(#X)
 #ifdef __clang__
 #define CIB_PRAGMA(X) CIB_DO_PRAGMA(clang X)
@@ -118,3 +120,5 @@ template <typename Flavor, typename... Ts> static auto log_version() -> void {
 
 #define CIB_LOG_V(FLAVOR) logging::log_version<FLAVOR>()
 #define CIB_LOG_VERSION() CIB_LOG_V(logging::default_flavor_t)
+
+// NOLINTEND(cppcoreguidelines-macro-usage)
