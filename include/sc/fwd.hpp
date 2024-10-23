@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdx/compiler.hpp>
+#include <stdx/ct_string.hpp>
+
 #include <concepts>
 #include <type_traits>
 
@@ -30,9 +33,8 @@ template <typename T> constexpr static type_name<T> type_{};
 template <typename CharT, CharT... chars> struct string_constant;
 
 inline namespace literals {
-template <class T, T... chars>
-constexpr auto operator""_sc() -> sc::string_constant<T, chars...> {
-    return {};
+template <stdx::ct_string S> CONSTEVAL auto operator""_sc() {
+    return stdx::ct_string_to_type<S, string_constant>();
 }
 } // namespace literals
 } // namespace sc
