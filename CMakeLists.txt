@@ -206,11 +206,6 @@ target_sources(
               include/seq/impl.hpp
               include/seq/step.hpp)
 
-target_compile_options(
-    cib
-    INTERFACE
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-string-literal-operator-template>)
-
 if(PROJECT_IS_TOP_LEVEL)
     add_docs(docs)
     clang_tidy_interface(cib)
