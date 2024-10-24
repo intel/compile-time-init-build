@@ -1,14 +1,14 @@
 #include <cib/cib.hpp>
 #include <flow/flow.hpp>
 
-// EXPECT: One or more steps are referenced in the flow but not explicitly
+// EXPECT: One or more steps are referenced in the flow
 
 namespace {
 using namespace flow::literals;
 
 constexpr auto a = flow::milestone<"a">();
 
-struct TestFlowAlpha : public flow::service<> {};
+struct TestFlowAlpha : public flow::service<"alpha"> {};
 
 struct FlowConfig {
     constexpr static auto config =
