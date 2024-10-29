@@ -12,3 +12,4 @@ CMakePresets.json
 /toolchains
 mull.yml
 requirements.txt
+docs/puppeteer_config.json

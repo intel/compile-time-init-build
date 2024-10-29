@@ -5,6 +5,7 @@
 :rouge-style: base16.solarized
 :source-language: c++
 :toc: left
+:mermaid-puppeteer-config: puppeteer_config.json
 
 include::intro.adoc[]
 include::flows.adoc[]
