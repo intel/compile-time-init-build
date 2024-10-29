@@ -40,7 +40,8 @@ jobs:
           node-version: 20
       - name: Install Mermaid
         run: |
-          sudo npm install -g @mermaid-js/mermaid-cli@11.2.0
+          sudo npm install -g @mermaid-js/mermaid-cli@11.2.1
+          npx puppeteer browsers install chrome-headless-shell
       - name: Install asciidoctor
         run: |
           sudo apt update
