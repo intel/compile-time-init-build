@@ -4,12 +4,12 @@
 #include <flow/detail/walk.hpp>
 #include <flow/impl.hpp>
 
-#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_set.hpp>
 #include <stdx/cx_vector.hpp>
 #include <stdx/span.hpp>
+#include <stdx/static_assert.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
@@ -52,31 +52,10 @@ template <typename T> using name_for = typename T::name_t;
     });
 }
 
-template <typename Cond> struct sequence_conditions;
-
-template <auto...> struct INFO_flow_name_;
-
-template <auto...> struct INFO_step_a_name_;
-
-template <auto...> struct INFO_step_a_condition_;
-
-template <auto...> struct INFO_step_b_name_;
-
-template <auto...> struct INFO_step_b_condition_;
-
-template <auto...> struct INFO_sequence_condition_;
-
-template <typename...> struct INFO_sequence_missing_predicate_;
-
-template <typename...> constexpr bool ERROR_DETAILS_ = false;
-
-template <auto...> struct INFO_missing_steps_;
-
-template <auto...> struct INFO_duplicated_steps_;
-
 template <stdx::ct_string Name,
           template <stdx::ct_string, std::size_t> typename Impl>
 struct graph_builder {
+    // NOLINTBEGIN(readability-function-cognitive-complexity)
     template <typename Node, std::size_t N, std::size_t E>
     [[nodiscard]] constexpr static auto make_graph(auto const &nodes,
                                                    auto const &edges) {
@@ -93,6 +72,8 @@ struct graph_builder {
 
                 using lhs_t = std::remove_cvref_t<decltype(lhs)>;
                 using rhs_t = std::remove_cvref_t<decltype(rhs)>;
+                using lhs_cond_t = std::remove_cvref_t<decltype(lhs.condition)>;
+                using rhs_cond_t = std::remove_cvref_t<decltype(rhs.condition)>;
 
                 using edge_ps_t = decltype(Cond::predicates);
                 auto node_ps = stdx::to_unsorted_set(stdx::tuple_cat(
@@ -100,31 +81,17 @@ struct graph_builder {
 
                 stdx::for_each(
                     [&]<typename P>(P const &) {
-                        if constexpr (not stdx::contains_type<edge_ps_t, P>) {
-                            static_assert(
-                                ERROR_DETAILS_<
-                                    INFO_flow_name_<Name>,
-                                    INFO_step_a_name_<lhs_t::ct_name>,
-                                    INFO_step_a_condition_<
-                                        lhs_t::condition.ct_name>,
-                                    INFO_step_b_name_<rhs_t::ct_name>,
-                                    INFO_step_b_condition_<
-                                        rhs_t::condition.ct_name>,
-                                    INFO_sequence_condition_<Cond::ct_name>,
-                                    INFO_sequence_missing_predicate_<P>>,
-
-                                "The conditions on this sequence "
-                                "(step_a >> step_b) are weaker than those on "
-                                "step_a and/or step_b. The sequence could be "
-                                "enabled while step_a and/or step_b is not. "
-                                "Specifically, the sequence is missing the "
-                                "predicate identified in "
-                                "`INFO_sequence_missing_predicate_`. TIP: "
-                                "Look for 'ERROR_DETAILS_` and `INFO_` in "
-                                "the compiler error message for details on "
-                                "the sequence, the step names, and the "
-                                "conditions.");
-                        }
+                        STATIC_ASSERT(
+                            (stdx::contains_type<edge_ps_t, P>),
+                            "The conditions on the sequence ({} >> {})[{}] are "
+                            "weaker than those on {}[{}] or {}[{}]. "
+                            "Specifically, the sequence is missing the "
+                            "predicate: {}",
+                            CX_VALUE(lhs_t::ct_name), CX_VALUE(rhs_t::ct_name),
+                            CX_VALUE(Cond::ct_name), CX_VALUE(lhs_t::ct_name),
+                            CX_VALUE(lhs_cond_t::ct_name),
+                            CX_VALUE(rhs_t::ct_name),
+                            CX_VALUE(rhs_cond_t::ct_name), CX_VALUE(P));
                     },
                     node_ps);
 
@@ -133,6 +100,7 @@ struct graph_builder {
             edges);
         return g;
     }
+    // NOLINTEND(readability-function-cognitive-complexity)
 
     template <typename Node, typename Graph>
     [[nodiscard]] constexpr static auto is_source_of(Node const &node,
@@ -191,6 +159,15 @@ struct graph_builder {
         return std::optional<Output>{std::in_place, span_t{ordered_list}};
     }
 
+    template <typename T>
+    constexpr static auto error_steps =
+        stdx::transform([](auto N) { return stdx::ct_string_from_type(N); },
+                        T{})
+            .join(stdx::ct_string{""}, [](auto x, auto y) {
+                using namespace stdx::literals;
+                return x + ", "_cts + y;
+            });
+
     constexpr static void check_for_missing_nodes(auto nodes,
                                                   auto mentioned_nodes) {
         constexpr auto get_name = []<typename N>(N) ->
@@ -201,52 +178,24 @@ struct graph_builder {
         using node_names_t = decltype(stdx::to_sorted_set(node_names));
         using mentioned_node_names_t =
             decltype(stdx::to_sorted_set(mentioned_node_names));
+        using missing_nodes_t =
+            boost::mp11::mp_set_difference<mentioned_node_names_t,
+                                           node_names_t>;
+        STATIC_ASSERT(
+            (std::is_same_v<node_names_t, mentioned_node_names_t>),
+            "One or more steps are referenced in the flow ({}) but not "
+            "explicitly added with the * operator. The missing steps are: {}.",
+            CX_VALUE(Name), CX_VALUE(error_steps<missing_nodes_t>));
 
-        if constexpr (not std::is_same_v<node_names_t,
-                                         mentioned_node_names_t>) {
-            using missing_nodes_t =
-                boost::mp11::mp_set_difference<mentioned_node_names_t,
-                                               node_names_t>;
-
-            constexpr auto missing_nodes = missing_nodes_t{};
-            constexpr auto missing_nodes_ct_strings = stdx::transform(
-                []<typename N>(N) { return stdx::ct_string_from_type(N{}); },
-                missing_nodes);
-
-            [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                using error_details_t = INFO_missing_steps_<stdx::get<Is>(
-                    missing_nodes_ct_strings)...>;
-
-                static_assert(
-                    ERROR_DETAILS_<INFO_flow_name_<Name>, error_details_t>,
-                    "One or more steps are referenced in the flow but not "
-                    "explicitly added with the * operator. The "
-                    "beginning of this error shows you which steps are "
-                    "missing.");
-            }(std::make_index_sequence<
-                stdx::tuple_size_v<decltype(missing_nodes)>>{});
-        }
-
-        if constexpr (stdx::tuple_size_v<node_names_t> !=
-                      stdx::tuple_size_v<decltype(node_names)>) {
-            constexpr auto duplicates = stdx::transform(
-                [](auto e) {
-                    return stdx::ct_string_from_type(stdx::get<0>(e));
-                },
-                stdx::filter<detail::is_duplicated>(stdx::gather(node_names)));
-
-            [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                using error_details_t =
-                    INFO_duplicated_steps_<stdx::get<Is>(duplicates)...>;
-
-                static_assert(
-                    ERROR_DETAILS_<INFO_flow_name_<Name>, error_details_t>,
-                    "One or more steps are explicitly added more than once "
-                    "using the * operator. The beginning of this "
-                    "error shows you which steps are duplicated.");
-            }(std::make_index_sequence<
-                stdx::tuple_size_v<decltype(duplicates)>>{});
-        }
+        constexpr auto duplicates = stdx::transform(
+            [](auto e) { return stdx::get<0>(e); },
+            stdx::filter<detail::is_duplicated>(stdx::gather(node_names)));
+        using duplicate_nodes_t = decltype(duplicates);
+        STATIC_ASSERT(
+            stdx::tuple_size_v<duplicate_nodes_t> == 0,
+            "One or more steps in the flow ({}) are explicitly added more than "
+            "once using the * operator. The duplicate steps are: {}.",
+            CX_VALUE(Name), CX_VALUE(error_steps<duplicate_nodes_t>));
     }
 
     template <typename Graph>

@@ -1,7 +1,7 @@
 #include <cib/cib.hpp>
 #include <flow/flow.hpp>
 
-// EXPECT: The conditions on this sequence
+// EXPECT: The conditions on the sequence
 
 namespace {
 using namespace flow::literals;
