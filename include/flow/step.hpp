@@ -3,8 +3,8 @@
 #include <cib/detail/runtime_conditional.hpp>
 #include <cib/func_decl.hpp>
 #include <flow/common.hpp>
+#include <flow/log.hpp>
 #include <flow/subgraph_identity.hpp>
-#include <log/log.hpp>
 #include <sc/string_constant.hpp>
 
 #include <stdx/compiler.hpp>
@@ -25,7 +25,7 @@ struct rt_node {
 
 template <stdx::ct_string Type, stdx::ct_string Name,
           subgraph_identity Identity, typename Cond, typename F>
-struct ct_node : rt_node {
+struct ct_node {
     using is_subgraph = void;
     using type_t =
         decltype(stdx::ct_string_to_type<Type, sc::string_constant>());
@@ -39,19 +39,21 @@ struct ct_node : rt_node {
 
     constexpr static auto condition = Cond{};
 
-    constexpr static auto run_func = [] {
-        if (condition) {
-            F{}();
-        }
-    };
-
-    constexpr static auto log_func = [] {
-        if (condition) {
-            CIB_TRACE("flow.{}({})", type_t{}, name_t{});
-        }
-    };
-
-    constexpr ct_node() : rt_node{+run_func, +log_func} {}
+    constexpr operator rt_node() const {
+        return rt_node{
+            [] {
+                if (condition) {
+                    F{}();
+                }
+            },
+            [] {
+                if (condition) {
+                    using log_spec_t = decltype(get_log_spec<ct_node>());
+                    CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
+                            "flow.{}({})", type_t{}, name_t{});
+                }
+            }};
+    }
 
     constexpr auto operator*() const {
         if constexpr (Identity == subgraph_identity::REFERENCE) {

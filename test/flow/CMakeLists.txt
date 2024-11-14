@@ -15,7 +15,7 @@ else()
         warnings
         cib)
 
-    add_tests(flow logging)
+    add_tests(flow logging log_levels custom_log_levels)
 endif()
 
 add_tests(graph graph_builder)

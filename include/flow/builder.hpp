@@ -4,6 +4,7 @@
 #include <flow/common.hpp>
 #include <flow/graph_builder.hpp>
 #include <flow/impl.hpp>
+#include <log/level.hpp>
 
 #include <stdx/ct_string.hpp>
 

@@ -78,6 +78,7 @@ template <stdx::ct_string Name, std::size_t NumSteps> class impl {
 namespace detail {
 template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
     constexpr static auto active = sizeof...(FuncPtrs) > 0;
+    constexpr static auto ct_name = Name;
 
     __attribute__((flatten, always_inline)) auto operator()() const -> void {
         constexpr static bool loggingEnabled = not Name.empty();
@@ -86,13 +87,17 @@ template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
             stdx::ct_string_to_type<Name, sc::string_constant>();
 
         if constexpr (loggingEnabled) {
-            CIB_TRACE("flow.start({})", name);
+            using log_spec_t = decltype(get_log_spec<inlined_func_list>());
+            CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
+                    "flow.start({})", name);
         }
 
         (FuncPtrs(), ...);
 
         if constexpr (loggingEnabled) {
-            CIB_TRACE("flow.end({})", name);
+            using log_spec_t = decltype(get_log_spec<inlined_func_list>());
+            CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
+                    "flow.end({})", name);
         }
     }
 };

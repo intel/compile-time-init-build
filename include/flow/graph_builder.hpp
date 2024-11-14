@@ -3,6 +3,7 @@
 #include <flow/common.hpp>
 #include <flow/detail/walk.hpp>
 #include <flow/impl.hpp>
+#include <log/level.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
