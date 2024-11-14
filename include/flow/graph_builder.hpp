@@ -3,7 +3,6 @@
 #include <flow/common.hpp>
 #include <flow/detail/walk.hpp>
 #include <flow/impl.hpp>
-#include <log/level.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
@@ -27,7 +26,13 @@
 namespace flow {
 namespace detail {
 template <typename T> using is_duplicated = std::bool_constant<(T::size() > 1)>;
-}
+
+template <typename CTNode, typename Output>
+concept is_output_compatible = requires(CTNode n) {
+    { Output::create_node(n) } -> std::same_as<typename Output::node_t>;
+};
+} // namespace detail
+
 template <typename T> using name_for = typename T::name_t;
 
 [[nodiscard]] constexpr auto edge_size(auto const &nodes,
@@ -57,12 +62,14 @@ template <stdx::ct_string Name,
           template <stdx::ct_string, std::size_t> typename Impl>
 struct graph_builder {
     // NOLINTBEGIN(readability-function-cognitive-complexity)
-    template <typename Node, std::size_t N, std::size_t E>
+    template <typename Output, std::size_t N, std::size_t E>
     [[nodiscard]] constexpr static auto make_graph(auto const &nodes,
                                                    auto const &edges) {
-        using graph_t = stdx::cx_multimap<Node, Node, N, E>;
+        using output_node_t = typename Output::node_t;
+        using graph_t = stdx::cx_multimap<output_node_t, output_node_t, N, E>;
         graph_t g{};
-        for_each([&](auto const &node) { g.put(node); }, nodes);
+        for_each([&]<typename Node>(Node n) { g.put(Output::create_node(n)); },
+                 nodes);
 
         auto const named_nodes = stdx::apply_indices<name_for>(nodes);
         for_each(
@@ -96,7 +103,7 @@ struct graph_builder {
                     },
                     node_ps);
 
-                g.put(lhs, rhs);
+                g.put(Output::create_node(lhs), Output::create_node(rhs));
             },
             edges);
         return g;
@@ -213,18 +220,16 @@ struct graph_builder {
         constexpr auto edge_capacity = edge_size(node_set, edges);
 
         using output_t = Impl<Graph::name, node_capacity>;
-        using rt_node_t = typename output_t::node_t;
-
         static_assert(
             all_of(
                 []<typename N>(N const &) {
-                    return std::is_convertible_v<N, rt_node_t>;
+                    return detail::is_output_compatible<N, output_t>;
                 },
                 node_set),
             "Output node type is not compatible with given input nodes");
 
-        auto g = make_graph<rt_node_t, node_capacity, edge_capacity>(node_set,
-                                                                     edges);
+        auto g =
+            make_graph<output_t, node_capacity, edge_capacity>(node_set, edges);
         return topo_sort<output_t>(g);
     }
 

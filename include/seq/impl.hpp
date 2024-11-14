@@ -24,6 +24,11 @@ template <stdx::ct_string, std::size_t NumSteps> struct impl {
 
     using node_t = rt_step;
 
+    template <typename CTNode>
+    constexpr static auto create_node(CTNode n) -> node_t {
+        return n;
+    }
+
     constexpr explicit(true) impl(stdx::span<node_t const, NumSteps> steps) {
         for (auto const &step : steps) {
             _forward_steps.push_back(step.forward_ptr);

@@ -14,54 +14,19 @@
 #include <type_traits>
 
 namespace flow {
-struct rt_node {
-    FunctionPtr run;
-    FunctionPtr log_name;
-
-  private:
-    friend constexpr auto operator==(rt_node const &,
-                                     rt_node const &) -> bool = default;
-};
-
-namespace detail {
-template <typename Cond, typename F> constexpr auto run_func() -> void {
-    if (Cond{}) {
-        F{}();
-    }
-}
-
-template <typename ct_node, typename Cond, stdx::ct_string Type,
-          stdx::ct_string Name>
-constexpr auto log_func() -> void {
-    if (Cond{}) {
-        using log_spec_t = decltype(get_log_spec<ct_node>());
-        CIB_LOG(typename log_spec_t::flavor, log_spec_t::level, "flow.{}({})",
-                stdx::ct_string_to_type<Type, sc::string_constant>(),
-                stdx::ct_string_to_type<Name, sc::string_constant>());
-    }
-}
-} // namespace detail
-
 template <stdx::ct_string Type, stdx::ct_string Name,
           subgraph_identity Identity, typename Cond, typename F>
 struct ct_node {
     using is_subgraph = void;
     using type_t =
         decltype(stdx::ct_string_to_type<Type, sc::string_constant>());
-
     using name_t =
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+    using func_t = F;
 
     constexpr static auto ct_name = Name;
-
     constexpr static auto identity = Identity;
-
     constexpr static auto condition = Cond{};
-
-    constexpr operator rt_node() const {
-        return rt_node{detail::run_func<Cond, F>,
-                       detail::log_func<ct_node, Cond, Type, Name>};
-    }
 
     constexpr auto operator*() const {
         if constexpr (Identity == subgraph_identity::REFERENCE) {

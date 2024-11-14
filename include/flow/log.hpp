@@ -2,6 +2,8 @@
 
 #include <log/log.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <type_traits>
 
 namespace flow {
@@ -12,21 +14,23 @@ struct default_log_spec {
 template <stdx::ct_string, typename...>
 constexpr auto log_spec = default_log_spec{};
 
-template <typename T, typename... DummyArgs>
+template <stdx::ct_string Name> struct log_spec_id_t {
+    constexpr static auto ct_name = Name;
+};
+
+template <typename T, typename Fallback = log_spec_id_t<"default">,
+          typename... DummyArgs>
     requires(sizeof...(DummyArgs) == 0)
 constexpr static auto get_log_spec() {
-    if constexpr (std::is_same_v<decltype(log_spec<T::ct_name, DummyArgs...>),
-                                 default_log_spec const>) {
-        return log_spec<"default", DummyArgs...>;
+    using log_spec_t = decltype(log_spec<T::ct_name, DummyArgs...>);
+    if constexpr (std::is_same_v<log_spec_t, default_log_spec const>) {
+        if constexpr (Fallback::ct_name == stdx::ct_string{"default"}) {
+            return log_spec<Fallback::ct_name, DummyArgs...>;
+        } else {
+            return get_log_spec<Fallback>();
+        }
     } else {
-        return log_spec<T::ct_name, DummyArgs...>;
+        return log_spec_t{};
     }
-}
-
-template <typename T, typename... DummyArgs, typename... Args>
-auto log_with_spec(Args &&...args) {
-    using log_spec_t = decltype(get_log_spec<T, DummyArgs...>());
-    logging::log<typename log_spec_t::flavor, log_spec_t::level,
-                 cib_log_module_id_t>(std::forward<Args>(args)...);
 }
 } // namespace flow

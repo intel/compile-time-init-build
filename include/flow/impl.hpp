@@ -4,6 +4,7 @@
 #include <flow/step.hpp>
 #include <log/log.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/cx_vector.hpp>
 #include <stdx/span.hpp>
 
@@ -13,6 +14,31 @@
 #include <type_traits>
 
 namespace flow {
+namespace detail {
+template <typename CTNode> constexpr auto run_func() -> void {
+    if (CTNode::condition) {
+        typename CTNode::func_t{}();
+    }
+}
+
+template <typename Flow, typename CTNode> constexpr auto log_func() -> void {
+    if (CTNode::condition) {
+        using log_spec_t = decltype(get_log_spec<CTNode, Flow>());
+        CIB_LOG(typename log_spec_t::flavor, log_spec_t::level, "flow.{}({})",
+                typename CTNode::type_t{}, typename CTNode::name_t{});
+    }
+}
+} // namespace detail
+
+struct rt_node {
+    FunctionPtr run{};
+    FunctionPtr log_name{};
+
+  private:
+    friend constexpr auto operator==(rt_node const &,
+                                     rt_node const &) -> bool = default;
+};
+
 /**
  * flow::impl is a constant representation of a series of Milestones and actions
  * to be executed in a specific order.
@@ -45,10 +71,17 @@ template <stdx::ct_string Name, std::size_t NumSteps> class impl {
   public:
     stdx::cx_vector<FunctionPtr, capacity> functionPtrs{};
 
-    using node_t = rt_node;
     constexpr static bool active = capacity > 0;
-
     constexpr static auto name = Name;
+
+    using node_t = rt_node;
+
+    template <typename CTNode>
+    constexpr static auto create_node(CTNode) -> node_t {
+        constexpr auto rf = detail::run_func<CTNode>;
+        constexpr auto lf = detail::log_func<log_spec_id_t<Name>, CTNode>;
+        return node_t{rf, lf};
+    }
 
     /**
      * Create a new flow::impl of Milestones.
@@ -60,17 +93,16 @@ template <stdx::ct_string Name, std::size_t NumSteps> class impl {
      *
      * @see flow::builder
      */
-    constexpr explicit(true)
-        impl(stdx::span<node_t const, NumSteps> newMilestones) {
+    constexpr explicit(true) impl(stdx::span<node_t const, NumSteps> steps) {
         if constexpr (loggingEnabled) {
-            for (auto const &milestone : newMilestones) {
-                functionPtrs.push_back(milestone.log_name);
-                functionPtrs.push_back(milestone.run);
+            for (auto const &step : steps) {
+                functionPtrs.push_back(step.log_name);
+                functionPtrs.push_back(step.run);
             }
         } else {
-            std::transform(std::cbegin(newMilestones), std::cend(newMilestones),
+            std::transform(std::cbegin(steps), std::cend(steps),
                            std::back_inserter(functionPtrs),
-                           [](auto const &milestone) { return milestone.run; });
+                           [](auto const &step) { return step.run; });
         }
     }
 };

@@ -30,6 +30,7 @@ constexpr auto run_flow = []() -> void {
 
 struct TestFlowA : public flow::service<"A"> {};
 struct TestFlowB : public flow::service<"B"> {};
+struct TestFlowC : public flow::service<"C"> {};
 
 constexpr auto msA = flow::milestone<"msA">();
 constexpr auto msB = flow::milestone<"msB">();
@@ -80,4 +81,16 @@ TEST_CASE("override log level by name", "[flow_custom_log_levels]") {
     CHECK(log_calls[0] == logging::level::USER1);
     CHECK(log_calls[1] == logging::level::USER2);
     CHECK(log_calls[2] == logging::level::USER1);
+}
+
+template <> constexpr auto flow::log_spec<"C"> = user1_log_spec{};
+
+TEST_CASE("default log spec for step will use overridden log spec for flow",
+          "[flow_custom_log_levels]") {
+    run_flow<TestFlowC, cib::exports<TestFlowC>,
+             cib::extend<TestFlowC>(*msA)>();
+
+    REQUIRE(log_calls.size() == 3);
+    std::for_each(std::begin(log_calls), std::end(log_calls),
+                  [](auto level) { CHECK(level == logging::level::USER1); });
 }
