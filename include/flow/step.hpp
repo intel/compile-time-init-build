@@ -51,7 +51,7 @@ struct ct_node : rt_node {
         }
     };
 
-    constexpr ct_node() : rt_node{run_func, log_func} {}
+    constexpr ct_node() : rt_node{+run_func, +log_func} {}
 
     constexpr auto operator*() const {
         if constexpr (Identity == subgraph_identity::REFERENCE) {
