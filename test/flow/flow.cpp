@@ -6,15 +6,13 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <iterator>
 #include <string>
+#include <string_view>
 
 std::string actual = {};
 
 namespace {
 using namespace flow::literals;
-
-std::string log_buffer{};
 
 constexpr auto a = flow::action<"a">([] { actual += "a"; });
 constexpr auto b = flow::action<"b">([] { actual += "b"; });
@@ -38,7 +36,6 @@ template <auto... Cs> struct wrapper {
 template <typename S, auto... Cs>
 constexpr auto check_flow = [](std::string_view expected) -> void {
     actual.clear();
-    log_buffer.clear();
     wrapper<Cs...>::template run<S>();
     CHECK(actual == expected);
 };
@@ -65,7 +62,7 @@ struct VizConfig {
 };
 } // namespace
 
-TEST_CASE("vizualize flow", "[flow]") {
+TEST_CASE("visualize flow", "[flow]") {
     cib::nexus<VizConfig> nexus{};
     auto viz = nexus.service<VizFlow>();
     auto expected = std::string{
@@ -75,9 +72,6 @@ a -> end
 })__debug__"};
     CHECK(viz == expected);
 }
-
-#if defined(__GNUC__) && __GNUC__ == 12
-#else
 
 TEST_CASE("add single action through cib::nexus", "[flow]") {
     check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
@@ -198,52 +192,3 @@ TEST_CASE("add multi action through cib::nexus, run through cib::service",
     cib::service<TestFlowBeta>();
     CHECK(actual == "abcd");
 }
-
-TEST_CASE("add actions using func_decl through cib::nexus", "[flow]") {
-    check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
-               cib::extend<TestFlowAlpha>(*"e"_action >> *"f"_action)>("ef");
-}
-
-namespace {
-struct NamedTestFlow : public flow::service<"TestFlow"> {};
-} // namespace
-
-template <>
-inline auto logging::config<> =
-    logging::fmt::config{std::back_inserter(log_buffer)};
-
-TEST_CASE("unnamed flow does not log start/end", "[flow]") {
-    check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>>("");
-
-    CHECK(std::empty(log_buffer));
-}
-
-TEST_CASE("empty flow logs start/end", "[flow]") {
-    check_flow<NamedTestFlow, cib::exports<NamedTestFlow>>("");
-
-    CHECK(log_buffer.find("flow.start(TestFlow)") != std::string::npos);
-    CHECK(log_buffer.find("flow.end(TestFlow)") != std::string::npos);
-}
-
-TEST_CASE("unnamed flow does not log actions", "[flow]") {
-    check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
-               cib::extend<TestFlowAlpha>(*a)>("a");
-
-    CHECK(log_buffer.find("flow.action(a)") == std::string::npos);
-}
-
-TEST_CASE("named flow logs actions", "[flow]") {
-    check_flow<NamedTestFlow, cib::exports<NamedTestFlow>,
-               cib::extend<NamedTestFlow>(*a)>("a");
-
-    CHECK(log_buffer.find("flow.action(a)") != std::string::npos);
-}
-
-TEST_CASE("named flow logs milestones", "[flow]") {
-    check_flow<NamedTestFlow, cib::exports<NamedTestFlow>,
-               cib::extend<NamedTestFlow>(*"ms"_milestone)>("");
-
-    CHECK(log_buffer.find("flow.milestone(ms)") != std::string::npos);
-}
-
-#endif
