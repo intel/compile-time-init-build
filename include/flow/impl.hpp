@@ -1,6 +1,7 @@
 #pragma once
 
 #include <flow/common.hpp>
+#include <flow/log.hpp>
 #include <flow/step.hpp>
 #include <log/log.hpp>
 
