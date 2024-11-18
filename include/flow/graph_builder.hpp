@@ -241,7 +241,7 @@ struct graph_builder {
                           "Topological sort failed: cycle in flow");
 
             constexpr auto functionPtrs = built->functionPtrs;
-            constexpr auto size = functionPtrs.size();
+            constexpr auto size = std::size(functionPtrs);
             constexpr auto name = built->name;
 
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
