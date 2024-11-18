@@ -14,7 +14,7 @@ TEST_CASE("an empty configuration should compile and initialize") {
 template <int Id> static bool is_callback_invoked = false;
 
 template <int Id, typename... Args>
-struct TestCallback : public cib::callback_meta<Args...> {};
+struct TestCallback : public callback::service<Args...> {};
 
 struct SimpleConfig {
     constexpr static auto config = cib::config(

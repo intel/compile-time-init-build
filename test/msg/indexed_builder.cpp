@@ -33,7 +33,7 @@ struct test_service : indexed_service<index_spec, test_msg_t> {};
 
 bool callback_success;
 
-constexpr auto test_callback = callback<"TestCallback", msg_defn>(
+constexpr auto test_callback = msg::callback<"TestCallback", msg_defn>(
     msg::in<test_id_field, 0x80>, [](auto) { callback_success = true; });
 
 struct test_project {
@@ -430,7 +430,7 @@ struct raw_service : indexed_service<index_spec, base_storage_t> {};
 
 int callback_count{};
 
-constexpr auto raw_view_callback = callback<"raw view", msg_defn>(
+constexpr auto raw_view_callback = msg::callback<"raw view", msg_defn>(
     msg::in<test_id_field, 0x80>,
     [](msg::const_view<msg_defn>) { ++callback_count; });
 
@@ -451,7 +451,7 @@ TEST_CASE("handle raw message by view", "[indexed_builder]") {
 }
 
 namespace {
-constexpr auto raw_owning_callback = callback<"raw owning", msg_defn>(
+constexpr auto raw_owning_callback = msg::callback<"raw owning", msg_defn>(
     msg::in<test_id_field, 0x80>,
     [](msg::owning<msg_defn>) { ++callback_count; });
 

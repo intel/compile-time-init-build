@@ -33,7 +33,7 @@ functionality.
 
 ```c++
 /// Invoked for each byte of data received on the serial port
-struct serial_port_rx : public cib::callback_meta<0, std::uint8_t>{};
+struct serial_port_rx : public callback::service<0, std::uint8_t>{};
 ```
 
 In *cib*, *features* have source-code dependencies on *services*. This follows
@@ -57,13 +57,13 @@ initialized before they can be used. The `runtime_init` and `main_loop`
 
 ```c++
 /// Invoked once on startup before interrupts are enabled
-struct runtime_init : public cib::callback_meta<>{};
+struct runtime_init : public callback::service<>{};
 
 /// Invoked each iteration through the main loop
-struct main_loop : public cib::callback_meta<>{};
+struct main_loop : public callback::service<>{};
 
 /// Invoked each time the serial port interrupt is triggered
-struct serial_port_interrupt : public cib::callback_meta<>{};
+struct serial_port_interrupt : public callback::service<>{};
 ```
 
 *Components* use `cib::exports` in their configuration to *export* services to 
@@ -157,7 +157,7 @@ INTERRUPT void serial_port_isr() {
 
 Services can be accessed with the `service<...>` template variable on a 
 `cib::nexus` instance. Because the `runtime_init` and `main_loop` services
-extend `cib::callback_meta`, their *service implementation* is a simple 
+extend `callback::service`, their *service implementation* is a simple 
 function pointer.
 
 ### `cib::service`
@@ -170,7 +170,7 @@ instance is not available. For example, when registering interrupts with
 an interrupt service. 
 
 ```c++
-struct serial_port_rx : public cib::callback_meta<0, char>{};
+struct serial_port_rx : public callback::service<0, char>{};
 
 struct serial_component {
     constexpr static auto config =
@@ -193,12 +193,12 @@ struct serial_component {
 ### `cib::service_meta`
 
 The *service metadata* describes to *cib* how a *service* is built and its 
-type-erased implementation interface. (`cib::callback_meta`)[include/cib/callback.hpp]
+type-erased implementation interface. (`callback::service`)[include/cib/callback.hpp]
 is an example of *service metadata*. Services that use the callback *service*
-type extend `cib::callback_meta`.
+type extend `callback::service`.
 
 ```c++
-struct main_loop : public cib::callback_meta<> {};
+struct main_loop : public callback::service<> {};
 ```
 
 ### Service Builder

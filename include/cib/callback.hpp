@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace cib {
+namespace callback {
 /**
  * Builder for simple callbacks.
  *
@@ -23,9 +23,9 @@ namespace cib {
  *      List of argument types that must be passed into the callback when it is
  * invoked.
  *
- * @see cib::callback_meta
+ * @see callback::service
  */
-template <int NumFuncs = 0, typename... ArgTypes> struct callback {
+template <int NumFuncs = 0, typename... ArgTypes> struct builder {
     using func_ptr_t = void (*)(ArgTypes...);
     std::array<func_ptr_t, NumFuncs> funcs{};
 
@@ -44,7 +44,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      */
     template <std::convertible_to<func_ptr_t>... Fs>
     [[nodiscard]] constexpr auto add(Fs &&...fs) const {
-        callback<NumFuncs + sizeof...(Fs), ArgTypes...> cb;
+        builder<NumFuncs + sizeof...(Fs), ArgTypes...> cb;
         auto i = std::size_t{};
         while (i < NumFuncs) {
             cb.funcs[i] = funcs[i];
@@ -117,6 +117,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
  * @see cib::extend
  */
 template <typename... ArgTypes>
-struct callback_meta : public cib::builder_meta<callback<0, ArgTypes...>,
-                                                void (*)(ArgTypes...)> {};
-} // namespace cib
+struct service
+    : public cib::builder_meta<builder<0, ArgTypes...>, void (*)(ArgTypes...)> {
+};
+} // namespace callback

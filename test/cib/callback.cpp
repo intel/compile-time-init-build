@@ -1,4 +1,6 @@
-#include <cib/cib.hpp>
+#include <cib/callback.hpp>
+
+#include <stdx/tuple.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -9,14 +11,14 @@ template <typename BuilderValue> constexpr static auto build() {
 }
 
 template <typename BuilderMeta, typename BuiltCallback>
-constexpr static bool built_is_convertable_to_interface(BuiltCallback) {
+constexpr static bool built_is_convertible_to_interface(BuiltCallback) {
     using interface_type = cib::interface_t<BuilderMeta>;
     return std::is_convertible_v<BuiltCallback, interface_type>;
 }
 
 struct EmptyCallbackNoArgs {
-    using meta = cib::callback_meta<>;
-    constexpr static auto value = cib::builder_t<meta>{};
+    using service = callback::service<>;
+    constexpr static auto value = cib::builder_t<service>{};
 };
 
 TEST_CASE("empty callback with no args", "[callback]") {
@@ -24,8 +26,8 @@ TEST_CASE("empty callback with no args", "[callback]") {
 
     SECTION("can be called without issue") { built_callback(); }
 
-    SECTION("built type is convertable to the interface type") {
-        REQUIRE(built_is_convertable_to_interface<EmptyCallbackNoArgs::meta>(
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<EmptyCallbackNoArgs::service>(
             built_callback));
     }
 }
@@ -33,9 +35,9 @@ TEST_CASE("empty callback with no args", "[callback]") {
 template <int Id> static bool is_callback_invoked = false;
 
 struct CallbackNoArgsWithSingleExtension {
-    using meta = cib::callback_meta<>;
+    using service = callback::service<>;
     constexpr static auto value = []() {
-        auto const builder = cib::builder_t<meta>{};
+        auto const builder = cib::builder_t<service>{};
         return builder.add([]() { is_callback_invoked<0> = true; });
     }();
 };
@@ -50,14 +52,14 @@ TEST_CASE("callback with no args with single extension", "[callback]") {
         REQUIRE(is_callback_invoked<0>);
     }
 
-    SECTION("built type is convertable to the interface type") {
-        REQUIRE(built_is_convertable_to_interface<
-                CallbackNoArgsWithSingleExtension::meta>(built_callback));
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<
+                CallbackNoArgsWithSingleExtension::service>(built_callback));
     }
 }
 
 struct CallbackNoArgsWithMultipleExtensions {
-    using meta = cib::callback_meta<>;
+    using service = callback::service<>;
 
     static void extension_one() { is_callback_invoked<1> = true; }
 
@@ -66,7 +68,7 @@ struct CallbackNoArgsWithMultipleExtensions {
     };
 
     constexpr static auto value = []() {
-        auto const builder = cib::builder_t<meta>{};
+        auto const builder = cib::builder_t<service>{};
 
         return builder.add([]() { is_callback_invoked<0> = true; })
             .add(extension_one)
@@ -89,15 +91,15 @@ TEST_CASE("callback with no args with multiple extensions", "[callback]") {
         REQUIRE(is_callback_invoked<2>);
     }
 
-    SECTION("built type is convertable to the interface type") {
-        REQUIRE(built_is_convertable_to_interface<
-                CallbackNoArgsWithMultipleExtensions::meta>(built_callback));
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<
+                CallbackNoArgsWithMultipleExtensions::service>(built_callback));
     }
 }
 
 struct CallbackWithArgsWithNoExtensions {
-    using meta = cib::callback_meta<int, bool>;
-    constexpr static auto value = cib::builder_t<meta>{};
+    using service = callback::service<int, bool>;
+    constexpr static auto value = cib::builder_t<service>{};
 };
 
 TEST_CASE("callback with args with no extensions", "[callback]") {
@@ -105,9 +107,9 @@ TEST_CASE("callback with args with no extensions", "[callback]") {
 
     SECTION("can be called") { built_callback(42, true); }
 
-    SECTION("built type is convertable to the interface type") {
-        REQUIRE(built_is_convertable_to_interface<
-                CallbackWithArgsWithNoExtensions::meta>(built_callback));
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<
+                CallbackWithArgsWithNoExtensions::service>(built_callback));
     }
 }
 
@@ -115,7 +117,7 @@ template <int Id, typename... ArgTypes>
 static stdx::tuple<ArgTypes...> callback_args{};
 
 struct CallbackWithArgsWithMultipleExtensions {
-    using meta = cib::callback_meta<int, bool>;
+    using service = callback::service<int, bool>;
 
     static void extension_one(int a, bool b) {
         is_callback_invoked<1> = true;
@@ -128,7 +130,7 @@ struct CallbackWithArgsWithMultipleExtensions {
     };
 
     constexpr static auto value = []() {
-        auto const builder = cib::builder_t<meta>{};
+        auto const builder = cib::builder_t<service>{};
 
         return builder
             .add([](int a, bool b) {
@@ -168,8 +170,9 @@ TEST_CASE("callback with args with multiple extensions", "[callback]") {
         REQUIRE(get<1>(callback_args<2, int, bool>) == false);
     }
 
-    SECTION("built type is convertable to the interface type") {
-        REQUIRE(built_is_convertable_to_interface<
-                CallbackWithArgsWithMultipleExtensions::meta>(built_callback));
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<
+                CallbackWithArgsWithMultipleExtensions::service>(
+            built_callback));
     }
 }

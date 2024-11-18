@@ -4,13 +4,13 @@
 
 // Services - basically like a function prototypes.
 //          - callback function declaration.
-struct send_byte_t : public cib::callback_meta<uint8_t> {};
+struct send_byte_t : public callback::service<uint8_t> {};
 
-struct get_byte_t : public cib::callback_meta<> {};
+struct get_byte_t : public callback::service<> {};
 
-struct serial_port_init_t : public cib::callback_meta<> {};
+struct serial_port_init_t : public callback::service<> {};
 
-struct run_t : public cib::callback_meta<> {};
+struct run_t : public callback::service<> {};
 
 // components defintion
 struct core_component_t {

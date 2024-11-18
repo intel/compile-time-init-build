@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-struct say_message : public cib::callback_meta<> {};
+struct say_message : public callback::service<> {};
 
 // the 'core' component exposes the 'say_message' service for others to extend
 struct core {

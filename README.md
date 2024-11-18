@@ -82,7 +82,7 @@ a simple example takes a few more lines than a typical "Hello, world!"
 #include <cib/cib.hpp>
 #include <iostream>
 
-struct say_message : public cib::callback_meta<>{};
+struct say_message : public callback::service<>{};
 
 // the 'core' component exposes the 'say_message' service for others to extend
 struct core {
