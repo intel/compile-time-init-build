@@ -17,7 +17,7 @@ namespace cib {
  *
  * @see cib::built
  *
- * @example cib::callback_meta
+ * @example callback::service
  */
 template <typename Builder, typename Interface> struct builder_meta {
     using builder_t = Builder;

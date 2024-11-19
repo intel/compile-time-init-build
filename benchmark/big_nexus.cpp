@@ -3,7 +3,7 @@
 template <int Id> [[maybe_unused]] static bool is_callback_invoked = false;
 
 template <int Id, typename... Args>
-struct TestCallback : public cib::callback_meta<Args...> {};
+struct TestCallback : public callback::service<Args...> {};
 
 template <int Id> struct TestComponent {
     constexpr static auto offset = Id * 100;

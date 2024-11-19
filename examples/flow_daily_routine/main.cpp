@@ -42,7 +42,7 @@
 
   Note::
     services can be defined using
-      + cib::callback_meta<>  - can have only one function pointer assigned to
+      + callback::service<>  - can have only one function pointer assigned to
   execute.
       + flow::service<>       - set of actions/milestones which are to be
   executed in specific order. So basically sequential execution of multiple
