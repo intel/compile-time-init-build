@@ -11,7 +11,7 @@
 #include <type_traits>
 
 namespace lookup {
-template <typename K, typename V = K, auto N = 0ul> struct input {
+template <typename K, typename V = K, std::size_t N = 0> struct input {
     using key_type = K;
     using value_type = V;
 
