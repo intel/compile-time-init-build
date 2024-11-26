@@ -93,7 +93,7 @@ def stable_module_key(module: str):
 
 
 def read_input(filenames: list[str], stable_ids):
-    line_re = re.compile(r"^.+?(unsigned int (catalog|module)<(.+?)>\(\))$")
+    line_re = re.compile(r"^.*(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
         with open(filename, "r") as f:
