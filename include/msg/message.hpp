@@ -19,6 +19,7 @@
 #include <stdx/utility.hpp>
 
 #include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/function.hpp>
 #include <boost/mp11/list.hpp>
 #include <boost/mp11/set.hpp>
 
@@ -339,6 +340,10 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;
 
+    template <auto N, typename Unit = bit_unit>
+    using shifted_by =
+        message<Name, typename Fields::template shifted_by<N, Unit>...>;
+
     template <typename S>
     constexpr static auto fits_inside =
         (... and Fields::template fits_inside<S>());
@@ -652,4 +657,49 @@ call_with_message(F &&f, S &&s, Args &&...args) -> decltype(auto) {
                                   std::forward<Args>(args)...);
     }
 }
+
+namespace detail {
+template <typename AlignTo, typename... Msgs>
+using msg_sizes = stdx::type_list<typename Msgs::template size<AlignTo>...>;
+
+template <typename S>
+using negated_size = std::integral_constant<std::size_t, -S::value>;
+
+template <typename AlignTo, typename... Msgs>
+using msg_offsets = boost::mp11::mp_partial_sum<
+    msg_sizes<AlignTo, Msgs...>,
+    negated_size<typename boost::mp11::mp_first<
+        stdx::type_list<Msgs...>>::template size<AlignTo>>,
+    boost::mp11::mp_plus>;
+
+template <typename AlignTo> struct shift_msg_q {
+    template <typename Offset, typename Msg>
+    using fn = typename Msg::template shifted_by<Offset::value, AlignTo>;
+};
+
+template <typename AlignTo, typename... Msgs>
+using shifted_msgs = boost::mp11::mp_transform_q<shift_msg_q<AlignTo>,
+                                                 msg_offsets<AlignTo, Msgs...>,
+                                                 stdx::type_list<Msgs...>>;
+
+template <stdx::ct_string Name> struct combiner {
+    template <typename... Fields> using fn = msg::message<Name, Fields...>;
+};
+
+template <stdx::ct_string Name> struct combine_q {
+    template <typename... Msgs>
+        requires(sizeof...(Msgs) > 0)
+    using fn = boost::mp11::mp_apply_q<
+        combiner<Name>, boost::mp11::mp_append<typename Msgs::fields_t...>>;
+};
+} // namespace detail
+
+template <stdx::ct_string Name, typename... Msgs>
+    requires(sizeof...(Msgs) > 0)
+using combine = typename detail::combine_q<Name>::template fn<Msgs...>;
+
+template <stdx::ct_string Name, typename AlignTo, typename... Msgs>
+    requires(sizeof...(Msgs) > 0)
+using pack = boost::mp11::mp_apply_q<detail::combine_q<Name>,
+                                     detail::shifted_msgs<AlignTo, Msgs...>>;
 } // namespace msg

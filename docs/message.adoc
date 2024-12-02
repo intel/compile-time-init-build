@@ -136,6 +136,54 @@ using msg1_defn = extend<header_defn, "msg", type_f::with_required<1>, payload_f
 using msg2_defn = extend<header_defn, "msg", type_f::with_required<2>, payload_f>;
 ----
 
+==== Combining and packing messages
+
+It is sometimes useful to combine multiple message definitions, to avoid
+repetition. For example, adding a payload message to a header:
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using header_defn = message<"header", type_f>;
+
+using data_f = field<"data">, std::uint32_t>::located<at{0_dw, 15_msb, 7_lsb}>;
+using payload_defn = message<"payload", data_f>;
+
+using msg_defn = extend<
+    combine<"msg", header_defn, payload_defn>,
+    type_f::with_required<1>>;
+----
+
+The combined definition incorporates all the fields of the messages. And as
+shown, the combination might typically be `extend`ed with a constraint on the
+header field.
+
+Other times it is useful to automatically concatenate or `pack` messages
+together, where the field locations in each message start at 0.
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint32_t>::located<at{0_dw, 5_msb, 0_lsb}>;
+using header_defn = message<"header", type_f>;
+
+// note: data_f collides with type_f under a naive combination
+using data_f = field<"data">, std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using payload_defn = message<"payload", data_f>;
+
+using msg_defn = extend<
+    pack<"msg", std::uint8_t, header_defn, payload_defn>,
+    type_f::with_required<1>>;
+
+// resulting message layout:
+// byte   0        1
+// bit    01234567 01234567
+// field  |type|xx |data  |
+----
+
+The second parameter to `pack` (`std::uint8_t` in the example above) defines how
+the messages are packed together - in this case, each subsequent message is
+byte-aligned.
+
 ==== Owning vs view types
 
 An owning message uses underlying storage: by default, this is a `std::array` of
