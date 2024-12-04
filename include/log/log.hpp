@@ -92,9 +92,17 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
     CIB_LOG(logging::default_flavor_t, logging::level::WARN, __VA_ARGS__)
 #define CIB_ERROR(...)                                                         \
     CIB_LOG(logging::default_flavor_t, logging::level::ERROR, __VA_ARGS__)
-#define CIB_FATAL(...)                                                         \
-    (CIB_LOG(logging::default_flavor_t, logging::level::FATAL, __VA_ARGS__),   \
-     STDX_PANIC(__VA_ARGS__))
+
+#define CIB_FATAL(MSG, ...)                                                    \
+    [] {                                                                       \
+        constexpr auto str = sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__);  \
+        logging::log<logging::default_flavor_t, logging::level::FATAL,         \
+                     cib_log_module_id_t>(__FILE__, __LINE__, str);            \
+        str.apply([]<typename S, typename... Args>(S s, Args... args) {        \
+            constexpr auto cts = stdx::ct_string_from_type(s);                 \
+            stdx::panic<cts>(args...);                                         \
+        });                                                                    \
+    }()
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
