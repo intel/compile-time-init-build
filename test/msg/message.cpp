@@ -538,3 +538,86 @@ TEST_CASE("message equivalence matcher", "[message]") {
                         "f3"_field = 0xd00d};
     CHECK_THAT(m2, not MsgEquiv(m));
 }
+
+TEST_CASE("message reports size", "[message]") {
+    static_assert(msg_defn::size<std::uint32_t>::value == 2);
+    static_assert(msg_defn::size<std::uint16_t>::value == 4);
+    static_assert(msg_defn::size<std::uint8_t>::value == 7);
+}
+
+TEST_CASE("shift a field by bit offset", "[message]") {
+    using new_field = id_field::shifted_by<3>;
+    using expected_field =
+        field<"id", std::uint32_t>::located<at{34_msb, 27_lsb}>;
+    static_assert(std::is_same_v<new_field, expected_field>);
+}
+
+TEST_CASE("shift a field by byte offset", "[message]") {
+    using new_field = id_field::shifted_by<1, std::uint8_t>;
+    using expected_field =
+        field<"id", std::uint32_t>::located<at{39_msb, 32_lsb}>;
+    static_assert(std::is_same_v<new_field, expected_field>);
+}
+
+TEST_CASE("shift all fields in a message", "[message]") {
+    using base_defn = message<"msg", id_field, field1>;
+    using defn = base_defn::shifted_by<1, std::uint8_t>;
+
+    using shifted_id = id_field::shifted_by<1, std::uint8_t>;
+    using shifted_field1 = field1::shifted_by<1, std::uint8_t>;
+    using expected_defn = message<"msg", shifted_id, shifted_field1>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("combine messages", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using m2 = message<"m2", f3, f4>;
+
+    using defn = combine<"defn", m1, m2::shifted_by<1, std::uint32_t>>;
+    using expected_defn =
+        message<"defn", f1, f2, f3::shifted_by<1, std::uint32_t>,
+                f4::shifted_by<1, std::uint32_t>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("combine 1 message", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using defn = combine<"defn", m1>;
+    using expected_defn = message<"defn", f1, f2>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("pack messages", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m2 = message<"m2", f3, f4>;
+
+    using defn = pack<"defn", std::uint8_t, m1, m2>;
+    using expected_defn =
+        message<"defn", f1, f2,
+                f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
+                f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("pack 1 message", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using defn = pack<"defn", std::uint8_t, m1>;
+    using expected_defn = message<"defn", f1, f2>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}

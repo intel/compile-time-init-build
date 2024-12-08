@@ -64,15 +64,6 @@ template <typename T, typename Spec>
 concept field_locator_for =
     field_extractor_for<T, Spec> and field_inserter_for<T, Spec>;
 
-template <typename T>
-concept field_location = requires(T const &t) {
-    { t.index() } -> std::same_as<std::uint32_t>;
-    { t.lsb() } -> std::same_as<std::uint32_t>;
-    { t.size() } -> std::same_as<std::uint32_t>;
-    { t.valid() } -> std::same_as<bool>;
-    { t.sort_key() } -> std::same_as<std::uint32_t>;
-};
-
 namespace detail {
 template <typename Name, typename T, std::uint32_t BitSize>
 struct field_spec_t {
@@ -305,62 +296,33 @@ CONSTEVAL auto operator""_msb(unsigned long long int v) -> msb_t {
 }
 } // namespace literals
 
-template <typename...> struct at;
+struct bit_unit {};
 
-template <> struct at<dword_index_t, msb_t, lsb_t> {
-    dword_index_t index_{};
+template <typename Unit, typename T>
+constexpr auto unit_bit_size(T t) -> std::uint32_t {
+    if constexpr (std::same_as<Unit, bit_unit>) {
+        return static_cast<std::uint32_t>(t);
+    } else {
+        return static_cast<std::uint32_t>(t) * sizeof(Unit) * CHAR_BIT;
+    }
+}
+
+struct at {
     msb_t msb_{};
     lsb_t lsb_{};
 
-    [[nodiscard]] constexpr auto
-    index() const -> std::underlying_type_t<dword_index_t> {
-        return stdx::to_underlying(index_);
-    }
-    [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
-        return stdx::to_underlying(lsb_);
-    }
-    [[nodiscard]] constexpr auto size() const -> std::underlying_type_t<lsb_t> {
-        return stdx::to_underlying(msb_) - lsb() + 1;
-    }
-    [[nodiscard]] constexpr auto valid() const -> bool {
-        return size() <= 64 and
-               stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
-    }
-    [[nodiscard]] constexpr auto
-    sort_key() const -> std::underlying_type_t<lsb_t> {
-        return index() * 32u + stdx::to_underlying(lsb_);
-    }
-};
-
-template <> struct at<byte_index_t, msb_t, lsb_t> {
-    byte_index_t index_{};
-    msb_t msb_{};
-    lsb_t lsb_{};
-
-    [[nodiscard]] constexpr auto
-    index() const -> std::underlying_type_t<byte_index_t> {
-        return stdx::to_underlying(index_) / 4;
-    }
-    [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
-        return (stdx::to_underlying(index_) * 8) % 32 +
-               stdx::to_underlying(lsb_);
-    }
-    [[nodiscard]] constexpr auto size() const -> std::underlying_type_t<lsb_t> {
-        return stdx::to_underlying(msb_) - stdx::to_underlying(lsb_) + 1;
-    }
-    [[nodiscard]] constexpr auto valid() const -> bool {
-        return size() <= 8 and
-               stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
-    }
-    [[nodiscard]] constexpr auto
-    sort_key() const -> std::underlying_type_t<lsb_t> {
-        return index() * 32u + stdx::to_underlying(lsb_);
-    }
-};
-
-template <> struct at<msb_t, lsb_t> {
-    msb_t msb_{};
-    lsb_t lsb_{};
+    constexpr at() = default;
+    constexpr at(msb_t m, lsb_t l) : msb_{m}, lsb_{l} {}
+    constexpr at(dword_index_t di, msb_t m, lsb_t l)
+        : msb_{unit_bit_size<std::uint32_t>(stdx::to_underlying(di)) +
+               stdx::to_underlying(m)},
+          lsb_{unit_bit_size<std::uint32_t>(stdx::to_underlying(di)) +
+               stdx::to_underlying(l)} {}
+    constexpr at(byte_index_t bi, msb_t m, lsb_t l)
+        : msb_{unit_bit_size<std::uint8_t>(stdx::to_underlying(bi)) +
+               stdx::to_underlying(m)},
+          lsb_{unit_bit_size<std::uint8_t>(stdx::to_underlying(bi)) +
+               stdx::to_underlying(l)} {}
 
     [[nodiscard]] constexpr auto
     index() const -> std::underlying_type_t<lsb_t> {
@@ -380,13 +342,14 @@ template <> struct at<msb_t, lsb_t> {
     sort_key() const -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_);
     }
+    [[nodiscard]] constexpr auto shifted_by(auto n) const -> at {
+        return {msb_t{stdx::to_underlying(msb_) + n},
+                lsb_t{stdx::to_underlying(lsb_) + n}};
+    }
 };
 
-template <typename... Ts> at(Ts...) -> at<Ts...>;
-
 namespace detail {
-template <auto... Ats>
-    requires(... and field_location<decltype(Ats)>)
+template <at... Ats>
 using locator_for =
     field_locator_t<bits_locator_t<Ats.index(), Ats.size(), Ats.lsb()>...>;
 
@@ -428,9 +391,8 @@ struct field_id_t {};
 
 template <typename Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
-          match::matcher M = match::always_t, auto... Ats>
-    requires std::is_trivially_copyable_v<T> and
-                 (... and field_location<decltype(Ats)>)
+          match::matcher M = match::always_t, at... Ats>
+    requires std::is_trivially_copyable_v<T>
 class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 public detail::locator_for<Ats...>,
                 public Default {
@@ -544,6 +506,12 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                                   msg::equal_to_t<field_t, V>, Ats...>;
 
     // ======================================================================
+    // shift a field
+    template <auto N, typename Unit = bit_unit>
+    using shifted_by =
+        field_t<Name, T, Default, M, Ats.shifted_by(unit_bit_size<Unit>(N))...>;
+
+    // ======================================================================
     // legacy aliases
     template <typename X> using WithMatch = with_matcher<X>;
     template <T... Vs> using WithIn = with_in<Vs...>;
@@ -560,8 +528,7 @@ template <stdx::ct_string Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t>
 struct field {
-    template <auto... Ats>
-        requires(... and field_location<decltype(Ats)>)
+    template <at... Ats>
     using located = detail::field_t<
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
         Default, M, Ats...>;
