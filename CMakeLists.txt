@@ -95,6 +95,28 @@ target_sources(
               include/interrupt/manager.hpp
               include/interrupt/policies.hpp)
 
+add_library(cib_lookup INTERFACE)
+target_compile_features(cib_lookup INTERFACE cxx_std_20)
+target_link_libraries_system(cib_lookup INTERFACE stdx)
+
+target_sources(
+    cib_lookup
+    INTERFACE FILE_SET
+              lookup
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/lookup/detail/select.hpp
+              include/lookup/entry.hpp
+              include/lookup/input.hpp
+              include/lookup/linear_search_lookup.hpp
+              include/lookup/lookup.hpp
+              include/lookup/pseudo_pext_lookup.hpp
+              include/lookup/strategies.hpp
+              include/lookup/strategy_failed.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
 target_link_libraries_system(
@@ -102,6 +124,7 @@ target_link_libraries_system(
     INTERFACE
     async
     cib_interrupt
+    cib_lookup
     cib_match
     cib_sc
     concurrency
@@ -169,24 +192,6 @@ target_sources(
               include/log/fmt/logger.hpp
               include/log/level.hpp
               include/log/log.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
-              lookup
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/lookup/detail/select.hpp
-              include/lookup/entry.hpp
-              include/lookup/input.hpp
-              include/lookup/linear_search_lookup.hpp
-              include/lookup/lookup.hpp
-              include/lookup/pseudo_pext_lookup.hpp
-              include/lookup/strategies.hpp
-              include/lookup/strategy_failed.hpp)
 
 target_sources(
     cib

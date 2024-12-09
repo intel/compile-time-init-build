@@ -5,7 +5,7 @@ add_tests(
     pseudo_pext_lookup
     lookup
     LIBRARIES
-    cib)
+    cib_lookup)
 
 add_versioned_package("gh:boost-ext/mph#v1.0.8")
 add_versioned_package("gh:serge-sans-paille/frozen#292a811")
@@ -78,7 +78,7 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
             FILES
             pseudo_pext.cpp
             SYSTEM_LIBRARIES
-            cib
+            cib_lookup
             mph
             frozen-headers)
         target_compile_features(${name} PRIVATE cxx_std_23)
