@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <cib/detail/components.hpp>
 #include <cib/detail/config_details.hpp>
 #include <cib/detail/config_item.hpp>

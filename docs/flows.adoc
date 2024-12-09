@@ -389,7 +389,10 @@ what happens by default when we run the flow.
 template <stdx::ct_string Name = "">
 using builder = flow::graph<Name, flow::graph_builder<impl>>;
 template <stdx::ct_string Name = "">
-struct service : cib::builder_meta<builder<Name>, flow::FunctionPtr> {};
+struct service {
+  using builder_t = builder<Name>;
+  using interface_t = flow::FunctionPtr;
+};
 
 // declare a flow service
 struct MorningRoutine : public service<"MorningRoutine"> {};
@@ -411,7 +414,10 @@ But given a flow, other renderings are possible.
 template <stdx::ct_string Name = "">
 using viz_builder = flow::graph<Name, flow::graphviz_builder>;
 template <stdx::ct_string Name = "">
-struct viz_service : cib::builder_meta<builder<Name>, flow::VizFunctionPtr> {};
+struct viz_service {
+  using builder_t = builder<Name>;
+  using interface_t = flow::VizFunctionPtr;
+};
 ----
 
 Here, `viz_service` will produce a graphviz rendering of a flow using the

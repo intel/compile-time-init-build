@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <flow/common.hpp>
 #include <flow/graph_builder.hpp>
 #include <flow/impl.hpp>
@@ -11,6 +10,8 @@ namespace flow {
 template <stdx::ct_string Name = "">
 using builder = graph<Name, graph_builder<Name, impl>>;
 
-template <stdx::ct_string Name = "">
-struct service : cib::builder_meta<builder<Name>, FunctionPtr> {};
+template <stdx::ct_string Name = ""> struct service {
+    using builder_t = builder<Name>;
+    using interface_t = FunctionPtr;
+};
 } // namespace flow
