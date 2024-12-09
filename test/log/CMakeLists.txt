@@ -1,4 +1,12 @@
-add_tests(fmt_logger log mipi_encoder mipi_logger module_id)
+add_tests(
+    FILES
+    fmt_logger
+    log
+    mipi_encoder
+    mipi_logger
+    module_id
+    LIBRARIES
+    cib)
 
 add_library(catalog1_lib STATIC catalog1_lib.cpp)
 add_library(catalog2_lib OBJECT catalog2a_lib.cpp catalog2b_lib.cpp)

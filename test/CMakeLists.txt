@@ -1,6 +1,9 @@
 function(add_tests)
+    set(multiValueArgs FILES LIBRARIES)
+    cmake_parse_arguments(AT "" "" "${multiValueArgs}" ${ARGN})
+
     get_filename_component(prefix ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-    foreach(name ${ARGN})
+    foreach(name ${AT_FILES})
         string(REPLACE "/" "_" test ${name})
         add_unit_test(
             "${prefix}_${test}_test"
@@ -9,7 +12,7 @@ function(add_tests)
             "${name}.cpp"
             LIBRARIES
             warnings
-            cib)
+            ${AT_LIBRARIES})
     endforeach()
 endfunction()
 

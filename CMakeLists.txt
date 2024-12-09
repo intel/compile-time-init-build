@@ -28,10 +28,34 @@ add_versioned_package("gh:intel/cpp-baremetal-concurrency#7c5b26c")
 add_versioned_package("gh:intel/cpp-std-extensions#2512bcf")
 add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#73d95bc")
 
+add_library(cib_sc INTERFACE)
+target_compile_features(cib_sc INTERFACE cxx_std_20)
+target_link_libraries_system(cib_sc INTERFACE fmt::fmt-header-only stdx)
+
+target_sources(
+    cib_sc
+    INTERFACE FILE_SET
+              sc
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/sc/format.hpp
+              include/sc/fwd.hpp
+              include/sc/lazy_string_format.hpp
+              include/sc/string_constant.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
-target_link_libraries_system(cib INTERFACE async concurrency
-                             fmt::fmt-header-only stdx)
+target_link_libraries_system(
+    cib
+    INTERFACE
+    async
+    cib_sc
+    concurrency
+    fmt::fmt-header-only
+    stdx)
 
 target_sources(
     cib
@@ -178,20 +202,6 @@ target_sources(
               include/msg/message.hpp
               include/msg/send.hpp
               include/msg/service.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
-              sc
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/sc/format.hpp
-              include/sc/fwd.hpp
-              include/sc/lazy_string_format.hpp
-              include/sc/string_constant.hpp)
 
 target_sources(
     cib

@@ -1,1 +1,1 @@
-add_tests(format string_constant)
+add_tests(FILES format string_constant LIBRARIES cib_sc)
