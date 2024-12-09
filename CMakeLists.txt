@@ -46,12 +46,40 @@ target_sources(
               include/sc/lazy_string_format.hpp
               include/sc/string_constant.hpp)
 
+add_library(cib_match INTERFACE)
+target_compile_features(cib_match INTERFACE cxx_std_20)
+target_link_libraries_system(cib_match INTERFACE cib_sc stdx)
+
+target_sources(
+    cib_match
+    INTERFACE FILE_SET
+              match
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/match/and.hpp
+              include/match/bin_op.hpp
+              include/match/concepts.hpp
+              include/match/constant.hpp
+              include/match/cost.hpp
+              include/match/implies.hpp
+              include/match/negate.hpp
+              include/match/not.hpp
+              include/match/ops.hpp
+              include/match/or.hpp
+              include/match/predicate.hpp
+              include/match/simplify.hpp
+              include/match/sum_of_products.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
 target_link_libraries_system(
     cib
     INTERFACE
     async
+    cib_match
     cib_sc
     concurrency
     fmt::fmt-header-only
@@ -154,29 +182,6 @@ target_sources(
               include/lookup/pseudo_pext_lookup.hpp
               include/lookup/strategies.hpp
               include/lookup/strategy_failed.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
-              match
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/match/and.hpp
-              include/match/bin_op.hpp
-              include/match/concepts.hpp
-              include/match/constant.hpp
-              include/match/cost.hpp
-              include/match/implies.hpp
-              include/match/negate.hpp
-              include/match/not.hpp
-              include/match/ops.hpp
-              include/match/or.hpp
-              include/match/predicate.hpp
-              include/match/simplify.hpp
-              include/match/sum_of_products.hpp)
 
 target_sources(
     cib

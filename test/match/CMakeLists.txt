@@ -13,4 +13,4 @@ add_tests(
     simplify_or
     sum_of_products
     LIBRARIES
-    cib)
+    cib_match)

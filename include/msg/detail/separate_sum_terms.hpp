@@ -7,6 +7,7 @@
 
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>
+#include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <type_traits>
