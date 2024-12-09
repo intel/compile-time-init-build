@@ -117,6 +117,38 @@ target_sources(
               include/lookup/strategies.hpp
               include/lookup/strategy_failed.hpp)
 
+add_library(cib_log INTERFACE)
+target_compile_features(cib_log INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log INTERFACE cib_sc stdx)
+
+target_sources(
+    cib_log
+    INTERFACE FILE_SET
+              log
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/log/level.hpp
+              include/log/log.hpp)
+
+add_library(cib_log_fmt INTERFACE)
+target_compile_features(cib_log_fmt INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
+                             stdx)
+
+target_sources(
+    cib_log_fmt
+    INTERFACE FILE_SET
+              log
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/log/fmt/logger.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
 target_link_libraries_system(
@@ -181,21 +213,6 @@ target_sources(
 target_sources(
     cib
     INTERFACE FILE_SET
-              log
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/log/catalog/catalog.hpp
-              include/log/catalog/mipi_encoder.hpp
-              include/log/fmt/logger.hpp
-              include/log/level.hpp
-              include/log/log.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
               msg
               TYPE
               HEADERS
@@ -230,6 +247,23 @@ target_sources(
               include/seq/builder.hpp
               include/seq/impl.hpp
               include/seq/step.hpp)
+
+add_library(cib_log_mipi INTERFACE)
+target_compile_features(cib_log_mipi INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log_mipi INTERFACE cib cib_log concurrency
+                             stdx)
+
+target_sources(
+    cib_log_mipi
+    INTERFACE FILE_SET
+              log
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/log/catalog/catalog.hpp
+              include/log/catalog/mipi_encoder.hpp)
 
 if(PROJECT_IS_TOP_LEVEL)
     add_docs(docs)
