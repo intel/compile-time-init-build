@@ -28,10 +28,85 @@ add_versioned_package("gh:intel/cpp-baremetal-concurrency#7c5b26c")
 add_versioned_package("gh:intel/cpp-std-extensions#2512bcf")
 add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#73d95bc")
 
+add_library(cib_sc INTERFACE)
+target_compile_features(cib_sc INTERFACE cxx_std_20)
+target_link_libraries_system(cib_sc INTERFACE fmt::fmt-header-only stdx)
+
+target_sources(
+    cib_sc
+    INTERFACE FILE_SET
+              sc
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/sc/format.hpp
+              include/sc/fwd.hpp
+              include/sc/lazy_string_format.hpp
+              include/sc/string_constant.hpp)
+
+add_library(cib_match INTERFACE)
+target_compile_features(cib_match INTERFACE cxx_std_20)
+target_link_libraries_system(cib_match INTERFACE cib_sc stdx)
+
+target_sources(
+    cib_match
+    INTERFACE FILE_SET
+              match
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/match/and.hpp
+              include/match/bin_op.hpp
+              include/match/concepts.hpp
+              include/match/constant.hpp
+              include/match/cost.hpp
+              include/match/implies.hpp
+              include/match/negate.hpp
+              include/match/not.hpp
+              include/match/ops.hpp
+              include/match/or.hpp
+              include/match/predicate.hpp
+              include/match/simplify.hpp
+              include/match/sum_of_products.hpp)
+
+add_library(cib_interrupt INTERFACE)
+target_compile_features(cib_interrupt INTERFACE cxx_std_20)
+target_link_libraries_system(cib_interrupt INTERFACE cib_sc concurrency stdx)
+
+target_sources(
+    cib_interrupt
+    INTERFACE FILE_SET
+              interrupt
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/interrupt/concepts.hpp
+              include/interrupt/config.hpp
+              include/interrupt/dynamic_controller.hpp
+              include/interrupt/fwd.hpp
+              include/interrupt/hal.hpp
+              include/interrupt/impl.hpp
+              include/interrupt/manager.hpp
+              include/interrupt/policies.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
-target_link_libraries_system(cib INTERFACE async concurrency
-                             fmt::fmt-header-only stdx)
+target_link_libraries_system(
+    cib
+    INTERFACE
+    async
+    cib_interrupt
+    cib_match
+    cib_sc
+    concurrency
+    fmt::fmt-header-only
+    stdx)
 
 target_sources(
     cib
@@ -83,24 +158,6 @@ target_sources(
 target_sources(
     cib
     INTERFACE FILE_SET
-              interrupt
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/interrupt/concepts.hpp
-              include/interrupt/config.hpp
-              include/interrupt/dynamic_controller.hpp
-              include/interrupt/fwd.hpp
-              include/interrupt/hal.hpp
-              include/interrupt/impl.hpp
-              include/interrupt/manager.hpp
-              include/interrupt/policies.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
               log
               TYPE
               HEADERS
@@ -134,29 +191,6 @@ target_sources(
 target_sources(
     cib
     INTERFACE FILE_SET
-              match
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/match/and.hpp
-              include/match/bin_op.hpp
-              include/match/concepts.hpp
-              include/match/constant.hpp
-              include/match/cost.hpp
-              include/match/implies.hpp
-              include/match/negate.hpp
-              include/match/not.hpp
-              include/match/ops.hpp
-              include/match/or.hpp
-              include/match/predicate.hpp
-              include/match/simplify.hpp
-              include/match/sum_of_products.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
               msg
               TYPE
               HEADERS
@@ -182,20 +216,6 @@ target_sources(
 target_sources(
     cib
     INTERFACE FILE_SET
-              sc
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/sc/format.hpp
-              include/sc/fwd.hpp
-              include/sc/lazy_string_format.hpp
-              include/sc/string_constant.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
               seq
               TYPE
               HEADERS
@@ -209,6 +229,9 @@ target_sources(
 if(PROJECT_IS_TOP_LEVEL)
     add_docs(docs)
     clang_tidy_interface(cib)
+    clang_tidy_interface(cib_interrupt)
+    clang_tidy_interface(cib_match)
+    clang_tidy_interface(cib_sc)
 
     # Enable functional and performance test suites.
     add_subdirectory(test)

@@ -1,1 +1,1 @@
-add_tests(sequencer)
+add_tests(FILES sequencer LIBRARIES cib)

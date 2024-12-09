@@ -1,4 +1,5 @@
 add_tests(
+    FILES
     callback
     field_extract
     field_insert
@@ -9,7 +10,9 @@ add_tests(
     indexed_callback
     indexed_handler
     message
-    send)
+    send
+    LIBRARIES
+    cib)
 
 add_subdirectory(fail)
 

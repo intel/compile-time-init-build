@@ -1,4 +1,11 @@
-add_tests(input linear_search pseudo_pext_lookup lookup)
+add_tests(
+    FILES
+    input
+    linear_search
+    pseudo_pext_lookup
+    lookup
+    LIBRARIES
+    cib)
 
 add_versioned_package("gh:boost-ext/mph#v1.0.8")
 add_versioned_package("gh:serge-sans-paille/frozen#292a811")

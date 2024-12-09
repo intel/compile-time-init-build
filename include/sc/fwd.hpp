@@ -37,5 +37,10 @@ template <stdx::ct_string S> CONSTEVAL auto operator""_sc() {
     return stdx::ct_string_to_type<S, string_constant>();
 }
 } // namespace literals
+
+template <typename T>
+concept sc_like = requires(T const &t) {
+    t.apply([]<typename StringType>(StringType, auto const &...) {});
+};
 } // namespace sc
 using sc::literals::operator""_sc;

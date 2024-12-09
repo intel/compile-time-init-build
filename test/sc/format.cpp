@@ -120,3 +120,9 @@ TEST_CASE("format a formatted string", "[sc::format]") {
                   (sc::lazy_string_format{"a1{}2{}3b4{}5{}6c"_sc,
                                           stdx::make_tuple(10, 20, 30, 40)}));
 }
+
+TEST_CASE("lazy_string_format is sc_like", "[sc::format]") {
+    [[maybe_unused]] auto lsf =
+        sc::lazy_string_format{"{}"_sc, stdx::make_tuple(0)};
+    static_assert(sc::sc_like<decltype(lsf)>);
+}

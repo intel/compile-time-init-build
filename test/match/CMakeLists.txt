@@ -1,4 +1,5 @@
 add_tests(
+    FILES
     and
     constant
     equivalence
@@ -10,4 +11,6 @@ add_tests(
     simplify_custom
     simplify_not
     simplify_or
-    sum_of_products)
+    sum_of_products
+    LIBRARIES
+    cib_match)
