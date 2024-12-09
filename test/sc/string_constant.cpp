@@ -33,3 +33,8 @@ TEST_CASE("join", "[sc::string_constant]") {
     static_assert(""_sc + "Luke"_sc == "Luke"_sc);
     static_assert("Computer"_sc + ""_sc == "Computer"_sc);
 }
+
+TEST_CASE("string_constant is sc_like", "[sc::string_constant]") {
+    [[maybe_unused]] auto hi = "Hello, cruel world!"_sc;
+    static_assert(sc::sc_like<decltype(hi)>);
+}

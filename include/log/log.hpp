@@ -32,11 +32,6 @@ struct config {
 
 template <typename...> inline auto config = null::config{};
 
-template <typename T>
-concept loggable = requires(T const &t) {
-    t.apply([]<typename StringType>(StringType, auto const &...) {});
-};
-
 struct default_flavor_t;
 
 template <typename Flavor, typename... Ts>
