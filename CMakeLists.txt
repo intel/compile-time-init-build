@@ -133,85 +133,20 @@ target_sources(
               include/log/level.hpp
               include/log/log.hpp)
 
-add_library(cib_log_fmt INTERFACE)
-target_compile_features(cib_log_fmt INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
-                             stdx)
-
-target_sources(
-    cib_log_fmt
-    INTERFACE FILE_SET
-              log
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/log/fmt/logger.hpp)
-
-add_library(cib INTERFACE)
-target_compile_features(cib INTERFACE cxx_std_20)
+add_library(cib_msg INTERFACE)
+target_compile_features(cib_msg INTERFACE cxx_std_20)
 target_link_libraries_system(
-    cib
+    cib_msg
     INTERFACE
     async
-    cib_interrupt
+    cib_log
     cib_lookup
     cib_match
     cib_sc
-    concurrency
-    fmt::fmt-header-only
     stdx)
 
 target_sources(
-    cib
-    INTERFACE FILE_SET
-              cib
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/cib/builder_meta.hpp
-              include/cib/built.hpp
-              include/cib/callback.hpp
-              include/cib/cib.hpp
-              include/cib/config.hpp
-              include/cib/detail/components.hpp
-              include/cib/detail/constexpr_conditional.hpp
-              include/cib/detail/runtime_conditional.hpp
-              include/cib/detail/config_details.hpp
-              include/cib/detail/config_item.hpp
-              include/cib/detail/exports.hpp
-              include/cib/detail/extend.hpp
-              include/cib/detail/nexus_details.hpp
-              include/cib/func_decl.hpp
-              include/cib/nexus.hpp
-              include/cib/top.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
-              flow
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/flow/builder.hpp
-              include/flow/common.hpp
-              include/flow/detail/par.hpp
-              include/flow/detail/seq.hpp
-              include/flow/detail/walk.hpp
-              include/flow/flow.hpp
-              include/flow/graph_builder.hpp
-              include/flow/graphviz_builder.hpp
-              include/flow/impl.hpp
-              include/flow/run.hpp
-              include/flow/step.hpp)
-
-target_sources(
-    cib
+    cib_msg
     INTERFACE FILE_SET
               msg
               TYPE
@@ -235,22 +170,25 @@ target_sources(
               include/msg/send.hpp
               include/msg/service.hpp)
 
+add_library(cib_log_fmt INTERFACE)
+target_compile_features(cib_log_fmt INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
+                             stdx)
+
 target_sources(
-    cib
+    cib_log_fmt
     INTERFACE FILE_SET
-              seq
+              log
               TYPE
               HEADERS
               BASE_DIRS
               include
               FILES
-              include/seq/builder.hpp
-              include/seq/impl.hpp
-              include/seq/step.hpp)
+              include/log/fmt/logger.hpp)
 
 add_library(cib_log_mipi INTERFACE)
 target_compile_features(cib_log_mipi INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log_mipi INTERFACE cib cib_log concurrency
+target_link_libraries_system(cib_log_mipi INTERFACE cib_log cib_msg concurrency
                              stdx)
 
 target_sources(
@@ -265,12 +203,130 @@ target_sources(
               include/log/catalog/catalog.hpp
               include/log/catalog/mipi_encoder.hpp)
 
+add_library(cib_nexus INTERFACE)
+target_compile_features(cib_nexus INTERFACE cxx_std_20)
+target_link_libraries_system(cib_nexus INTERFACE stdx)
+
+target_sources(
+    cib_nexus
+    INTERFACE FILE_SET
+              nexus
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/cib/builder_meta.hpp
+              include/cib/built.hpp
+              include/cib/callback.hpp
+              include/cib/config.hpp
+              include/cib/detail/components.hpp
+              include/cib/detail/constexpr_conditional.hpp
+              include/cib/detail/runtime_conditional.hpp
+              include/cib/detail/config_details.hpp
+              include/cib/detail/config_item.hpp
+              include/cib/detail/exports.hpp
+              include/cib/detail/extend.hpp
+              include/cib/detail/nexus_details.hpp
+              include/cib/func_decl.hpp
+              include/cib/nexus.hpp)
+
+add_library(cib_flow INTERFACE)
+target_compile_features(cib_flow INTERFACE cxx_std_20)
+target_link_libraries_system(cib_flow INTERFACE cib_log cib_nexus cib_sc stdx)
+
+target_sources(
+    cib_flow
+    INTERFACE FILE_SET
+              flow
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/flow/builder.hpp
+              include/flow/common.hpp
+              include/flow/detail/par.hpp
+              include/flow/detail/seq.hpp
+              include/flow/detail/walk.hpp
+              include/flow/flow.hpp
+              include/flow/graph_builder.hpp
+              include/flow/graphviz_builder.hpp
+              include/flow/impl.hpp
+              include/flow/run.hpp
+              include/flow/step.hpp)
+
+add_library(cib_seq INTERFACE)
+target_compile_features(cib_seq INTERFACE cxx_std_20)
+target_link_libraries_system(
+    cib_seq
+    INTERFACE
+    cib_flow
+    cib_log
+    cib_nexus
+    cib_sc
+    stdx)
+
+target_sources(
+    cib_seq
+    INTERFACE FILE_SET
+              seq
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/seq/builder.hpp
+              include/seq/impl.hpp
+              include/seq/step.hpp)
+
+add_library(cib INTERFACE)
+target_compile_features(cib INTERFACE cxx_std_20)
+target_link_libraries_system(
+    cib
+    INTERFACE
+    async
+    cib_flow
+    cib_interrupt
+    cib_log
+    cib_log_fmt
+    cib_log_mipi
+    cib_lookup
+    cib_match
+    cib_msg
+    cib_nexus
+    cib_sc
+    cib_seq
+    concurrency
+    fmt::fmt-header-only
+    stdx)
+
+target_sources(
+    cib
+    INTERFACE FILE_SET
+              cib
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/cib/cib.hpp
+              include/cib/top.hpp)
+
 if(PROJECT_IS_TOP_LEVEL)
     add_docs(docs)
     clang_tidy_interface(cib)
+    clang_tidy_interface(cib_flow)
     clang_tidy_interface(cib_interrupt)
+    clang_tidy_interface(cib_lookup)
+    clang_tidy_interface(cib_log)
+    clang_tidy_interface(cib_log_fmt)
+    clang_tidy_interface(cib_log_mipi)
     clang_tidy_interface(cib_match)
+    clang_tidy_interface(cib_msg)
+    clang_tidy_interface(cib_nexus)
     clang_tidy_interface(cib_sc)
+    clang_tidy_interface(cib_seq)
 
     # Enable functional and performance test suites.
     add_subdirectory(test)

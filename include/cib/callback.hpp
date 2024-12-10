@@ -105,7 +105,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct builder {
 /**
  * Extend this to create named callback services.
  *
- * Types that extend callback_meta can be used as unique names with
+ * Types that extend service can be used as unique names with
  * cib::exports and cib::extend.
  *
  * @tparam ArgTypes
@@ -116,8 +116,8 @@ template <int NumFuncs = 0, typename... ArgTypes> struct builder {
  * @see cib::exports
  * @see cib::extend
  */
-template <typename... ArgTypes>
-struct service
-    : public cib::builder_meta<builder<0, ArgTypes...>, void (*)(ArgTypes...)> {
+template <typename... ArgTypes> struct service {
+    using builder_t = builder<0, ArgTypes...>;
+    using interface_t = void (*)(ArgTypes...);
 };
 } // namespace callback

@@ -339,7 +339,7 @@ namespace example_component {
 ==== `operator*`
 
 Explicitly add an action to the flow. Actions used in flow extensions without
-the `*` will be treated as references only and will not be added to the
+the `\*` will be treated as references only and will not be added to the
 flow at that location. It is a compilation error if an action is not added 
 with a `*` in exactly one location in the overall config.
 
@@ -388,8 +388,12 @@ what happens by default when we run the flow.
 // the default flow builder and service
 template <stdx::ct_string Name = "">
 using builder = flow::graph<Name, flow::graph_builder<impl>>;
+
 template <stdx::ct_string Name = "">
-struct service : cib::builder_meta<builder<Name>, flow::FunctionPtr> {};
+struct service {
+  using builder_t = builder<Name>;
+  using interface_t = flow::FunctionPtr;
+};
 
 // declare a flow service
 struct MorningRoutine : public service<"MorningRoutine"> {};
@@ -410,8 +414,12 @@ But given a flow, other renderings are possible.
 // a flow builder and service that produces a graphviz rendering
 template <stdx::ct_string Name = "">
 using viz_builder = flow::graph<Name, flow::graphviz_builder>;
+
 template <stdx::ct_string Name = "">
-struct viz_service : cib::builder_meta<builder<Name>, flow::VizFunctionPtr> {};
+struct viz_service {
+  using builder_t = builder<Name>;
+  using interface_t = flow::VizFunctionPtr;
+};
 ----
 
 Here, `viz_service` will produce a graphviz rendering of a flow using the
