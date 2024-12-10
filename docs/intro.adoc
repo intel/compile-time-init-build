@@ -38,9 +38,9 @@ The library dependencies are:
 - https://github.com/intel/cpp-senders-and-receivers[Baremetal Senders and Receivers (`async`)]
 - https://github.com/fmtlib/fmt[fmt]
 
-=== Libraries
+=== Functionality
 
-_cib_ contains several libraries that work together:
+_cib_ contains several parts that work together:
 
 - xref:flow.adoc#_the_flow_library[`flow`]
 - xref:logging.adoc#_the_logging_library[`logging`]
@@ -48,3 +48,33 @@ _cib_ contains several libraries that work together:
 - xref:match.adoc#_the_match_library[`match`]
 - xref:message.adoc#_the_message_library[`message`]
 - xref:sc.adoc#_the_sc_string_constant_library[`sc` (string constant)]
+
+=== Sub-library DAG
+
+Various sub-libraries within CIB form a dependency graph. `cib` is an omnibus
+library that contains all the functionality.
+
+[mermaid, format="svg"]
+----
+flowchart BT
+  sc(cib_sc)
+  nexus(cib_nexus)
+  lookup(cib_lookup)
+
+  flow(cib_flow) --> nexus
+  flow --> log
+
+  interrupt(cib_interrupt) --> sc
+  match(cib_match) --> sc
+  log(cib_log) --> sc
+
+
+  log_fmt(cib_log_fmt) --> log
+  msg(cib_msg) --> log & match
+  msg --> lookup
+
+  log_mipi(cib_log_mipi) --> msg
+  seq(cib_seq) --> flow
+
+  cib --> interrupt & seq & log_fmt & log_mipi
+----
