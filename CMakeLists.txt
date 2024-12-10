@@ -133,6 +133,43 @@ target_sources(
               include/log/level.hpp
               include/log/log.hpp)
 
+add_library(cib_msg INTERFACE)
+target_compile_features(cib_msg INTERFACE cxx_std_20)
+target_link_libraries_system(
+    cib_msg
+    INTERFACE
+    async
+    cib_log
+    cib_lookup
+    cib_match
+    cib_sc
+    stdx)
+
+target_sources(
+    cib_msg
+    INTERFACE FILE_SET
+              msg
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/msg/callback.hpp
+              include/msg/detail/indexed_builder_common.hpp
+              include/msg/detail/indexed_handler_common.hpp
+              include/msg/detail/separate_sum_terms.hpp
+              include/msg/field.hpp
+              include/msg/field_matchers.hpp
+              include/msg/handler_builder.hpp
+              include/msg/handler.hpp
+              include/msg/handler_interface.hpp
+              include/msg/indexed_builder.hpp
+              include/msg/indexed_handler.hpp
+              include/msg/indexed_service.hpp
+              include/msg/message.hpp
+              include/msg/send.hpp
+              include/msg/service.hpp)
+
 add_library(cib_log_fmt INTERFACE)
 target_compile_features(cib_log_fmt INTERFACE cxx_std_20)
 target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
@@ -149,6 +186,23 @@ target_sources(
               FILES
               include/log/fmt/logger.hpp)
 
+add_library(cib_log_mipi INTERFACE)
+target_compile_features(cib_log_mipi INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log_mipi INTERFACE cib_log cib_msg concurrency
+                             stdx)
+
+target_sources(
+    cib_log_mipi
+    INTERFACE FILE_SET
+              log
+              TYPE
+              HEADERS
+              BASE_DIRS
+              include
+              FILES
+              include/log/catalog/catalog.hpp
+              include/log/catalog/mipi_encoder.hpp)
+
 add_library(cib INTERFACE)
 target_compile_features(cib INTERFACE cxx_std_20)
 target_link_libraries_system(
@@ -156,8 +210,12 @@ target_link_libraries_system(
     INTERFACE
     async
     cib_interrupt
+    cib_log
+    cib_log_fmt
+    cib_log_mipi
     cib_lookup
     cib_match
+    cib_msg
     cib_sc
     concurrency
     fmt::fmt-header-only
@@ -213,31 +271,6 @@ target_sources(
 target_sources(
     cib
     INTERFACE FILE_SET
-              msg
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/msg/callback.hpp
-              include/msg/detail/indexed_builder_common.hpp
-              include/msg/detail/indexed_handler_common.hpp
-              include/msg/detail/separate_sum_terms.hpp
-              include/msg/field.hpp
-              include/msg/field_matchers.hpp
-              include/msg/handler_builder.hpp
-              include/msg/handler.hpp
-              include/msg/handler_interface.hpp
-              include/msg/indexed_builder.hpp
-              include/msg/indexed_handler.hpp
-              include/msg/indexed_service.hpp
-              include/msg/message.hpp
-              include/msg/send.hpp
-              include/msg/service.hpp)
-
-target_sources(
-    cib
-    INTERFACE FILE_SET
               seq
               TYPE
               HEADERS
@@ -248,28 +281,16 @@ target_sources(
               include/seq/impl.hpp
               include/seq/step.hpp)
 
-add_library(cib_log_mipi INTERFACE)
-target_compile_features(cib_log_mipi INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log_mipi INTERFACE cib cib_log concurrency
-                             stdx)
-
-target_sources(
-    cib_log_mipi
-    INTERFACE FILE_SET
-              log
-              TYPE
-              HEADERS
-              BASE_DIRS
-              include
-              FILES
-              include/log/catalog/catalog.hpp
-              include/log/catalog/mipi_encoder.hpp)
-
 if(PROJECT_IS_TOP_LEVEL)
     add_docs(docs)
     clang_tidy_interface(cib)
     clang_tidy_interface(cib_interrupt)
+    clang_tidy_interface(cib_lookup)
+    clang_tidy_interface(cib_log)
+    clang_tidy_interface(cib_log_fmt)
+    clang_tidy_interface(cib_log_mipi)
     clang_tidy_interface(cib_match)
+    clang_tidy_interface(cib_msg)
     clang_tidy_interface(cib_sc)
 
     # Enable functional and performance test suites.

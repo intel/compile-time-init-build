@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
 #include <flow/common.hpp>
 #include <flow/graph_builder.hpp>
 #include <seq/impl.hpp>
@@ -11,6 +10,8 @@ namespace seq {
 template <stdx::ct_string Name = "">
 using builder = flow::graph<Name, flow::graph_builder<Name, impl>>;
 
-template <stdx::ct_string Name = "">
-struct service : cib::builder_meta<builder<Name>, flow::FunctionPtr> {};
+template <stdx::ct_string Name = ""> struct service {
+    using builder_t = builder<Name>;
+    using interface_t = flow::FunctionPtr;
+};
 } // namespace seq

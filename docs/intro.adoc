@@ -34,7 +34,8 @@ The library dependencies are:
 
 - https://github.com/boostorg/mp11[Boost.MP11]
 - https://github.com/intel/cpp-std-extensions[C++ std extensions (`stdx`)]
-- https://github.com/intel/cpp-baremetal-concurrency[Baremetal Concurrency]
+- https://github.com/intel/cpp-baremetal-concurrency[Baremetal Concurrency (`conc`)]
+- https://github.com/intel/cpp-senders-and-receivers[Baremetal Senders and Receivers (`async`)]
 - https://github.com/fmtlib/fmt[fmt]
 
 === Libraries

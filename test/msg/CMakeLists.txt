@@ -12,7 +12,7 @@ add_tests(
     message
     send
     LIBRARIES
-    cib)
+    cib_msg)
 
 add_subdirectory(fail)
 

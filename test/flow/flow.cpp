@@ -51,9 +51,10 @@ TEST_CASE("run empty flow through cib::nexus", "[flow]") {
 namespace {
 template <stdx::ct_string Name = "">
 using alt_builder = flow::graph<Name, flow::graphviz_builder>;
-template <stdx::ct_string Name = "">
-struct alt_flow_service
-    : cib::builder_meta<alt_builder<Name>, flow::VizFunctionPtr> {};
+template <stdx::ct_string Name = ""> struct alt_flow_service {
+    using builder_t = alt_builder<Name>;
+    using interface_t = flow::VizFunctionPtr;
+};
 
 struct VizFlow : public alt_flow_service<"debug"> {};
 struct VizConfig {
