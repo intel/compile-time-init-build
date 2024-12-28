@@ -9,25 +9,24 @@
 
 #include <nanobench.h>
 
+namespace pp {
+template <auto data, typename T>
+constexpr auto input_data = []() {
+    std::array<lookup::entry<T, T>, data.size()> d{};
+
+    for (auto i = std::size_t{}; i < d.size(); i++) {
+        d[i] = {static_cast<T>(data[i].first), static_cast<T>(data[i].second)};
+    }
+
+    return d;
+}();
+} // namespace pp
+
 template <auto data, typename T, bool indirect = true,
           std::size_t max_search_len = 2>
 constexpr auto make_pseudo_pext() {
-    constexpr static auto input_data = []() {
-        std::array<lookup::entry<T, T>, data.size()> d{};
-
-        for (auto i = std::size_t{}; i < d.size(); i++) {
-            d[i] = {static_cast<T>(data[i].first),
-                    static_cast<T>(data[i].second)};
-        }
-
-        return d;
-    }();
-
-    constexpr static auto map =
-        lookup::pseudo_pext_lookup<indirect, max_search_len>::make(
-            CX_VALUE(lookup::input{0, input_data}));
-
-    return map;
+    return lookup::pseudo_pext_lookup<indirect, max_search_len>::make(
+        CX_VALUE(lookup::input{0, pp::input_data<data, T>}));
 }
 
 template <auto data, typename T, bool indirect = true,

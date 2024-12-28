@@ -72,7 +72,6 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
             cib_lookup
             mph
             frozen-headers)
-        target_compile_features(${name} PRIVATE cxx_std_23)
         target_compile_options(${name} PRIVATE -fconstexpr-steps=4000000000)
         target_compile_definitions(
             ${name}
