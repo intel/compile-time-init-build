@@ -77,8 +77,6 @@ foreach(BENCH_ALG_NAME ${BENCH_ALG_NAMES})
         target_compile_definitions(
             ${name}
             PRIVATE ALG_NAME=bench_${BENCH_ALG_NAME}
-                    QALG_NAME="bench_${BENCH_ALG_NAME}"
-                    BENCH_DATASET=${BENCH_DATASET}
-                    QBENCH_DATASET="${BENCH_DATASET}")
+                    BENCH_DATASET=${BENCH_DATASET} ANKERL_NANOBENCH_IMPLEMENT)
     endforeach()
 endforeach()
