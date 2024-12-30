@@ -39,7 +39,7 @@ uint64_t cb_count{};
 uint64_t volatile *cb_count_ptr = &cb_count;
 
 template <uint32_t B, uint32_t M, uint32_t S>
-constexpr auto cb = callback<"callback", msg_defn>(
+constexpr auto cb = msg::callback<"callback", msg_defn>(
     "big"_f.in<B> and "med"_f.in<M> and "small_a"_f.in<S>,
     [](auto) { (*cb_count_ptr) = 0; });
 
