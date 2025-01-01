@@ -54,6 +54,7 @@ using alt_builder = flow::graph<Name, flow::graphviz_builder>;
 template <stdx::ct_string Name = ""> struct alt_flow_service {
     using builder_t = alt_builder<Name>;
     using interface_t = flow::VizFunctionPtr;
+    constexpr static auto uninitialized() -> interface_t { return {}; }
 };
 
 struct VizFlow : public alt_flow_service<"debug"> {};

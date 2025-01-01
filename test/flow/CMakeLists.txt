@@ -11,6 +11,7 @@ add_unit_test(
 add_tests(
     FILES
     flow
+    flow_uninit
     graph
     graph_builder
     logging

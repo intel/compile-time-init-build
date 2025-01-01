@@ -3,6 +3,7 @@
 #include <cib/builder_meta.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/panic.hpp>
 
 #include <array>
 #include <concepts>
@@ -119,5 +120,12 @@ template <int NumFuncs = 0, typename... ArgTypes> struct builder {
 template <typename... ArgTypes> struct service {
     using builder_t = builder<0, ArgTypes...>;
     using interface_t = void (*)(ArgTypes...);
+
+    CONSTEVAL static auto uninitialized() -> interface_t {
+        return [](ArgTypes...) {
+            stdx::panic<
+                "Attempting to run callback before it is initialized">();
+        };
+    }
 };
 } // namespace callback
