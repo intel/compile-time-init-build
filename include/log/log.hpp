@@ -4,6 +4,7 @@
 #include <sc/format.hpp>
 #include <sc/fwd.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
 
@@ -35,7 +36,7 @@ template <typename...> inline auto config = null::config{};
 struct default_flavor_t;
 
 template <typename Flavor, typename... Ts>
-constexpr static auto get_config() -> auto & {
+ALWAYS_INLINE constexpr static auto get_config() -> auto & {
     if constexpr (std::same_as<Flavor, default_flavor_t>) {
         return config<Ts...>;
     } else {
@@ -45,7 +46,7 @@ constexpr static auto get_config() -> auto & {
 
 template <typename Flavor, level L, typename ModuleId, typename... Ts,
           typename... TArgs>
-static auto log(TArgs &&...args) -> void {
+ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     auto &cfg = get_config<Flavor, Ts...>();
     cfg.logger.template log<L, ModuleId>(std::forward<TArgs>(args)...);
 }
@@ -103,7 +104,8 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
 
 namespace logging {
-template <typename Flavor, typename... Ts> static auto log_version() -> void {
+template <typename Flavor, typename... Ts>
+ALWAYS_INLINE static auto log_version() -> void {
     auto &l_cfg = get_config<Flavor, Ts...>();
     auto &v_cfg = ::version::config<Ts...>;
     if constexpr (requires {
