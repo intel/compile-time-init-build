@@ -35,9 +35,18 @@ function(gen_str_catalog)
         endif()
     endforeach()
 
-    list(TRANSFORM SC_INPUT_JSON PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-    list(TRANSFORM SC_STABLE_JSON PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-    list(TRANSFORM SC_INPUT_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+    foreach(INPUT ${SC_INPUT_JSON})
+        file(REAL_PATH ${INPUT} out_path)
+        list(APPEND INPUT_JSON ${out_path})
+    endforeach()
+    foreach(INPUT ${SC_STABLE_JSON})
+        file(REAL_PATH ${INPUT} out_path)
+        list(APPEND STABLE_JSON ${out_path})
+    endforeach()
+    foreach(INPUT ${SC_INPUT_HEADERS})
+        file(REAL_PATH ${INPUT} out_path)
+        list(APPEND INPUT_HEADERS ${out_path})
+    endforeach()
 
     if(SC_FORGET_OLD_IDS)
         set(FORGET_ARG "--forget_old_ids")
@@ -59,12 +68,12 @@ function(gen_str_catalog)
         OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}
         COMMAND
             ${Python3_EXECUTABLE} ${SC_GEN_STR_CATALOG} --input ${UNDEFS}
-            --json_input ${SC_INPUT_JSON} --cpp_headers ${SC_INPUT_HEADERS}
+            --json_input ${INPUT_JSON} --cpp_headers ${INPUT_HEADERS}
             --cpp_output ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON}
-            --xml_output ${SC_OUTPUT_XML} --stable_json ${SC_STABLE_JSON}
+            --xml_output ${SC_OUTPUT_XML} --stable_json ${STABLE_JSON}
             ${FORGET_ARG} ${CLIENT_NAME_ARG} ${VERSION_ARG} ${GUID_ID_ARG}
             ${GUID_MASK_ARG}
-        DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG} ${SC_STABLE_JSON}
+        DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG} ${STABLE_JSON}
         COMMAND_EXPAND_LISTS)
     if(SC_OUTPUT_LIB)
         add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})
