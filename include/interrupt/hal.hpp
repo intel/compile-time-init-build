@@ -3,6 +3,7 @@
 #include <interrupt/fwd.hpp>
 #include <interrupt/policies.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -44,19 +45,20 @@ template <typename...> inline auto injected_hal = null_hal{};
 struct hal {
     template <typename... Ts>
         requires(sizeof...(Ts) == 0)
-    static auto init() -> void {
+    ALWAYS_INLINE static auto init() -> void {
         injected_hal<Ts...>.init();
     }
 
     template <bool Enable, irq_num_t IrqNumber, int Priority, typename... Ts>
         requires(sizeof...(Ts) == 0)
-    static auto irq_init() -> void {
+    ALWAYS_INLINE static auto irq_init() -> void {
         injected_hal<Ts...>.template irq_init<Enable, IrqNumber, Priority>();
     }
 
     template <status_policy P, typename... Ts>
         requires(sizeof...(Ts) == 0)
-    static auto run(irq_num_t irq, stdx::invocable auto const &isr) -> void {
+    ALWAYS_INLINE static auto run(irq_num_t irq,
+                                  stdx::invocable auto const &isr) -> void {
         injected_hal<Ts...>.template run<P>(irq, isr);
     }
 };
