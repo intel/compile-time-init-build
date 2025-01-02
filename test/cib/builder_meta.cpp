@@ -1,16 +1,19 @@
 #include <cib/builder_meta.hpp>
 
+#include <stdx/compiler.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <type_traits>
 
 namespace {
-struct TestBuilderTag;
-struct TestInterfaceTag;
+struct TestBuilder;
+struct TestInterface {};
 
 struct test_builder_meta {
-    using builder_t = TestBuilderTag;
-    using interface_t = TestInterfaceTag;
+    using builder_t = TestBuilder;
+    using interface_t = TestInterface;
+    CONSTEVAL static auto uninitialized() -> interface_t;
 };
 } // namespace
 
@@ -21,7 +24,7 @@ TEST_CASE("builder_meta concept") {
 TEST_CASE(
     "builder_meta builder and interface type traits return correct values") {
     static_assert(
-        std::is_same_v<TestBuilderTag, cib::builder_t<test_builder_meta>>);
+        std::is_same_v<TestBuilder, cib::builder_t<test_builder_meta>>);
     static_assert(
-        std::is_same_v<TestInterfaceTag, cib::interface_t<test_builder_meta>>);
+        std::is_same_v<TestInterface, cib::interface_t<test_builder_meta>>);
 }

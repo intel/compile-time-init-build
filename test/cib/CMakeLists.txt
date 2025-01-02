@@ -2,6 +2,7 @@ add_tests(
     FILES
     builder_meta
     callback
+    callback_uninit
     nexus
     readme_hello_world
     LIBRARIES

@@ -6,9 +6,11 @@ add_tests(
     field_matchers
     handler
     handler_builder
+    handler_uninit
     indexed_builder
     indexed_callback
     indexed_handler
+    indexed_handler_uninit
     message
     send
     LIBRARIES

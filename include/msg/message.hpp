@@ -349,6 +349,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         (... and Fields::template fits_inside<S>());
 
     template <typename T> struct base {
+        constexpr static auto name = Name;
+
         constexpr auto as_derived() const -> T const & {
             return static_cast<T const &>(*this);
         }
