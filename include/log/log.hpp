@@ -60,20 +60,17 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#define CIB_DO_PRAGMA(X) _Pragma(#X)
 #ifdef __clang__
-#define CIB_PRAGMA(X) CIB_DO_PRAGMA(clang X)
 #define CIB_PRAGMA_SEMI
 #else
-#define CIB_PRAGMA(X) CIB_DO_PRAGMA(GCC X)
 #define CIB_PRAGMA_SEMI ;
 #endif
 
 #define CIB_LOG_MODULE(S)                                                      \
-    CIB_PRAGMA(diagnostic push)                                                \
-    CIB_PRAGMA(diagnostic ignored "-Wshadow")                                  \
+    STDX_PRAGMA(diagnostic push)                                               \
+    STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
     using cib_log_module_id_t [[maybe_unused]] =                               \
-        typename logging::module_id_t<S>::type CIB_PRAGMA_SEMI CIB_PRAGMA(     \
+        typename logging::module_id_t<S>::type CIB_PRAGMA_SEMI STDX_PRAGMA(    \
             diagnostic pop)
 
 #define CIB_LOG(FLAVOR, LEVEL, MSG, ...)                                       \
