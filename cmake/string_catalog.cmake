@@ -63,6 +63,9 @@ function(gen_str_catalog)
     if(SC_GUID_MASK)
         set(GUID_MASK_ARG --guid_mask ${SC_GUID_MASK})
     endif()
+    if(NOT SC_GEN_STR_CATALOG)
+        set(SC_GEN_STR_CATALOG ${GEN_STR_CATALOG})
+    endif()
 
     add_custom_command(
         OUTPUT ${SC_OUTPUT_CPP} ${SC_OUTPUT_JSON} ${SC_OUTPUT_XML}

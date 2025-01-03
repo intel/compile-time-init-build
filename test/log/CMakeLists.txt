@@ -9,8 +9,6 @@ target_include_directories(catalog2_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(catalog1_lib PRIVATE warnings cib)
 target_link_libraries(catalog2_lib PRIVATE warnings cib)
 gen_str_catalog(
-    GEN_STR_CATALOG
-    ${CMAKE_SOURCE_DIR}/tools/gen_str_catalog.py
     OUTPUT_CPP
     ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp
     OUTPUT_JSON
