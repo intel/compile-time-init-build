@@ -28,6 +28,10 @@ add_versioned_package("gh:intel/cpp-baremetal-concurrency#7c5b26c")
 add_versioned_package("gh:intel/cpp-std-extensions#4d57b2e")
 add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#73d95bc")
 
+set(GEN_STR_CATALOG
+    ${CMAKE_CURRENT_LIST_DIR}/tools/gen_str_catalog.py
+    CACHE FILEPATH "Location of script to generate a string catalog")
+
 add_library(cib_sc INTERFACE)
 target_compile_features(cib_sc INTERFACE cxx_std_20)
 target_link_libraries_system(cib_sc INTERFACE fmt::fmt-header-only stdx)
