@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-from functools import partial
 import itertools
 import json
 import re
 import xml.etree.ElementTree as et
+from functools import partial
 
 
 def find_arg_split_pos(s: str, start: int) -> int:
@@ -215,7 +215,7 @@ def write_json(messages, modules, extra_inputs: list[str], filename: str, stable
 
 
 def read_stable(stable_filenames: list[str]):
-    stable_catalog = dict()
+    stable_catalog: dict = dict(messages=[], modules=[])
     for filename in stable_filenames:
         with open(filename, "r") as f:
             stable_catalog.update(json.load(f))
@@ -397,10 +397,12 @@ def main():
     args = parse_cmdline()
 
     stable_catalog = read_stable(args.stable_json)
+    stable_messages = stable_catalog.get("messages", [])
+    stable_modules = stable_catalog.get("modules", [])
     try:
         stable_ids = (
-            {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]},
-            {m["string"]: m["id"] for m in stable_catalog["modules"]},
+            {stable_msg_key(msg): msg["id"] for msg in stable_messages},
+            {m["string"]: m["id"] for m in stable_modules},
         )
         modules, messages = read_input(args.input, stable_ids)
     except Exception as e:
@@ -411,9 +413,7 @@ def main():
 
     stable_output = dict(messages=[], modules=[])
     if not args.forget_old_ids:
-        stable_output = dict(
-            messages=stable_catalog["messages"], modules=stable_catalog["modules"]
-        )
+        stable_output = dict(messages=stable_messages, modules=stable_modules)
 
     if args.json_output is not None:
         write_json(messages, modules, args.json_input, args.json_output, stable_output)
