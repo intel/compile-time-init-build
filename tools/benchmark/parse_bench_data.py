@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import argparse
 import csv
 import re
 
@@ -72,9 +75,28 @@ def generate_csv_tables(data, output_prefix):
             writer.writerow(row)
 
 
-# Usage example
-file_path = 'bench_output2.txt'
-output_prefix = 'output'
+def parse_cmdline():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help=("Path to the input results."),
+    )
+    parser.add_argument(
+        "--output_prefix",
+        type=str,
+        required=True,
+        help="Output filename prefix for the generated CSV file.",
+    )
+    return parser.parse_args()
 
-data = parse_file(file_path)
-generate_csv_tables(data, output_prefix)
+
+def main():
+    args = parse_cmdline()
+    data = parse_file(args.input)
+    generate_csv_tables(data, args.output_prefix)
+
+
+if __name__ == "__main__":
+    main()
