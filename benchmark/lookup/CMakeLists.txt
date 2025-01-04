@@ -91,8 +91,12 @@ function(gen_pp_benchmarks)
             cib_lookup
             mph
             frozen-headers)
-        target_compile_options(${name} PRIVATE -fconstexpr-steps=4000000000
-                                               --include=${HEADER})
+        target_compile_options(
+            ${name}
+            PRIVATE
+                $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-fconstexpr-steps=4000000000>
+                $<$<CXX_COMPILER_ID:GNU>:-fconstexpr-ops-limit=4000000000>
+                --include=${HEADER})
         target_compile_definitions(
             ${name} PRIVATE ALG_NAME=bench_${ALG_NAME} DATASET=${DATASET}
                             ANKERL_NANOBENCH_IMPLEMENT)

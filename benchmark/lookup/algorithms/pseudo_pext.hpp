@@ -26,7 +26,7 @@ template <auto data, typename T, bool indirect = true,
           std::size_t max_search_len = 2>
 constexpr auto make_pseudo_pext() {
     return lookup::pseudo_pext_lookup<indirect, max_search_len>::make(
-        CX_VALUE(lookup::input{0, pp::input_data<data, T>}));
+        CX_VALUE(lookup::input<T, T, data.size()>{0, pp::input_data<data, T>}));
 }
 
 template <auto data, typename T, bool indirect = true,
