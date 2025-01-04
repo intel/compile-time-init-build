@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-from functools import partial
 import itertools
 import json
 import re
 import xml.etree.ElementTree as et
+from functools import partial
 
 
 def find_arg_split_pos(s: str, start: int) -> int:
@@ -215,7 +215,7 @@ def write_json(messages, modules, extra_inputs: list[str], filename: str, stable
 
 
 def read_stable(stable_filenames: list[str]):
-    stable_catalog = dict()
+    stable_catalog: dict[str, list] = dict(messages=[], modules=[])
     for filename in stable_filenames:
         with open(filename, "r") as f:
             stable_catalog.update(json.load(f))
