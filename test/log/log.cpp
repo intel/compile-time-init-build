@@ -3,6 +3,7 @@
 
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
+#include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -52,6 +53,6 @@ TEST_CASE("CIB_FATAL calls compile-time panic", "[log]") {
 
 TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
     panicked = false;
-    CIB_FATAL("{}", "Hello"_sc);
+    CIB_FATAL("{}", CX_VALUE("Hello"));
     CHECK(panicked);
 }

@@ -20,14 +20,14 @@ struct graphviz_builder {
         nodes_t sinks{};
         for_each(
             [&]<typename Node>(Node const &) {
-                sources.insert(Node::name_t::value);
-                sinks.insert(Node::name_t::value);
+                sources.emplace(Node::name_t::value);
+                sinks.emplace(Node::name_t::value);
             },
             nodes);
         for_each(
             [&]<typename Edge>(Edge const &) {
-                sinks.erase(Edge::source_t::name_t::value);
-                sources.erase(Edge::dest_t::name_t::value);
+                sinks.erase(std::string_view{Edge::source_t::name_t::value});
+                sources.erase(std::string_view{Edge::dest_t::name_t::value});
             },
             edges);
 
@@ -39,9 +39,9 @@ struct graphviz_builder {
         }
         for_each(
             [&]<typename Edge>(Edge const &) {
-                output += std::string{Edge::source_t::name_t::value};
+                output += std::string_view{Edge::source_t::name_t::value};
                 output += " -> ";
-                output += std::string{Edge::dest_t::name_t::value};
+                output += std::string_view{Edge::dest_t::name_t::value};
                 output += '\n';
             },
             edges);

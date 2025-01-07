@@ -10,7 +10,6 @@
 #include <msg/callback.hpp>
 #include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
@@ -167,8 +166,8 @@ struct indexed_builder_base {
             CIB_INFO(
                 "Incoming message matched [{}], because [{}] (collapsed to "
                 "[{}]), executing callback",
-                stdx::ct_string_to_type<cb.name, sc::string_constant>(),
-                orig_cb.matcher.describe(), cb.matcher.describe());
+                stdx::cts_t<cb.name>{}, orig_cb.matcher.describe(),
+                cb.matcher.describe());
             msg::call_with_message<msg_t>(cb.callable, data, args...);
             return true;
         }

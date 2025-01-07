@@ -4,7 +4,6 @@
 #include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
 #include <msg/message.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>

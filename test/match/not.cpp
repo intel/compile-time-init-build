@@ -1,8 +1,8 @@
 #include "test_matcher.hpp"
 
 #include <match/ops.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+
+#include <stdx/ct_format.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -17,13 +17,13 @@ TEST_CASE("NOT fulfils matcher concept", "[match not]") {
 TEST_CASE("NOT describes itself", "[match not]") {
     constexpr auto e = not test_matcher{};
     static_assert(e.describe() ==
-                  format("not ({})"_sc, test_m<0>{}.describe()));
+                  stdx::ct_format<"not ({})">(test_m<0>{}.describe()));
 }
 
 TEST_CASE("NOT describes a match", "[match not]") {
     constexpr auto e = not test_matcher{};
-    static_assert(e.describe_match(1) ==
-                  format("not ({})"_sc, test_matcher{}.describe_match(1)));
+    static_assert(e.describe_match(1) == stdx::ct_format<"not ({})">(
+                                             test_matcher{}.describe_match(1)));
 }
 
 TEST_CASE("NOT matches correctly", "[match not]") {
