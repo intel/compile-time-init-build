@@ -664,15 +664,12 @@ namespace detail {
 template <typename AlignTo, typename... Msgs>
 using msg_sizes = stdx::type_list<typename Msgs::template size<AlignTo>...>;
 
-template <typename S>
-using negated_size = std::integral_constant<std::size_t, -S::value>;
-
 template <typename AlignTo, typename... Msgs>
-using msg_offsets = boost::mp11::mp_partial_sum<
-    msg_sizes<AlignTo, Msgs...>,
-    negated_size<typename boost::mp11::mp_first<
-        stdx::type_list<Msgs...>>::template size<AlignTo>>,
-    boost::mp11::mp_plus>;
+using msg_offsets = boost::mp11::mp_push_front<
+    boost::mp11::mp_partial_sum<msg_sizes<AlignTo, Msgs...>,
+                                std::integral_constant<std::size_t, 0>,
+                                boost::mp11::mp_plus>,
+    std::integral_constant<std::size_t, 0>>;
 
 template <typename AlignTo> struct shift_msg_q {
     template <typename Offset, typename Msg>
@@ -680,9 +677,10 @@ template <typename AlignTo> struct shift_msg_q {
 };
 
 template <typename AlignTo, typename... Msgs>
-using shifted_msgs = boost::mp11::mp_transform_q<shift_msg_q<AlignTo>,
-                                                 msg_offsets<AlignTo, Msgs...>,
-                                                 stdx::type_list<Msgs...>>;
+using shifted_msgs =
+    boost::mp11::mp_transform_q<shift_msg_q<AlignTo>,
+                                msg_offsets<AlignTo, Msgs...>,
+                                stdx::type_list<Msgs..., msg::message<"end">>>;
 
 template <stdx::ct_string Name> struct combiner {
     template <typename... Fields> using fn = msg::message<Name, Fields...>;
@@ -704,4 +702,40 @@ template <stdx::ct_string Name, typename AlignTo, typename... Msgs>
     requires(sizeof...(Msgs) > 0)
 using pack = boost::mp11::mp_apply_q<detail::combine_q<Name>,
                                      detail::shifted_msgs<AlignTo, Msgs...>>;
+
+namespace detail {
+template <typename F>
+using is_locatable = std::bool_constant<requires { F::sort_key; }>;
+
+template <typename F1, typename F2>
+using field_size_sort_fn = std::bool_constant < F2::bitsize<F1::bitsize>;
+
+template <stdx::ct_string Name, typename... Fields> struct field_locator {
+    using fields = boost::mp11::mp_partition<boost::mp11::mp_list<Fields...>,
+                                             is_locatable>;
+    using located_fields = boost::mp11::mp_first<fields>;
+    using unlocated_fields = boost::mp11::mp_second<fields>;
+
+    using located_msg = boost::mp11::mp_apply_q<combiner<Name>, located_fields>;
+
+    using auto_fields =
+        boost::mp11::mp_sort<unlocated_fields, field_size_sort_fn>;
+
+    template <typename F>
+    using as_singleton_message =
+        msg::message<Name, typename F::default_located>;
+    using auto_msgs =
+        boost::mp11::mp_transform<as_singleton_message, auto_fields>;
+
+    using all_msgs = boost::mp11::mp_push_front<auto_msgs, located_msg>;
+
+    template <typename... Msgs>
+    using pack = msg::pack<Name, std::uint8_t, Msgs...>;
+    using msg_type = boost::mp11::mp_apply<pack, all_msgs>;
+};
+} // namespace detail
+
+template <stdx::ct_string Name, typename... Fields>
+using relaxed_message =
+    typename detail::field_locator<Name, Fields...>::msg_type;
 } // namespace msg

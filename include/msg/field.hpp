@@ -532,5 +532,8 @@ struct field {
     using located = detail::field_t<
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
         Default, M, Ats...>;
+
+    constexpr static auto bitsize = sizeof(T) * CHAR_BIT;
+    using default_located = located<at{msb_t{bitsize - 1}, lsb_t{}}>;
 };
 } // namespace msg

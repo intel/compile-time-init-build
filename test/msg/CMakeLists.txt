@@ -12,6 +12,7 @@ add_tests(
     indexed_handler
     indexed_handler_uninit
     message
+    relaxed_message
     send
     LIBRARIES
     cib)
