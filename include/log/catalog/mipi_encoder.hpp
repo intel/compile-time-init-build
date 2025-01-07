@@ -22,11 +22,10 @@ namespace logging::mipi {
 namespace detail {
 template <logging::level L, typename S, typename... Args>
 constexpr auto to_message() {
-    constexpr auto s = S::value;
-    using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
+    constexpr auto s = std::string_view{S::value};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::message<
-            L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+        return sc::message<L,
+                           sc::undefined<sc::args<Args...>, char, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -112,8 +111,10 @@ template <typename TDestinations> struct log_handler {
 
     template <logging::level Level, typename Env, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
-        msg.apply([&]<typename S, typename... Args>(S, Args... args) {
-            using Message = decltype(detail::to_message<Level, S, Args...>());
+        msg.args.apply([&]<typename... Args>(Args... args) {
+            using Message =
+                decltype(detail::to_message<Level, decltype(msg.str),
+                                            Args...>());
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
             dispatch_message<Level>(catalog<Message>(), module<Module>(),

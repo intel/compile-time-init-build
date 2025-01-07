@@ -1,8 +1,8 @@
 #include "test_matcher.hpp"
 
 #include <match/ops.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+
+#include <stdx/ct_format.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -16,29 +16,31 @@ TEST_CASE("OR fulfils matcher concept", "[match or]") {
 
 TEST_CASE("OR describes itself", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    static_assert(e.describe() == format("({}) or ({})"_sc,
-                                         test_m<0>{}.describe(),
-                                         test_m<1>{}.describe()));
+    static_assert(e.describe() ==
+                  stdx::ct_format<"({}) or ({})">(test_m<0>{}.describe(),
+                                                  test_m<1>{}.describe()));
 }
 
 TEST_CASE("OR description flattens", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{} or test_m<2>{};
-    static_assert(e.describe() ==
-                  format("({}) or ({}) or ({})"_sc, test_m<0>{}.describe(),
-                         test_m<1>{}.describe(), test_m<2>{}.describe()));
+    static_assert(e.describe() == stdx::ct_format<"({}) or ({}) or ({})">(
+                                      test_m<0>{}.describe(),
+                                      test_m<1>{}.describe(),
+                                      test_m<2>{}.describe()));
 }
 
 TEST_CASE("OR describes a match", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    static_assert(e.describe_match(1) == format("({}) or ({})"_sc,
-                                                test_m<0>{}.describe_match(1),
-                                                test_m<1>{}.describe_match(1)));
+    static_assert(e.describe_match(1) == stdx::ct_format<"({}) or ({})">(
+                                             test_m<0>{}.describe_match(1),
+                                             test_m<1>{}.describe_match(1)));
 }
 
 TEST_CASE("OR match description flattens", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{} or test_m<2>{};
-    static_assert(e.describe_match(1) == format("({}) or ({}) or ({})"_sc,
-                                                test_m<0>{}.describe_match(1),
+    static_assert(
+        e.describe_match(1) ==
+        stdx::ct_format<"({}) or ({}) or ({})">(test_m<0>{}.describe_match(1),
                                                 test_m<1>{}.describe_match(1),
                                                 test_m<2>{}.describe_match(1)));
 }

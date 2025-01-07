@@ -1,5 +1,4 @@
 #include <log/log.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/ct_string.hpp>
 
@@ -46,7 +45,6 @@ TEST_CASE("log module id overridden at function scope", "[module_id]") {
 
 TEST_CASE("log module id overridden at statement scope", "[module_id]") {
     CIB_LOG_MODULE("wrong");
-
     {
         CIB_LOG_MODULE("statement");
         using namespace stdx::literals;
