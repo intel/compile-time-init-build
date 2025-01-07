@@ -24,9 +24,9 @@ include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
 fmt_recipe(10.2.1)
-add_versioned_package("gh:intel/cpp-baremetal-concurrency#7c5b26c")
-add_versioned_package("gh:intel/cpp-std-extensions#4d57b2e")
-add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#73d95bc")
+add_versioned_package("gh:intel/cpp-baremetal-concurrency#1108849")
+add_versioned_package("gh:intel/cpp-std-extensions#25911ff")
+add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#8510ecc")
 
 set(GEN_STR_CATALOG
     ${CMAKE_CURRENT_LIST_DIR}/tools/gen_str_catalog.py
