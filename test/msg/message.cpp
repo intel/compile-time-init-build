@@ -621,3 +621,24 @@ TEST_CASE("pack 1 message", "[message]") {
     using expected_defn = message<"defn", f1, f2>;
     static_assert(std::is_same_v<defn, expected_defn>);
 }
+
+TEST_CASE("pack with empty messages", "[message]") {
+    using m0 = message<"m0">;
+
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using m2 = message<"m2">;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m3 = message<"m3", f3, f4>;
+
+    using defn = pack<"defn", std::uint8_t, m0, m1, m2, m3>;
+    using expected_defn =
+        message<"defn", f1, f2,
+                f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
+                f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
