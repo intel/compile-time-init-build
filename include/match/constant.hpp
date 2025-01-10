@@ -3,7 +3,8 @@
 #include <match/concepts.hpp>
 #include <match/implies.hpp>
 #include <match/negate.hpp>
-#include <sc/string_constant.hpp>
+
+#include <stdx/ct_string.hpp>
 
 // NOTE: the implication overloads in this file are crafted to be high priority,
 // to avoid ambiguity. Hence always_t and never_t define friend overloads that
@@ -17,7 +18,10 @@ struct always_t {
     [[nodiscard]] constexpr auto operator()(auto const &) const -> bool {
         return true;
     }
-    [[nodiscard]] constexpr static auto describe() { return "true"_sc; }
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "true"_ctst;
+    }
     [[nodiscard]] constexpr static auto describe_match(auto const &) {
         return describe();
     }
@@ -35,7 +39,10 @@ struct never_t {
     [[nodiscard]] constexpr auto operator()(auto const &) const -> bool {
         return false;
     }
-    [[nodiscard]] constexpr static auto describe() { return "false"_sc; }
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "false"_ctst;
+    }
     [[nodiscard]] constexpr static auto describe_match(auto const &) {
         return describe();
     }

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <log/level.hpp>
-#include <sc/format.hpp>
-#include <sc/fwd.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
+#include <stdx/utility.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -51,12 +51,10 @@ ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     cfg.logger.template log<L, ModuleId>(std::forward<TArgs>(args)...);
 }
 
-template <stdx::ct_string S> struct module_id_t {
-    using type = decltype(stdx::ct_string_to_type<S, sc::string_constant>());
-};
+template <stdx::ct_string S> using module_id_t = stdx::cts_t<S>;
 } // namespace logging
 
-using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
+using cib_log_module_id_t = typename logging::module_id_t<"default">;
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
@@ -70,12 +68,12 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
     STDX_PRAGMA(diagnostic push)                                               \
     STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
     using cib_log_module_id_t [[maybe_unused]] =                               \
-        typename logging::module_id_t<S>::type CIB_PRAGMA_SEMI STDX_PRAGMA(    \
+        typename logging::module_id_t<S> CIB_PRAGMA_SEMI STDX_PRAGMA(          \
             diagnostic pop)
 
 #define CIB_LOG(FLAVOR, LEVEL, MSG, ...)                                       \
     logging::log<FLAVOR, LEVEL, cib_log_module_id_t>(                          \
-        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+        __FILE__, __LINE__, stdx::ct_format<MSG>(__VA_ARGS__))
 
 #define CIB_TRACE(...)                                                         \
     CIB_LOG(logging::default_flavor_t, logging::level::TRACE, __VA_ARGS__)
@@ -88,12 +86,11 @@ using cib_log_module_id_t = typename logging::module_id_t<"default">::type;
 
 #define CIB_FATAL(MSG, ...)                                                    \
     [] {                                                                       \
-        constexpr auto str = sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__);  \
+        constexpr auto s = stdx::ct_format<MSG>(__VA_ARGS__);                  \
         logging::log<logging::default_flavor_t, logging::level::FATAL,         \
-                     cib_log_module_id_t>(__FILE__, __LINE__, str);            \
-        str.apply([]<typename S, typename... Args>(S s, Args... args) {        \
-            constexpr auto cts = stdx::ct_string_from_type(s);                 \
-            stdx::panic<cts>(args...);                                         \
+                     cib_log_module_id_t>(__FILE__, __LINE__, s);              \
+        s.args.apply([](auto &&...args) {                                      \
+            stdx::panic<decltype(s.str)::value>(FWD(args)...);                 \
         });                                                                    \
     }()
 
@@ -113,9 +110,8 @@ ALWAYS_INLINE static auto log_version() -> void {
     } else {
         l_cfg.logger.template log<level::MAX, cib_log_module_id_t>(
             "", 0,
-            sc::format("Version: {} ({})"_sc, sc::uint_<v_cfg.build_id>,
-                       stdx::ct_string_to_type<v_cfg.version_string,
-                                               sc::string_constant>()));
+            stdx::ct_format<"Version: {} ({})">(
+                CX_VALUE(v_cfg.build_id), CX_VALUE(v_cfg.version_string)));
     }
 }
 } // namespace logging

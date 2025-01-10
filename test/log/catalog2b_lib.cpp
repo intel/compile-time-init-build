@@ -4,6 +4,8 @@
 #include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
+#include <stdx/ct_format.hpp>
+
 #include <cstdint>
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
@@ -22,5 +24,5 @@ auto log_rt_enum_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     using namespace ns;
     cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
-        format("E string with {} placeholder"_sc, E::value));
+        stdx::ct_format<"E string with {} placeholder">(E::value));
 }
