@@ -308,6 +308,14 @@ def write_xml(
         xf.write(xml_string)
 
 
+def check_module_limit(modules, max):
+    for m in modules.values():
+        if m["id"] > max:
+            raise Exception(
+                f"Module ({m}) assigned value exceeds the module ID max ({max})."
+            )
+
+
 def parse_cmdline():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -379,6 +387,12 @@ def parse_cmdline():
         action="store_true",
         help="When on, stable IDs from a previous run are forgotten. By default, those strings are remembered in the output so that they will not be reused in future.",
     )
+    parser.add_argument(
+        "--module_id_max",
+        type=int,
+        default=127,
+        help="The maximum value of a module ID.",
+    )
     return parser.parse_args()
 
 
@@ -414,6 +428,8 @@ def main():
         stable_output = dict(
             messages=stable_catalog["messages"], modules=stable_catalog["modules"]
         )
+
+    check_module_limit(modules, args.module_id_max)
 
     if args.json_output is not None:
         write_json(messages, modules, args.json_input, args.json_output, stable_output)

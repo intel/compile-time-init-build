@@ -9,7 +9,8 @@ function(gen_str_catalog)
         CLIENT_NAME
         VERSION
         GUID_ID
-        GUID_MASK)
+        GUID_MASK
+        MODULE_ID_MAX)
     set(multiValueArgs INPUT_JSON INPUT_LIBS INPUT_HEADERS STABLE_JSON)
     cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}"
                           ${ARGN})
@@ -63,6 +64,9 @@ function(gen_str_catalog)
     if(SC_GUID_MASK)
         set(GUID_MASK_ARG --guid_mask ${SC_GUID_MASK})
     endif()
+    if(SC_MODULE_ID_MAX)
+        set(MODULE_ID_MAX_ARG --module_id_max ${SC_MODULE_ID_MAX})
+    endif()
     if(NOT SC_GEN_STR_CATALOG)
         set(SC_GEN_STR_CATALOG ${GEN_STR_CATALOG})
     endif()
@@ -75,7 +79,7 @@ function(gen_str_catalog)
             --cpp_output ${SC_OUTPUT_CPP} --json_output ${SC_OUTPUT_JSON}
             --xml_output ${SC_OUTPUT_XML} --stable_json ${STABLE_JSON}
             ${FORGET_ARG} ${CLIENT_NAME_ARG} ${VERSION_ARG} ${GUID_ID_ARG}
-            ${GUID_MASK_ARG}
+            ${GUID_MASK_ARG} ${MODULE_ID_MAX_ARG}
         DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG} ${STABLE_JSON}
         COMMAND_EXPAND_LISTS)
     if(SC_OUTPUT_LIB)
