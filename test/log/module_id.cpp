@@ -8,23 +8,26 @@
 #include <type_traits>
 
 TEST_CASE("default log module id", "[module_id]") {
-    static_assert(std::is_same_v<cib_log_module_id_t, decltype("default"_sc)>);
+    using namespace stdx::literals;
+    static_assert(logging::get_module(cib_log_env_t{}) == "default"_ctst);
 }
 
 namespace ns {
 CIB_LOG_MODULE("ns");
 
 TEST_CASE("log module id overridden at namespace scope", "[module_id]") {
-    static_assert(std::is_same_v<cib_log_module_id_t, decltype("ns"_sc)>);
+    using namespace stdx::literals;
+    static_assert(logging::get_module(cib_log_env_t{}) == "ns"_ctst);
 }
 } // namespace ns
 
 struct S {
-    CIB_LOG_MODULE("S");
-
     template <typename = void> constexpr static auto test() {
-        static_assert(std::is_same_v<cib_log_module_id_t, decltype("S"_sc)>);
+        using namespace stdx::literals;
+        static_assert(logging::get_module(cib_log_env_t{}) == "S"_ctst);
     }
+
+    CIB_LOG_MODULE("S");
 };
 
 TEST_CASE("log module id overridden at class scope", "[module_id]") {
@@ -33,7 +36,8 @@ TEST_CASE("log module id overridden at class scope", "[module_id]") {
 
 template <typename = void> constexpr static auto func_test() {
     CIB_LOG_MODULE("fn");
-    static_assert(std::is_same_v<cib_log_module_id_t, decltype("fn"_sc)>);
+    using namespace stdx::literals;
+    static_assert(logging::get_module(cib_log_env_t{}) == "fn"_ctst);
 }
 
 TEST_CASE("log module id overridden at function scope", "[module_id]") {
@@ -45,7 +49,7 @@ TEST_CASE("log module id overridden at statement scope", "[module_id]") {
 
     {
         CIB_LOG_MODULE("statement");
-        static_assert(
-            std::is_same_v<cib_log_module_id_t, decltype("statement"_sc)>);
+        using namespace stdx::literals;
+        static_assert(logging::get_module(cib_log_env_t{}) == "statement"_ctst);
     }
 }

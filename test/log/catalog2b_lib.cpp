@@ -21,6 +21,6 @@ auto log_rt_enum_arg() -> void;
 auto log_rt_enum_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     using namespace ns;
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
         format("E string with {} placeholder"_sc, E::value));
 }
