@@ -85,7 +85,7 @@ operator and(runtime_condition<LhsName, LhsPs...> const &lhs,
         constexpr auto name =
             stdx::ct_format<"{} and {}">(CX_VALUE(LhsName), CX_VALUE(RhsName));
 
-        return runtime_condition<name, LhsPs..., RhsPs...>{};
+        return runtime_condition<name.str.value, LhsPs..., RhsPs...>{};
     }
 }
 
