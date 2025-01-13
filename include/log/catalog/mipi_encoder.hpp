@@ -3,6 +3,7 @@
 #include <conc/concurrency.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
+#include <log/module.hpp>
 #include <msg/message.hpp>
 
 #include <stdx/bit.hpp>
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
+#include <string_view>
 #include <utility>
 
 namespace logging::mipi {
@@ -28,11 +30,10 @@ constexpr auto to_message() {
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
-template <typename S> constexpr auto to_module() {
-    constexpr auto s = S::value;
-    using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
+template <stdx::ct_string S> constexpr auto to_module() {
+    constexpr auto s = std::string_view{S};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::module_string<sc::undefined<void, char_t, s[Is]...>>{};
+        return sc::module_string<sc::undefined<void, char, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 } // namespace detail
@@ -102,19 +103,19 @@ using catalog_msg_t =
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level Level, typename ModuleId,
-              typename FilenameStringType, typename LineNumberType,
-              typename MsgType>
+    template <logging::level Level, typename Env, typename FilenameStringType,
+              typename LineNumberType, typename MsgType>
     ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
                            MsgType const &msg) -> void {
-        log_msg<Level, ModuleId>(msg);
+        log_msg<Level, Env>(msg);
     }
 
-    template <logging::level Level, typename ModuleId, typename Msg>
+    template <logging::level Level, typename Env, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
             using Message = decltype(detail::to_message<Level, S, Args...>());
-            using Module = decltype(detail::to_module<ModuleId>());
+            using Module =
+                decltype(detail::to_module<get_module(Env{}).value>());
             dispatch_message<Level>(catalog<Message>(), module<Module>(),
                                     static_cast<std::uint32_t>(args)...);
         });

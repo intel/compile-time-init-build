@@ -132,19 +132,18 @@ template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
 TEST_CASE("log zero arguments", "[mipi]") {
     test_critical_section::count = 0;
-    auto cfg =
-        logging::mipi::config{test_log_args_destination<logging::level::TRACE,
-                                                        cib_log_module_id_t>{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>("Hello"_sc);
+    auto cfg = logging::mipi::config{
+        test_log_args_destination<logging::level::TRACE, cib_log_env_t>{}};
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>("Hello"_sc);
     CHECK(test_critical_section::count == 2);
 }
 
 TEST_CASE("log one argument", "[mipi]") {
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, cib_log_module_id_t,
-                                  42u, 17u>{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+        test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                  17u>{}};
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
         format("{}"_sc, 17u));
     CHECK(test_critical_section::count == 2);
 }
@@ -152,9 +151,9 @@ TEST_CASE("log one argument", "[mipi]") {
 TEST_CASE("log two arguments", "[mipi]") {
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, cib_log_module_id_t,
-                                  42u, 17u, 18u>{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+        test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                  17u, 18u>{}};
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
         format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 2);
 }
@@ -163,18 +162,18 @@ TEST_CASE("log more than two arguments", "[mipi]") {
     {
         test_critical_section::count = 0;
         auto cfg = logging::mipi::config{
-            test_log_buf_destination<logging::level::TRACE, cib_log_module_id_t,
-                                     42u, 17u, 18u, 19u>{}};
-        cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+            test_log_buf_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                     17u, 18u, 19u>{}};
+        cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
             format("{} {} {}"_sc, 17u, 18u, 19u));
         CHECK(test_critical_section::count == 2);
     }
     {
         test_critical_section::count = 0;
         auto cfg = logging::mipi::config{
-            test_log_buf_destination<logging::level::TRACE, cib_log_module_id_t,
-                                     42u, 17u, 18u, 19u, 20u>{}};
-        cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+            test_log_buf_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                     17u, 18u, 19u, 20u>{}};
+        cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
             format("{} {} {} {}"_sc, 17u, 18u, 19u, 20u));
         CHECK(test_critical_section::count == 2);
     }
@@ -184,11 +183,11 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, cib_log_module_id_t,
-                                  42u, 17u, 18u>{},
-        test_log_args_destination<logging::level::TRACE, cib_log_module_id_t,
-                                  42u, 17u, 18u>{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_module_id_t>(
+        test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                  17u, 18u>{},
+        test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
+                                  17u, 18u>{}};
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
         format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 4);
     CHECK(num_log_args_calls == 2);
