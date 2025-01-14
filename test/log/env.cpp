@@ -1,7 +1,13 @@
 #include <log/env.hpp>
+#include <log/level.hpp>
+#include <log/log.hpp>
 #include <log/module.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace {
 [[maybe_unused]] constexpr inline struct custom_t {
@@ -47,4 +53,36 @@ TEST_CASE("multi-value environment", "[log_env]") {
     using namespace stdx::literals;
     static_assert(custom(cib_log_env_t{}) == 1);
     static_assert(logging::get_module(cib_log_env_t{}) == "hello"_ctst);
+}
+
+namespace {
+auto logged_modules = std::vector<std::string_view>{};
+
+struct log_handler {
+    template <logging::level L, typename Env, typename FilenameStringType,
+              typename LineNumberType, typename MsgType>
+    auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
+        using namespace stdx::literals;
+        logged_modules.push_back(
+            std::string_view{logging::get_module(Env{}).value});
+    }
+};
+
+struct log_config {
+    log_handler logger;
+};
+} // namespace
+
+template <> inline auto logging::config<> = log_config{};
+
+TEST_CASE("with-scoped environment", "[log_env]") {
+    logged_modules.clear();
+
+    CIB_WITH_LOG_ENV(logging::get_module, "with") { CIB_INFO(""); }
+    REQUIRE(logged_modules.size() == 1);
+    CHECK(logged_modules[0] == "with");
+
+    CIB_INFO("");
+    REQUIRE(logged_modules.size() == 2);
+    CHECK(logged_modules[1] == "default");
 }

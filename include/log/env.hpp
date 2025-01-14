@@ -6,12 +6,6 @@
 
 #include <boost/mp11/algorithm.hpp>
 
-#ifdef __clang__
-#define CIB_PRAGMA_SEMI
-#else
-#define CIB_PRAGMA_SEMI ;
-#endif
-
 namespace logging {
 template <auto Query, auto Value> struct prop {
     [[nodiscard]] CONSTEVAL static auto query(decltype(Query)) noexcept {
@@ -44,13 +38,16 @@ template <typename... Envs> struct env {
 
 namespace detail {
 template <typename T> struct autowrap {
+    // NOLINTNEXTLINE(google-explicit-constructor)
     CONSTEVAL autowrap(T t) : value(t) {}
     T value;
 };
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 template <std::size_t N> using str_lit_t = char const (&)[N];
 
 template <std::size_t N> struct autowrap<str_lit_t<N>> {
+    // NOLINTNEXTLINE(google-explicit-constructor)
     CONSTEVAL autowrap(str_lit_t<N> str) : value(str) {}
     stdx::ct_string<N> value;
 };
@@ -77,15 +74,32 @@ template <std::size_t... Is> struct for_each_pair<std::index_sequence<Is...>> {
 using cib_log_env_t = logging::env<>;
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
+
+#ifdef __clang__
+#define CIB_PRAGMA_SEMI
+#else
+#define CIB_PRAGMA_SEMI ;
+#endif
+
+#define CIB_LOG_ENV_DECL(...)                                                  \
+    [[maybe_unused]] typedef decltype([]<logging::detail::autowrap... Args> {  \
+        using new_env_t =                                                      \
+            typename logging::detail::for_each_pair<std::make_index_sequence<  \
+                sizeof...(Args) / 2>>::template type<Args...>;                 \
+        return boost::mp11::mp_append<new_env_t, cib_log_env_t>{};             \
+    }.template operator()<__VA_ARGS__>()) cib_log_env_t
+
 #define CIB_LOG_ENV(...)                                                       \
     STDX_PRAGMA(diagnostic push)                                               \
     STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
-    using cib_log_env_t [[maybe_unused]] =                                     \
-        decltype([]<logging::detail::autowrap... Args> {                       \
-            using new_env_t = typename logging::detail::for_each_pair<         \
-                std::make_index_sequence<sizeof...(Args) /                     \
-                                         2>>::template type<Args...>;          \
-            return boost::mp11::mp_append<new_env_t, cib_log_env_t>{};         \
-        }.template operator()<__VA_ARGS__>()) CIB_PRAGMA_SEMI                  \
-            STDX_PRAGMA(diagnostic pop)
+    CIB_LOG_ENV_DECL(__VA_ARGS__)                                              \
+    CIB_PRAGMA_SEMI                                                            \
+    STDX_PRAGMA(diagnostic pop)
+
+#define CIB_WITH_LOG_ENV(...)                                                  \
+    STDX_PRAGMA(diagnostic push)                                               \
+    STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
+    if constexpr (CIB_LOG_ENV_DECL(__VA_ARGS__); true)                         \
+    STDX_PRAGMA(diagnostic pop)
+
 // NOLINTEND(cppcoreguidelines-macro-usage)

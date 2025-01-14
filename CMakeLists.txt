@@ -134,8 +134,10 @@ target_sources(
               BASE_DIRS
               include
               FILES
+              include/log/env.hpp
               include/log/level.hpp
-              include/log/log.hpp)
+              include/log/log.hpp
+              include/log/module.hpp)
 
 add_library(cib_msg INTERFACE)
 target_compile_features(cib_msg INTERFACE cxx_std_20)
