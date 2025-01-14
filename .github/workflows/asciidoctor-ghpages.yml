@@ -42,7 +42,7 @@ jobs:
 
       - name: Install Mermaid
         run: |
-          sudo npm install -g @mermaid-js/mermaid-cli@11.2.1
+          npm install -g @mermaid-js/mermaid-cli@11.4.2
           npx puppeteer browsers install chrome-headless-shell
 
       - name: Install asciidoctor
