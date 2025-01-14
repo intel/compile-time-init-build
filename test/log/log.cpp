@@ -16,7 +16,7 @@ bool panicked{};
 struct injected_handler {
     template <stdx::ct_string Why, typename... Ts>
     static auto panic(Ts &&...) noexcept -> void {
-        static_assert(std::string_view{Why} == "Hello");
+        static_assert(std::string_view{Why}.starts_with("Hello"));
         panicked = true;
     }
 };
@@ -53,5 +53,12 @@ TEST_CASE("CIB_FATAL calls compile-time panic", "[log]") {
 TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
     panicked = false;
     CIB_FATAL("{}", "Hello"_sc);
+    CHECK(panicked);
+}
+
+TEST_CASE("CIB_FATAL can format stack arguments", "[log]") {
+    panicked = false;
+    auto x = 42;
+    CIB_FATAL("Hello {}", x);
     CHECK(panicked);
 }

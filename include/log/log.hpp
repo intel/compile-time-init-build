@@ -70,15 +70,14 @@ ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     CIB_LOG(logging::default_flavor_t, logging::level::ERROR, __VA_ARGS__)
 
 #define CIB_FATAL(MSG, ...)                                                    \
-    [] {                                                                       \
-        constexpr auto str = sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__);  \
+    [](auto &&str) {                                                           \
         logging::log<logging::default_flavor_t, logging::level::FATAL,         \
                      cib_log_env_t>(__FILE__, __LINE__, str);                  \
-        str.apply([]<typename S, typename... Args>(S s, Args... args) {        \
+        FWD(str).apply([]<typename S, typename... Args>(S s, Args... args) {   \
             constexpr auto cts = stdx::ct_string_from_type(s);                 \
             stdx::panic<cts>(args...);                                         \
         });                                                                    \
-    }()
+    }(sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
