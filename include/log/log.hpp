@@ -27,7 +27,7 @@ namespace logging {
 namespace null {
 struct config {
     struct {
-        template <level, typename>
+        template <typename>
         constexpr auto log(auto &&...) const noexcept -> void {}
     } logger;
 };
@@ -46,33 +46,39 @@ ALWAYS_INLINE constexpr static auto get_config() -> auto & {
     }
 }
 
-template <typename Flavor, level L, typename Env, typename... Ts,
-          typename... TArgs>
+template <typename Flavor, typename Env, typename... Ts, typename... TArgs>
 ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     auto &cfg = get_config<Flavor, Ts...>();
-    cfg.logger.template log<L, Env>(std::forward<TArgs>(args)...);
+    cfg.logger.template log<Env>(std::forward<TArgs>(args)...);
 }
 } // namespace logging
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#define CIB_LOG(FLAVOR, LEVEL, MSG, ...)                                       \
-    logging::log<FLAVOR, LEVEL, cib_log_env_t>(                                \
+#define CIB_LOG(FLAVOR, MSG, ...)                                              \
+    logging::log<FLAVOR, cib_log_env_t>(                                       \
         __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
 
+#define CIB_LOG_WITH_LEVEL(LEVEL, ...)                                         \
+    do {                                                                       \
+        CIB_LOG_ENV(logging::get_level, LEVEL);                                \
+        CIB_LOG(logging::default_flavor_t __VA_OPT__(, ) __VA_ARGS__);         \
+    } while (false)
+
 #define CIB_TRACE(...)                                                         \
-    CIB_LOG(logging::default_flavor_t, logging::level::TRACE, __VA_ARGS__)
+    CIB_LOG_WITH_LEVEL(logging::level::TRACE __VA_OPT__(, ) __VA_ARGS__)
 #define CIB_INFO(...)                                                          \
-    CIB_LOG(logging::default_flavor_t, logging::level::INFO, __VA_ARGS__)
+    CIB_LOG_WITH_LEVEL(logging::level::INFO __VA_OPT__(, ) __VA_ARGS__)
 #define CIB_WARN(...)                                                          \
-    CIB_LOG(logging::default_flavor_t, logging::level::WARN, __VA_ARGS__)
+    CIB_LOG_WITH_LEVEL(logging::level::WARN __VA_OPT__(, ) __VA_ARGS__)
 #define CIB_ERROR(...)                                                         \
-    CIB_LOG(logging::default_flavor_t, logging::level::ERROR, __VA_ARGS__)
+    CIB_LOG_WITH_LEVEL(logging::level::ERROR __VA_OPT__(, ) __VA_ARGS__)
 
 #define CIB_FATAL(MSG, ...)                                                    \
     [](auto &&str) {                                                           \
-        logging::log<logging::default_flavor_t, logging::level::FATAL,         \
-                     cib_log_env_t>(__FILE__, __LINE__, str);                  \
+        CIB_LOG_ENV(logging::get_level, logging::level::FATAL);                \
+        logging::log<logging::default_flavor_t, cib_log_env_t>(__FILE__,       \
+                                                               __LINE__, str); \
         FWD(str).apply([]<typename S, typename... Args>(S s, Args... args) {   \
             constexpr auto cts = stdx::ct_string_from_type(s);                 \
             stdx::panic<cts>(args...);                                         \
@@ -93,7 +99,8 @@ ALWAYS_INLINE static auto log_version() -> void {
                   }) {
         l_cfg.logger.template log_build<v_cfg.build_id, v_cfg.version_string>();
     } else {
-        l_cfg.logger.template log<level::MAX, cib_log_env_t>(
+        CIB_LOG_ENV(logging::get_level, logging::level::MAX);
+        l_cfg.logger.template log<cib_log_env_t>(
             "", 0,
             sc::format("Version: {} ({})"_sc, sc::uint_<v_cfg.build_id>,
                        stdx::ct_string_to_type<v_cfg.version_string,

@@ -2,6 +2,8 @@
 
 #include <flow/common.hpp>
 #include <flow/log.hpp>
+#include <log/env.hpp>
+#include <log/level.hpp>
 #include <log/log.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -20,9 +22,9 @@ constexpr auto run_func() -> void {
         if constexpr (not FlowName.empty()) {
             using log_spec_t =
                 decltype(get_log_spec<CTNode, log_spec_id_t<FlowName>>());
-            CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
-                    "flow.{}({})", typename CTNode::type_t{},
-                    typename CTNode::name_t{});
+            CIB_LOG_ENV(logging::get_level, log_spec_t::level);
+            CIB_LOG(typename log_spec_t::flavor, "flow.{}({})",
+                    typename CTNode::type_t{}, typename CTNode::name_t{});
         }
         typename CTNode::func_t{}();
     }
@@ -60,16 +62,16 @@ template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
 
         if constexpr (loggingEnabled) {
             using log_spec_t = decltype(get_log_spec<inlined_func_list>());
-            CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
-                    "flow.start({})", name);
+            CIB_LOG_ENV(logging::get_level, log_spec_t::level);
+            CIB_LOG(typename log_spec_t::flavor, "flow.start({})", name);
         }
 
         (FuncPtrs(), ...);
 
         if constexpr (loggingEnabled) {
             using log_spec_t = decltype(get_log_spec<inlined_func_list>());
-            CIB_LOG(typename log_spec_t::flavor, log_spec_t::level,
-                    "flow.end({})", name);
+            CIB_LOG_ENV(logging::get_level, log_spec_t::level);
+            CIB_LOG(typename log_spec_t::flavor, "flow.end({})", name);
         }
     }
 };

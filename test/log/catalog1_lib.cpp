@@ -17,6 +17,8 @@ struct test_log_args_destination {
         last_header = hdr;
     }
 };
+
+using log_env1 = logging::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_zero_args() -> void;
@@ -27,32 +29,34 @@ auto log_with_fixed_module_id() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        "A string with no placeholders"_sc);
+    cfg.logger.log_msg<log_env1>("A string with no placeholders"_sc);
 }
 
 auto log_one_ct_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
+    cfg.logger.log_msg<log_env1>(
         format("B string with {} placeholder"_sc, "one"_sc));
 }
 
 auto log_one_rt_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("C string with {} placeholder"_sc, 1));
+    cfg.logger.log_msg<log_env1>(format("C string with {} placeholder"_sc, 1));
 }
 
 auto log_with_non_default_module_id() -> void {
-    CIB_LOG_MODULE("not default");
-    auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("ModuleID string with {} placeholder"_sc, 1));
+    CIB_WITH_LOG_ENV(logging::get_level, logging::level::TRACE,
+                     logging::get_module, "not default") {
+        auto cfg = logging::mipi::config{test_log_args_destination{}};
+        cfg.logger.log_msg<cib_log_env_t>(
+            format("ModuleID string with {} placeholder"_sc, 1));
+    }
 }
 
 auto log_with_fixed_module_id() -> void {
-    CIB_LOG_MODULE("fixed");
-    auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("Fixed ModuleID string with {} placeholder"_sc, 1));
+    CIB_WITH_LOG_ENV(logging::get_level, logging::level::TRACE,
+                     logging::get_module, "fixed") {
+        auto cfg = logging::mipi::config{test_log_args_destination{}};
+        cfg.logger.log_msg<cib_log_env_t>(
+            format("Fixed ModuleID string with {} placeholder"_sc, 1));
+    }
 }

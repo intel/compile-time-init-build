@@ -162,9 +162,10 @@ inline auto logging::config<secure_t> =
     logging::fmt::config{std::back_inserter(secure_buffer)};
 
 TEST_CASE("logging can be flavored", "[fmt_logger]") {
+    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     buffer.clear();
     secure_buffer.clear();
-    CIB_LOG(secure_t, logging::level::TRACE, "Hello");
+    CIB_LOG(secure_t, "Hello");
     CAPTURE(secure_buffer);
     CHECK(secure_buffer.substr(secure_buffer.size() - std::size("Hello")) ==
           "Hello\n");

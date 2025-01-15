@@ -1,5 +1,6 @@
 #pragma once
 
+#include <log/level.hpp>
 #include <log/log.hpp>
 #include <log/module.hpp>
 
@@ -31,7 +32,7 @@ namespace logging::fmt {
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level L, typename Env, typename FilenameStringType,
+    template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
         auto const currentTime =
@@ -42,7 +43,7 @@ template <typename TDestinations> struct log_handler {
         stdx::for_each(
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
-                                 stdx::ct<L>(), get_module(Env{}).value);
+                                 get_level(Env{}), get_module(Env{}).value);
                 msg.apply(
                     [&]<typename StringType>(StringType, auto const &...args) {
                         ::fmt::format_to(out, StringType::value, args...);

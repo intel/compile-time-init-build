@@ -103,21 +103,22 @@ using catalog_msg_t =
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level Level, typename Env, typename FilenameStringType,
+    template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
                            MsgType const &msg) -> void {
-        log_msg<Level, Env>(msg);
+        log_msg<Env>(msg);
     }
 
-    template <logging::level Level, typename Env, typename Msg>
+    template <typename Env, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
-            using Message = decltype(detail::to_message<Level, S, Args...>());
+            constexpr auto L = get_level(Env{}).value;
+            using Message = decltype(detail::to_message<L, S, Args...>());
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
-            dispatch_message<Level>(catalog<Message>(), module<Module>(),
-                                    static_cast<std::uint32_t>(args)...);
+            dispatch_message<L>(catalog<Message>(), module<Module>(),
+                                static_cast<std::uint32_t>(args)...);
         });
     }
 

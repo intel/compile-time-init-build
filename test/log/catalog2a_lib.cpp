@@ -14,12 +14,15 @@ namespace {
 struct test_log_args_destination {
     auto log_by_args(std::uint32_t, auto...) -> void { ++log_calls; }
 };
+
+using log_env2a =
+    logging::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_two_rt_args() -> void;
 
 auto log_two_rt_args() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
+    cfg.logger.log_msg<log_env2a>(
         format("D string with {} and {} placeholder"_sc, 1, 2));
 }
