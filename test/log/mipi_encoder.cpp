@@ -61,12 +61,6 @@ expected_msg_header(logging::level level, module_id m,
                   : expected_short32_header();
 }
 
-template <auto ExpectedId> struct test_log_id_destination {
-    template <typename Id> static auto log_by_args(Id id) {
-        CHECK(id == ((ExpectedId << 4u) | 1u));
-    }
-};
-
 int num_log_args_calls{};
 
 constexpr auto check = [](auto value, auto expected) {

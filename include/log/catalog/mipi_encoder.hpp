@@ -20,13 +20,13 @@
 
 namespace logging::mipi {
 namespace detail {
-template <logging::level L, typename S, typename... Args>
-constexpr auto to_message() {
+template <auto L, typename S, typename... Args> constexpr auto to_message() {
     constexpr auto s = S::value;
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
-            L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+            static_cast<logging::level>(L),
+            sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -113,7 +113,7 @@ template <typename TDestinations> struct log_handler {
     template <typename Env, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
-            constexpr auto L = get_level(Env{}).value;
+            constexpr auto L = stdx::to_underlying(get_level(Env{}).value);
             using Message = decltype(detail::to_message<L, S, Args...>());
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
@@ -174,7 +174,7 @@ template <typename TDestinations> struct log_handler {
             dests);
     }
 
-    template <logging::level Level, std::same_as<std::uint32_t>... MsgDataTypes>
+    template <auto Level, std::same_as<std::uint32_t>... MsgDataTypes>
     ALWAYS_INLINE auto dispatch_message(string_id id,
                                         [[maybe_unused]] module_id m,
                                         MsgDataTypes... msg_data) -> void {

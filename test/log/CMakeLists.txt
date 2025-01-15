@@ -1,4 +1,11 @@
-add_tests(FILES log module_id env LIBRARIES cib_log)
+add_tests(
+    FILES
+    level
+    log
+    module_id
+    env
+    LIBRARIES
+    cib_log)
 add_tests(FILES fmt_logger LIBRARIES cib_log_fmt)
 add_tests(FILES mipi_encoder mipi_logger LIBRARIES cib_log_mipi)
 
