@@ -2,6 +2,7 @@
 #include <log/catalog/mipi_encoder.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/span.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -131,10 +132,12 @@ struct test_log_version_destination {
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
 TEST_CASE("log zero arguments", "[mipi]") {
+    using namespace stdx::literals;
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE, cib_log_env_t>{}};
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>("Hello"_sc);
+    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
+        stdx::ct_format<"Hello">());
     CHECK(test_critical_section::count == 2);
 }
 
@@ -144,7 +147,7 @@ TEST_CASE("log one argument", "[mipi]") {
         test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
                                   17u>{}};
     cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("{}"_sc, 17u));
+        stdx::ct_format<"{}">(17u));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -154,7 +157,7 @@ TEST_CASE("log two arguments", "[mipi]") {
         test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
                                   17u, 18u>{}};
     cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("{} {}"_sc, 17u, 18u));
+        stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -165,7 +168,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
             test_log_buf_destination<logging::level::TRACE, cib_log_env_t, 42u,
                                      17u, 18u, 19u>{}};
         cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-            format("{} {} {}"_sc, 17u, 18u, 19u));
+            stdx::ct_format<"{} {} {}">(17u, 18u, 19u));
         CHECK(test_critical_section::count == 2);
     }
     {
@@ -174,7 +177,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
             test_log_buf_destination<logging::level::TRACE, cib_log_env_t, 42u,
                                      17u, 18u, 19u, 20u>{}};
         cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-            format("{} {} {} {}"_sc, 17u, 18u, 19u, 20u));
+            stdx::ct_format<"{} {} {} {}">(17u, 18u, 19u, 20u));
         CHECK(test_critical_section::count == 2);
     }
 }
@@ -188,7 +191,7 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
         test_log_args_destination<logging::level::TRACE, cib_log_env_t, 42u,
                                   17u, 18u>{}};
     cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
-        format("{} {}"_sc, 17u, 18u));
+        stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 4);
     CHECK(num_log_args_calls == 2);
 }

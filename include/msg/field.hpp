@@ -3,7 +3,6 @@
 #include <match/constant.hpp>
 #include <match/ops.hpp>
 #include <msg/field_matchers.hpp>
-#include <sc/format.hpp>
 
 #include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
@@ -65,10 +64,10 @@ concept field_locator_for =
     field_extractor_for<T, Spec> and field_inserter_for<T, Spec>;
 
 namespace detail {
-template <typename Name, typename T, std::uint32_t BitSize>
+template <stdx::ct_string Name, typename T, std::uint32_t BitSize>
 struct field_spec_t {
     using type = T;
-    using name_t = Name;
+    using name_t = stdx::cts_t<Name>;
 
     constexpr static name_t name{};
     constexpr static auto size = BitSize;
@@ -386,10 +385,10 @@ concept is_mutable_value = requires { typename T::is_mutable_t; };
 template <auto V, typename D>
 concept compatible_with_default = D::template is_compatible_value<V>;
 
-template <typename Name, typename T = std::uint32_t, auto... Ats>
+template <stdx::ct_string Name, typename T = std::uint32_t, auto... Ats>
 struct field_id_t {};
 
-template <typename Name, typename T = std::uint32_t,
+template <stdx::ct_string Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t, at... Ats>
     requires std::is_trivially_copyable_v<T>
@@ -408,7 +407,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                   "Field size is smaller than sum of locations!");
 
   public:
-    using name_t = Name;
+    using name_t = stdx::cts_t<Name>;
     using field_id = field_id_t<Name, T, Ats...>;
     using value_type = T;
     using matcher_t = M;
@@ -445,7 +444,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     }
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
-        return format("{}: 0x{:x}"_sc, spec_t::name, v);
+        return stdx::ct_format<"{}: 0x{:x}">(spec_t::name, v);
     }
 
     constexpr static auto can_hold(value_type v) -> bool {
@@ -529,9 +528,7 @@ template <stdx::ct_string Name, typename T = std::uint32_t,
           match::matcher M = match::always_t>
 struct field {
     template <at... Ats>
-    using located = detail::field_t<
-        decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
-        Default, M, Ats...>;
+    using located = detail::field_t<Name, T, Default, M, Ats...>;
 
     constexpr static auto bitsize = sizeof(T) * CHAR_BIT;
     using default_located = located<at{msb_t{bitsize - 1}, lsb_t{}}>;

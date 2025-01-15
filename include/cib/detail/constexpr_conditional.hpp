@@ -5,7 +5,7 @@
 #include <cib/detail/extend.hpp>
 
 #include <stdx/compiler.hpp>
-#include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 

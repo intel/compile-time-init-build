@@ -55,8 +55,7 @@ template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
     __attribute__((flatten, always_inline)) auto operator()() const -> void {
         constexpr static bool loggingEnabled = not Name.empty();
 
-        constexpr auto name =
-            stdx::ct_string_to_type<Name, sc::string_constant>();
+        constexpr auto name = stdx::cts_t<Name>{};
 
         if constexpr (loggingEnabled) {
             using log_spec_t = decltype(get_log_spec<inlined_func_list>());

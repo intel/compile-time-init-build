@@ -32,8 +32,7 @@ struct callback {
         if (msg::call_with_message<Msg>(matcher, data)) {
             CIB_INFO("Incoming message matched [{}], because [{}], executing "
                      "callback",
-                     stdx::ct_string_to_type<Name, sc::string_constant>(),
-                     matcher.describe());
+                     stdx::cts_t<Name>{}, matcher.describe());
             msg::call_with_message<Msg>(callable, data,
                                         std::forward<Args>(args)...);
             return true;
@@ -42,8 +41,7 @@ struct callback {
     }
 
     auto log_mismatch(auto const &data) const -> void {
-        CIB_INFO("    {} - F:({})",
-                 stdx::ct_string_to_type<Name, sc::string_constant>(),
+        CIB_INFO("    {} - F:({})", stdx::cts_t<Name>{},
                  msg::call_with_message<Msg>(
                      [&]<typename T>(T &&t) -> decltype(matcher.describe_match(
                                                 std::forward<T>(t))) {

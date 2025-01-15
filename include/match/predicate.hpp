@@ -1,7 +1,6 @@
 #pragma once
 
 #include <match/concepts.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
@@ -24,7 +23,7 @@ template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
     }
 
     [[nodiscard]] constexpr static auto describe() {
-        return stdx::ct_string_to_type<Name, sc::string_constant>();
+        return stdx::cts_t<Name>{};
     }
 
     [[nodiscard]] constexpr static auto describe_match(auto const &) {

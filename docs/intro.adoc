@@ -47,7 +47,6 @@ _cib_ contains several parts that work together:
 - xref:interrupt.adoc#_the_interrupt_library[`interrupt`]
 - xref:match.adoc#_the_match_library[`match`]
 - xref:message.adoc#_the_message_library[`message`]
-- xref:sc.adoc#_the_sc_string_constant_library[`sc` (string constant)]
 
 === Sub-library DAG
 
@@ -57,17 +56,13 @@ library that contains all the functionality.
 [mermaid, format="svg"]
 ----
 flowchart BT
-  sc(cib_sc)
   nexus(cib_nexus)
   lookup(cib_lookup)
+  log(cib_log)
+  match(cib_match)
 
   flow(cib_flow) --> nexus
   flow --> log
-
-  interrupt(cib_interrupt) --> sc
-  match(cib_match) --> sc
-  log(cib_log) --> sc
-
 
   log_fmt(cib_log_fmt) --> log
   msg(cib_msg) --> log & match
@@ -76,5 +71,6 @@ flowchart BT
   log_mipi(cib_log_mipi) --> msg
   seq(cib_seq) --> flow
 
-  cib --> interrupt & seq & log_fmt & log_mipi
+  interrupt(cib_interrupt)
+  cib(cib) --> interrupt & seq & log_fmt & log_mipi
 ----

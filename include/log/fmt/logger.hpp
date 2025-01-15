@@ -10,6 +10,7 @@
 #include <fmt/format.h>
 
 #include <chrono>
+#include <string_view>
 #include <utility>
 
 template <auto L> struct fmt::formatter<logging::level_constant<L>> {
@@ -28,8 +29,8 @@ template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
     template <logging::level L, typename Env, typename FilenameStringType,
-              typename LineNumberType, typename MsgType>
-    auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
+              typename LineNumberType, typename S>
+    auto log(FilenameStringType, LineNumberType, S const &s) -> void {
         auto const currentTime =
             std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_time)
@@ -39,10 +40,11 @@ template <typename TDestinations> struct log_handler {
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
                                  level_constant<L>{}, get_module(Env{}).value);
-                msg.apply(
-                    [&]<typename StringType>(StringType, auto const &...args) {
-                        ::fmt::format_to(out, StringType::value, args...);
-                    });
+                s.args.apply([&](auto const &...args) {
+                    constexpr auto fmtstr =
+                        std::string_view{decltype(s.str)::value};
+                    ::fmt::format_to(out, fmtstr, args...);
+                });
                 *out = '\n';
             },
             dests);

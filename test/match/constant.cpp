@@ -1,5 +1,7 @@
 #include <match/ops.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("constant fulfils matcher concepts", "[match constant]") {
@@ -12,17 +14,19 @@ TEST_CASE("constant fulfils matcher concepts", "[match constant]") {
 }
 
 TEST_CASE("constant describes itself", "[match constant]") {
+    using namespace stdx::literals;
     using A = decltype(match::always);
     using N = decltype(match::never);
-    static_assert(A{}.describe() == "true"_sc);
-    static_assert(N{}.describe() == "false"_sc);
+    static_assert(A{}.describe() == "true"_ctst);
+    static_assert(N{}.describe() == "false"_ctst);
 }
 
 TEST_CASE("constant describes a match", "[match not]") {
+    using namespace stdx::literals;
     using A = decltype(match::always);
     using N = decltype(match::never);
-    static_assert(A{}.describe_match(0) == "true"_sc);
-    static_assert(N{}.describe_match(0) == "false"_sc);
+    static_assert(A{}.describe_match(0) == "true"_ctst);
+    static_assert(N{}.describe_match(0) == "false"_ctst);
 }
 
 TEST_CASE("constant matches correctly", "[match constant]") {
