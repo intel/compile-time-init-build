@@ -29,6 +29,4 @@ template <level L>
                                     "INFO"sv, "USER1"sv, "USER2"sv, "TRACE"sv};
     return level_text[stdx::to_underlying(L)];
 }
-
-template <level L> struct level_constant : std::integral_constant<level, L> {};
 } // namespace logging

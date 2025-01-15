@@ -1,6 +1,7 @@
 #include <log/fmt/logger.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -61,49 +62,49 @@ TEST_CASE("log levels are properly represented", "[fmt_logger]") {
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::TRACE>{});
+                       stdx::ct<logging::level::TRACE>());
         CHECK(level == "TRACE");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::INFO>{});
+                       stdx::ct<logging::level::INFO>());
         CHECK(level == "INFO");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::WARN>{});
+                       stdx::ct<logging::level::WARN>());
         CHECK(level == "WARN");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::ERROR>{});
+                       stdx::ct<logging::level::ERROR>());
         CHECK(level == "ERROR");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::FATAL>{});
+                       stdx::ct<logging::level::FATAL>());
         CHECK(level == "FATAL");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::MAX>{});
+                       stdx::ct<logging::level::MAX>());
         CHECK(level == "MAX");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::USER1>{});
+                       stdx::ct<logging::level::USER1>());
         CHECK(level == "USER1");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       logging::level_constant<logging::level::USER2>{});
+                       stdx::ct<logging::level::USER2>());
         CHECK(level == "USER2");
     }
 }

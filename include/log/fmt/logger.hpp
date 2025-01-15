@@ -6,19 +6,23 @@
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/utility.hpp>
 
 #include <fmt/format.h>
 
 #include <chrono>
+#include <type_traits>
 #include <utility>
 
-template <auto L> struct fmt::formatter<logging::level_constant<L>> {
+template <logging::level L>
+struct fmt::formatter<std::integral_constant<logging::level, L>> {
     constexpr static auto parse(format_parse_context &ctx) {
         return ctx.begin();
     }
 
     template <typename FormatContext>
-    auto format(logging::level_constant<L>, FormatContext &ctx) const {
+    auto format(std::integral_constant<logging::level, L>,
+                FormatContext &ctx) const {
         return ::fmt::format_to(ctx.out(), logging::to_text<L>());
     }
 };
@@ -38,7 +42,7 @@ template <typename TDestinations> struct log_handler {
         stdx::for_each(
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
-                                 level_constant<L>{}, get_module(Env{}).value);
+                                 stdx::ct<L>(), get_module(Env{}).value);
                 msg.apply(
                     [&]<typename StringType>(StringType, auto const &...args) {
                         ::fmt::format_to(out, StringType::value, args...);
