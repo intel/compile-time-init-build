@@ -69,6 +69,16 @@ template <std::size_t... Is> struct for_each_pair<std::index_sequence<Is...>> {
                                            2 * Is + 1>::value.value>()>...>;
 };
 } // namespace detail
+
+template <typename Env = env<>>
+constexpr auto make_env = []<detail::autowrap... Args> {
+    using new_env_t = typename detail::for_each_pair<
+        std::make_index_sequence<sizeof...(Args) / 2>>::template type<Args...>;
+    return boost::mp11::mp_append<new_env_t, Env>{};
+};
+
+template <detail::autowrap... Args>
+using make_env_t = decltype(make_env<>.template operator()<Args...>());
 } // namespace logging
 
 using cib_log_env_t = logging::env<>;
@@ -82,10 +92,11 @@ using cib_log_env_t = logging::env<>;
 #endif
 
 #define CIB_LOG_ENV_DECL(...)                                                  \
-    [[maybe_unused]] typedef decltype([]<logging::detail::autowrap... Args> {  \
+    [[maybe_unused]] typedef decltype([]<logging::detail::                     \
+                                             autowrap... _env_args> {          \
         using new_env_t =                                                      \
             typename logging::detail::for_each_pair<std::make_index_sequence<  \
-                sizeof...(Args) / 2>>::template type<Args...>;                 \
+                sizeof...(_env_args) / 2>>::template type<_env_args...>;       \
         return boost::mp11::mp_append<new_env_t, cib_log_env_t>{};             \
     }.template operator()<__VA_ARGS__>()) cib_log_env_t
 

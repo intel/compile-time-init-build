@@ -1,5 +1,6 @@
 #include <cib/cib.hpp>
 #include <flow/flow.hpp>
+#include <log/level.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -37,11 +38,10 @@ constexpr auto msB = flow::milestone<"msB">();
 
 struct log_config {
     struct log_handler {
-        template <logging::level Level, typename ModuleId,
-                  typename FilenameStringType, typename LineNumberType,
-                  typename MsgType>
+        template <typename Env, typename FilenameStringType,
+                  typename LineNumberType, typename MsgType>
         auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
-            log_calls.push_back(Level);
+            log_calls.push_back(logging::get_level(Env{}).value);
         }
     };
     log_handler logger;

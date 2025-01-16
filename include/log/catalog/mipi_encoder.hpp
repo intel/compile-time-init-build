@@ -20,13 +20,13 @@
 
 namespace logging::mipi {
 namespace detail {
-template <logging::level L, typename S, typename... Args>
-constexpr auto to_message() {
+template <auto L, typename S, typename... Args> constexpr auto to_message() {
     constexpr auto s = S::value;
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
-            L, sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+            static_cast<logging::level>(L),
+            sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -103,21 +103,22 @@ using catalog_msg_t =
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
-    template <logging::level Level, typename Env, typename FilenameStringType,
+    template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
                            MsgType const &msg) -> void {
-        log_msg<Level, Env>(msg);
+        log_msg<Env>(msg);
     }
 
-    template <logging::level Level, typename Env, typename Msg>
+    template <typename Env, typename Msg>
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
-            using Message = decltype(detail::to_message<Level, S, Args...>());
+            constexpr auto L = stdx::to_underlying(get_level(Env{}).value);
+            using Message = decltype(detail::to_message<L, S, Args...>());
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
-            dispatch_message<Level>(catalog<Message>(), module<Module>(),
-                                    static_cast<std::uint32_t>(args)...);
+            dispatch_message<L>(catalog<Message>(), module<Module>(),
+                                static_cast<std::uint32_t>(args)...);
         });
     }
 
@@ -173,7 +174,7 @@ template <typename TDestinations> struct log_handler {
             dests);
     }
 
-    template <logging::level Level, std::same_as<std::uint32_t>... MsgDataTypes>
+    template <auto Level, std::same_as<std::uint32_t>... MsgDataTypes>
     ALWAYS_INLINE auto dispatch_message(string_id id,
                                         [[maybe_unused]] module_id m,
                                         MsgDataTypes... msg_data) -> void {

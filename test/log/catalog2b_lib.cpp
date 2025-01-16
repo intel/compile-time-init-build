@@ -14,6 +14,9 @@ namespace {
 struct test_log_args_destination {
     auto log_by_args(std::uint32_t, auto...) -> void { ++log_calls; }
 };
+
+using log_env2b =
+    logging::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_rt_enum_arg() -> void;
@@ -21,6 +24,6 @@ auto log_rt_enum_arg() -> void;
 auto log_rt_enum_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
     using namespace ns;
-    cfg.logger.log_msg<logging::level::TRACE, cib_log_env_t>(
+    cfg.logger.log_msg<log_env2b>(
         format("E string with {} placeholder"_sc, E::value));
 }

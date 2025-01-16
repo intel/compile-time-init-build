@@ -59,7 +59,7 @@ namespace {
 auto logged_modules = std::vector<std::string_view>{};
 
 struct log_handler {
-    template <logging::level L, typename Env, typename FilenameStringType,
+    template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
         using namespace stdx::literals;
