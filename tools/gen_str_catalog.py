@@ -32,25 +32,21 @@ def split_args(s: str) -> list[str]:
 
 
 string_re = re.compile(
-    r"sc::message<\(logging::level\)(\d+), sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
+    r"sc::message<sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
 )
 
 
 def extract_string_id(line_m):
-    levels = ["MAX", "FATAL", "ERROR", "WARN", "INFO", "USER1", "USER2", "TRACE"]
-
     catalog_type = line_m.group(1)
     string_m = string_re.match(line_m.group(3))
-    log_level = string_m.group(1)
-    arg_tuple = string_m.group(2)
-    string_tuple = string_m.group(3).replace("(char)", "")
+    arg_tuple = string_m.group(1)
+    string_tuple = string_m.group(2).replace("(char)", "")
     string_value = "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
     args = split_args(arg_tuple)
 
     return (
         (catalog_type, arg_tuple),
         dict(
-            level=levels[int(log_level)],
             msg=string_value,
             type="flow" if string_value.startswith("flow.") else "msg",
             arg_types=args,
@@ -85,7 +81,7 @@ def extract(line_num: int, line_m):
 
 
 def stable_msg_key(msg: dict):
-    return hash(msg["level"]) ^ hash(msg["msg"]) ^ hash("".join(msg["arg_types"]))
+    return hash(msg["msg"]) ^ hash("".join(msg["arg_types"]))
 
 
 def stable_module_key(module: str):

@@ -20,12 +20,11 @@
 
 namespace logging::mipi {
 namespace detail {
-template <auto L, typename S, typename... Args> constexpr auto to_message() {
+template <typename S, typename... Args> constexpr auto to_message() {
     constexpr auto s = S::value;
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
-            static_cast<logging::level>(L),
             sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
@@ -114,7 +113,7 @@ template <typename TDestinations> struct log_handler {
     ALWAYS_INLINE auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
             constexpr auto L = stdx::to_underlying(get_level(Env{}).value);
-            using Message = decltype(detail::to_message<L, S, Args...>());
+            using Message = decltype(detail::to_message<S, Args...>());
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
             dispatch_message<L>(catalog<Message>(), module<Module>(),
