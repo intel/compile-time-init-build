@@ -43,3 +43,25 @@ TEST_CASE("message with no automatically packed fields", "[relaxed_message]") {
     using expected_defn = msg::message<"msg", fixed_f>;
     static_assert(std::is_same_v<defn, expected_defn>);
 }
+
+TEST_CASE("auto field with default value", "[relaxed_message]") {
+    using defn = relaxed_message<"msg", auto_f1::with_default<42>>;
+    using expected_defn = msg::message<
+        "msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>::with_default<42>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("auto field with const default value", "[relaxed_message]") {
+    using defn = relaxed_message<"msg", auto_f1::with_const_default<42>>;
+    using expected_defn =
+        msg::message<"msg", auto_f1::located<at{
+                                0_dw, 31_msb, 0_lsb}>::with_const_default<42>>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("auto field without default value", "[relaxed_message]") {
+    using defn = relaxed_message<"msg", auto_f1::without_default>;
+    using expected_defn = msg::message<
+        "msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>::without_default>;
+    static_assert(std::is_same_v<defn, expected_defn>);
+}

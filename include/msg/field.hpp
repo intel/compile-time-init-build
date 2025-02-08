@@ -389,13 +389,19 @@ concept compatible_with_default = D::template is_compatible_value<V>;
 template <typename Name, typename T = std::uint32_t, auto... Ats>
 struct field_id_t {};
 
+template <at... Ats> struct sort_key_t {
+    constexpr static auto sort_key = std::min({Ats.sort_key()...});
+};
+template <> struct sort_key_t<> {};
+
 template <typename Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t, at... Ats>
     requires std::is_trivially_copyable_v<T>
 class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                 public detail::locator_for<Ats...>,
-                public Default {
+                public Default,
+                public sort_key_t<Ats...> {
     using spec_t = field_spec_t<Name, T, detail::field_size<Ats...>>;
     using locator_t = detail::locator_for<Ats...>;
 
@@ -412,7 +418,6 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using field_id = field_id_t<Name, T, Ats...>;
     using value_type = T;
     using matcher_t = M;
-    constexpr static auto sort_key = std::min({Ats.sort_key()...});
 
     template <stdx::range R>
     [[nodiscard]] constexpr static auto extract(R &&r) -> value_type {
@@ -511,6 +516,12 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     using shifted_by =
         field_t<Name, T, Default, M, Ats.shifted_by(unit_bit_size<Unit>(N))...>;
 
+    template <at... NewAts>
+    using located = field_t<Name, T, Default, M, NewAts...>;
+
+    constexpr static auto bitsize = sizeof(T) * CHAR_BIT;
+    using default_located = located<at{msb_t{bitsize - 1}, lsb_t{}}>;
+
     // ======================================================================
     // legacy aliases
     template <typename X> using WithMatch = with_matcher<X>;
@@ -527,13 +538,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 template <stdx::ct_string Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t>
-struct field {
-    template <at... Ats>
-    using located = detail::field_t<
-        decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T,
-        Default, M, Ats...>;
-
-    constexpr static auto bitsize = sizeof(T) * CHAR_BIT;
-    using default_located = located<at{msb_t{bitsize - 1}, lsb_t{}}>;
-};
+using field = detail::field_t<
+    decltype(stdx::ct_string_to_type<Name, sc::string_constant>()), T, Default,
+    M>;
 } // namespace msg
