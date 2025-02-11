@@ -207,7 +207,9 @@ target_sources(
               include
               FILES
               include/log/catalog/catalog.hpp
-              include/log/catalog/mipi_encoder.hpp)
+              include/log/catalog/mipi_builder.hpp
+              include/log/catalog/mipi_encoder.hpp
+              include/log/catalog/mipi_messages.hpp)
 
 add_library(cib_nexus INTERFACE)
 target_compile_features(cib_nexus INTERFACE cxx_std_20)
