@@ -6,6 +6,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -67,8 +68,7 @@ constexpr auto check = [](auto value, auto expected) {
     CHECK(value == expected);
 };
 
-constexpr auto check_at = [](stdx::span<std::uint8_t const> span, auto dw_idx,
-                             std::uint32_t expected) {
+constexpr auto check_at = [](auto span, auto dw_idx, std::uint32_t expected) {
     auto idx = dw_idx * sizeof(std::uint32_t);
     auto sz = std::min(sizeof(std::uint32_t), span.size() - idx);
 
@@ -78,13 +78,13 @@ constexpr auto check_at = [](stdx::span<std::uint8_t const> span, auto dw_idx,
 };
 
 template <std::uint32_t... Expected>
-constexpr auto check_buffer = [](stdx::span<std::uint8_t const> data) {
+constexpr auto check_buffer = [](auto data) {
     REQUIRE(data.size() > (sizeof...(Expected) - 1) * sizeof(std::uint32_t));
     auto idx = std::size_t{};
     (check_at(data, idx++, Expected), ...);
 };
 
-template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
+template <logging::level Level, auto... ExpectedArgs>
 struct test_log_args_destination {
     template <typename... Args>
     auto log_by_args(std::uint32_t header, Args... args) {
@@ -98,7 +98,8 @@ struct test_log_args_destination {
 
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_buf_destination {
-    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
+    template <std::size_t N>
+    auto log_by_buf(stdx::span<std::uint8_t const, N> data) const {
         constexpr auto Header =
             expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
         check_buffer<Header, ExpectedArgs...>(data);
@@ -115,7 +116,8 @@ struct test_log_version_destination {
         ++num_log_args_calls;
     }
 
-    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
+    template <std::size_t N>
+    auto log_by_buf(stdx::span<std::uint8_t const, N> data) const {
         check_buffer<Header, ExpectedArgs...>(data);
         ++num_log_args_calls;
     }
@@ -130,7 +132,7 @@ TEST_CASE("log zero arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, log_env>{}};
+        test_log_args_destination<logging::level::TRACE>{}};
     cfg.logger.log_msg<log_env>("Hello"_sc);
     CHECK(test_critical_section::count == 2);
 }
@@ -139,7 +141,7 @@ TEST_CASE("log one argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, log_env, 42u, 17u>{}};
+        test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(format("{}"_sc, 17u));
     CHECK(test_critical_section::count == 2);
 }
@@ -148,8 +150,7 @@ TEST_CASE("log two arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                  18u>{}};
+        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<log_env>(format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 2);
 }
@@ -180,10 +181,8 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
     auto cfg = logging::mipi::config{
-        test_log_args_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                  18u>{},
-        test_log_args_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                  18u>{}};
+        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{},
+        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
 
     cfg.logger.log_msg<log_env>(format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 4);
@@ -229,11 +228,40 @@ TEST_CASE("log version information (long with string)", "[mipi]") {
 }
 
 template <>
-inline auto logging::config<> = logging::mipi::config{
-    test_log_args_destination<logging::level::TRACE, log_env>{}};
+inline auto logging::config<> =
+    logging::mipi::config{test_log_args_destination<logging::level::TRACE>{}};
 
 TEST_CASE("injection", "[mipi]") {
     test_critical_section::count = 0;
     CIB_TRACE("Hello");
     CHECK(test_critical_section::count == 2);
+}
+
+namespace {
+int num_catalog_args_calls{};
+
+template <logging::level Level> struct test_catalog_args_destination {
+    template <typename... Args>
+    auto log_by_args(std::uint32_t header, std::uint32_t id, Args...) {
+        constexpr auto Header =
+            expected_catalog32_header(Level, test_module_id);
+        CHECK(header == Header);
+        CHECK(id == test_string_id);
+        static_assert(sizeof...(Args) == 0);
+        ++num_catalog_args_calls;
+    }
+};
+} // namespace
+
+TEST_CASE("log with overridden builder", "[mipi]") {
+    using catalog_env = logging::make_env_t<
+        logging::get_level, logging::level::TRACE, logging::mipi::get_builder,
+        logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}>;
+
+    num_catalog_args_calls = 0;
+    auto cfg = logging::mipi::config{
+        test_catalog_args_destination<logging::level::TRACE>{}};
+
+    cfg.logger.log_msg<catalog_env>("Hello"_sc);
+    CHECK(num_catalog_args_calls == 1);
 }
