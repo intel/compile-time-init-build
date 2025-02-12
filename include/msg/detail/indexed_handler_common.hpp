@@ -7,6 +7,7 @@
 #include <stdx/compiler.hpp>
 #include <stdx/ranges.hpp>
 
+#include <functional>
 #include <iterator>
 #include <type_traits>
 #include <utility>
@@ -49,9 +50,9 @@ struct indexed_handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
     handle(MsgBase const &msg, ExtraCallbackArgs... args) const -> bool final {
         auto const callback_candidates = index(msg);
 
-        bool handled{};
-        for_each([&](auto i) { handled |= callback_entries[i](msg, args...); },
-                 callback_candidates);
+        bool const handled = transform_reduce(
+            [&](auto i) -> bool { return callback_entries[i](msg, args...); },
+            std::logical_or{}, false, callback_candidates);
 
         if (not handled) {
             CIB_ERROR("None of the registered callbacks claimed this message.");
