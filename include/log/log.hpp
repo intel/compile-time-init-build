@@ -1,6 +1,7 @@
 #pragma once
 
 #include <log/env.hpp>
+#include <log/flavor.hpp>
 #include <log/level.hpp>
 #include <log/module.hpp>
 #include <sc/format.hpp>
@@ -9,6 +10,8 @@
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
+#include <stdx/type_traits.hpp>
+#include <stdx/utility.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -35,35 +38,33 @@ struct config {
 
 template <typename...> inline auto config = null::config{};
 
-struct default_flavor_t;
-
-template <typename Flavor, typename... Ts>
+template <typename Env, typename... Ts>
 ALWAYS_INLINE constexpr static auto get_config() -> auto & {
-    if constexpr (std::same_as<Flavor, default_flavor_t>) {
+    using flavor_t = typename decltype(get_flavor(Env{}).value)::type;
+    if constexpr (std::same_as<flavor_t, default_flavor_t>) {
         return config<Ts...>;
     } else {
-        return config<Flavor, Ts...>;
+        return config<flavor_t, Ts...>;
     }
 }
 
-template <typename Flavor, typename Env, typename... Ts, typename... TArgs>
+template <typename Env, typename... Ts, typename... TArgs>
 ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
-    auto &cfg = get_config<Flavor, Ts...>();
+    auto &cfg = get_config<Env, Ts...>();
     cfg.logger.template log<Env>(std::forward<TArgs>(args)...);
 }
 } // namespace logging
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#define CIB_LOG(FLAVOR, MSG, ...)                                              \
-    logging::log<FLAVOR, cib_log_env_t>(                                       \
+#define CIB_LOG(MSG, ...)                                                      \
+    logging::log<cib_log_env_t>(                                               \
         __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
 
-#define CIB_LOG_WITH_LEVEL(LEVEL, ...)                                         \
-    do {                                                                       \
-        CIB_LOG_ENV(logging::get_level, LEVEL);                                \
-        CIB_LOG(logging::default_flavor_t __VA_OPT__(, ) __VA_ARGS__);         \
-    } while (false)
+#define CIB_LOG_WITH_LEVEL(LEVEL, MSG, ...)                                    \
+    logging::log<                                                              \
+        logging::extend_env_t<cib_log_env_t, logging::get_level, LEVEL>>(      \
+        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
 
 #define CIB_TRACE(...)                                                         \
     CIB_LOG_WITH_LEVEL(logging::level::TRACE __VA_OPT__(, ) __VA_ARGS__)
@@ -77,8 +78,7 @@ ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
 #define CIB_FATAL(MSG, ...)                                                    \
     [](auto &&str) {                                                           \
         CIB_LOG_ENV(logging::get_level, logging::level::FATAL);                \
-        logging::log<logging::default_flavor_t, cib_log_env_t>(__FILE__,       \
-                                                               __LINE__, str); \
+        logging::log<cib_log_env_t>(__FILE__, __LINE__, str);                  \
         FWD(str).apply([]<typename S, typename... Args>(S s, Args... args) {   \
             constexpr auto cts = stdx::ct_string_from_type(s);                 \
             stdx::panic<cts>(args...);                                         \
@@ -89,9 +89,9 @@ ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
 
 namespace logging {
-template <typename Flavor, typename... Ts>
+template <typename Env, typename... Ts>
 ALWAYS_INLINE static auto log_version() -> void {
-    auto &l_cfg = get_config<Flavor, Ts...>();
+    auto &l_cfg = get_config<Env, Ts...>();
     auto &v_cfg = ::version::config<Ts...>;
     if constexpr (requires {
                       l_cfg.logger.template log_build<v_cfg.build_id,
@@ -109,7 +109,9 @@ ALWAYS_INLINE static auto log_version() -> void {
 }
 } // namespace logging
 
-#define CIB_LOG_V(FLAVOR) logging::log_version<FLAVOR>()
+#define CIB_LOG_V(FLAVOR)                                                      \
+    logging::log_version<logging::extend_env_t<                                \
+        cib_log_env_t, logging::get_flavor, stdx::type_identity<FLAVOR>{}>>()
 #define CIB_LOG_VERSION() CIB_LOG_V(logging::default_flavor_t)
 
 // NOLINTEND(cppcoreguidelines-macro-usage)
