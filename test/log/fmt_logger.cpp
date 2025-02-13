@@ -1,6 +1,7 @@
 #include <log/fmt/logger.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -161,16 +162,23 @@ template <>
 inline auto logging::config<secure_t> =
     logging::fmt::config{std::back_inserter(secure_buffer)};
 
+#define SECURE_TRACE(MSG, ...)                                                 \
+    logging::log<logging::extend_env_t<                                        \
+        cib_log_env_t, logging::get_level, logging::level::TRACE,              \
+        logging::get_flavor, stdx::type_identity<secure_t>{}>>(                \
+        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+
 TEST_CASE("logging can be flavored", "[fmt_logger]") {
-    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     buffer.clear();
     secure_buffer.clear();
-    CIB_LOG(secure_t, "Hello");
+    SECURE_TRACE("Hello");
     CAPTURE(secure_buffer);
     CHECK(secure_buffer.substr(secure_buffer.size() - std::size("Hello")) ==
           "Hello\n");
     CHECK(buffer.empty());
 }
+
+#undef SECURE_TRACE
 
 TEST_CASE("log version can be flavored", "[fmt_logger]") {
     buffer.clear();
