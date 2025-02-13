@@ -2,6 +2,7 @@
 
 #include <log/env.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <array>

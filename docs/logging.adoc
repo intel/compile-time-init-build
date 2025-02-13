@@ -86,8 +86,7 @@ implementation is a matter of defining this structure appropriately.
 ----
 struct my_logger_config {
   struct {
-    template <logging::level L, typename ModuleId,
-              typename File, typename Line, typename Msg>
+    template <typename Env, typename File, typename Line, typename Msg>
     auto log(File, Line, Msg const &msg) -> void {
       // log according to my mechanism
     }
@@ -95,9 +94,8 @@ struct my_logger_config {
 };
 ----
 
-Notice that the first two template parameters to log are the
-xref:logging.adoc#_log_levels[level] and the xref:logging.adoc#_modules[module
-ID]. The `ModuleId` type is a xref:sc.adoc#_string_constants[compile-time string].
+Notice that the first template parameters to log is the
+xref:logging.adoc#_logging_environments[environment].
 
 The first two runtime parameters receive preprocessor `\_​_FILE_​\_` and `__LINE_​_` values
 respectively. The `msg` argument is a structure containing a
@@ -109,8 +107,7 @@ way to implement `log` is:
 ----
 struct my_logger_config {
   struct {
-    template <logging::level L, typename ModuleId,
-              typename File, typename Line, typename Msg>
+    template <typename Env, typename File, typename Line, typename Msg>
     auto log(File, Line, Msg const &msg) -> void {
       msg.apply([] <typename Str> (Str, auto const&... args) {
         std::print(Str::value, args...);
@@ -235,4 +232,48 @@ The easiest way to flavor the version logging is to define a macro in terms of
 [source,cpp]
 ----
 #define LOG_SECURE_VERSION(...) CIB_LOG_V(secure_tag)
+----
+
+=== Logging environments
+
+The logging environment is a compile-time map from types to values that allows a
+logger to look up various parameters, including the module ID, the log level,
+and the flavor. It can also be used to provide user-defined values to be
+interpreted by a logging backend.
+
+The macros that implement logging with various levels, modules, and flavors
+are implemented as environment declarations, for example:
+[source,cpp]
+----
+CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
+CIB_LOG("Hello");  // logs with TRACE level
+----
+or:
+[source,cpp]
+----
+CIB_LOG_ENV(logging::get_flavor, secure_tag);
+CIB_TRACE("Hello");  // logs with secure back end
+----
+A temporary override of values can be done with `CIB_WITH_LOG_ENV`:
+[source,cpp]
+----
+CIB_WITH LOG_ENV(logging::get_level, logging::level::TRACE,
+                 logging::get_flavor, secure_tag) {
+  CIB_LOG("Hello");  // logs a TRACE with secure back end
+}
+----
+
+To interrogate the environment from a custom logger, use the appropriate query
+on the environment.
+[source,cpp]
+----
+struct my_logger_config {
+  struct {
+    template <typename Env, typename File, typename Line, typename Msg>
+    auto log(File, Line, Msg const &msg) -> void {
+      constexpr auto level = get_level(Env{}).value;
+      // ...
+    }
+  } logger;
+};
 ----

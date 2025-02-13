@@ -77,8 +77,11 @@ constexpr auto make_env = []<detail::autowrap... Args> {
     return boost::mp11::mp_append<new_env_t, Env>{};
 };
 
+template <typename Env, detail::autowrap... Args>
+using extend_env_t = decltype(make_env<Env>.template operator()<Args...>());
+
 template <detail::autowrap... Args>
-using make_env_t = decltype(make_env<>.template operator()<Args...>());
+using make_env_t = extend_env_t<env<>, Args...>;
 } // namespace logging
 
 using cib_log_env_t = logging::env<>;
@@ -92,13 +95,9 @@ using cib_log_env_t = logging::env<>;
 #endif
 
 #define CIB_LOG_ENV_DECL(...)                                                  \
-    [[maybe_unused]] typedef decltype([]<logging::detail::                     \
-                                             autowrap... _env_args> {          \
-        using new_env_t =                                                      \
-            typename logging::detail::for_each_pair<std::make_index_sequence<  \
-                sizeof...(_env_args) / 2>>::template type<_env_args...>;       \
-        return boost::mp11::mp_append<new_env_t, cib_log_env_t>{};             \
-    }.template operator()<__VA_ARGS__>()) cib_log_env_t
+    [[maybe_unused]] typedef decltype([] {                                     \
+        return logging::extend_env_t<cib_log_env_t, __VA_ARGS__>{};            \
+    }()) cib_log_env_t
 
 #define CIB_LOG_ENV(...)                                                       \
     STDX_PRAGMA(diagnostic push)                                               \
