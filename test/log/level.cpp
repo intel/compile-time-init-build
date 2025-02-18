@@ -39,7 +39,7 @@ struct fmt::formatter<std::integral_constant<custom_level, L>> {
 TEST_CASE("fmt logger works with custom level", "[level]") {
     CIB_LOG_ENV(logging::get_level, custom_level::THE_ONE_LEVEL);
     buffer.clear();
-    CIB_LOG(logging::default_flavor_t, "Hello");
+    CIB_LOG("Hello");
     CAPTURE(buffer);
     CHECK(buffer.find("THE_ONE_LEVEL [default]:") != std::string::npos);
 }

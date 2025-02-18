@@ -135,6 +135,7 @@ target_sources(
               include
               FILES
               include/log/env.hpp
+              include/log/flavor.hpp
               include/log/level.hpp
               include/log/log.hpp
               include/log/module.hpp)
