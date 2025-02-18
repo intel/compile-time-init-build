@@ -43,13 +43,11 @@ template <typename TDestinations> struct log_handler {
 
     template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
-    ALWAYS_INLINE auto log(FilenameStringType, LineNumberType,
-                           MsgType const &msg) -> void {
+    auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
         log_msg<Env>(msg);
     }
 
-    template <typename Env, typename Msg>
-    ALWAYS_INLINE auto log_msg(Msg msg) -> void {
+    template <typename Env, typename Msg> auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
             constexpr auto L = stdx::to_underlying(get_level(Env{}).value);
             using Message = decltype(detail::to_message<S, Args...>());
@@ -93,7 +91,7 @@ template <typename TDestinations> struct log_handler {
 
   private:
     template <std::size_t N>
-    NEVER_INLINE auto write(stdx::span<std::uint8_t const, N> msg) -> void {
+    auto write(stdx::span<std::uint8_t const, N> msg) -> void {
         stdx::for_each(
             [&]<typename Dest>(Dest &dest) {
                 conc::call_in_critical_section<Dest>(
@@ -103,7 +101,7 @@ template <typename TDestinations> struct log_handler {
     }
 
     template <std::size_t N>
-    NEVER_INLINE auto write(stdx::span<std::uint32_t const, N> msg) -> void {
+    auto write(stdx::span<std::uint32_t const, N> msg) -> void {
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             stdx::for_each(
                 [&]<typename Dest>(Dest &dest) {

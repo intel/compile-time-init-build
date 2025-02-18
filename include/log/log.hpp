@@ -39,7 +39,7 @@ struct config {
 template <typename...> inline auto config = null::config{};
 
 template <typename Env, typename... Ts>
-ALWAYS_INLINE constexpr static auto get_config() -> auto & {
+constexpr static auto get_config() -> auto & {
     using flavor_t = typename decltype(get_flavor(Env{}).value)::type;
     if constexpr (std::same_as<flavor_t, default_flavor_t>) {
         return config<Ts...>;
@@ -49,7 +49,7 @@ ALWAYS_INLINE constexpr static auto get_config() -> auto & {
 }
 
 template <typename Env, typename... Ts, typename... TArgs>
-ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
+static auto log(TArgs &&...args) -> void {
     auto &cfg = get_config<Env, Ts...>();
     cfg.logger.template log<Env>(std::forward<TArgs>(args)...);
 }
@@ -89,8 +89,7 @@ ALWAYS_INLINE static auto log(TArgs &&...args) -> void {
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
 
 namespace logging {
-template <typename Env, typename... Ts>
-ALWAYS_INLINE static auto log_version() -> void {
+template <typename Env, typename... Ts> static auto log_version() -> void {
     auto &l_cfg = get_config<Env, Ts...>();
     auto &v_cfg = ::version::config<Ts...>;
     if constexpr (requires {
