@@ -1,5 +1,6 @@
 #pragma once
 
+#include <log/env.hpp>
 #include <log/log.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -7,30 +8,28 @@
 #include <type_traits>
 
 namespace flow {
-struct default_log_spec {
-    using flavor = logging::default_flavor_t;
-    constexpr static auto level = logging::level::TRACE;
-};
+using default_log_env =
+    logging::make_env_t<logging::get_level, logging::level::TRACE>;
 template <stdx::ct_string, typename...>
-constexpr auto log_spec = default_log_spec{};
+constexpr auto log_env = default_log_env{};
 
-template <stdx::ct_string Name> struct log_spec_id_t {
+template <stdx::ct_string Name> struct log_env_id_t {
     constexpr static auto ct_name = Name;
 };
 
-template <typename T, typename Fallback = log_spec_id_t<"default">,
+template <typename T, typename Fallback = log_env_id_t<"default">,
           typename... DummyArgs>
     requires(sizeof...(DummyArgs) == 0)
-constexpr static auto get_log_spec() {
-    using log_spec_t = decltype(log_spec<T::ct_name, DummyArgs...>);
-    if constexpr (std::is_same_v<log_spec_t, default_log_spec const>) {
+constexpr static auto get_log_env() {
+    using log_env_t = decltype(log_env<T::ct_name, DummyArgs...>);
+    if constexpr (std::is_same_v<log_env_t, default_log_env const>) {
         if constexpr (Fallback::ct_name == stdx::ct_string{"default"}) {
-            return log_spec<Fallback::ct_name, DummyArgs...>;
+            return log_env<Fallback::ct_name, DummyArgs...>;
         } else {
-            return get_log_spec<Fallback>();
+            return get_log_env<Fallback>();
         }
     } else {
-        return log_spec_t{};
+        return log_env_t{};
     }
 }
 } // namespace flow

@@ -50,16 +50,19 @@ struct log_config {
 
 template <> inline auto logging::config<> = log_config{};
 
-struct user1_log_spec : flow::default_log_spec {
-    constexpr static auto level = logging::level::USER1;
-};
-struct user2_log_spec : flow::default_log_spec {
-    constexpr static auto level = logging::level::USER2;
-};
-struct info_log_spec : flow::default_log_spec {
-    constexpr static auto level = logging::level::INFO;
-};
-template <> constexpr auto flow::log_spec<"default"> = info_log_spec{};
+using user1_log_env =
+    logging::extend_env_t<flow::default_log_env, logging::get_level,
+                          logging::level::USER1>;
+
+using user2_log_env =
+    logging::extend_env_t<flow::default_log_env, logging::get_level,
+                          logging::level::USER2>;
+
+using info_log_env =
+    logging::extend_env_t<flow::default_log_env, logging::get_level,
+                          logging::level::INFO>;
+
+template <> constexpr auto flow::log_env<"default"> = info_log_env{};
 
 TEST_CASE("override default log level", "[flow_custom_log_levels]") {
     run_flow<TestFlowA, cib::exports<TestFlowA>,
@@ -70,8 +73,8 @@ TEST_CASE("override default log level", "[flow_custom_log_levels]") {
                   [](auto level) { CHECK(level == logging::level::INFO); });
 }
 
-template <> constexpr auto flow::log_spec<"B"> = user1_log_spec{};
-template <> constexpr auto flow::log_spec<"msB"> = user2_log_spec{};
+template <> constexpr auto flow::log_env<"B"> = user1_log_env{};
+template <> constexpr auto flow::log_env<"msB"> = user2_log_env{};
 
 TEST_CASE("override log level by name", "[flow_custom_log_levels]") {
     run_flow<TestFlowB, cib::exports<TestFlowB>,
@@ -83,7 +86,7 @@ TEST_CASE("override log level by name", "[flow_custom_log_levels]") {
     CHECK(log_calls[2] == logging::level::USER1);
 }
 
-template <> constexpr auto flow::log_spec<"C"> = user1_log_spec{};
+template <> constexpr auto flow::log_env<"C"> = user1_log_env{};
 
 TEST_CASE("default log spec for step will use overridden log spec for flow",
           "[flow_custom_log_levels]") {
