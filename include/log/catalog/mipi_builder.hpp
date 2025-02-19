@@ -17,7 +17,7 @@ template <typename> struct builder;
 
 template <> struct builder<defn::short32_msg_t> {
     template <auto Level, std::same_as<std::uint32_t>... Ts>
-    ALWAYS_INLINE static auto build(string_id id, module_id, Ts...) {
+    static auto build(string_id id, module_id, Ts...) {
         using namespace msg;
         return owning<defn::short32_msg_t>{"payload"_field = id};
     }
@@ -25,7 +25,7 @@ template <> struct builder<defn::short32_msg_t> {
 
 template <typename Storage> struct catalog_builder {
     template <auto Level, std::same_as<std::uint32_t>... Ts>
-    ALWAYS_INLINE static auto build(string_id id, module_id m, Ts... msg_data) {
+    static auto build(string_id id, module_id m, Ts... msg_data) {
         using namespace msg;
         defn::catalog_msg_t::owner_t<Storage> message{"severity"_field = Level,
                                                       "module_id"_field = m};
@@ -48,7 +48,7 @@ template <typename Storage>
     requires std::same_as<typename Storage::value_type, std::uint32_t>
 struct catalog_builder<Storage> {
     template <auto Level, std::same_as<std::uint32_t>... Ts>
-    ALWAYS_INLINE static auto build(string_id id, module_id m, Ts... msg_data) {
+    static auto build(string_id id, module_id m, Ts... msg_data) {
         using namespace msg;
         defn::catalog_msg_t::owner_t<Storage> message{"severity"_field = Level,
                                                       "module_id"_field = m};
@@ -65,7 +65,7 @@ struct catalog_builder<Storage> {
 
 template <> struct builder<defn::catalog_msg_t> {
     template <auto Level, std::same_as<std::uint32_t>... Ts>
-    ALWAYS_INLINE static auto build(string_id id, module_id m, Ts... msg_data) {
+    static auto build(string_id id, module_id m, Ts... msg_data) {
         using namespace msg;
         if constexpr (sizeof...(Ts) <= 2u) {
             constexpr auto header_size =
@@ -89,7 +89,7 @@ template <> struct builder<defn::catalog_msg_t> {
 
 struct default_builder {
     template <auto Level, std::same_as<std::uint32_t>... Ts>
-    ALWAYS_INLINE static auto build(string_id id, module_id m, Ts... msg_data) {
+    static auto build(string_id id, module_id m, Ts... msg_data) {
         if constexpr (sizeof...(Ts) == 0u) {
             return builder<defn::short32_msg_t>{}.template build<Level>(
                 id, m, msg_data...);
