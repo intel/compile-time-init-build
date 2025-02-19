@@ -2,9 +2,6 @@
 
 #include <flow/common.hpp>
 #include <flow/log.hpp>
-#include <log/env.hpp>
-#include <log/flavor.hpp>
-#include <log/level.hpp>
 #include <log/log.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -22,13 +19,11 @@ template <stdx::ct_string FlowName, typename CTNode>
 constexpr auto run_func() -> void {
     if (CTNode::condition) {
         if constexpr (not FlowName.empty()) {
-            using log_spec_t =
-                decltype(get_log_spec<CTNode, log_spec_id_t<FlowName>>());
-            CIB_LOG_ENV(logging::get_level, log_spec_t::level,
-                        logging::get_flavor,
-                        stdx::type_identity<typename log_spec_t::flavor>{});
-            CIB_LOG("flow.{}({})", typename CTNode::type_t{},
-                    typename CTNode::name_t{});
+            logging::log<
+                decltype(get_log_env<CTNode, log_env_id_t<FlowName>>())>(
+                __FILE__, __LINE__,
+                sc::format("flow.{}({})"_sc, typename CTNode::type_t{},
+                           typename CTNode::name_t{}));
         }
         typename CTNode::func_t{}();
     }
@@ -65,21 +60,15 @@ template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
             stdx::ct_string_to_type<Name, sc::string_constant>();
 
         if constexpr (loggingEnabled) {
-            using log_spec_t = decltype(get_log_spec<inlined_func_list>());
-            CIB_LOG_ENV(logging::get_level, log_spec_t::level,
-                        logging::get_flavor,
-                        stdx::type_identity<typename log_spec_t::flavor>{});
-            CIB_LOG("flow.start({})", name);
+            logging::log<decltype(get_log_env<inlined_func_list>())>(
+                __FILE__, __LINE__, sc::format("flow.start({})"_sc, name));
         }
 
         (FuncPtrs(), ...);
 
         if constexpr (loggingEnabled) {
-            using log_spec_t = decltype(get_log_spec<inlined_func_list>());
-            CIB_LOG_ENV(logging::get_level, log_spec_t::level,
-                        logging::get_flavor,
-                        stdx::type_identity<typename log_spec_t::flavor>{});
-            CIB_LOG("flow.end({})", name);
+            logging::log<decltype(get_log_env<inlined_func_list>())>(
+                __FILE__, __LINE__, sc::format("flow.end({})"_sc, name));
         }
     }
 };
