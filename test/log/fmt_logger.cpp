@@ -63,49 +63,49 @@ TEST_CASE("log levels are properly represented", "[fmt_logger]") {
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::TRACE>());
+                       logging::level_wrapper<logging::level::TRACE>{});
         CHECK(level == "TRACE");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::INFO>());
+                       logging::level_wrapper<logging::level::INFO>{});
         CHECK(level == "INFO");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::WARN>());
+                       logging::level_wrapper<logging::level::WARN>{});
         CHECK(level == "WARN");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::ERROR>());
+                       logging::level_wrapper<logging::level::ERROR>{});
         CHECK(level == "ERROR");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::FATAL>());
+                       logging::level_wrapper<logging::level::FATAL>{});
         CHECK(level == "FATAL");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::MAX>());
+                       logging::level_wrapper<logging::level::MAX>{});
         CHECK(level == "MAX");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::USER1>());
+                       logging::level_wrapper<logging::level::USER1>{});
         CHECK(level == "USER1");
     }
     {
         std::string level{};
         fmt::format_to(std::back_inserter(level), "{}",
-                       stdx::ct<logging::level::USER2>());
+                       logging::level_wrapper<logging::level::USER2>{});
         CHECK(level == "USER2");
     }
 }
