@@ -4,31 +4,38 @@
 #include <log/log.hpp>
 #include <log/module.hpp>
 
+#include <stdx/bit.hpp>
 #include <stdx/ct_format.hpp>
-#include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
-#include <stdx/utility.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <fmt/format.h>
 
+#include <array>
 #include <chrono>
-#include <type_traits>
+#include <iterator>
+#include <string_view>
 #include <utility>
 
+namespace logging {
+template <auto> struct level_wrapper {};
+
+namespace fmt_detail {
+using namespace std::string_view_literals;
+constexpr std::array level_text{"MAX"sv,  "FATAL"sv, "ERROR"sv, "WARN"sv,
+                                "INFO"sv, "USER1"sv, "USER2"sv, "TRACE"sv};
+} // namespace fmt_detail
+
 template <logging::level L>
-struct fmt::formatter<std::integral_constant<logging::level, L>> {
-    constexpr static auto parse(format_parse_context &ctx) {
-        return ctx.begin();
-    }
+constexpr std::string_view level_text =
+    fmt_detail::level_text[stdx::to_underlying(L)];
 
-    template <typename FormatContext>
-    auto format(std::integral_constant<logging::level, L>,
-                FormatContext &ctx) const {
-        return ::fmt::format_to(ctx.out(), logging::to_text<L>());
-    }
-};
+template <logging::level L>
+[[nodiscard]] constexpr auto format_as(level_wrapper<L>) -> std::string_view {
+    return level_text<L>;
+}
 
-namespace logging::fmt {
+namespace fmt {
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
@@ -43,7 +50,8 @@ template <typename TDestinations> struct log_handler {
         stdx::for_each(
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
-                                 get_level(Env{}), get_module(Env{}).value);
+                                 level_wrapper<get_level(Env{}).value>{},
+                                 get_module(Env{}).value);
                 msg.apply(
                     [&]<typename StringType>(StringType, auto const &...args) {
                         ::fmt::format_to(out, StringType::value, args...);
@@ -65,4 +73,5 @@ template <typename... TDestinations> struct config {
 
     log_handler<destinations_tuple_t> logger;
 };
-} // namespace logging::fmt
+} // namespace fmt
+} // namespace logging

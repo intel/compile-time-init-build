@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace {
@@ -19,22 +20,17 @@ enum struct custom_level { THE_ONE_LEVEL = 5 };
 std::string buffer{};
 } // namespace
 
+namespace logging {
+template <custom_level L>
+[[nodiscard]] constexpr auto format_as(level_wrapper<L>) -> std::string_view {
+    static_assert(L == custom_level::THE_ONE_LEVEL);
+    return "THE_ONE_LEVEL";
+}
+} // namespace logging
+
 template <>
 inline auto logging::config<> =
     logging::fmt::config{std::back_inserter(buffer)};
-
-template <custom_level L>
-struct fmt::formatter<std::integral_constant<custom_level, L>> {
-    constexpr static auto parse(format_parse_context &ctx) {
-        return ctx.begin();
-    }
-
-    template <typename FormatContext>
-    auto format(std::integral_constant<custom_level, L>,
-                FormatContext &ctx) const {
-        return ::fmt::format_to(ctx.out(), stdx::enum_as_string<L>());
-    }
-};
 
 TEST_CASE("fmt logger works with custom level", "[level]") {
     CIB_LOG_ENV(logging::get_level, custom_level::THE_ONE_LEVEL);
@@ -65,4 +61,19 @@ TEST_CASE("mipi logger works with custom level", "[level]") {
     auto cfg = logging::mipi::config{test_destination{}};
     cfg.logger.log_msg<cib_log_env_t>(sc::format("Hello {} {}"_sc, 17, 42));
     CHECK(log_calls == 1);
+}
+
+namespace {
+constexpr auto MY_LEVEL = logging::level::USER1;
+}
+namespace logging {
+template <> constexpr std::string_view level_text<MY_LEVEL> = "MY_LEVEL";
+}
+
+TEST_CASE("mipi logger USER level can be renamed", "[level]") {
+    CIB_LOG_ENV(logging::get_level, MY_LEVEL);
+    buffer.clear();
+    CIB_LOG("Hello");
+    CAPTURE(buffer);
+    CHECK(buffer.find("MY_LEVEL [default]:") != std::string::npos);
 }
