@@ -195,17 +195,24 @@ def extract_enums(filename: str):
     return enums
 
 
-def write_json(messages, modules, extra_inputs: list[str], filename: str, stable_ids):
-    str_catalog = dict(messages=list(messages.values()), modules=list(modules.values()))
+def write_json(messages, modules, enums, extra_inputs: list[str], filename: str, stable_ids):
+    d = dict(messages=list(messages.values()), modules=list(modules.values()))
     for msg in stable_ids.get("messages"):
-        if not msg in str_catalog["messages"]:
-            str_catalog["messages"].append(msg)
+        if not msg in d["messages"]:
+            d["messages"].append(msg)
     for mod in stable_ids.get("modules"):
-        if not mod in str_catalog["modules"]:
-            str_catalog["modules"].append(mod)
+        if not mod in d["modules"]:
+            d["modules"].append(mod)
+
+    es = dict()
+    for (k, (_, v)) in enums.items():
+        es.update({k: {value: name for (name, value) in v.items()}})
+
+    str_catalog = dict(**d, enums=es)
     for extra in extra_inputs:
         with open(extra, "r") as f:
             str_catalog.update(json.load(f))
+
     with open(filename, "w") as f:
         json.dump(str_catalog, f, indent=4)
 
@@ -427,11 +434,8 @@ def main():
 
     check_module_limit(modules, args.module_id_max)
 
-    if args.json_output is not None:
-        write_json(messages, modules, args.json_input, args.json_output, stable_output)
-
-    if args.xml_output is not None:
-        enums = {}
+    enums = {}
+    if args.xml_output is not None or args.json_output is not None:
         if args.cpp_output is not None:
             try:
                 enums = {
@@ -452,6 +456,10 @@ def main():
         else:
             print("XML output without C++ output: enum lookup will not be available")
 
+    if args.json_output is not None:
+        write_json(messages, modules, enums, args.json_input, args.json_output, stable_output)
+
+    if args.xml_output is not None:
         write_xml(
             messages,
             modules,
