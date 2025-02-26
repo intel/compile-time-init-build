@@ -255,6 +255,12 @@ def serialize_modules(client_node: et.Element, modules):
         syst_module.text = f"<![CDATA[{m['string']}]]>"
 
 
+def arg_printf_spec(arg: str):
+    printf_dict = {"encode_32": "%d", "encode_u32": "%u",
+                   "encode_64": "%lld", "encode_u64": "%llu"}
+    return printf_dict.get(arg, "%d")
+
+
 def serialize_messages(short_node: et.Element, catalog_node: et.Element, messages):
     for msg in messages.values():
         syst_format = et.SubElement(
@@ -267,9 +273,13 @@ def serialize_messages(short_node: et.Element, catalog_node: et.Element, message
                 "EnumLookup", f'{msg["enum_lookup"][0]}:{msg["enum_lookup"][1]}'
             )
 
-        fmt_string = re.sub(r"{}", r"%d", msg["msg"])
-        if msg["arg_count"] != 0:
-            fmt_string = re.sub(r"{:(.*?)}", r"%\1", fmt_string)
+        fmt_string = msg["msg"]
+        for arg in msg["arg_types"]:
+            m = re.search(r"{:([^}]+)}", fmt_string)
+            if m:
+                fmt_string = f"{fmt_string[:m.start()]}%{m.group(1)}{fmt_string[m.end():]}"
+            else:
+                fmt_string = re.sub(r"{}", arg_printf_spec(arg), fmt_string, count = 1)
         syst_format.text = f"<![CDATA[{fmt_string}]]>"
 
 
