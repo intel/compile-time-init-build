@@ -19,8 +19,8 @@ struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
             [&](auto &callback) { return callback.is_match(msg); }, callbacks);
     }
 
-    auto handle(MsgBase const &msg,
-                ExtraCallbackArgs... args) const -> bool final {
+    auto handle(MsgBase const &msg, ExtraCallbackArgs... args) const
+        -> bool final {
         auto const found_valid_callback = stdx::apply(
             [&](auto &...cbs) -> bool {
                 return (0u | ... | cbs.handle(msg, args...));

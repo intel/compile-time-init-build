@@ -42,9 +42,10 @@ constexpr inline class index_terms_t {
 
 constexpr inline class index_not_terms_t {
     template <match::matcher M>
-    friend constexpr auto
-    tag_invoke(index_not_terms_t, M const &m, stdx::callable auto const &f,
-               std::size_t idx, bool negated = false) -> void {
+    friend constexpr auto tag_invoke(index_not_terms_t, M const &m,
+                                     stdx::callable auto const &f,
+                                     std::size_t idx, bool negated = false)
+        -> void {
         if constexpr (stdx::is_specialization_of_v<M, match::or_t> or
                       stdx::is_specialization_of_v<M, match::and_t>) {
             tag_invoke(index_not_terms_t{}, m.lhs, f, idx, negated);
@@ -67,8 +68,8 @@ constexpr inline class index_not_terms_t {
 constexpr inline class remove_terms_t {
     template <match::matcher M, typename... Fields>
     [[nodiscard]] friend constexpr auto
-    tag_invoke(remove_terms_t, M const &m,
-               [[maybe_unused]] Fields... fs) -> match::matcher auto {
+    tag_invoke(remove_terms_t, M const &m, [[maybe_unused]] Fields... fs)
+        -> match::matcher auto {
         if constexpr (stdx::is_specialization_of_v<M, match::or_t>) {
             return tag_invoke(remove_terms_t{}, m.lhs, fs...) or
                    tag_invoke(remove_terms_t{}, m.rhs, fs...);
@@ -236,16 +237,17 @@ template <typename Field, auto ExpectedValue>
 constexpr auto equal_to = equal_to_t<Field, ExpectedValue>{};
 
 template <typename Field, auto X, typename RelOp, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, equal_to_t<Field, X> const &,
-           rel_matcher_t<RelOp, Field, Y> const &) -> bool {
+[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
+                                        equal_to_t<Field, X> const &,
+                                        rel_matcher_t<RelOp, Field, Y> const &)
+    -> bool {
     return RelOp{}(X, Y);
 }
 
 template <typename Field, auto X>
 constexpr auto tag_invoke(index_terms_t, equal_to_t<Field, X> const &,
-                          stdx::callable auto const &f,
-                          std::size_t idx) -> void {
+                          stdx::callable auto const &f, std::size_t idx)
+    -> void {
     f.template operator()<Field>(idx, X);
 }
 
@@ -262,9 +264,10 @@ constexpr auto tag_invoke(index_not_terms_t, not_equal_to_t<Field, X> const &,
 }
 
 template <typename Field, auto X, typename... Fields>
-[[nodiscard]] constexpr auto
-tag_invoke(remove_terms_t, equal_to_t<Field, X> const &m,
-           std::type_identity<Fields>...) -> match::matcher auto {
+[[nodiscard]] constexpr auto tag_invoke(remove_terms_t,
+                                        equal_to_t<Field, X> const &m,
+                                        std::type_identity<Fields>...)
+    -> match::matcher auto {
     if constexpr ((std::is_same_v<Field, Fields> or ...)) {
         return match::always;
     } else {
@@ -273,9 +276,10 @@ tag_invoke(remove_terms_t, equal_to_t<Field, X> const &m,
 }
 
 template <typename Field, auto X, typename... Fields>
-[[nodiscard]] constexpr auto
-tag_invoke(remove_terms_t, not_equal_to_t<Field, X> const &m,
-           std::type_identity<Fields>...) -> match::matcher auto {
+[[nodiscard]] constexpr auto tag_invoke(remove_terms_t,
+                                        not_equal_to_t<Field, X> const &m,
+                                        std::type_identity<Fields>...)
+    -> match::matcher auto {
     if constexpr ((std::is_same_v<Field, Fields> or ...)) {
         return match::always;
     } else {
@@ -284,16 +288,18 @@ tag_invoke(remove_terms_t, not_equal_to_t<Field, X> const &m,
 }
 
 template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_t<Field, X> const &,
-           not_equal_to_t<Field, Y> const &) -> bool {
+[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
+                                        less_than_t<Field, X> const &,
+                                        not_equal_to_t<Field, Y> const &)
+    -> bool {
     return X <= Y;
 }
 
 template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_t<Field, X> const &,
-           not_equal_to_t<Field, Y> const &) -> bool {
+[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
+                                        greater_than_t<Field, X> const &,
+                                        not_equal_to_t<Field, Y> const &)
+    -> bool {
     return X >= Y;
 }
 

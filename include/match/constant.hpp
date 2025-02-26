@@ -23,8 +23,8 @@ struct always_t {
     }
 
   private:
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, auto &&,
-                                                   always_t) -> bool {
+    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, auto &&, always_t)
+        -> bool {
         return true;
     }
 };
@@ -41,13 +41,13 @@ struct never_t {
     }
 
   private:
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t,
-                                                   never_t) -> always_t {
+    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, never_t)
+        -> always_t {
         return {};
     }
 
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, never_t,
-                                                   auto &&) -> bool {
+    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, never_t, auto &&)
+        -> bool {
         return true;
     }
 };

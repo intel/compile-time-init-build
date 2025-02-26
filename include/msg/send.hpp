@@ -117,9 +117,8 @@ template <stdx::ct_string Name, typename... RecvArgs, typename F,
 
 template <stdx::ct_string Name, _send_recv::valid_send_action S, typename F,
           typename... Args>
-[[nodiscard]] constexpr auto then_receive(S &&s, F &&f,
-                                          Args &&...args) -> async::sender
-    auto {
+[[nodiscard]] constexpr auto then_receive(S &&s, F &&f, Args &&...args)
+    -> async::sender auto {
     return std::forward<S>(s) |
            then_receive<Name>(std::forward<F>(f), std::forward<Args>(args)...);
 }

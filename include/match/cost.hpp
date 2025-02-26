@@ -7,8 +7,8 @@
 
 namespace match {
 constexpr inline class cost_t {
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(cost_t, auto const &) -> std::size_t {
+    [[nodiscard]] friend constexpr auto tag_invoke(cost_t, auto const &)
+        -> std::size_t {
         return 1u;
     }
 

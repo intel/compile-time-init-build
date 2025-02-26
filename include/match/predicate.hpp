@@ -18,8 +18,8 @@ template <stdx::ct_string Name, stdx::callable P> struct predicate_t {
     constexpr predicate_t() = default;
     constexpr explicit(true) predicate_t(P) {}
 
-    [[nodiscard]] constexpr auto
-    operator()(auto const &event) const -> decltype(pred(event)) {
+    [[nodiscard]] constexpr auto operator()(auto const &event) const
+        -> decltype(pred(event)) {
         return pred(event);
     }
 

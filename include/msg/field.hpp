@@ -106,13 +106,13 @@ struct bits_locator_t {
             Index * sizeof(std::uint32_t) / sizeof(elem_t);
 
         constexpr auto elem_size = stdx::bit_size<elem_t>();
-        constexpr auto max_idx = BaseIndex + Msb / elem_size;
-        constexpr auto min_idx = BaseIndex + Lsb / elem_size;
+        constexpr auto max_idx = BaseIndex + (Msb / elem_size);
+        constexpr auto min_idx = BaseIndex + (Lsb / elem_size);
 
         constexpr auto f =
             []<auto CurrentMsb, typename Rng>([[maybe_unused]] auto recurse,
                                               Rng &&rng, T value) -> T {
-            constexpr auto current_idx = BaseIndex + CurrentMsb / elem_size;
+            constexpr auto current_idx = BaseIndex + (CurrentMsb / elem_size);
             if constexpr (current_idx == max_idx and current_idx == min_idx) {
                 constexpr auto mask =
                     stdx::bit_mask<T, CurrentMsb % elem_size>();
@@ -126,7 +126,7 @@ struct bits_locator_t {
                 constexpr auto mask =
                     stdx::bit_mask<T, CurrentMsb % elem_size>();
                 constexpr auto NewMsb =
-                    (CurrentMsb / elem_size) * elem_size - 1u;
+                    (CurrentMsb / elem_size * elem_size) - 1u;
                 MUSTTAIL return recurse.template operator()<NewMsb>(
                     recurse, std::forward<Rng>(rng),
                     std::forward<Rng>(rng)[current_idx] & mask);
@@ -152,13 +152,13 @@ struct bits_locator_t {
             Index * sizeof(std::uint32_t) / sizeof(elem_t);
 
         constexpr auto elem_size = stdx::bit_size<elem_t>();
-        [[maybe_unused]] constexpr auto min_idx = BaseIndex + Lsb / elem_size;
-        [[maybe_unused]] constexpr auto max_idx = BaseIndex + Msb / elem_size;
+        [[maybe_unused]] constexpr auto min_idx = BaseIndex + (Lsb / elem_size);
+        [[maybe_unused]] constexpr auto max_idx = BaseIndex + (Msb / elem_size);
 
         constexpr auto f =
             []<auto CurrentLsb, typename Rng>([[maybe_unused]] auto recurse,
                                               Rng &&rng, T value) -> void {
-            constexpr auto current_idx = BaseIndex + CurrentLsb / elem_size;
+            constexpr auto current_idx = BaseIndex + (CurrentLsb / elem_size);
 
             if constexpr (current_idx == max_idx) {
                 constexpr auto lsb = CurrentLsb % elem_size;
@@ -242,8 +242,8 @@ template <bits_locator... BLs> struct field_locator_t {
     }
 
     template <field_spec Spec, stdx::range R>
-    constexpr static auto insert(R &&r,
-                                 typename Spec::type const &value) -> void {
+    constexpr static auto insert(R &&r, typename Spec::type const &value)
+        -> void {
         using raw_t = integral_type_for<typename Spec::type>;
         auto raw = stdx::bit_cast<raw_t>(value);
         auto const insert_bits = [&]<bits_locator B>() {
@@ -324,8 +324,8 @@ struct at {
           lsb_{unit_bit_size<std::uint8_t>(stdx::to_underlying(bi)) +
                stdx::to_underlying(l)} {}
 
-    [[nodiscard]] constexpr auto
-    index() const -> std::underlying_type_t<lsb_t> {
+    [[nodiscard]] constexpr auto index() const
+        -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_) / 32u;
     }
     [[nodiscard]] constexpr auto lsb() const -> std::underlying_type_t<lsb_t> {
@@ -338,8 +338,8 @@ struct at {
         return size() <= 64 and
                stdx::to_underlying(msb_) >= stdx::to_underlying(lsb_);
     }
-    [[nodiscard]] constexpr auto
-    sort_key() const -> std::underlying_type_t<lsb_t> {
+    [[nodiscard]] constexpr auto sort_key() const
+        -> std::underlying_type_t<lsb_t> {
         return stdx::to_underlying(lsb_);
     }
     [[nodiscard]] constexpr auto shifted_by(auto n) const -> at {

@@ -15,8 +15,8 @@ template <std::size_t MaxSize> struct linear_search_lookup {
         using key_type = typename Input::key_type;
         using value_type = typename Input::value_type;
 
-        [[nodiscard]] constexpr auto
-        operator[](key_type key) const -> value_type {
+        [[nodiscard]] constexpr auto operator[](key_type key) const
+            -> value_type {
             value_type result = this->default_value;
             for (auto [k, v] : this->entries) {
                 result = detail::select(key, k, v, result);

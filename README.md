@@ -32,7 +32,7 @@ to implement *cib* and others extend *cib*.
 ## Compiler/Standard support
 
 The main branch of *cib* currently uses C++20 and is tested with:
-- Clang 14 thru 18
+- Clang 14 thru 19
 - GCC 12 thru 13
 
 An older version of *cib* that uses C++17 is tagged at v1.7.0. It
