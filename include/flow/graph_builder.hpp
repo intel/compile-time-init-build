@@ -35,8 +35,8 @@ concept is_output_compatible = requires(CTNode n) {
 
 template <typename T> using name_for = typename T::name_t;
 
-[[nodiscard]] constexpr auto edge_size(auto const &nodes,
-                                       auto const &edges) -> std::size_t {
+[[nodiscard]] constexpr auto edge_size(auto const &nodes, auto const &edges)
+    -> std::size_t {
     auto const edge_capacities = transform(
         [&]<typename N>(N const &) {
             return edges.fold_left(
@@ -134,8 +134,8 @@ struct graph_builder {
     }
 
     template <typename Output, typename Graph>
-    [[nodiscard]] constexpr static auto
-    topo_sort(Graph &g) -> std::optional<Output> {
+    [[nodiscard]] constexpr static auto topo_sort(Graph &g)
+        -> std::optional<Output> {
         stdx::cx_vector<typename Graph::key_type, Graph::capacity()>
             ordered_list{};
 

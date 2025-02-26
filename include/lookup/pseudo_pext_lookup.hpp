@@ -159,8 +159,8 @@ constexpr auto keys_are_unique(std::array<T, S> const &keys) -> bool {
 }
 
 template <typename T, std::size_t S>
-constexpr auto with_mask(T const mask,
-                         std::array<T, S> const &keys) -> std::array<T, S> {
+constexpr auto with_mask(T const mask, std::array<T, S> const &keys)
+    -> std::array<T, S> {
     std::array<T, S> new_keys{};
 
     std::transform(keys.begin(), keys.end(), new_keys.begin(),
@@ -182,9 +182,9 @@ constexpr auto get_keys(std::array<entry<T, V>, S> const &entries) {
 }
 
 template <typename T, std::size_t S>
-constexpr auto
-remove_cheapest_bit(detail::raw_integral_t<T> mask,
-                    std::array<T, S> keys) -> detail::raw_integral_t<T> {
+constexpr auto remove_cheapest_bit(detail::raw_integral_t<T> mask,
+                                   std::array<T, S> keys)
+    -> detail::raw_integral_t<T> {
     using raw_t = detail::raw_integral_t<T>;
 
     auto const t_digits = std::numeric_limits<raw_t>::digits;
@@ -287,8 +287,8 @@ struct pseudo_pext_lookup {
         constexpr static Value default_value = Default::value;
         Storage storage;
 
-        [[nodiscard]] constexpr auto
-        operator[](key_type key) const -> value_type {
+        [[nodiscard]] constexpr auto operator[](key_type key) const
+            -> value_type {
             auto const raw_key = detail::as_raw_integral(key);
             auto const e = storage[pext_func(raw_key)];
 
@@ -326,8 +326,8 @@ struct pseudo_pext_lookup {
         LookupTable lookup_table;
         Storage storage;
 
-        [[nodiscard]] constexpr auto
-        operator[](key_type key) const -> value_type {
+        [[nodiscard]] constexpr auto operator[](key_type key) const
+            -> value_type {
             auto const raw_key = detail::as_raw_integral(key);
             auto i = lookup_table[pext_func(raw_key)];
 

@@ -11,7 +11,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   BUILD_TYPE: Release
-  LLVM_VERSION: 18
+  LLVM_VERSION: 19
 
 jobs:
   performance_test:

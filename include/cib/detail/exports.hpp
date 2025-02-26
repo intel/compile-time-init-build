@@ -12,13 +12,13 @@ template <typename ServiceT, typename BuilderT> struct service_entry {
 };
 
 template <typename... Services> struct exports : public detail::config_item {
-    [[nodiscard]] constexpr auto
-    extends_tuple() const -> stdx::tuple<extend<Services>...> {
+    [[nodiscard]] constexpr auto extends_tuple() const
+        -> stdx::tuple<extend<Services>...> {
         return {extend<Services>{}...};
     }
 
-    [[nodiscard]] constexpr auto
-    exports_tuple() const -> stdx::tuple<Services...> {
+    [[nodiscard]] constexpr auto exports_tuple() const
+        -> stdx::tuple<Services...> {
         return {};
     }
 };

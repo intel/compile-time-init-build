@@ -30,8 +30,8 @@ template <match::matcher M>
 }
 
 template <match::matcher L, match::matcher R>
-[[nodiscard]] constexpr auto
-operator<=>(L const &lhs, R const &rhs) -> std::partial_ordering {
+[[nodiscard]] constexpr auto operator<=>(L const &lhs, R const &rhs)
+    -> std::partial_ordering {
     auto const l = match::simplify(lhs);
     auto const r = match::simplify(rhs);
     auto const x = match::implies(l, r);

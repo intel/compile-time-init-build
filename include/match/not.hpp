@@ -44,13 +44,14 @@ template <matcher M> struct not_t {
         }
     }
 
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(cost_t, std::type_identity<not_t>) -> std::size_t {
+    [[nodiscard]] friend constexpr auto tag_invoke(cost_t,
+                                                   std::type_identity<not_t>)
+        -> std::size_t {
         return cost(std::type_identity<M>{}) + 1u;
     }
 
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t,
-                                                   not_t const &n) -> M {
+    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, not_t const &n)
+        -> M {
         return n.m;
     }
 

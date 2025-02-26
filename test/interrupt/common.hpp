@@ -26,8 +26,8 @@ struct test_hal {
     }
 
     template <interrupt::status_policy P>
-    static auto run(interrupt::irq_num_t,
-                    stdx::invocable auto const &isr) -> void {
+    static auto run(interrupt::irq_num_t, stdx::invocable auto const &isr)
+        -> void {
         P::run([] {}, [&] { isr(); });
     }
 };
@@ -48,8 +48,8 @@ struct test_nexus {
 
 template <auto> struct enable_field_t {
     static inline bool value{};
-    constexpr friend auto operator==(enable_field_t,
-                                     enable_field_t) -> bool = default;
+    constexpr friend auto operator==(enable_field_t, enable_field_t)
+        -> bool = default;
 };
 template <auto> struct status_field_t {
     static inline bool value{};

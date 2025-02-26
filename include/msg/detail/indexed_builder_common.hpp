@@ -141,8 +141,8 @@ struct indexed_builder_base {
                       ExtraCallbackArgs...>{new_callbacks};
     }
 
-    using callback_func_t = auto (*)(MsgBase const &,
-                                     ExtraCallbackArgs... args) -> bool;
+    using callback_func_t = auto (*)(MsgBase const &, ExtraCallbackArgs... args)
+        -> bool;
 
     template <typename BuilderValue, std::size_t I>
     constexpr static auto invoke_callback(MsgBase const &data,

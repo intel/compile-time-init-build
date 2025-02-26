@@ -433,13 +433,13 @@ template <stdx::ct_string Name, typename... Fields> struct message {
         using mutable_span_t =
             stdx::span<typename Span::value_type, stdx::ct_capacity_v<Span>>;
 
-        friend constexpr auto equiv(view_t lhs,
-                                    view_t<const_span_t> rhs) -> bool {
+        friend constexpr auto equiv(view_t lhs, view_t<const_span_t> rhs)
+            -> bool {
             return (... and (lhs.get(Fields{}) == rhs.get(Fields{})));
         }
 
-        friend constexpr auto equiv(view_t lhs,
-                                    view_t<mutable_span_t> rhs) -> bool {
+        friend constexpr auto equiv(view_t lhs, view_t<mutable_span_t> rhs)
+            -> bool {
             return equiv(lhs, rhs.as_const_view());
         }
     };
@@ -522,8 +522,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
                       "Fields overflow message storage!");
         storage_t storage{};
 
-        friend constexpr auto operator==(owner_t const &,
-                                         owner_t const &) -> bool {
+        friend constexpr auto operator==(owner_t const &, owner_t const &)
+            -> bool {
             static_assert(stdx::always_false_v<Storage>,
                           "Equality is not defined for messages: "
                           "consider using equivalent() instead.");
@@ -571,9 +571,8 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     view_t(stdx::span<T, N>, auto &&...) -> view_t<stdx::span<T, N>>;
 
     template <typename S>
-    view_t(owner_t<S> const &)
-        -> view_t<
-            stdx::span<typename S::value_type const, stdx::ct_capacity_v<S>>>;
+    view_t(owner_t<S> const &) -> view_t<
+        stdx::span<typename S::value_type const, stdx::ct_capacity_v<S>>>;
     template <typename S>
     view_t(owner_t<S> &, auto &&...)
         -> view_t<stdx::span<typename S::value_type, stdx::ct_capacity_v<S>>>;

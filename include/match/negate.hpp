@@ -9,8 +9,8 @@ template <matcher> struct not_t;
 
 constexpr inline class negate_t {
     template <matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t,
-                                                   M const &m) -> not_t<M> {
+    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, M const &m)
+        -> not_t<M> {
         return {m};
     }
 

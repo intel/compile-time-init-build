@@ -9,8 +9,8 @@ namespace lookup {
 template <typename...> struct strategies;
 
 template <> struct strategies<> {
-    [[nodiscard]] CONSTEVAL static auto
-    make(compile_time auto) -> strategy_failed_t {
+    [[nodiscard]] CONSTEVAL static auto make(compile_time auto)
+        -> strategy_failed_t {
         return {};
     }
 };

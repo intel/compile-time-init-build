@@ -23,8 +23,9 @@ struct rt_step {
     log_func_ptr log_name{};
 
   private:
-    [[nodiscard]] constexpr friend auto
-    operator==(rt_step const &, rt_step const &) -> bool = default;
+    [[nodiscard]] constexpr friend auto operator==(rt_step const &,
+                                                   rt_step const &)
+        -> bool = default;
 };
 
 template <stdx::ct_string Name, bool IsReference = true>

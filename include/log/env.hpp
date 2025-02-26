@@ -66,7 +66,7 @@ template <std::size_t... Is> struct for_each_pair<std::index_sequence<Is...>> {
         prop<boost::mp11::mp_at_c<boost::mp11::mp_list<wrap<Args>...>,
                                   2 * Is>::value.value,
              stdx::ct<boost::mp11::mp_at_c<boost::mp11::mp_list<wrap<Args>...>,
-                                           2 * Is + 1>::value.value>()>...>;
+                                           (2 * Is) + 1>::value.value>()>...>;
 };
 } // namespace detail
 
