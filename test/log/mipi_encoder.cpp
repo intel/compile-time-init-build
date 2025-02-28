@@ -66,6 +66,7 @@ struct test_conc_policy {
 int num_log_args_calls{};
 
 constexpr auto check = [](auto value, auto expected) {
+    // static_assert(std::is_same_v<decltype(value), decltype(expected)>);
     CHECK(value == expected);
 };
 
@@ -129,6 +130,19 @@ using log_env = logging::make_env_t<logging::get_level, logging::level::TRACE>;
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
+TEST_CASE("argument packing", "[mipi]") {
+    static_assert(std::same_as<logging::mipi::pack_as_t<std::int32_t>, int>);
+    static_assert(
+        std::same_as<logging::mipi::pack_as_t<std::uint32_t>, unsigned int>);
+    static_assert(
+        std::same_as<logging::mipi::pack_as_t<std::int64_t>, long long>);
+    static_assert(std::same_as<logging::mipi::pack_as_t<std::uint64_t>,
+                               unsigned long long>);
+    static_assert(std::same_as<logging::mipi::pack_as_t<char>, int>);
+    static_assert(
+        std::same_as<logging::mipi::pack_as_t<unsigned char>, unsigned int>);
+}
+
 TEST_CASE("log zero arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
@@ -138,12 +152,23 @@ TEST_CASE("log zero arguments", "[mipi]") {
     CHECK(test_critical_section::count == 2);
 }
 
-TEST_CASE("log one argument", "[mipi]") {
+TEST_CASE("log one 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::mipi::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(format("{}"_sc, 17u));
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("log one 64-bit argument", "[mipi]") {
+    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
+    test_critical_section::count = 0;
+    auto x = std::uint64_t{0x1234'5678'90ab'cdefull};
+    auto cfg = logging::mipi::config{
+        test_log_args_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
+                                  0x1234'5678u>{}};
+    cfg.logger.log_msg<log_env>(format("{}"_sc, x));
     CHECK(test_critical_section::count == 2);
 }
 

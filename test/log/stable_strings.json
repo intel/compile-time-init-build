@@ -1,7 +1,6 @@
 {
     "messages": [
         {
-            "level": "TRACE",
             "msg": "An old string that can't be reused",
             "type": "msg",
             "arg_types": [],
@@ -9,7 +8,6 @@
             "id": 0
         },
         {
-            "level": "TRACE",
             "msg": "A string with no placeholders",
             "type": "msg",
             "arg_types": [],

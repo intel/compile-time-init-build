@@ -25,7 +25,7 @@ function(gen_str_catalog)
         if(${lib_type} STREQUAL OBJECT_LIBRARY)
             add_custom_command(
                 OUTPUT ${UNDEF}
-                DEPENDS ${LIB}
+                DEPENDS $<TARGET_OBJECTS:${LIB}>
                 COMMAND ${CMAKE_NM} -uC "$<TARGET_OBJECTS:${LIB}>" > "${UNDEF}"
                 COMMAND_EXPAND_LISTS)
         else()
@@ -82,6 +82,7 @@ function(gen_str_catalog)
             ${GUID_MASK_ARG} ${MODULE_ID_MAX_ARG}
         DEPENDS ${UNDEFS} ${INPUT_JSON} ${SC_GEN_STR_CATALOG} ${STABLE_JSON}
         COMMAND_EXPAND_LISTS)
+
     if(SC_OUTPUT_LIB)
         add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})
         target_link_libraries(${SC_OUTPUT_LIB} PUBLIC cib)
