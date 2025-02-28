@@ -15,8 +15,7 @@ struct test_log_args_destination {
     auto log_by_args(std::uint32_t, auto...) -> void { ++log_calls; }
 };
 
-using log_env2b =
-    logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env2b = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_rt_enum_arg() -> void;

@@ -19,8 +19,7 @@ struct test_log_args_destination {
     }
 };
 
-using log_env2a =
-    logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env2a = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_two_rt_args() -> void;

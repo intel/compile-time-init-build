@@ -50,8 +50,8 @@ template <typename TDestinations> struct log_handler {
         stdx::for_each(
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
-                                 level_wrapper<get_level(Env{}).value>{},
-                                 get_module(Env{}).value);
+                                 level_wrapper<get_level(Env{})>{},
+                                 get_module(Env{}));
                 msg.apply(
                     [&]<typename StringType>(StringType, auto const &...args) {
                         ::fmt::format_to(out, StringType::value, args...);

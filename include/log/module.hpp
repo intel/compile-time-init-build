@@ -18,7 +18,7 @@ namespace logging {
 
     CONSTEVAL auto operator()(auto &&) const {
         using namespace stdx::literals;
-        return "default"_ctst;
+        return "default"_cts;
     }
 } get_module;
 } // namespace logging

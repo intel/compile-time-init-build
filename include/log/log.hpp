@@ -40,7 +40,7 @@ template <typename...> inline auto config = null::config{};
 
 template <typename Env, typename... Ts>
 constexpr static auto get_config() -> auto & {
-    using flavor_t = typename decltype(get_flavor(Env{}).value)::type;
+    using flavor_t = typename decltype(get_flavor(Env{}))::type;
     if constexpr (std::same_as<flavor_t, default_flavor_t>) {
         return config<Ts...>;
     } else {
@@ -63,7 +63,7 @@ static auto log(TArgs &&...args) -> void {
 
 #define CIB_LOG_WITH_LEVEL(LEVEL, MSG, ...)                                    \
     logging::log<                                                              \
-        logging::extend_env_t<cib_log_env_t, logging::get_level, LEVEL>>(      \
+        stdx::extend_env_t<cib_log_env_t, logging::get_level, LEVEL>>(         \
         __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
 
 #define CIB_TRACE(...)                                                         \
@@ -109,7 +109,7 @@ template <typename Env, typename... Ts> static auto log_version() -> void {
 } // namespace logging
 
 #define CIB_LOG_V(FLAVOR)                                                      \
-    logging::log_version<logging::extend_env_t<                                \
+    logging::log_version<stdx::extend_env_t<                                   \
         cib_log_env_t, logging::get_flavor, stdx::type_identity<FLAVOR>{}>>()
 #define CIB_LOG_VERSION() CIB_LOG_V(logging::default_flavor_t)
 

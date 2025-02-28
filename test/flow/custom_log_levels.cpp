@@ -41,7 +41,7 @@ struct log_config {
         template <typename Env, typename FilenameStringType,
                   typename LineNumberType, typename MsgType>
         auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
-            log_calls.push_back(logging::get_level(Env{}).value);
+            log_calls.push_back(logging::get_level(Env{}));
         }
     };
     log_handler logger;
@@ -51,16 +51,16 @@ struct log_config {
 template <> inline auto logging::config<> = log_config{};
 
 using user1_log_env =
-    logging::extend_env_t<flow::default_log_env, logging::get_level,
-                          logging::level::USER1>;
+    stdx::extend_env_t<flow::default_log_env, logging::get_level,
+                       logging::level::USER1>;
 
 using user2_log_env =
-    logging::extend_env_t<flow::default_log_env, logging::get_level,
-                          logging::level::USER2>;
+    stdx::extend_env_t<flow::default_log_env, logging::get_level,
+                       logging::level::USER2>;
 
 using info_log_env =
-    logging::extend_env_t<flow::default_log_env, logging::get_level,
-                          logging::level::INFO>;
+    stdx::extend_env_t<flow::default_log_env, logging::get_level,
+                       logging::level::INFO>;
 
 template <> constexpr auto flow::log_env<"default"> = info_log_env{};
 

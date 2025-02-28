@@ -18,7 +18,7 @@ struct test_log_args_destination {
     }
 };
 
-using log_env1 = logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env1 = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_zero_args() -> void;

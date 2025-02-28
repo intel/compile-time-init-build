@@ -132,8 +132,6 @@ struct default_builder {
         return std::forward<T>(t).query(*this);
     }
 
-    CONSTEVAL auto operator()(auto &&) const {
-        return stdx::ct<default_builder{}>();
-    }
+    CONSTEVAL auto operator()(auto &&) const { return default_builder{}; }
 } get_builder;
 } // namespace logging::mipi

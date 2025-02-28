@@ -18,7 +18,7 @@ struct default_flavor_t;
     }
 
     CONSTEVAL auto operator()(auto &&) const {
-        return stdx::ct<stdx::type_identity<default_flavor_t>{}>();
+        return stdx::type_identity<default_flavor_t>{};
     }
 } get_flavor;
 } // namespace logging

@@ -49,16 +49,15 @@ struct test_conc_policy {
     return (static_cast<std::uint32_t>(test_string_id) << 4u) | 0x1u;
 }
 
-[[maybe_unused]] constexpr auto expected_catalog32_header(logging::level level,
-                                                          module_id m)
-    -> std::uint32_t {
+[[maybe_unused]] constexpr auto
+expected_catalog32_header(logging::level level, module_id m) -> std::uint32_t {
     return (0x1u << 24u) | (m << 16u) |
            (static_cast<std::uint32_t>(level) << 4u) | 0x3u;
 }
 
-[[maybe_unused]] constexpr auto expected_msg_header(logging::level level,
-                                                    module_id m, std::size_t sz)
-    -> std::uint32_t {
+[[maybe_unused]] constexpr auto
+expected_msg_header(logging::level level, module_id m,
+                    std::size_t sz) -> std::uint32_t {
     return sz > 0 ? expected_catalog32_header(level, m)
                   : expected_short32_header();
 }
@@ -125,7 +124,7 @@ struct test_log_version_destination {
     }
 };
 
-using log_env = logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
@@ -295,7 +294,7 @@ template <logging::level Level> struct test_catalog_args_destination {
 } // namespace
 
 TEST_CASE("log with overridden builder", "[mipi]") {
-    using catalog_env = logging::make_env_t<
+    using catalog_env = stdx::make_env_t<
         logging::get_level, logging::level::TRACE, logging::mipi::get_builder,
         logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}>;
 

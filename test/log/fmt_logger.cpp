@@ -163,7 +163,7 @@ inline auto logging::config<secure_t> =
     logging::fmt::config{std::back_inserter(secure_buffer)};
 
 #define SECURE_TRACE(MSG, ...)                                                 \
-    logging::log<logging::extend_env_t<                                        \
+    logging::log<stdx::extend_env_t<                                           \
         cib_log_env_t, logging::get_level, logging::level::TRACE,              \
         logging::get_flavor, stdx::type_identity<secure_t>{}>>(                \
         __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))

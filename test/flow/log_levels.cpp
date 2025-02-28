@@ -38,7 +38,7 @@ struct log_config {
         template <typename Env, typename FilenameStringType,
                   typename LineNumberType, typename MsgType>
         auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
-            log_calls.push_back(logging::get_level(Env{}).value);
+            log_calls.push_back(logging::get_level(Env{}));
         }
     };
     log_handler logger;
