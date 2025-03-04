@@ -23,7 +23,9 @@ using log_env1 = logging::make_env_t<logging::get_level, logging::level::TRACE>;
 
 auto log_zero_args() -> void;
 auto log_one_ct_arg() -> void;
-auto log_one_rt_arg() -> void;
+auto log_one_32bit_rt_arg() -> void;
+auto log_one_64bit_rt_arg() -> void;
+auto log_one_formatted_rt_arg() -> void;
 auto log_with_non_default_module_id() -> void;
 auto log_with_fixed_module_id() -> void;
 
@@ -38,9 +40,22 @@ auto log_one_ct_arg() -> void {
         format("B string with {} placeholder"_sc, "one"_sc));
 }
 
-auto log_one_rt_arg() -> void {
+auto log_one_32bit_rt_arg() -> void {
     auto cfg = logging::mipi::config{test_log_args_destination{}};
-    cfg.logger.log_msg<log_env1>(format("C string with {} placeholder"_sc, 1));
+    cfg.logger.log_msg<log_env1>(
+        format("C1 string with {} placeholder"_sc, std::int32_t{1}));
+}
+
+auto log_one_64bit_rt_arg() -> void {
+    auto cfg = logging::mipi::config{test_log_args_destination{}};
+    cfg.logger.log_msg<log_env1>(
+        format("C2 string with {} placeholder"_sc, std::int64_t{1}));
+}
+
+auto log_one_formatted_rt_arg() -> void {
+    auto cfg = logging::mipi::config{test_log_args_destination{}};
+    cfg.logger.log_msg<log_env1>(
+        format("C3 string with {:08x} placeholder"_sc, std::int32_t{1}));
 }
 
 auto log_with_non_default_module_id() -> void {

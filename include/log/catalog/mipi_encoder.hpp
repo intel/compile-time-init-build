@@ -26,7 +26,7 @@ template <typename S, typename... Args> constexpr auto to_message() {
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
-            sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+            sc::undefined<sc::args<encode_as_t<Args>...>, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -54,9 +54,8 @@ template <typename TDestinations> struct log_handler {
             using Module =
                 decltype(detail::to_module<get_module(Env{}).value>());
             auto builder = get_builder(Env{}).value;
-            write(
-                builder.template build<L>(catalog<Message>(), module<Module>(),
-                                          static_cast<std::uint32_t>(args)...));
+            write(builder.template build<L>(catalog<Message>(),
+                                            module<Module>(), args...));
         });
     }
 

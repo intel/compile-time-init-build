@@ -12,7 +12,9 @@ extern int log_calls;
 extern std::uint32_t last_header;
 extern auto log_zero_args() -> void;
 extern auto log_one_ct_arg() -> void;
-extern auto log_one_rt_arg() -> void;
+extern auto log_one_32bit_rt_arg() -> void;
+extern auto log_one_64bit_rt_arg() -> void;
+extern auto log_one_formatted_rt_arg() -> void;
 extern auto log_two_rt_args() -> void;
 extern auto log_rt_enum_arg() -> void;
 extern auto log_with_non_default_module_id() -> void;
@@ -38,10 +40,26 @@ TEST_CASE("log one compile-time argument", "[catalog]") {
     CHECK(last_header >> 4u != 0);
 }
 
-TEST_CASE("log one runtime argument", "[catalog]") {
+TEST_CASE("log one 32-bit runtime argument", "[catalog]") {
     log_calls = 0;
     test_critical_section::count = 0;
-    log_one_rt_arg();
+    log_one_32bit_rt_arg();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log one 64-bit runtime argument", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_one_64bit_rt_arg();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log one formatted runtime argument", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_one_formatted_rt_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
 }
@@ -65,7 +83,7 @@ TEST_CASE("log runtime enum argument", "[catalog]") {
 TEST_CASE("log module ids change", "[catalog]") {
     // subtype 1, severity 7, type 3
     std::uint32_t expected_static = (1u << 24u) | (7u << 4u) | 3u;
-    log_one_rt_arg();
+    log_one_32bit_rt_arg();
     CHECK((last_header & expected_static) == expected_static);
 
     auto default_header = last_header;
