@@ -9,7 +9,7 @@
 
 TEST_CASE("default log module id", "[module_id]") {
     using namespace stdx::literals;
-    static_assert(logging::get_module(cib_log_env_t{}) == "default"_ctst);
+    static_assert(logging::get_module(cib_log_env_t{}) == "default"_cts);
 }
 
 namespace ns {
@@ -17,14 +17,14 @@ CIB_LOG_MODULE("ns");
 
 TEST_CASE("log module id overridden at namespace scope", "[module_id]") {
     using namespace stdx::literals;
-    static_assert(logging::get_module(cib_log_env_t{}) == "ns"_ctst);
+    static_assert(logging::get_module(cib_log_env_t{}) == "ns"_cts);
 }
 } // namespace ns
 
 struct S {
     template <typename = void> constexpr static auto test() {
         using namespace stdx::literals;
-        static_assert(logging::get_module(cib_log_env_t{}) == "S"_ctst);
+        static_assert(logging::get_module(cib_log_env_t{}) == "S"_cts);
     }
 
     CIB_LOG_MODULE("S");
@@ -37,7 +37,7 @@ TEST_CASE("log module id overridden at class scope", "[module_id]") {
 template <typename = void> constexpr static auto func_test() {
     CIB_LOG_MODULE("fn");
     using namespace stdx::literals;
-    static_assert(logging::get_module(cib_log_env_t{}) == "fn"_ctst);
+    static_assert(logging::get_module(cib_log_env_t{}) == "fn"_cts);
 }
 
 TEST_CASE("log module id overridden at function scope", "[module_id]") {
@@ -50,6 +50,6 @@ TEST_CASE("log module id overridden at statement scope", "[module_id]") {
     {
         CIB_LOG_MODULE("statement");
         using namespace stdx::literals;
-        static_assert(logging::get_module(cib_log_env_t{}) == "statement"_ctst);
+        static_assert(logging::get_module(cib_log_env_t{}) == "statement"_cts);
     }
 }

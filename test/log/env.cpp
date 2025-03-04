@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -43,7 +44,7 @@ TEST_CASE("supplement environment", "[log_env]") {
         using namespace stdx::literals;
         CIB_LOG_ENV(logging::get_module, "hello");
         static_assert(custom(cib_log_env_t{}) == 1);
-        static_assert(logging::get_module(cib_log_env_t{}) == "hello"_ctst);
+        static_assert(logging::get_module(cib_log_env_t{}) == "hello"_cts);
     }
 }
 
@@ -52,19 +53,19 @@ TEST_CASE("multi-value environment", "[log_env]") {
 
     using namespace stdx::literals;
     static_assert(custom(cib_log_env_t{}) == 1);
-    static_assert(logging::get_module(cib_log_env_t{}) == "hello"_ctst);
+    static_assert(logging::get_module(cib_log_env_t{}) == "hello"_cts);
 }
 
 namespace {
-auto logged_modules = std::vector<std::string_view>{};
+auto logged_modules = std::vector<std::string>{};
 
 struct log_handler {
     template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
         using namespace stdx::literals;
-        logged_modules.push_back(
-            std::string_view{logging::get_module(Env{}).value});
+        logged_modules.emplace_back(
+            std::string_view{logging::get_module(Env{})});
     }
 };
 

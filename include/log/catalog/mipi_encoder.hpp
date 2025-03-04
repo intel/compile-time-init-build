@@ -1,6 +1,5 @@
 #pragma once
 
-#include <conc/concurrency.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/catalog/mipi_builder.hpp>
 #include <log/catalog/mipi_messages.hpp>
@@ -12,6 +11,8 @@
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/utility.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <algorithm>
 #include <concepts>
@@ -49,11 +50,10 @@ template <typename TDestinations> struct log_handler {
 
     template <typename Env, typename Msg> auto log_msg(Msg msg) -> void {
         msg.apply([&]<typename S, typename... Args>(S, Args... args) {
-            constexpr auto L = stdx::to_underlying(get_level(Env{}).value);
+            constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = decltype(detail::to_message<S, Args...>());
-            using Module =
-                decltype(detail::to_module<get_module(Env{}).value>());
-            auto builder = get_builder(Env{}).value;
+            using Module = decltype(detail::to_module<get_module(Env{})>());
+            auto builder = get_builder(Env{});
             write(builder.template build<L>(catalog<Message>(),
                                             module<Module>(), args...));
         });

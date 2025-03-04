@@ -48,7 +48,7 @@ struct test_nexus {
 
 template <auto> struct enable_field_t {
     static inline bool value{};
-    constexpr friend auto operator==(enable_field_t, enable_field_t)
+    friend constexpr auto operator==(enable_field_t, enable_field_t)
         -> bool = default;
 };
 template <auto> struct status_field_t {

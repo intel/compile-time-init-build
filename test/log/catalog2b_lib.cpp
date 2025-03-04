@@ -1,8 +1,9 @@
 #include "catalog_concurrency.hpp"
 #include "catalog_enums.hpp"
 
-#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <cstdint>
 
@@ -15,8 +16,7 @@ struct test_log_args_destination {
     auto log_by_args(std::uint32_t, auto...) -> void { ++log_calls; }
 };
 
-using log_env2b =
-    logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env2b = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_rt_enum_arg() -> void;

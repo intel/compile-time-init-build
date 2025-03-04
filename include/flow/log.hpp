@@ -9,7 +9,7 @@
 
 namespace flow {
 using default_log_env =
-    logging::make_env_t<logging::get_level, logging::level::TRACE>;
+    stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 template <stdx::ct_string, typename...>
 constexpr auto log_env = default_log_env{};
 

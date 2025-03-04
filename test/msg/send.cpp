@@ -1,11 +1,12 @@
-#include <async/schedulers/trigger_manager.hpp>
-#include <async/start_detached.hpp>
 #include <cib/cib.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/message.hpp>
 #include <msg/send.hpp>
 #include <msg/service.hpp>
+
+#include <async/schedulers/trigger_manager.hpp>
+#include <async/start_detached.hpp>
 
 #include <stdx/ct_conversions.hpp>
 #include <stdx/ct_string.hpp>

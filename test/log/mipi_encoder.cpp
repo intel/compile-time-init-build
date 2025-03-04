@@ -1,8 +1,9 @@
-#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/span.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -125,7 +126,7 @@ struct test_log_version_destination {
     }
 };
 
-using log_env = logging::make_env_t<logging::get_level, logging::level::TRACE>;
+using log_env = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
@@ -295,7 +296,7 @@ template <logging::level Level> struct test_catalog_args_destination {
 } // namespace
 
 TEST_CASE("log with overridden builder", "[mipi]") {
-    using catalog_env = logging::make_env_t<
+    using catalog_env = stdx::make_env_t<
         logging::get_level, logging::level::TRACE, logging::mipi::get_builder,
         logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}>;
 
