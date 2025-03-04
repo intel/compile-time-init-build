@@ -1,8 +1,9 @@
 #include "catalog_concurrency.hpp"
 #include "catalog_enums.hpp"
 
-#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <cstdint>
 

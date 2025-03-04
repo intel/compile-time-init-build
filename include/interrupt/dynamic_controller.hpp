@@ -1,11 +1,11 @@
 #pragma once
 
-#include <conc/concurrency.hpp>
-
 #include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>

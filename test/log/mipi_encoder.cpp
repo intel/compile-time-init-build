@@ -1,8 +1,9 @@
-#include <conc/concurrency.hpp>
 #include <log/catalog/mipi_encoder.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/span.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -49,15 +50,16 @@ struct test_conc_policy {
     return (static_cast<std::uint32_t>(test_string_id) << 4u) | 0x1u;
 }
 
-[[maybe_unused]] constexpr auto
-expected_catalog32_header(logging::level level, module_id m) -> std::uint32_t {
+[[maybe_unused]] constexpr auto expected_catalog32_header(logging::level level,
+                                                          module_id m)
+    -> std::uint32_t {
     return (0x1u << 24u) | (m << 16u) |
            (static_cast<std::uint32_t>(level) << 4u) | 0x3u;
 }
 
-[[maybe_unused]] constexpr auto
-expected_msg_header(logging::level level, module_id m,
-                    std::size_t sz) -> std::uint32_t {
+[[maybe_unused]] constexpr auto expected_msg_header(logging::level level,
+                                                    module_id m, std::size_t sz)
+    -> std::uint32_t {
     return sz > 0 ? expected_catalog32_header(level, m)
                   : expected_short32_header();
 }
