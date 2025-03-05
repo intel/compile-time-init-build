@@ -9,7 +9,7 @@
 
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
-#include <stdx/cx_vector.hpp>
+#include <stdx/env.hpp>
 #include <stdx/iterator.hpp>
 #include <stdx/ranges.hpp>
 #include <stdx/span.hpp>
@@ -197,7 +197,7 @@ template <typename... Fields> struct storage_size {
 
 template <typename F> using name_for = typename F::name_t;
 
-template <stdx::ct_string Name, typename... Fields> class message_access {
+template <stdx::ct_string Name, typename... Fields> class msg_access {
     using FieldsTuple =
         decltype(stdx::make_indexed_tuple<name_for>(Fields{}...));
 
@@ -295,10 +295,11 @@ concept storage_like = stdx::range<T> and requires {
     typename T::value_type;
 };
 
-template <stdx::ct_string Name, typename... Fields> struct message;
+template <stdx::ct_string Name, typename Env, typename... Fields>
+struct message;
 
-template <stdx::ct_string Name> struct msg_q {
-    template <typename... Fields> using fn = message<Name, Fields...>;
+template <stdx::ct_string Name, typename Env> struct msg_q {
+    template <typename... Fields> using fn = message<Name, Env, Fields...>;
 };
 
 template <typename F1, typename F2>
@@ -312,9 +313,9 @@ using unique_by_name = boost::mp11::mp_unique_if<
     boost::mp11::mp_sort<boost::mp11::mp_list<Fields...>, field_sort_fn>,
     name_equal_fn>;
 
-template <stdx::ct_string Name, typename... Fields>
+template <stdx::ct_string Name, typename Env, typename... Fields>
 using message_without_unique_field_names =
-    boost::mp11::mp_apply_q<detail::msg_q<Name>,
+    boost::mp11::mp_apply_q<detail::msg_q<Name, Env>,
                             detail::unique_by_name<Fields...>>;
 
 template <stdx::ct_string Name, typename... Fields>
@@ -323,12 +324,45 @@ struct message_with_unique_field_names {
                       name_for, boost::mp11::mp_list<Fields...>>>::value,
                   "Message contains fields with duplicate names");
 
-    using type = message_without_unique_field_names<Name, Fields...>;
+    using type =
+        message_without_unique_field_names<Name, stdx::env<>, Fields...>;
 };
 
-template <stdx::ct_string Name, typename... Fields> struct message {
+template <stdx::ct_string Name, stdx::envlike Env, typename... Fields>
+struct message_with_unique_field_names<Name, Env, Fields...> {
+    static_assert(boost::mp11::mp_is_set<boost::mp11::mp_transform<
+                      name_for, boost::mp11::mp_list<Fields...>>>::value,
+                  "Message contains fields with duplicate names");
+
+    using type = message_without_unique_field_names<Name, Env, Fields...>;
+};
+
+template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
+    constexpr static auto name = Name;
+
+    constexpr auto as_derived() const -> T const & {
+        return static_cast<T const &>(*this);
+    }
+    constexpr auto as_derived() -> T & { return static_cast<T &>(*this); }
+
+    [[nodiscard]] constexpr auto get(auto f) const {
+        return Access::get(as_derived().data(), f);
+    }
+    constexpr auto set(auto... fs) -> void {
+        Access::set(as_derived().data(), fs...);
+    }
+    constexpr auto set() -> void {}
+
+    [[nodiscard]] constexpr auto describe() const {
+        return Access::describe(as_derived().data());
+    }
+};
+
+template <stdx::ct_string Name, typename Env, typename... Fields>
+struct message {
     using fields_t = stdx::type_list<Fields...>;
-    using access_t = detail::message_access<Name, Fields...>;
+    using env_t = Env;
+    using access_t = msg_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
     using default_span_t = typename access_t::default_span_t;
     using default_const_span_t = typename access_t::default_const_span_t;
@@ -342,32 +376,13 @@ template <stdx::ct_string Name, typename... Fields> struct message {
 
     template <auto N, typename Unit = bit_unit>
     using shifted_by =
-        message<Name, typename Fields::template shifted_by<N, Unit>...>;
+        message<Name, Env, typename Fields::template shifted_by<N, Unit>...>;
 
     template <typename S>
     constexpr static auto fits_inside =
         (... and Fields::template fits_inside<S>());
 
-    template <typename T> struct base {
-        constexpr static auto name = Name;
-
-        constexpr auto as_derived() const -> T const & {
-            return static_cast<T const &>(*this);
-        }
-        constexpr auto as_derived() -> T & { return static_cast<T &>(*this); }
-
-        [[nodiscard]] constexpr auto get(auto f) const {
-            return access_t::get(as_derived().data(), f);
-        }
-        constexpr auto set(auto... fs) -> void {
-            access_t::set(as_derived().data(), fs...);
-        }
-        constexpr auto set() -> void {}
-
-        [[nodiscard]] constexpr auto describe() const {
-            return access_t::describe(as_derived().data());
-        }
-    };
+    template <typename T> using base = msg_base<Name, access_t, T>;
 
     template <typename> struct owner_t;
 
@@ -583,13 +598,17 @@ template <stdx::ct_string Name, typename... Fields> struct message {
     // name (see unique_by_name)
     template <stdx::ct_string NewName, typename... NewFields>
     using extension =
-        message_without_unique_field_names<NewName, NewFields..., Fields...>;
+        message_without_unique_field_names<NewName, Env, NewFields...,
+                                           Fields...>;
+
+    template <stdx::envlike E>
+    using with_env = message<Name, stdx::append_env_t<Env, E>, Fields...>;
 };
 } // namespace detail
 
-template <stdx::ct_string Name, typename... Fields>
+template <stdx::ct_string Name, typename... Ts>
 using message =
-    typename detail::message_with_unique_field_names<Name, Fields...>::type;
+    typename detail::message_with_unique_field_names<Name, Ts...>::type;
 
 template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
@@ -681,15 +700,16 @@ using shifted_msgs =
                                 msg_offsets<AlignTo, Msgs...>,
                                 stdx::type_list<Msgs..., msg::message<"end">>>;
 
-template <stdx::ct_string Name> struct combiner {
-    template <typename... Fields> using fn = msg::message<Name, Fields...>;
+template <stdx::ct_string Name, stdx::envlike Env> struct combiner {
+    template <typename... Fields> using fn = msg::message<Name, Env, Fields...>;
 };
 
 template <stdx::ct_string Name> struct combine_q {
     template <typename... Msgs>
         requires(sizeof...(Msgs) > 0)
     using fn = boost::mp11::mp_apply_q<
-        combiner<Name>, boost::mp11::mp_append<typename Msgs::fields_t...>>;
+        combiner<Name, stdx::append_env_t<typename Msgs::env_t...>>,
+        boost::mp11::mp_append<typename Msgs::fields_t...>>;
 };
 } // namespace detail
 
@@ -709,20 +729,25 @@ using is_locatable = std::bool_constant<requires { F::sort_key; }>;
 template <typename F1, typename F2>
 using field_size_sort_fn = std::bool_constant < F2::bitsize<F1::bitsize>;
 
-template <stdx::ct_string Name, typename... Fields> struct field_locator {
+template <stdx::ct_string Name, typename... Fields>
+struct field_locator : field_locator<Name, stdx::env<>, Fields...> {};
+
+template <stdx::ct_string Name, stdx::envlike Env, typename... Fields>
+struct field_locator<Name, Env, Fields...> {
     using fields = boost::mp11::mp_partition<boost::mp11::mp_list<Fields...>,
                                              is_locatable>;
     using located_fields = boost::mp11::mp_first<fields>;
     using unlocated_fields = boost::mp11::mp_second<fields>;
 
-    using located_msg = boost::mp11::mp_apply_q<combiner<Name>, located_fields>;
+    using located_msg =
+        boost::mp11::mp_apply_q<combiner<Name, stdx::env<>>, located_fields>;
 
     using auto_fields =
         boost::mp11::mp_sort<unlocated_fields, field_size_sort_fn>;
 
     template <typename F>
     using as_singleton_message =
-        msg::message<Name, typename F::default_located>;
+        msg::message<Name, Env, typename F::default_located>;
     using auto_msgs =
         boost::mp11::mp_transform<as_singleton_message, auto_fields>;
 
@@ -730,11 +755,11 @@ template <stdx::ct_string Name, typename... Fields> struct field_locator {
 
     template <typename... Msgs>
     using pack = msg::pack<Name, std::uint8_t, Msgs...>;
-    using msg_type = boost::mp11::mp_apply<pack, all_msgs>;
+    using msg_type =
+        typename boost::mp11::mp_apply<pack, all_msgs>::template with_env<Env>;
 };
 } // namespace detail
 
-template <stdx::ct_string Name, typename... Fields>
-using relaxed_message =
-    typename detail::field_locator<Name, Fields...>::msg_type;
+template <stdx::ct_string Name, typename... Ts>
+using relaxed_message = typename detail::field_locator<Name, Ts...>::msg_type;
 } // namespace msg

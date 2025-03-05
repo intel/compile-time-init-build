@@ -428,7 +428,6 @@ TEST_CASE("view_of concept", "[message]") {
 TEST_CASE("message fields are canonically sorted by lsb", "[message]") {
     using defn = message<"msg", field2, field1>;
     static_assert(std::is_same_v<defn, message<"msg", field1, field2>>);
-    static_assert(std::is_same_v<defn, detail::message<"msg", field1, field2>>);
 }
 
 TEST_CASE("extend message with more fields", "[message]") {
@@ -641,4 +640,59 @@ TEST_CASE("pack with empty messages", "[message]") {
                 f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
                 f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
     static_assert(std::is_same_v<defn, expected_defn>);
+}
+
+namespace {
+[[maybe_unused]] constexpr inline struct custom_t {
+    template <typename T>
+        requires true // more constrained
+    CONSTEVAL auto operator()(T &&t) const
+        noexcept(noexcept(std::forward<T>(t).query(std::declval<custom_t>())))
+            -> decltype(std::forward<T>(t).query(*this)) {
+        return std::forward<T>(t).query(*this);
+    }
+
+    CONSTEVAL auto operator()(auto &&) const { return 42; }
+} custom;
+} // namespace
+
+TEST_CASE("message with default empty environment", "[message]") {
+    static_assert(custom(msg_defn::env_t{}) == 42);
+}
+
+TEST_CASE("message with defined environment", "[message]") {
+    using env_t = stdx::make_env_t<custom, 17>;
+    using defn = message<"msg", env_t, id_field::with_required<0x80>, field1,
+                         field2, field3>;
+    static_assert(custom(defn::env_t{}) == 17);
+}
+
+TEST_CASE("supplement message environment", "[message]") {
+    using env_t = stdx::make_env_t<custom, 17>;
+    using defn = message<"msg", env_t, id_field::with_required<0x80>, field1,
+                         field2, field3>;
+    using new_defn = defn::with_env<stdx::make_env_t<custom, 18>>;
+    static_assert(custom(new_defn::env_t{}) == 18);
+}
+
+TEST_CASE("combine appends environments", "[message]") {
+    using env1_t = stdx::make_env_t<custom, 17>;
+    using m1 = message<"m1", env1_t>;
+
+    using env2_t = stdx::make_env_t<custom, 18>;
+    using m2 = message<"m2", env2_t>;
+
+    using defn = combine<"defn", m1, m2>;
+    static_assert(custom(defn::env_t{}) == 18);
+}
+
+TEST_CASE("pack appends environments", "[message]") {
+    using env1_t = stdx::make_env_t<custom, 17>;
+    using m1 = message<"m1", env1_t>;
+
+    using env2_t = stdx::make_env_t<custom, 18>;
+    using m2 = message<"m2", env2_t>;
+
+    using defn = pack<"defn", std::uint8_t, m1, m2>;
+    static_assert(custom(defn::env_t{}) == 18);
 }
