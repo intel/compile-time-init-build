@@ -56,7 +56,9 @@ struct indexed_handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
             std::logical_or{}, false, callback_candidates);
 
         if (not handled) {
-            CIB_ERROR("None of the registered callbacks claimed this message.");
+            CIB_ERROR(
+                "None of the registered callbacks ({}) claimed this message.",
+                sc::uint_<stdx::tuple_size_v<Callbacks>>);
         }
         return handled;
     }

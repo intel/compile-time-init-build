@@ -87,7 +87,7 @@ TEST_CASE("log mismatch when no match", "[handler]") {
     CHECK(not handler.handle(msg));
     CAPTURE(log_buffer);
     CHECK(log_buffer.find(
-              "None of the registered callbacks claimed this message") !=
+              "None of the registered callbacks (0) claimed this message") !=
           std::string::npos);
 }
 
