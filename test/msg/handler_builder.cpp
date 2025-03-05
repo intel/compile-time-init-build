@@ -111,7 +111,7 @@ TEST_CASE("match output failure", "[handler_builder]") {
 
     CAPTURE(log_buffer);
     CHECK(log_buffer.find(
-              "None of the registered callbacks claimed this message") !=
+              "None of the registered callbacks (1) claimed this message") !=
           std::string::npos);
     CHECK(log_buffer.find("cb") != std::string::npos);
     CHECK(log_buffer.find("id (0x81) == 0x80") != std::string::npos);
