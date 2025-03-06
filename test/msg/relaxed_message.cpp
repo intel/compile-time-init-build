@@ -65,3 +65,28 @@ TEST_CASE("auto field without default value", "[relaxed_message]") {
         "msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>::without_default>;
     static_assert(std::is_same_v<defn, expected_defn>);
 }
+
+namespace {
+[[maybe_unused]] constexpr inline struct custom_t {
+    template <typename T>
+        requires true // more constrained
+    CONSTEVAL auto operator()(T &&t) const
+        noexcept(noexcept(std::forward<T>(t).query(std::declval<custom_t>())))
+            -> decltype(std::forward<T>(t).query(*this)) {
+        return std::forward<T>(t).query(*this);
+    }
+
+    CONSTEVAL auto operator()(auto &&) const { return 42; }
+} custom;
+} // namespace
+
+TEST_CASE("message with default empty environment", "[relaxed_message]") {
+    using defn = relaxed_message<"msg", auto_f1, auto_f2>;
+    static_assert(custom(defn::env_t{}) == 42);
+}
+
+TEST_CASE("message with defined environment", "[message]") {
+    using env_t = stdx::make_env_t<custom, 17>;
+    using defn = relaxed_message<"msg", env_t, auto_f1, auto_f2>;
+    static_assert(custom(defn::env_t{}) == 17);
+}

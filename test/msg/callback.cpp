@@ -152,7 +152,7 @@ TEST_CASE("callback handles message (typed)", "[callback]") {
     CHECK(dispatched);
 }
 
-TEST_CASE("callback logs match", "[callback]") {
+TEST_CASE("callback logs match as INFO", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         id_match, [](msg::const_view<msg_defn>) { dispatched = true; });
     auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
@@ -162,6 +162,22 @@ TEST_CASE("callback logs match", "[callback]") {
     CAPTURE(log_buffer);
     CHECK(log_buffer.find("matched [cb], because [id == 0x80]") !=
           std::string::npos);
+    CHECK(log_buffer.find("INFO") != std::string::npos);
+}
+
+TEST_CASE("callback logs match using message environment", "[callback]") {
+    using trace_msg_defn = msg_defn::with_env<
+        stdx::make_env_t<logging::get_level, logging::level::TRACE>>;
+    auto callback = msg::callback<"cb", trace_msg_defn>(
+        id_match, [](msg::const_view<trace_msg_defn>) { dispatched = true; });
+    auto const msg_match = std::array{0x8000ba11u, 0x0042d00du};
+
+    log_buffer.clear();
+    CHECK(callback.handle(msg_match));
+    CAPTURE(log_buffer);
+    CHECK(log_buffer.find("matched [cb], because [id == 0x80]") !=
+          std::string::npos);
+    CHECK(log_buffer.find("TRACE") != std::string::npos);
 }
 
 TEST_CASE("callback with convenience matcher", "[callback]") {

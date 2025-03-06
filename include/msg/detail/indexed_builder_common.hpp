@@ -163,12 +163,13 @@ struct indexed_builder_base {
         }
 
         using msg_t = typename CB::msg_t;
+        CIB_LOG_ENV(logging::get_level, logging::level::INFO);
         if (msg::call_with_message<msg_t>(cb.matcher, data)) {
-            CIB_INFO(
-                "Incoming message matched [{}], because [{}] (collapsed to "
-                "[{}]), executing callback",
-                stdx::ct_string_to_type<cb.name, sc::string_constant>(),
-                orig_cb.matcher.describe(), cb.matcher.describe());
+            CIB_APPEND_LOG_ENV(typename msg_t::env_t);
+            CIB_LOG("Incoming message matched [{}], because [{}] (collapsed to "
+                    "[{}]), executing callback",
+                    stdx::ct_string_to_type<cb.name, sc::string_constant>(),
+                    orig_cb.matcher.describe(), cb.matcher.describe());
             msg::call_with_message<msg_t>(cb.callable, data, args...);
             return true;
         }
