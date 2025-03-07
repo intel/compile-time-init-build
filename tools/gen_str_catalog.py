@@ -124,7 +124,7 @@ def read_input(filenames: list[str], stable_ids):
 
     unique_strings = {i[0][0]: i for i in strings}.values()
     return (
-        {m: {"string": module_string(m), "id": get_module_id(m)} for m in set(modules)},
+        {m: {"string": module_string(m), "id": get_module_id(m)} for m in sorted(set(modules))},
         {item[0]: {**item[1], "id": get_msg_id(item[1])} for item in unique_strings},
     )
 
