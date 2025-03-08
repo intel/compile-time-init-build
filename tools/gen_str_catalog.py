@@ -124,7 +124,7 @@ def read_input(filenames: list[str], stable_ids):
 
     unique_strings = {i[0][0]: i for i in strings}.values()
     return (
-        {m: {"string": module_string(m), "id": get_module_id(m)} for m in set(modules)},
+        {m: {"string": module_string(m), "id": get_module_id(m)} for m in sorted(set(modules))},
         {item[0]: {**item[1], "id": get_msg_id(item[1])} for item in unique_strings},
     )
 
@@ -204,14 +204,19 @@ def write_json(messages, modules, enums, extra_inputs: list[str], filename: str,
         if not mod in d["modules"]:
             d["modules"].append(mod)
 
-    es = dict()
-    for (k, (_, v)) in enums.items():
-        es.update({k: {value: name for (name, value) in v.items()}})
-
-    str_catalog = dict(**d, enums=es)
+    str_catalog = dict(**d, enums=dict())
     for extra in extra_inputs:
         with open(extra, "r") as f:
             str_catalog.update(json.load(f))
+
+    es = dict()
+    for (k, (_, v)) in enums.items():
+        es.update({k: {value: name for (name, value) in v.items()}})
+    for (k, v) in es.items():
+        if k in str_catalog["enums"]:
+            str_catalog["enums"][k].update(v) # type: ignore
+        else:
+            str_catalog["enums"].update({k: v}) # type: ignore
 
     with open(filename, "w") as f:
         json.dump(str_catalog, f, indent=4)
