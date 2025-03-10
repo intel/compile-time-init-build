@@ -38,7 +38,7 @@ jobs:
             cxx_flags: "-stdlib=libstdc++"
           - version: 19
             compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19 all
             toolchain_root: "/usr/lib/llvm-19"
           - version: 19
             compiler: clang
@@ -109,6 +109,13 @@ jobs:
         run: |
           ${{ matrix.install }}
           sudo apt install -y ninja-build
+
+      - name: Install libclang for string catalog
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          pip install libclang
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
         env:
