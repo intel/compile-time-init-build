@@ -39,9 +39,34 @@ template <stdx::ct_string S> constexpr auto to_module() {
 }
 } // namespace detail
 
-template <typename TDestinations> struct log_handler {
-    constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
+template <typename Destinations> struct log_writer {
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint8_t const, N> msg) -> void {
+        stdx::for_each(
+            [&]<typename Dest>(Dest &dest) {
+                conc::call_in_critical_section<Dest>(
+                    [&] { dest.log_by_buf(msg); });
+            },
+            dests);
+    }
 
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> msg) -> void {
+        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            stdx::for_each(
+                [&]<typename Dest>(Dest &dest) {
+                    conc::call_in_critical_section<Dest>(
+                        [&] { dest.log_by_args(msg[Is]...); });
+                },
+                dests);
+        }(std::make_index_sequence<N>{});
+    }
+
+    Destinations dests;
+};
+template <typename T> log_writer(T) -> log_writer<T>;
+
+template <typename Writer> struct log_handler {
     template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename MsgType>
     auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
@@ -88,40 +113,17 @@ template <typename TDestinations> struct log_handler {
         }
     }
 
-  private:
-    template <std::size_t N>
-    auto write(stdx::span<std::uint8_t const, N> msg) -> void {
-        stdx::for_each(
-            [&]<typename Dest>(Dest &dest) {
-                conc::call_in_critical_section<Dest>(
-                    [&] { dest.log_by_buf(msg); });
-            },
-            dests);
-    }
+    auto write(auto const &msg) -> void { w(msg.as_const_view().data()); }
 
-    template <std::size_t N>
-    auto write(stdx::span<std::uint32_t const, N> msg) -> void {
-        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            stdx::for_each(
-                [&]<typename Dest>(Dest &dest) {
-                    conc::call_in_critical_section<Dest>(
-                        [&] { dest.log_by_args(msg[Is]...); });
-                },
-                dests);
-        }(std::make_index_sequence<N>{});
-    }
-
-    auto write(auto const &msg) -> void { write(msg.as_const_view().data()); }
-
-    TDestinations dests;
+    Writer w;
 };
 
 template <typename... TDestinations> struct config {
     using destinations_tuple_t = stdx::tuple<TDestinations...>;
     constexpr explicit config(TDestinations... dests)
-        : logger{stdx::tuple{std::move(dests)...}} {}
+        : logger{log_writer{stdx::tuple{std::move(dests)...}}} {}
 
-    log_handler<destinations_tuple_t> logger;
+    log_handler<log_writer<destinations_tuple_t>> logger;
 };
 template <typename... Ts> config(Ts...) -> config<Ts...>;
 } // namespace logging::mipi
