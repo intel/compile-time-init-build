@@ -1,4 +1,4 @@
-#include <log/catalog/mipi_encoder.hpp>
+#include <log/catalog/encoder.hpp>
 #include <log/fmt/logger.hpp>
 #include <log/level.hpp>
 #include <sc/format.hpp>
@@ -58,7 +58,7 @@ struct test_destination {
 TEST_CASE("mipi logger works with custom level", "[level]") {
     log_calls = 0;
     CIB_LOG_ENV(logging::get_level, custom_level::THE_ONE_LEVEL);
-    auto cfg = logging::mipi::config{test_destination{}};
+    auto cfg = logging::binary::config{test_destination{}};
     cfg.logger.log_msg<cib_log_env_t>(sc::format("Hello {} {}"_sc, 17, 42));
     CHECK(log_calls == 1);
 }

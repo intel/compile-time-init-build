@@ -93,10 +93,11 @@ template <typename Env, typename... Ts> static auto log_version() -> void {
     auto &l_cfg = get_config<Env, Ts...>();
     auto &v_cfg = ::version::config<Ts...>;
     if constexpr (requires {
-                      l_cfg.logger.template log_build<v_cfg.build_id,
-                                                      v_cfg.version_string>();
+                      l_cfg.logger.template log_version<Env, v_cfg.build_id,
+                                                        v_cfg.version_string>();
                   }) {
-        l_cfg.logger.template log_build<v_cfg.build_id, v_cfg.version_string>();
+        l_cfg.logger
+            .template log_version<Env, v_cfg.build_id, v_cfg.version_string>();
     } else {
         CIB_LOG_ENV(logging::get_level, logging::level::MAX);
         l_cfg.logger.template log<cib_log_env_t>(

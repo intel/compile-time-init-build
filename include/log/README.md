@@ -6,7 +6,7 @@ Logging in *cib* is in two parts:
 
 Three possible logger implementations are provided:
 - one using libfmt in [fmt/logger.hpp](fmt/logger.hpp)
-- one using the [MIPI SyS-T spec](https://www.mipi.org/specifications/sys-t), in [catalog/mipi_encoder.hpp](catalog/mipi_encoder.hpp)
+- a binary logger in [catalog/encoder.hpp](catalog/encoder.hpp), by default using the [MIPI SyS-T spec](https://www.mipi.org/specifications/sys-t)
 - the null logger (accepts everything, never produces output)
 
 ## log levels

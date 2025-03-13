@@ -43,7 +43,7 @@ static_assert("Hello,"_sc + " World!"_sc == "Hello, World!"_sc);
 The reason `string_constant` exists is for efficient logging. On a constrained
 system, space for text can be limited-to-nonexistent. `string_constant`
 interacts with the
-https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/mipi_encoder.hpp[MIPI
+https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/encoder.hpp[MIPI
 Sys-T logging config] to solve this problem.
 
 - First, each `string_constant` contains string character data in its type.

@@ -7,7 +7,7 @@ add_tests(
     LIBRARIES
     cib_log)
 add_tests(FILES fmt_logger LIBRARIES cib_log_fmt)
-add_tests(FILES mipi_encoder mipi_logger LIBRARIES cib_log_mipi)
+add_tests(FILES encoder mipi_logger LIBRARIES cib_log_binary)
 
 add_library(catalog1_lib STATIC catalog1_lib.cpp)
 add_library(catalog2_lib OBJECT catalog2a_lib.cpp catalog2b_lib.cpp)
@@ -50,7 +50,7 @@ add_unit_test(
     catalog_app.cpp
     LIBRARIES
     warnings
-    cib_log_mipi
+    cib_log_binary
     catalog1_lib
     catalog2_lib
     catalog_strings)
