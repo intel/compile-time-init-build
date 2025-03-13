@@ -193,13 +193,13 @@ target_sources(
               FILES
               include/log/fmt/logger.hpp)
 
-add_library(cib_log_mipi INTERFACE)
-target_compile_features(cib_log_mipi INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log_mipi INTERFACE cib_log cib_msg concurrency
-                             stdx)
+add_library(cib_log_binary INTERFACE)
+target_compile_features(cib_log_binary INTERFACE cxx_std_20)
+target_link_libraries_system(cib_log_binary INTERFACE cib_log cib_msg
+                             concurrency stdx)
 
 target_sources(
-    cib_log_mipi
+    cib_log_binary
     INTERFACE FILE_SET
               log
               TYPE
@@ -208,8 +208,8 @@ target_sources(
               include
               FILES
               include/log/catalog/catalog.hpp
+              include/log/catalog/encoder.hpp
               include/log/catalog/mipi_builder.hpp
-              include/log/catalog/mipi_encoder.hpp
               include/log/catalog/mipi_messages.hpp)
 
 add_library(cib_nexus INTERFACE)
@@ -298,8 +298,8 @@ target_link_libraries_system(
     cib_flow
     cib_interrupt
     cib_log
+    cib_log_binary
     cib_log_fmt
-    cib_log_mipi
     cib_lookup
     cib_match
     cib_msg
@@ -329,8 +329,8 @@ if(PROJECT_IS_TOP_LEVEL)
     clang_tidy_interface(cib_interrupt)
     clang_tidy_interface(cib_lookup)
     clang_tidy_interface(cib_log)
+    clang_tidy_interface(cib_log_binary)
     clang_tidy_interface(cib_log_fmt)
-    clang_tidy_interface(cib_log_mipi)
     clang_tidy_interface(cib_match)
     clang_tidy_interface(cib_msg)
     clang_tidy_interface(cib_nexus)

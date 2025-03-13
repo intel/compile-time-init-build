@@ -1,4 +1,4 @@
-#include <log/catalog/mipi_encoder.hpp>
+#include <log/catalog/encoder.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/span.hpp>
@@ -162,7 +162,7 @@ TEST_CASE("argument encoding", "[mipi]") {
 TEST_CASE("log zero arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE>{}};
     cfg.logger.log_msg<log_env>("Hello"_sc);
     CHECK(test_critical_section::count == 2);
@@ -171,7 +171,7 @@ TEST_CASE("log zero arguments", "[mipi]") {
 TEST_CASE("log one 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(format("{}"_sc, 17u));
     CHECK(test_critical_section::count == 2);
@@ -181,7 +181,7 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto x = std::uint64_t{0x1234'5678'90ab'cdefull};
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
                                   0x1234'5678u>{}};
     cfg.logger.log_msg<log_env>(format("{}"_sc, x));
@@ -191,7 +191,7 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
 TEST_CASE("log two arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<log_env>(format("{} {}"_sc, 17u, 18u));
     CHECK(test_critical_section::count == 2);
@@ -201,7 +201,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     {
         test_critical_section::count = 0;
-        auto cfg = logging::mipi::config{
+        auto cfg = logging::binary::config{
             test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
                                      18u, 19u>{}};
         cfg.logger.log_msg<log_env>(format("{} {} {}"_sc, 17u, 18u, 19u));
@@ -209,7 +209,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
     }
     {
         test_critical_section::count = 0;
-        auto cfg = logging::mipi::config{
+        auto cfg = logging::binary::config{
             test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
                                      18u, 19u, 20u>{}};
         cfg.logger.log_msg<log_env>(
@@ -222,7 +222,7 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{},
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
 
@@ -234,10 +234,10 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
 TEST_CASE("log version information (compact32)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::mipi::config{test_log_version_destination<
+    auto cfg = logging::binary::config{test_log_version_destination<
         0b11'000000'1010'1011'1100'1101'0101'0000u>{}};
     //     3      0    a    b    c    d    5
-    cfg.logger.log_build<0x3abcd5u>();
+    cfg.logger.log_version<log_env, 0x3abcd5u>();
     CHECK(test_critical_section::count == 2);
     CHECK(num_log_args_calls == 1);
 }
@@ -245,12 +245,12 @@ TEST_CASE("log version information (compact32)", "[mipi]") {
 TEST_CASE("log version information (compact64)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_version_destination<0b11'000001'1010'1011'1100'1101'0101'0000u,
                                      // 3      1    a    b    c    d    5
                                      0b1'0010'0011'0100'0101'0110'00u>{}};
     //                                 1    2    3    4    5    6
-    cfg.logger.log_build<0x1234'563a'bcd5u>();
+    cfg.logger.log_version<log_env, 0x1234'563a'bcd5u>();
     CHECK(test_critical_section::count == 2);
     CHECK(num_log_args_calls == 1);
 }
@@ -258,20 +258,20 @@ TEST_CASE("log version information (compact64)", "[mipi]") {
 TEST_CASE("log version information (long with string)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_log_version_destination<0b10'0000'0000'0000'0010'0000'0000u,
                                      0x4321'000du, 0x5678'8765u, 0x65'68'1234u,
                                      //                             e  h
                                      0x6f'6c'6cu>{}};
     //                                  o  l  l
-    cfg.logger.log_build<0x1234'5678'8765'4321ull, "hello">();
+    cfg.logger.log_version<log_env, 0x1234'5678'8765'4321ull, "hello">();
     CHECK(test_critical_section::count == 2);
     CHECK(num_log_args_calls == 1);
 }
 
 template <>
 inline auto logging::config<> =
-    logging::mipi::config{test_log_args_destination<logging::level::TRACE>{}};
+    logging::binary::config{test_log_args_destination<logging::level::TRACE>{}};
 
 TEST_CASE("injection", "[mipi]") {
     test_critical_section::count = 0;
@@ -293,15 +293,23 @@ template <logging::level Level> struct test_catalog_args_destination {
         ++num_catalog_args_calls;
     }
 };
+
+struct custom_builder : logging::mipi::default_builder {
+    template <auto Level, logging::mipi::packable... Ts>
+    static auto build(string_id id, module_id m, Ts... args) {
+        return logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}
+            .template build<Level>(id, m, args...);
+    }
+};
 } // namespace
 
 TEST_CASE("log with overridden builder", "[mipi]") {
-    using catalog_env = stdx::make_env_t<
-        logging::get_level, logging::level::TRACE, logging::mipi::get_builder,
-        logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}>;
+    using catalog_env =
+        stdx::make_env_t<logging::get_level, logging::level::TRACE,
+                         logging::binary::get_builder, custom_builder{}>;
 
     num_catalog_args_calls = 0;
-    auto cfg = logging::mipi::config{
+    auto cfg = logging::binary::config{
         test_catalog_args_destination<logging::level::TRACE>{}};
 
     cfg.logger.log_msg<catalog_env>("Hello"_sc);

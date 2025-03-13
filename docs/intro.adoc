@@ -73,8 +73,8 @@ flowchart BT
   msg(cib_msg) --> log & match
   msg --> lookup
 
-  log_mipi(cib_log_mipi) --> msg
+  log_binary(cib_log_binary) --> msg
   seq(cib_seq) --> flow
 
-  cib --> interrupt & seq & log_fmt & log_mipi
+  cib --> interrupt & seq & log_fmt & log_binary
 ----

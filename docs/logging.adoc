@@ -14,7 +14,7 @@ Logging in _cib_ is in two parts:
 Three possible logger implementations are provided:
 
 - one using fmt in https://github.com/intel/compile-time-init-build/tree/main/include/log/fmt/logger.hpp[fmt/logger.hpp]
-- one using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/mipi_encoder.hpp[catalog/mipi_encoder.hpp]
+- one using binary encoding in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/encoder.hpp[catalog/encoder.hpp], using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] by default
 - the default implementation: the null logger which accepts everything, but never produces output
 
 === Log levels
@@ -208,14 +208,14 @@ template <> inline auto version::config<> = my_version_config{};
 ----
 
 Then use `CIB_LOG_VERSION()` to log the version. If the logging config provides
-a `log_build` function, that will be used. Otherwise a text string will be
+a `log_version` function, that will be used. Otherwise a text string will be
 logged.
 
 [source,cpp]
 ----
 struct my_logger_config {
   struct {
-    template <auto Version, stdx::ct_string S = ""> auto log_build() -> void {
+    template <auto Version, stdx::ct_string S = ""> auto log_version() -> void {
       // log the build version according to my mechanism
     }
   } logger;
@@ -223,7 +223,7 @@ struct my_logger_config {
 template <>
 inline auto logging::config<> = my_logger_config{};
 
-CIB_LOG_VERSION(); // calls my_logger_config::log_build
+CIB_LOG_VERSION(); // calls my_logger_config::log_version
 ----
 
 The easiest way to flavor the version logging is to define a macro in terms of

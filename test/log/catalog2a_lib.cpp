@@ -1,7 +1,7 @@
 #include "catalog_concurrency.hpp"
 #include "catalog_enums.hpp"
 
-#include <log/catalog/mipi_encoder.hpp>
+#include <log/catalog/encoder.hpp>
 
 #include <conc/concurrency.hpp>
 
@@ -26,7 +26,7 @@ using log_env2a = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 auto log_two_rt_args() -> void;
 
 auto log_two_rt_args() -> void {
-    auto cfg = logging::mipi::config{test_log_args_destination{}};
+    auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env2a>(
         format("D string with {} and {} placeholder"_sc, std::uint32_t{1},
                std::int64_t{2}));

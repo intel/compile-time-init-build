@@ -1,4 +1,4 @@
-#include <log/catalog/mipi_encoder.hpp>
+#include <log/catalog/encoder.hpp>
 
 #include <stdx/ct_string.hpp>
 
@@ -26,7 +26,7 @@ struct test_log_version_destination {
 } // namespace
 
 template <>
-inline auto logging::config<> = logging::mipi::config{
+inline auto logging::config<> = logging::binary::config{
     test_log_version_destination<0b11'000000'1010'1011'1100'1101'0101'0000u>{}};
 //                                  3      0    a    b    c    d    5
 
