@@ -4,6 +4,8 @@
 #include <async/concepts.hpp>
 #include <async/connect.hpp>
 #include <async/debug_context.hpp>
+#include <async/incite_on.hpp>
+#include <async/just.hpp>
 #include <async/schedulers/trigger_scheduler.hpp>
 #include <async/start.hpp>
 #include <async/then.hpp>
@@ -17,65 +19,12 @@
 
 namespace msg {
 namespace _send_recv {
-template <typename Sched>
-using scheduler_sender = decltype(std::declval<Sched>().schedule());
-
 template <typename S>
 concept valid_send_action =
     requires { typename std::remove_cvref_t<S>::is_send_action; };
 
-template <valid_send_action SA, typename Sched, typename Rcvr>
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-struct op_state {
-    template <stdx::same_as_unqualified<SA> S, typename Sch, typename R>
-    constexpr op_state(S &&s, Sch &&sch, R &&r)
-        : send(s), ops{async::connect(std::forward<Sch>(sch).schedule(),
-                                      std::forward<R>(r))} {}
-    constexpr op_state(op_state &&) = delete;
-
-    using ops_t = async::connect_result_t<scheduler_sender<Sched>, Rcvr>;
-
-    constexpr auto start() & -> void {
-        async::start(ops);
-        send();
-    }
-
-    SA send;
-    ops_t ops;
-};
-
-template <valid_send_action SA, typename Sched> struct sender {
-    using is_sender = void;
-
-    [[no_unique_address]] SA send;
-    [[no_unique_address]] Sched sched;
-
-  public:
-    template <async::receiver R>
-    [[nodiscard]] constexpr auto
-    connect(R &&r) && -> op_state<SA, Sched, std::remove_cvref_t<R>> {
-        async::check_connect<sender &&, R>();
-        return {std::move(send), std::move(sched), std::forward<R>(r)};
-    }
-
-    template <async::receiver R>
-    [[nodiscard]] constexpr auto
-    connect(R &&r) const & -> op_state<SA, Sched, std::remove_cvref_t<R>> {
-        async::check_connect<sender, R>();
-        return {send, sched, std::forward<R>(r)};
-    }
-
-    template <typename Env>
-    [[nodiscard]] constexpr static auto get_completion_signatures(Env const &)
-        -> async::completion_signatures_of_t<scheduler_sender<Sched>, Env> {
-        return {};
-    }
-};
-
-template <typename Sndr, typename Sched>
-sender(Sndr, Sched) -> sender<Sndr, Sched>;
-
-template <typename F> struct send_action : F {
+template <typename F> struct send_action {
+    [[no_unique_address]] F f;
     using is_send_action = void;
 };
 template <typename F> send_action(F) -> send_action<F>;
@@ -88,9 +37,8 @@ template <stdx::ct_string Name, typename... Args> struct pipeable {
         template <valid_send_action S, stdx::same_as_unqualified<type> Self>
         friend constexpr auto operator|(S &&s, Self &&self) -> async::sender
             auto {
-            return _send_recv::sender{
-                       std::forward<S>(s),
-                       async::trigger_scheduler<Name, Args...>{}} |
+            return async::just(std::forward<S>(s).f) |
+                   async::incite_on(async::trigger_scheduler<Name, Args...>{}) |
                    std::forward<Self>(self).a;
         }
     };
@@ -102,8 +50,8 @@ template <stdx::ct_string Name, typename... Args> struct pipeable {
 template <typename F, typename... Args>
 constexpr auto send(F &&f, Args &&...args) {
     return _send_recv::send_action{
-        [f = std::forward<F>(f), ... args = std::forward<Args>(args)]() {
-            return f(args...);
+        [f = std::forward<F>(f), ... as = std::forward<Args>(args)] {
+            return std::move(f)(std::move(as)...);
         }};
 }
 
@@ -122,14 +70,4 @@ template <stdx::ct_string Name, _send_recv::valid_send_action S, typename F,
     return std::forward<S>(s) |
            then_receive<Name>(std::forward<F>(f), std::forward<Args>(args)...);
 }
-
-struct send_t;
 } // namespace msg
-
-template <typename... Ts>
-struct async::debug::context_for<msg::_send_recv::op_state<Ts...>> {
-    using tag = msg::send_t;
-    constexpr static auto name = stdx::ct_string{"msg_send"};
-    using type = msg::_send_recv::op_state<Ts...>;
-    using children = stdx::type_list<>;
-};

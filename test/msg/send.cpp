@@ -6,7 +6,7 @@
 #include <msg/service.hpp>
 
 #include <async/schedulers/trigger_manager.hpp>
-#include <async/start_detached.hpp>
+#include <async/sync_wait.hpp>
 
 #include <stdx/ct_conversions.hpp>
 #include <stdx/ct_string.hpp>
@@ -29,7 +29,7 @@ TEMPLATE_TEST_CASE("request-response", "[send]", decltype([] {})) {
              msg::then_receive<name, int>(
                  [&](auto recvd, auto x) { var = recvd + x; }, 17);
     CHECK(var == 0);
-    CHECK(async::start_detached_unstoppable(s));
+    CHECK(async::sync_wait(s));
     CHECK(var == 59);
 }
 
@@ -77,6 +77,6 @@ TEST_CASE("request-response through handler", "[send]") {
             0x80) |
         msg::then_receive<"cb", msg_view_t>(
             [&](auto v) { var = v.get("id"_f); });
-    CHECK(async::start_detached_unstoppable(s));
+    CHECK(async::sync_wait(s));
     CHECK(var == 0x80);
 }
