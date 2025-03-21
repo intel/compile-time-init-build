@@ -490,3 +490,28 @@ TEST_CASE("handle raw message by mixture of callbacks", "[indexed_builder]") {
         std::array{0x8000ba11u, 0x0042d00du}));
     CHECK(callback_count == 2);
 }
+
+namespace {
+bool callback2_success;
+
+constexpr auto test_callback2 = msg::callback<"TestCallback2", msg_defn>(
+    msg::in<test_id_field, 0x80>, [](auto) { callback2_success = true; });
+
+struct test_project_multi_cb {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback, test_callback2));
+};
+} // namespace
+
+TEST_CASE("call multiple callbacks", "[handler_builder]") {
+    cib::nexus<test_project_multi_cb> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    callback2_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
+    CHECK(callback_success);
+    CHECK(callback2_success);
+}

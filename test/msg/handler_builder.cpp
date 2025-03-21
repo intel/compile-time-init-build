@@ -143,3 +143,27 @@ TEST_CASE("handle extra arguments", "[handler_builder]") {
     CHECK(callback_success);
     CHECK(callback_extra_arg == 42);
 }
+
+namespace {
+bool callback2_success;
+
+constexpr auto test_callback2 = msg::callback<"cb2", msg_defn>(
+    id_match, [](msg_view_t) { callback2_success = true; });
+
+struct test_project_multi_cb {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback, test_callback2));
+};
+} // namespace
+
+TEST_CASE("call multiple callbacks", "[handler_builder]") {
+    cib::nexus<test_project_multi_cb> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    callback2_success = false;
+    cib::service<test_service>->handle(test_msg_t{"id"_field = 0x80});
+    CHECK(callback_success);
+    CHECK(callback2_success);
+}
