@@ -15,6 +15,7 @@
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
@@ -162,18 +163,10 @@ struct indexed_builder_base {
                 "Indexed callback has matcher that is never matched!");
         }
 
-        using msg_t = typename CB::msg_t;
-        CIB_LOG_ENV(logging::get_level, logging::level::INFO);
-        if (msg::call_with_message<msg_t>(cb.matcher, data)) {
-            CIB_APPEND_LOG_ENV(typename msg_t::env_t);
-            CIB_LOG("Incoming message matched [{}], because [{}] (collapsed to "
-                    "[{}]), executing callback",
-                    stdx::ct_string_to_type<cb.name, sc::string_constant>(),
-                    orig_cb.matcher.describe(), cb.matcher.describe());
-            msg::call_with_message<msg_t>(cb.callable, data, args...);
-            return true;
-        }
-        return false;
+        constexpr auto matcher_str =
+            stdx::ct_format<" (collapsed by index from [{}])">(
+                orig_cb.matcher.describe());
+        return cb.template handle<matcher_str>(data, args...);
     }
 
     template <typename BuilderValue, std::size_t... Is>

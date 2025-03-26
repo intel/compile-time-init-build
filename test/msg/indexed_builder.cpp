@@ -179,7 +179,8 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
     CHECK(callback_success);
     CHECK(not callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 
     callback_success = false;
     callback_success_single_field = false;
@@ -197,7 +198,8 @@ TEST_CASE("build handler multi fields", "[indexed_builder]") {
     CHECK(not callback_success);
     CHECK(callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 }
 
 namespace {
@@ -253,7 +255,8 @@ TEST_CASE("build handler not single field", "[indexed_builder]") {
         test_msg_t{"test_id_field"_field = 0x51});
     CHECK(callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 }
 
 namespace {
@@ -284,7 +287,8 @@ TEST_CASE("build handler not multi fields", "[indexed_builder]") {
     CHECK(callback_success);
     CHECK(not callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 
     log_buffer.clear();
     callback_success = false;
@@ -294,7 +298,8 @@ TEST_CASE("build handler not multi fields", "[indexed_builder]") {
     CHECK(not callback_success);
     CHECK(callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 
     log_buffer.clear();
     callback_success = false;
@@ -304,7 +309,8 @@ TEST_CASE("build handler not multi fields", "[indexed_builder]") {
     CHECK(callback_success);
     CHECK(callback_success_single_field);
     CAPTURE(log_buffer);
-    CHECK(log_buffer.find("(collapsed to [true])") != std::string::npos);
+    CHECK(log_buffer.find("because [true]") != std::string::npos);
+    CHECK(log_buffer.find("(collapsed by index from") != std::string::npos);
 }
 
 namespace {
