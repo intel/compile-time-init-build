@@ -2,9 +2,9 @@
 
 #include <log/log.hpp>
 #include <msg/handler_interface.hpp>
-#include <sc/fwd.hpp>
 
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/utility.hpp>
 
 namespace msg {
 
@@ -30,7 +30,7 @@ struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
         if (!found_valid_callback) {
             CIB_ERROR(
                 "None of the registered callbacks ({}) claimed this message:",
-                sc::uint_<stdx::tuple_size_v<Callbacks>>);
+                stdx::ct<stdx::tuple_size_v<Callbacks>>());
             stdx::for_each([&](auto &callback) { callback.log_mismatch(msg); },
                            callbacks);
         }

@@ -4,10 +4,9 @@
 #include <log/flavor.hpp>
 #include <log/level.hpp>
 #include <log/module.hpp>
-#include <sc/format.hpp>
-#include <sc/fwd.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
 #include <stdx/type_traits.hpp>
@@ -58,13 +57,13 @@ static auto log(TArgs &&...args) -> void {
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
 #define CIB_LOG(MSG, ...)                                                      \
-    logging::log<cib_log_env_t>(                                               \
-        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+    logging::log<cib_log_env_t>(__FILE__, __LINE__,                            \
+                                stdx::ct_format<MSG>(__VA_ARGS__))
 
 #define CIB_LOG_WITH_LEVEL(LEVEL, MSG, ...)                                    \
     logging::log<                                                              \
         stdx::extend_env_t<cib_log_env_t, logging::get_level, LEVEL>>(         \
-        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+        __FILE__, __LINE__, stdx::ct_format<MSG>(__VA_ARGS__))
 
 #define CIB_TRACE(...)                                                         \
     CIB_LOG_WITH_LEVEL(logging::level::TRACE __VA_OPT__(, ) __VA_ARGS__)
@@ -76,14 +75,13 @@ static auto log(TArgs &&...args) -> void {
     CIB_LOG_WITH_LEVEL(logging::level::ERROR __VA_OPT__(, ) __VA_ARGS__)
 
 #define CIB_FATAL(MSG, ...)                                                    \
-    [](auto &&str) {                                                           \
+    [](auto &&s) {                                                             \
         CIB_LOG_ENV(logging::get_level, logging::level::FATAL);                \
-        logging::log<cib_log_env_t>(__FILE__, __LINE__, str);                  \
-        FWD(str).apply([]<typename S, typename... Args>(S s, Args... args) {   \
-            constexpr auto cts = stdx::ct_string_from_type(s);                 \
-            stdx::panic<cts>(args...);                                         \
+        logging::log<cib_log_env_t>(__FILE__, __LINE__, s);                    \
+        FWD(s).args.apply([](auto &&...args) {                                 \
+            stdx::panic<decltype(s.str)::value>(FWD(args)...);                 \
         });                                                                    \
-    }(sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+    }(stdx::ct_format<MSG>(__VA_ARGS__))
 
 #define CIB_ASSERT(expr)                                                       \
     ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
@@ -102,9 +100,8 @@ template <typename Env, typename... Ts> static auto log_version() -> void {
         CIB_LOG_ENV(logging::get_level, logging::level::MAX);
         l_cfg.logger.template log<cib_log_env_t>(
             "", 0,
-            sc::format("Version: {} ({})"_sc, sc::uint_<v_cfg.build_id>,
-                       stdx::ct_string_to_type<v_cfg.version_string,
-                                               sc::string_constant>()));
+            stdx::ct_format<"Version: {} ({})">(
+                CX_VALUE(v_cfg.build_id), CX_VALUE(v_cfg.version_string)));
     }
 }
 } // namespace logging

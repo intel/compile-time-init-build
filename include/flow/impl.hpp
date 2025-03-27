@@ -4,6 +4,7 @@
 #include <flow/log.hpp>
 #include <log/log.hpp>
 
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
 #include <stdx/type_traits.hpp>
@@ -22,8 +23,8 @@ constexpr auto run_func() -> void {
             logging::log<
                 decltype(get_log_env<CTNode, log_env_id_t<FlowName>>())>(
                 __FILE__, __LINE__,
-                sc::format("flow.{}({})"_sc, typename CTNode::type_t{},
-                           typename CTNode::name_t{}));
+                stdx::ct_format<"flow.{}({})">(stdx::cts_t<CTNode::ct_type>{},
+                                               stdx::cts_t<CTNode::ct_name>{}));
         }
         typename CTNode::func_t{}();
     }
@@ -56,19 +57,18 @@ template <stdx::ct_string Name, auto... FuncPtrs> struct inlined_func_list {
     __attribute__((flatten, always_inline)) auto operator()() const -> void {
         constexpr static bool loggingEnabled = not Name.empty();
 
-        constexpr auto name =
-            stdx::ct_string_to_type<Name, sc::string_constant>();
-
         if constexpr (loggingEnabled) {
             logging::log<decltype(get_log_env<inlined_func_list>())>(
-                __FILE__, __LINE__, sc::format("flow.start({})"_sc, name));
+                __FILE__, __LINE__,
+                stdx::ct_format<"flow.start({})">(stdx::cts_t<Name>{}));
         }
 
         (FuncPtrs(), ...);
 
         if constexpr (loggingEnabled) {
             logging::log<decltype(get_log_env<inlined_func_list>())>(
-                __FILE__, __LINE__, sc::format("flow.end({})"_sc, name));
+                __FILE__, __LINE__,
+                stdx::ct_format<"flow.end({})">(stdx::cts_t<Name>{}));
         }
     }
 };

@@ -4,8 +4,8 @@
 #include <match/cost.hpp>
 #include <match/negate.hpp>
 #include <match/simplify.hpp>
-#include <sc/string_constant.hpp>
 
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -32,16 +32,16 @@ struct bin_op_t {
 
   private:
     [[nodiscard]] constexpr auto form_description(auto const &f) const {
+        using namespace stdx::literals;
         auto const desc = [&]<matcher M>(M const &m) {
             if constexpr (stdx::is_specialization_of_v<M, Term>) {
                 return f(m);
             } else {
-                return "("_sc + f(m) + ")"_sc;
+                return "("_ctst + f(m) + ")"_ctst;
             }
         };
-        return desc(lhs) +
-               stdx::ct_string_to_type<OpName, sc::string_constant>() +
-               desc(rhs);
+        return stdx::ct_format<"{} {} {}">(desc(lhs), stdx::cts_t<OpName>{},
+                                           desc(rhs));
     }
 };
 

@@ -1,8 +1,8 @@
 #include "test_matcher.hpp"
 
 #include <match/ops.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+
+#include <stdx/ct_format.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -16,31 +16,33 @@ TEST_CASE("AND fulfils matcher concept", "[match and]") {
 
 TEST_CASE("AND describes itself", "[match and]") {
     constexpr auto e = test_m<0>{} and test_m<1>{};
-    static_assert(e.describe() == format("({}) and ({})"_sc,
-                                         test_m<0>{}.describe(),
-                                         test_m<1>{}.describe()));
+    static_assert(e.describe() ==
+                  stdx::ct_format<"({}) and ({})">(test_m<0>{}.describe(),
+                                                   test_m<1>{}.describe()));
 }
 
 TEST_CASE("AND description flattens", "[match and]") {
     constexpr auto e = test_m<0>{} and test_m<1>{} and test_m<2>{};
-    static_assert(e.describe() ==
-                  format("({}) and ({}) and ({})"_sc, test_m<0>{}.describe(),
-                         test_m<1>{}.describe(), test_m<2>{}.describe()));
+    static_assert(e.describe() == stdx::ct_format<"({}) and ({}) and ({})">(
+                                      test_m<0>{}.describe(),
+                                      test_m<1>{}.describe(),
+                                      test_m<2>{}.describe()));
 }
 
 TEST_CASE("AND describes a match", "[match and]") {
     constexpr auto e = test_m<0>{} and test_m<1>{};
-    static_assert(e.describe_match(1) == format("({}) and ({})"_sc,
-                                                test_m<0>{}.describe_match(1),
-                                                test_m<1>{}.describe_match(1)));
+    static_assert(e.describe_match(1) == stdx::ct_format<"({}) and ({})">(
+                                             test_m<0>{}.describe_match(1),
+                                             test_m<1>{}.describe_match(1)));
 }
 
 TEST_CASE("AND match description flattens", "[match and]") {
     constexpr auto e = test_m<0>{} and test_m<1>{} and test_m<2>{};
-    static_assert(e.describe_match(1) == format("({}) and ({}) and ({})"_sc,
-                                                test_m<0>{}.describe_match(1),
-                                                test_m<1>{}.describe_match(1),
-                                                test_m<2>{}.describe_match(1)));
+    static_assert(e.describe_match(1) ==
+                  stdx::ct_format<"({}) and ({}) and ({})">(
+                      test_m<0>{}.describe_match(1),
+                      test_m<1>{}.describe_match(1),
+                      test_m<2>{}.describe_match(1)));
 }
 
 TEST_CASE("AND matches correctly", "[match and]") {

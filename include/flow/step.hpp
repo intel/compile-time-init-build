@@ -24,6 +24,7 @@ struct ct_node {
         decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
     using func_t = F;
 
+    constexpr static auto ct_type = Type;
     constexpr static auto ct_name = Name;
     constexpr static auto identity = Identity;
     constexpr static auto condition = Cond{};

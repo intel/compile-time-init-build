@@ -52,7 +52,7 @@ target_sources(
 
 add_library(cib_match INTERFACE)
 target_compile_features(cib_match INTERFACE cxx_std_20)
-target_link_libraries_system(cib_match INTERFACE cib_sc stdx)
+target_link_libraries_system(cib_match INTERFACE stdx)
 
 target_sources(
     cib_match
@@ -79,7 +79,7 @@ target_sources(
 
 add_library(cib_interrupt INTERFACE)
 target_compile_features(cib_interrupt INTERFACE cxx_std_20)
-target_link_libraries_system(cib_interrupt INTERFACE cib_sc concurrency stdx)
+target_link_libraries_system(cib_interrupt INTERFACE concurrency stdx)
 
 target_sources(
     cib_interrupt
@@ -123,7 +123,7 @@ target_sources(
 
 add_library(cib_log INTERFACE)
 target_compile_features(cib_log INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log INTERFACE cib_sc stdx)
+target_link_libraries_system(cib_log INTERFACE stdx)
 
 target_sources(
     cib_log
@@ -149,7 +149,6 @@ target_link_libraries_system(
     cib_log
     cib_lookup
     cib_match
-    cib_sc
     stdx)
 
 target_sources(

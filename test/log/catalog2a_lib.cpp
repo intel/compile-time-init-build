@@ -3,6 +3,8 @@
 
 #include <log/catalog/encoder.hpp>
 
+#include <stdx/ct_format.hpp>
+
 #include <conc/concurrency.hpp>
 
 #include <cstdint>
@@ -28,6 +30,6 @@ auto log_two_rt_args() -> void;
 auto log_two_rt_args() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env2a>(
-        format("D string with {} and {} placeholder"_sc, std::uint32_t{1},
-               std::int64_t{2}));
+        stdx::ct_format<"D string with {} and {} placeholder">(
+            std::uint32_t{1}, std::int64_t{2}));
 }

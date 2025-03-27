@@ -1,5 +1,4 @@
 #include <log/log.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/ct_string.hpp>
 

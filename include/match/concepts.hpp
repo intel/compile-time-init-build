@@ -1,7 +1,5 @@
 #pragma once
 
-#include <sc/fwd.hpp>
-
 #include <concepts>
 #include <type_traits>
 
@@ -12,7 +10,7 @@ concept matcher = requires { typename std::remove_cvref_t<T>::is_matcher; };
 template <typename T, typename Event>
 concept matcher_for = matcher<T> and requires(T const &t, Event const &e) {
     { t(e) } -> std::convertible_to<bool>;
-    { t.describe() } -> sc::sc_like;
-    { t.describe_match(e) } -> sc::sc_like;
+    t.describe();
+    t.describe_match(e);
 };
 } // namespace match

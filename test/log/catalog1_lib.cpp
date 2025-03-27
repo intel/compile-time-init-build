@@ -2,6 +2,9 @@
 
 #include <log/catalog/encoder.hpp>
 
+#include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
+
 #include <conc/concurrency.hpp>
 
 #include <cstdint>
@@ -32,31 +35,33 @@ auto log_with_fixed_module_id() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
-    cfg.logger.log_msg<log_env1>("A string with no placeholders"_sc);
+    cfg.logger.log_msg<log_env1>(
+        stdx::ct_format<"A string with no placeholders">());
 }
 
 auto log_one_ct_arg() -> void {
+    using namespace stdx::literals;
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env1>(
-        format("B string with {} placeholder"_sc, "one"_sc));
+        stdx::ct_format<"B string with {} placeholder">("one"_ctst));
 }
 
 auto log_one_32bit_rt_arg() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env1>(
-        format("C1 string with {} placeholder"_sc, std::int32_t{1}));
+        stdx::ct_format<"C1 string with {} placeholder">(std::int32_t{1}));
 }
 
 auto log_one_64bit_rt_arg() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env1>(
-        format("C2 string with {} placeholder"_sc, std::int64_t{1}));
+        stdx::ct_format<"C2 string with {} placeholder">(std::int64_t{1}));
 }
 
 auto log_one_formatted_rt_arg() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env1>(
-        format("C3 string with {:08x} placeholder"_sc, std::int32_t{1}));
+        stdx::ct_format<"C3 string with {:08x} placeholder">(std::int32_t{1}));
 }
 
 auto log_with_non_default_module_id() -> void {
@@ -64,7 +69,7 @@ auto log_with_non_default_module_id() -> void {
                      logging::get_module, "not default") {
         auto cfg = logging::binary::config{test_log_args_destination{}};
         cfg.logger.log_msg<cib_log_env_t>(
-            format("ModuleID string with {} placeholder"_sc, 1));
+            stdx::ct_format<"ModuleID string with {} placeholder">(1));
     }
 }
 
@@ -73,6 +78,6 @@ auto log_with_fixed_module_id() -> void {
                      logging::get_module, "fixed") {
         auto cfg = logging::binary::config{test_log_args_destination{}};
         cfg.logger.log_msg<cib_log_env_t>(
-            format("Fixed ModuleID string with {} placeholder"_sc, 1));
+            stdx::ct_format<"Fixed ModuleID string with {} placeholder">(1));
     }
 }

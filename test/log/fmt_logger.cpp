@@ -1,5 +1,6 @@
 #include <log/fmt/logger.hpp>
 
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
@@ -166,7 +167,7 @@ inline auto logging::config<secure_t> =
     logging::log<stdx::extend_env_t<                                           \
         cib_log_env_t, logging::get_level, logging::level::TRACE,              \
         logging::get_flavor, stdx::type_identity<secure_t>{}>>(                \
-        __FILE__, __LINE__, sc::format(MSG##_sc __VA_OPT__(, ) __VA_ARGS__))
+        __FILE__, __LINE__, stdx::ct_format<MSG>(__VA_ARGS__))
 
 TEST_CASE("logging can be flavored", "[fmt_logger]") {
     buffer.clear();

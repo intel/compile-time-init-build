@@ -1,6 +1,7 @@
 #include <log/catalog/encoder.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/span.hpp>
 
 #include <conc/concurrency.hpp>
@@ -164,7 +165,7 @@ TEST_CASE("log zero arguments", "[mipi]") {
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE>{}};
-    cfg.logger.log_msg<log_env>("Hello"_sc);
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"Hello">());
     CHECK(test_critical_section::count == 2);
 }
 
@@ -173,7 +174,7 @@ TEST_CASE("log one 32-bit argument", "[mipi]") {
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
-    cfg.logger.log_msg<log_env>(format("{}"_sc, 17u));
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(17u));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -184,7 +185,7 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
     auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
                                   0x1234'5678u>{}};
-    cfg.logger.log_msg<log_env>(format("{}"_sc, x));
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(x));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -193,7 +194,7 @@ TEST_CASE("log two arguments", "[mipi]") {
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
-    cfg.logger.log_msg<log_env>(format("{} {}"_sc, 17u, 18u));
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -204,7 +205,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
         auto cfg = logging::binary::config{
             test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
                                      18u, 19u>{}};
-        cfg.logger.log_msg<log_env>(format("{} {} {}"_sc, 17u, 18u, 19u));
+        cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {} {}">(17u, 18u, 19u));
         CHECK(test_critical_section::count == 2);
     }
     {
@@ -213,7 +214,7 @@ TEST_CASE("log more than two arguments", "[mipi]") {
             test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
                                      18u, 19u, 20u>{}};
         cfg.logger.log_msg<log_env>(
-            format("{} {} {} {}"_sc, 17u, 18u, 19u, 20u));
+            stdx::ct_format<"{} {} {} {}">(17u, 18u, 19u, 20u));
         CHECK(test_critical_section::count == 2);
     }
 }
@@ -226,7 +227,7 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{},
         test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
 
-    cfg.logger.log_msg<log_env>(format("{} {}"_sc, 17u, 18u));
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 4);
     CHECK(num_log_args_calls == 2);
 }
@@ -312,6 +313,6 @@ TEST_CASE("log with overridden builder", "[mipi]") {
     auto cfg = logging::binary::config{
         test_catalog_args_destination<logging::level::TRACE>{}};
 
-    cfg.logger.log_msg<catalog_env>("Hello"_sc);
+    cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());
     CHECK(num_catalog_args_calls == 1);
 }

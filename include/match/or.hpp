@@ -5,7 +5,6 @@
 #include <match/constant.hpp>
 #include <match/simplify.hpp>
 #include <match/sum_of_products.hpp>
-#include <sc/string_constant.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -14,7 +13,7 @@
 namespace match {
 template <matcher, matcher> struct and_t;
 
-template <matcher L, matcher R> struct or_t : bin_op_t<or_t, " or ", L, R> {
+template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
     [[nodiscard]] constexpr auto operator()(auto const &event) const -> bool {
         return this->lhs(event) or this->rhs(event);
     }
