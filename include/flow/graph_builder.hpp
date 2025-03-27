@@ -169,12 +169,10 @@ struct graph_builder {
 
     template <typename T>
     constexpr static auto error_steps =
-        stdx::transform([](auto N) { return stdx::ct_string_from_type(N); },
-                        T{})
-            .join(stdx::ct_string{""}, [](auto x, auto y) {
-                using namespace stdx::literals;
-                return x + ", "_cts + y;
-            });
+        T{}.join(stdx::cts_t<"">{}, [](auto x, auto y) {
+            using namespace stdx::literals;
+            return x + ", "_ctst + y;
+        });
 
     constexpr static void check_for_missing_nodes(auto nodes,
                                                   auto mentioned_nodes) {

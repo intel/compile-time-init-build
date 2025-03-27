@@ -241,7 +241,7 @@ target_sources(
 
 add_library(cib_flow INTERFACE)
 target_compile_features(cib_flow INTERFACE cxx_std_20)
-target_link_libraries_system(cib_flow INTERFACE cib_log cib_nexus cib_sc stdx)
+target_link_libraries_system(cib_flow INTERFACE cib_log cib_nexus stdx)
 
 target_sources(
     cib_flow
@@ -266,14 +266,7 @@ target_sources(
 
 add_library(cib_seq INTERFACE)
 target_compile_features(cib_seq INTERFACE cxx_std_20)
-target_link_libraries_system(
-    cib_seq
-    INTERFACE
-    cib_flow
-    cib_log
-    cib_nexus
-    cib_sc
-    stdx)
+target_link_libraries_system(cib_seq INTERFACE cib_flow cib_log cib_nexus stdx)
 
 target_sources(
     cib_seq

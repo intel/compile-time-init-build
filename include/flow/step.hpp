@@ -5,7 +5,6 @@
 #include <flow/common.hpp>
 #include <flow/log.hpp>
 #include <flow/subgraph_identity.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
@@ -18,10 +17,7 @@ template <stdx::ct_string Type, stdx::ct_string Name,
           subgraph_identity Identity, typename Cond, typename F>
 struct ct_node {
     using is_subgraph = void;
-    using type_t =
-        decltype(stdx::ct_string_to_type<Type, sc::string_constant>());
-    using name_t =
-        decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+    using name_t = stdx::cts_t<Name>;
     using func_t = F;
 
     constexpr static auto ct_type = Type;
