@@ -40,8 +40,8 @@ template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
     template <typename Env, typename FilenameStringType,
-              typename LineNumberType, typename MsgType>
-    auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
+              typename LineNumberType, typename FmtResult>
+    auto log(FilenameStringType, LineNumberType, FmtResult const &fr) -> void {
         auto const currentTime =
             std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_time)
@@ -52,10 +52,11 @@ template <typename TDestinations> struct log_handler {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
                                  level_wrapper<get_level(Env{})>{},
                                  get_module(Env{}));
-                msg.apply(
-                    [&]<typename StringType>(StringType, auto const &...args) {
-                        ::fmt::format_to(out, StringType::value, args...);
-                    });
+                constexpr auto fmtstr =
+                    std::string_view{decltype(fr.str)::value};
+                fr.args.apply([&](auto const &...args) {
+                    ::fmt::format_to(out, fmtstr, args...);
+                });
                 *out = '\n';
             },
             dests);

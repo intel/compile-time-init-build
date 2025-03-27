@@ -6,6 +6,7 @@
 
 #include <stdx/compiler.hpp>
 #include <stdx/ranges.hpp>
+#include <stdx/utility.hpp>
 
 #include <functional>
 #include <iterator>
@@ -58,7 +59,7 @@ struct indexed_handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
         if (not handled) {
             CIB_ERROR(
                 "None of the registered callbacks ({}) claimed this message.",
-                sc::uint_<stdx::tuple_size_v<Callbacks>>);
+                stdx::ct<stdx::tuple_size_v<Callbacks>>());
         }
         return handled;
     }

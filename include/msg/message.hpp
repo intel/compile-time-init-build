@@ -4,10 +4,9 @@
 #include <match/sum_of_products.hpp>
 #include <msg/field.hpp>
 #include <msg/field_matchers.hpp>
-#include <sc/format.hpp>
-#include <sc/fwd.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/env.hpp>
 #include <stdx/iterator.hpp>
@@ -37,12 +36,12 @@ template <typename T>
 concept matcher_maker = requires { typename T::is_matcher_maker; };
 
 namespace detail {
-template <typename N> struct matching_name {
+template <stdx::ct_string N> struct matching_name {
     template <typename Field>
-    using fn = std::is_same<N, typename Field::name_t>;
+    using fn = std::bool_constant<N == Field::name_t::value>;
 };
 
-template <typename Name, typename RelOp, auto V> struct matcher_maker {
+template <stdx::ct_string Name, typename RelOp, auto V> struct matcher_maker {
     using is_matcher_maker = void;
 
     template <typename Msg>
@@ -120,13 +119,13 @@ constexpr auto operator or(T, U) -> mm_or_t<T, matcher_wrapper<U>> {
     return {};
 }
 
-template <typename Name, typename T> struct field_value {
-    using name_t = Name;
+template <stdx::ct_string Name, typename T> struct field_value {
+    using name_t = stdx::cts_t<Name>;
     T value;
 };
 
-template <typename Name> struct field_name {
-    using name_t = Name;
+template <stdx::ct_string Name> struct field_name {
+    using name_t = stdx::cts_t<Name>;
 
     // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     template <typename T> constexpr auto operator=(T value) {
@@ -173,12 +172,10 @@ template <typename Name> struct field_name {
 
 inline namespace literals {
 template <stdx::ct_string S> constexpr auto operator""_field() {
-    using Name = decltype(stdx::ct_string_to_type<S, sc::string_constant>());
-    return detail::field_name<Name>{};
+    return detail::field_name<S>{};
 }
 template <stdx::ct_string S> constexpr auto operator""_f() {
-    using Name = decltype(stdx::ct_string_to_type<S, sc::string_constant>());
-    return detail::field_name<Name>{};
+    return detail::field_name<S>{};
 }
 } // namespace literals
 
@@ -212,9 +209,8 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, some_field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
-        using Field =
-            std::remove_cvref_t<decltype(stdx::get<typename V::name_t>(
-                FieldsTuple{}))>;
+        using Field = std::remove_cvref_t<decltype(stdx::get<name_for<V>>(
+            FieldsTuple{}))>;
         check<Field, std::remove_cvref_t<R>>();
         Field::insert(std::forward<R>(r),
                       static_cast<typename Field::value_type>(v.value));
@@ -236,7 +232,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
     }
 
   public:
-    template <stdx::range R, typename... Ns>
+    template <stdx::range R, stdx::ct_string... Ns>
     constexpr static auto set(R &&r, field_name<Ns>...) -> void {
         (set_default<Ns>(r), ...);
     }
@@ -248,33 +244,32 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, typename... Fs>
     constexpr static auto set(R &&r, Fs...) -> void {
-        (set_default<typename Fs::name_t>(r), ...);
+        (set_default<name_for<Fs>>(r), ...);
     }
 
-    template <stdx::range R, typename N>
+    template <stdx::range R, stdx::ct_string N>
     constexpr static auto get(R &&r, field_name<N>) {
-        return get<N>(std::forward<R>(r));
+        return get<stdx::cts_t<N>>(std::forward<R>(r));
     }
 
     template <stdx::range R, typename F> constexpr static auto get(R &&r, F) {
-        return get<typename F::name_t>(std::forward<R>(r));
+        return get<name_for<F>>(std::forward<R>(r));
     }
 
     template <stdx::range R>
     [[nodiscard]] constexpr static auto describe(R &&r) {
-        using msg_name =
-            decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+        using namespace stdx::literals;
         auto const descs = [&] {
             auto const field_descriptions =
                 stdx::tuple{Fields::describe(Fields::extract(r))...};
             if constexpr (sizeof...(Fields) > 0) {
                 return field_descriptions.join(
-                    [](auto lhs, auto rhs) { return lhs + ", "_sc + rhs; });
+                    [](auto lhs, auto rhs) { return lhs + ", "_ctst + rhs; });
             } else {
-                return ""_sc;
+                return ""_ctst;
             }
         }();
-        return format("{}({})"_sc, msg_name{}, descs);
+        return stdx::ct_format<"{}({})">(stdx::cts_t<Name>{}, descs);
     }
 
     using default_value_type = std::uint32_t;

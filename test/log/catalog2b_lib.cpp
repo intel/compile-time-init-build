@@ -3,6 +3,8 @@
 
 #include <log/catalog/encoder.hpp>
 
+#include <stdx/ct_format.hpp>
+
 #include <conc/concurrency.hpp>
 
 #include <cstdint>
@@ -25,5 +27,5 @@ auto log_rt_enum_arg() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     using namespace ns;
     cfg.logger.log_msg<log_env2b>(
-        format("E string with {} placeholder"_sc, E::value));
+        stdx::ct_format<"E string with {} placeholder">(E::value));
 }

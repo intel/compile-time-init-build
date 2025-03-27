@@ -1,9 +1,10 @@
 #pragma once
 
 #include <match/ops.hpp>
-#include <sc/format.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/ranges.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
@@ -113,18 +114,19 @@ template <typename RelOp> constexpr auto inverse_op() {
 }
 
 template <typename RelOp> constexpr auto to_string() {
+    using namespace stdx::literals;
     if constexpr (std::same_as<RelOp, std::less<>>) {
-        return "<"_sc;
+        return "<"_ctst;
     } else if constexpr (std::same_as<RelOp, std::less_equal<>>) {
-        return "<="_sc;
+        return "<="_ctst;
     } else if constexpr (std::same_as<RelOp, std::greater<>>) {
-        return ">"_sc;
+        return ">"_ctst;
     } else if constexpr (std::same_as<RelOp, std::greater_equal<>>) {
-        return ">="_sc;
+        return ">="_ctst;
     } else if constexpr (std::same_as<RelOp, std::equal_to<>>) {
-        return "=="_sc;
+        return "=="_ctst;
     } else if constexpr (std::same_as<RelOp, std::not_equal_to<>>) {
-        return "!="_sc;
+        return "!="_ctst;
     }
 }
 } // namespace detail
@@ -139,17 +141,17 @@ struct rel_matcher_t {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        return format("{} {} 0x{:x}"_sc, Field::name,
-                      detail::to_string<RelOp>(),
-                      sc::uint_<static_cast<std::uint32_t>(ExpectedValue)>);
+        return stdx::ct_format<"{} {} 0x{:x}">(
+            Field::name, detail::to_string<RelOp>(),
+            stdx::ct<static_cast<std::uint32_t>(ExpectedValue)>());
     }
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return format("{} (0x{:x}) {} 0x{:x}"_sc, Field::name,
-                      static_cast<std::uint32_t>(extract_field(msg)),
-                      detail::to_string<RelOp>(),
-                      sc::uint_<static_cast<std::uint32_t>(ExpectedValue)>);
+        return stdx::ct_format<"{} (0x{:x}) {} 0x{:x}">(
+            Field::name, static_cast<std::uint32_t>(extract_field(msg)),
+            detail::to_string<RelOp>(),
+            stdx::ct<static_cast<std::uint32_t>(ExpectedValue)>());
     }
 
   private:

@@ -3,6 +3,8 @@
 #include <msg/field.hpp>
 #include <msg/message.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
@@ -31,7 +33,10 @@ constexpr struct custom_match_t {
         return true;
     }
 
-    [[nodiscard]] constexpr static auto describe() { return "custom"_sc; }
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "custom"_ctst;
+    }
 
     [[nodiscard]] constexpr static auto describe_match(msg::owning<msg_defn>) {
         return describe();

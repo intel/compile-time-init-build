@@ -3,8 +3,9 @@
 #include <match/concepts.hpp>
 #include <match/implies.hpp>
 #include <match/negate.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
+
+#include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
 
 #include <concepts>
 #include <functional>
@@ -16,9 +17,12 @@ struct test_matcher {
     [[nodiscard]] constexpr auto operator()(int i) const -> bool {
         return i == 1;
     }
-    [[nodiscard]] constexpr static auto describe() { return "test"_sc; }
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "test"_ctst;
+    }
     [[nodiscard]] constexpr auto describe_match(int i) const {
-        return format("{}({} == 1)"_sc, (*this)(i) ? 'T' : 'F', i);
+        return stdx::ct_format<"{}({} == 1)">((*this)(i) ? 'T' : 'F', i);
     }
 };
 static_assert(match::matcher<test_matcher>);
@@ -40,15 +44,16 @@ template <typename RelOp> constexpr auto inverse_op() {
         return std::less{};
     }
 }
-template <typename RelOp> constexpr auto to_string() -> std::string_view {
+template <typename RelOp> constexpr auto to_string() {
+    using namespace stdx::literals;
     if constexpr (std::same_as<RelOp, std::less<>>) {
-        return "<";
+        return "<"_ctst;
     } else if constexpr (std::same_as<RelOp, std::less_equal<>>) {
-        return "<=";
+        return "<="_ctst;
     } else if constexpr (std::same_as<RelOp, std::greater<>>) {
-        return ">";
+        return ">"_ctst;
     } else if constexpr (std::same_as<RelOp, std::greater_equal<>>) {
-        return ">=";
+        return ">="_ctst;
     }
 }
 } // namespace detail
@@ -59,10 +64,14 @@ template <typename RelOp, auto Value> struct rel_matcher {
     [[nodiscard]] constexpr auto operator()(int i) const -> bool {
         return RelOp{}(i, Value);
     }
-    [[nodiscard]] constexpr static auto describe() { return "test"_sc; }
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "test"_ctst;
+    }
     [[nodiscard]] constexpr auto describe_match(int i) const {
-        return format("{}({} {} {})"_sc, (*this)(i) ? 'T' : 'F', i,
-                      detail::to_string<RelOp>(), Value);
+        return stdx::ct_format<"{}({} {} {})">((*this)(i) ? 'T' : 'F', i,
+                                               detail::to_string<RelOp>(),
+                                               stdx::ct<Value>());
     }
 
   private:

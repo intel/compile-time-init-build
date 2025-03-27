@@ -6,9 +6,8 @@
 #include <match/negate.hpp>
 #include <match/simplify.hpp>
 #include <match/sum_of_products.hpp>
-#include <sc/format.hpp>
-#include <sc/string_constant.hpp>
 
+#include <stdx/ct_format.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <type_traits>
@@ -26,11 +25,11 @@ template <matcher M> struct not_t {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        return format("not ({})"_sc, m.describe());
+        return stdx::ct_format<"not ({})">(m.describe());
     }
 
     [[nodiscard]] constexpr auto describe_match(auto const &event) const {
-        return format("not ({})"_sc, m.describe_match(event));
+        return stdx::ct_format<"not ({})">(m.describe_match(event));
     }
 
   private:

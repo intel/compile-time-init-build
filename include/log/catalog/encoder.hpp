@@ -21,7 +21,7 @@
 namespace logging::binary {
 namespace detail {
 template <typename S, typename... Args> constexpr static auto to_message() {
-    constexpr auto s = S::value;
+    constexpr auto s = std::string_view{S::value};
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
@@ -74,20 +74,22 @@ template <typename T> log_writer(T) -> log_writer<T>;
 
 template <typename Writer> struct log_handler {
     template <typename Env, typename FilenameStringType,
-              typename LineNumberType, typename MsgType>
-    auto log(FilenameStringType, LineNumberType, MsgType const &msg) -> void {
-        log_msg<Env>(msg);
+              typename LineNumberType, typename FmtResult>
+    auto log(FilenameStringType, LineNumberType, FmtResult const &fr) -> void {
+        log_msg<Env>(fr);
     }
 
-    template <typename Env, typename Msg> auto log_msg(Msg msg) -> void {
-        msg.apply([&]<typename S, typename... Args>(S, Args... args) {
+    template <typename Env, typename FmtResult>
+    auto log_msg(FmtResult const &fr) -> void {
+        fr.args.apply([&]<typename... Args>(Args &&...args) {
             auto builder = get_builder(Env{});
             constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = typename decltype(builder)::template convert_args<
-                detail::to_message_t<S>::template fn, Args...>;
+                detail::to_message_t<decltype(fr.str)>::template fn,
+                std::remove_cvref_t<Args>...>;
             using Module = decltype(detail::to_module<get_module(Env{})>());
             w(builder.template build<L>(catalog<Message>(), module<Module>(),
-                                        args...));
+                                        std::forward<Args>(args)...));
         });
     }
 

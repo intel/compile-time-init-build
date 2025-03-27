@@ -10,7 +10,6 @@
 #include <msg/callback.hpp>
 #include <msg/detail/separate_sum_terms.hpp>
 #include <msg/field_matchers.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
