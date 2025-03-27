@@ -10,6 +10,7 @@
 #include <stdx/type_traits.hpp>
 
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -141,17 +142,28 @@ struct rel_matcher_t {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        return stdx::ct_format<"{} {} 0x{:x}">(
-            Field::name, detail::to_string<RelOp>(),
-            stdx::ct<static_cast<std::uint32_t>(ExpectedValue)>());
+        if constexpr (std::integral<typename Field::type>) {
+            return stdx::ct_format<"{} {} 0x{:x}">(Field::name,
+                                                   detail::to_string<RelOp>(),
+                                                   stdx::ct<ExpectedValue>());
+        } else {
+            return stdx::ct_format<"{} {} {}">(Field::name,
+                                               detail::to_string<RelOp>(),
+                                               stdx::ct<ExpectedValue>());
+        }
     }
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
-        return stdx::ct_format<"{} (0x{:x}) {} 0x{:x}">(
-            Field::name, static_cast<std::uint32_t>(extract_field(msg)),
-            detail::to_string<RelOp>(),
-            stdx::ct<static_cast<std::uint32_t>(ExpectedValue)>());
+        if constexpr (std::integral<typename Field::type>) {
+            return stdx::ct_format<"{} (0x{:x}) {} 0x{:x}">(
+                Field::name, extract_field(msg), detail::to_string<RelOp>(),
+                stdx::ct<ExpectedValue>());
+        } else {
+            return stdx::ct_format<"{} ({}) {} {}">(
+                Field::name, extract_field(msg), detail::to_string<RelOp>(),
+                stdx::ct<ExpectedValue>());
+        }
     }
 
   private:
