@@ -2,13 +2,55 @@
 #include <msg/field.hpp>
 #include <msg/field_matchers.hpp>
 
+#include <stdx/ct_string.hpp>
+#include <stdx/tuple.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 namespace {
 using namespace msg;
 using test_field =
     field<"test_field", std::uint32_t>::located<at{0_dw, 31_msb, 24_lsb}>;
+
+enum struct E { A, B, C };
+
+using test_enum_field =
+    field<"enum_field", E>::located<at{0_dw, 31_msb, 24_lsb}>;
 } // namespace
+
+TEST_CASE("matcher description", "[field matchers]") {
+    using namespace stdx::literals;
+    constexpr auto m = msg::less_than_t<test_field, 5>{};
+    constexpr auto desc = m.describe();
+    static_assert(desc.str == "test_field < 0x5"_ctst);
+}
+
+TEST_CASE("matcher description of match", "[field matchers]") {
+    using namespace stdx::literals;
+    using msg_data = std::array<std::uint32_t, 1>;
+
+    constexpr auto m = msg::less_than_t<test_field, 5>{};
+    constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
+    static_assert(desc.str == "test_field (0x{:x}) < 0x5"_ctst);
+    static_assert(desc.args == stdx::tuple{1});
+}
+
+TEST_CASE("matcher description (enum field)", "[field matchers]") {
+    using namespace stdx::literals;
+    constexpr auto m = msg::less_than_t<test_enum_field, E::C>{};
+    constexpr auto desc = m.describe();
+    static_assert(desc.str == "enum_field < C"_ctst);
+}
+
+TEST_CASE("matcher description of match (enum field)", "[field matchers]") {
+    using namespace stdx::literals;
+    using msg_data = std::array<std::uint32_t, 1>;
+
+    constexpr auto m = msg::less_than_t<test_enum_field, E::C>{};
+    constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
+    static_assert(desc.str == "enum_field ({}) < C"_ctst);
+    static_assert(desc.args == stdx::tuple{E::B});
+}
 
 TEST_CASE("negate less_than", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_field, 5>{};
