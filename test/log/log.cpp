@@ -110,3 +110,24 @@ TEST_CASE("CIB_FATAL passes extra arguments to panic", "[log]") {
     CHECK(buffer.find("Hello 42") != std::string::npos);
     CHECK(panicked);
 }
+
+TEST_CASE("CIB_ASSERT is equivalent to CIB_FATAL on failure", "[log]") {
+    reset_test_state();
+    expected_why = "Assertion failure: true == false";
+
+    CIB_ASSERT(true == false);
+    CAPTURE(buffer);
+    CHECK(buffer.find(expected_why) != std::string::npos);
+    CHECK(panicked);
+}
+
+TEST_CASE("CIB_ASSERT passes arguments to panic", "[log]") {
+    reset_test_state();
+    expected_why = "Assertion failure: true == false";
+    expected_args = std::make_tuple(stdx::make_tuple(), 42);
+
+    CIB_ASSERT(true == false, 42);
+    CAPTURE(buffer);
+    CHECK(buffer.find(expected_why) != std::string::npos);
+    CHECK(panicked);
+}
