@@ -129,8 +129,10 @@ template <stdx::ct_string Fmt, typename Env, typename F, typename L>
     logging::detail::panic<MSG, cib_log_env_t>(                                \
         __FILE__, __LINE__ __VA_OPT__(, ) __VA_ARGS__)
 
-#define CIB_ASSERT(expr)                                                       \
-    ((expr) ? void(0) : CIB_FATAL("Assertion failure: " #expr))
+#define CIB_ASSERT(expr, ...)                                                  \
+    ((expr)                                                                    \
+         ? void(0)                                                             \
+         : CIB_FATAL("Assertion failure: " #expr __VA_OPT__(, ) __VA_ARGS__))
 
 namespace logging {
 template <typename Env, typename... Ts> static auto log_version() -> void {
