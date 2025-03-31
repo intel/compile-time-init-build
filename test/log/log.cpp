@@ -3,19 +3,21 @@
 
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
+#include <stdx/tuple.hpp>
 #include <stdx/utility.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <any>
 #include <iterator>
-#include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 namespace {
 bool panicked{};
 std::string_view expected_why{};
-std::optional<int> expected_arg{};
+std::any expected_args{};
 
 struct injected_handler {
     template <stdx::ct_string Why, typename... Args>
@@ -24,11 +26,11 @@ struct injected_handler {
         CAPTURE(s);
         CHECK(s.ends_with(expected_why));
         panicked = true;
-        if (expected_arg) {
-            CHECK(sizeof...(Args) == 1);
-            if constexpr (sizeof...(Args) == 1) {
-                CHECK(*expected_arg == (args, ...));
-            }
+
+        if (expected_args.has_value()) {
+            using expected_t = std::tuple<std::decay_t<Args>...>;
+            CHECK(std::any_cast<expected_t>(expected_args) ==
+                  std::make_tuple(args...));
         }
     }
 };
@@ -38,7 +40,7 @@ std::string buffer{};
 auto reset_test_state() {
     panicked = false;
     expected_why = {};
-    expected_arg.reset();
+    expected_args.reset();
     buffer.clear();
 }
 } // namespace
@@ -88,10 +90,22 @@ TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
 TEST_CASE("CIB_FATAL can format stack arguments", "[log]") {
     reset_test_state();
     expected_why = "Hello {}";
-    expected_arg = 42;
+    expected_args = std::make_tuple(stdx::make_tuple(42));
 
     auto x = 42;
     CIB_FATAL("Hello {}", x);
+    CAPTURE(buffer);
+    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(panicked);
+}
+
+TEST_CASE("CIB_FATAL passes extra arguments to panic", "[log]") {
+    reset_test_state();
+    expected_why = "Hello {}";
+    expected_args = std::make_tuple(stdx::make_tuple(42), 17);
+
+    auto x = 42;
+    CIB_FATAL("Hello {}", x, 17);
     CAPTURE(buffer);
     CHECK(buffer.find("Hello 42") != std::string::npos);
     CHECK(panicked);
