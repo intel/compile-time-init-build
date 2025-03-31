@@ -3,7 +3,6 @@
 #include <cib/detail/runtime_conditional.hpp>
 #include <flow/subgraph_identity.hpp>
 #include <log/log.hpp>
-#include <sc/string_constant.hpp>
 
 #include <stdx/ct_string.hpp>
 
@@ -31,8 +30,7 @@ struct rt_step {
 template <stdx::ct_string Name, bool IsReference = true>
 struct ct_step : rt_step {
     using is_subgraph = void;
-    using name_t =
-        decltype(stdx::ct_string_to_type<Name, sc::string_constant>());
+    using name_t = stdx::cts_t<Name>;
 
     constexpr static auto identity = flow::subgraph_identity::VALUE;
 
@@ -56,10 +54,8 @@ struct ct_step : rt_step {
  */
 template <stdx::ct_string Name>
 [[nodiscard]] constexpr auto step(func_ptr forward, func_ptr backward) {
-    return ct_step<Name>{
-        {forward, backward, [] {
-             CIB_TRACE("seq.step({})",
-                       stdx::ct_string_to_type<Name, sc::string_constant>());
-         }}};
+    return ct_step<Name>{{forward, backward, [] {
+                              CIB_TRACE("seq.step({})", stdx::cts_t<Name>{});
+                          }}};
 }
 } // namespace seq

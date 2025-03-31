@@ -99,7 +99,7 @@ xref:logging.adoc#_logging_environments[environment].
 
 The first two runtime parameters receive preprocessor `\_​_FILE_​\_` and `__LINE_​_` values
 respectively. The `msg` argument is a structure containing a
-xref:sc.adoc#_formatting_strings[compile-time format string] and runtime
+compile-time format string and runtime
 arguments to be interpolated into it. It supports an `apply` function, so one
 way to implement `log` is:
 
@@ -185,11 +185,52 @@ struct my_struct {
 }
 ----
 
-=== String data
+=== Efficient logging with MIPI Sys-T
 
-On a constrained system, space for text can be at a premium. The `sc` library
-and the MIPI Sys-T logger combine to
-xref:sc.adoc#_efficient_logging_with_mipi_sys_t[solve this problem].
+On a constrained system, space for text can be limited-to-nonexistent. `cib`
+uses `stdx::ct_format` and the
+https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/mipi_encoder.hpp[MIPI
+Sys-T logging config] to solve this problem.
+
+- First, each string constant contains string character data in its type.
+- The MIPI logger calls the function template specialization
+  https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/catalog.hpp[`catalog`]
+  to get the catalog ID corresponding to each string constant.
+
+But: the `catalog` function template is just that -- only a template -- to
+begin with. It is specialized as follows:
+
+- The application is built as a library.
+- Running `nm` on that library reveals missing symbols: precisely the function
+  specializations that are required for all the string constants.
+- Those symbols are used to generate the template specializations in another
+  file, which itself is compiled into a library.
+- String data is recovered from the symbol types and used to generate the
+  catalog collateral in XML and/or JSON format.
+- Link-time optimization inlines the `catalog` function template
+  specializations, each of which is a one-line function that returns a
+  catalog ID.
+
+Thus no string data exists in the executable, but the correct catalog IDs are
+used in logging, and the remote log handler can reconstitute the actual strings.
+The XML and JSON collateral also contains information about any runtime
+arguments that need to be interpolated into the string and whose values are sent
+by the MIPI Sys-T logger after the catalog ID.
+
+==== Tooling support
+
+The process of generating log strings from the type information revealed by
+missing symbols is automated by a
+https://github.com/intel/compile-time-init-build/blob/main/tools/gen_str_catalog.py[python
+script] provided and by a
+https://github.com/intel/compile-time-init-build/blob/main/cmake/string_catalog.cmake[CMake
+wrapper function (`gen_str_catalog`)] that drives the process. See
+https://github.com/intel/compile-time-init-build/blob/main/test/CMakeLists.txt[the
+test] that exercises that functionality for an example.
+
+NOTE: This process assigns IDs to both strings and
+xref:logging.adoc#_modules[log modules]. `catalog` is specialized for catalog
+IDs; `module` is specialized for module IDs.
 
 === Version logging
 
