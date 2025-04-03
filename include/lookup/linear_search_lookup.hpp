@@ -6,7 +6,7 @@
 #include <stdx/compiler.hpp>
 
 #include <cstddef>
-#include <iterator>
+#include <type_traits>
 
 namespace lookup {
 template <std::size_t MaxSize> struct linear_search_lookup {
@@ -28,7 +28,7 @@ template <std::size_t MaxSize> struct linear_search_lookup {
   public:
     [[nodiscard]] CONSTEVAL static auto make(compile_time auto i) {
         if constexpr (constexpr auto input = i(); input.size <= MaxSize) {
-            return impl<decltype(input)>{input};
+            return impl<std::remove_cv_t<decltype(input)>>{input};
         } else {
             return strategy_failed_t{};
         }
