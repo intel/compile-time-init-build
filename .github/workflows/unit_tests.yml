@@ -13,7 +13,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 19
+  DEFAULT_LLVM_VERSION: 20
   DEFAULT_GCC_VERSION: 13
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 13, 16, 17, 18, 19]
+        version: [12, 13, 16, 17, 18, 19, 20]
         cxx_standard: [20]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
@@ -36,6 +36,15 @@ jobs:
             cc: "clang"
             cxx: "clang++"
             cxx_flags: "-stdlib=libstdc++"
+          - version: 20
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20 all
+            toolchain_root: "/usr/lib/llvm-20"
+          - version: 20
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20 && sudo apt install -y libc++-20-dev libc++abi-20-dev
+            cxx_flags: "-stdlib=libc++"
           - version: 19
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19 all
@@ -87,6 +96,8 @@ jobs:
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: gcc
+            version: 20
           - compiler: gcc
             version: 19
           - compiler: gcc
@@ -300,8 +311,8 @@ jobs:
           - compiler: clang
             cc: "clang"
             cxx: "clang++"
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19
-            toolchain_root: "/usr/lib/llvm-19"
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20
+            toolchain_root: "/usr/lib/llvm-20"
           - compiler: gcc
             cc: "gcc-13"
             cxx: "g++-13"

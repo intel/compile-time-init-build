@@ -46,7 +46,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct builder {
     template <std::convertible_to<func_ptr_t>... Fs>
     [[nodiscard]] constexpr auto add(Fs &&...fs) const {
         builder<NumFuncs + sizeof...(Fs), ArgTypes...> cb;
-        auto i = std::size_t{};
+        auto i = 0;
         while (i < NumFuncs) {
             cb.funcs[i] = funcs[i];
             ++i;

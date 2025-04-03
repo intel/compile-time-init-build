@@ -139,8 +139,8 @@ template <> struct builder<defn::normal_build_msg_t> {
         auto dest = &message.data()[header_size];
 
         auto const ver = stdx::to_le(static_cast<std::uint64_t>(Version));
-        dest = std::copy_n(stdx::bit_cast<std::uint8_t const *>(&ver),
-                           sizeof(std::uint64_t), dest);
+        std::memcpy(dest, &ver, sizeof(std::uint64_t));
+        dest += sizeof(std::uint64_t);
         std::copy_n(std::cbegin(S.value), S.size(), dest);
         return message;
     }
