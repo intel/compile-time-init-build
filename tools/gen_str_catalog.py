@@ -58,9 +58,13 @@ def extract_string_id(line_m):
 module_re = re.compile(r"sc::module_string<sc::undefined<void, char, (.*)>\s?>")
 
 
-def module_string(module) -> str:
+def module_string(module: str) -> str:
     string_tuple = module.replace("(char)", "")
     return "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
+
+
+def msg_string(msg: dict) -> str:
+    return msg["msg"]
 
 
 def extract_module_id(line_m):
@@ -85,10 +89,46 @@ def stable_msg_key(msg: dict):
 
 
 def stable_module_key(module: str):
-    return module_string(module)
+    return hash(module_string(module))
 
 
-def read_input(filenames: list[str], stable_ids):
+def typo_error(s: str, stable: str, i: int) -> str:
+    raise Exception(f"Error: typo detected: \"{s}\" is similar to \"{stable}\"")
+
+
+def typo_warn(s: str, stable: str, i: int) -> str:
+    print(f"Warning: typo detected: \"{s}\" is similar to \"{stable}\"")
+    return s
+
+
+def typo_fix(s: str, stable: str, i: int) -> str:
+    print(f"Warning: typo detected: \"{s}\" is similar to \"{stable}\". Fixing to ID {i}.")
+    return stable
+
+
+def typo_fix_quiet(s: str, stable: str, i: int) -> str:
+    return stable
+
+
+typo_behavior = {
+    "error": typo_error,
+    "warn": typo_warn,
+    "fix": typo_fix,
+    "fix_quiet": typo_fix_quiet
+}
+
+
+def handle_typo(stable_ids: dict, s: str, d: int, fn, gen) -> str:
+    if d != 0:
+        from Levenshtein import distance
+        for (i, value) in stable_ids.values():
+            if distance(s, value) <= d:
+                if fn(s, value, i) == value:
+                    return i
+    return next(gen)
+
+
+def read_input(filenames: list[str], stable_ids, typo_distance: int, typo_detect: str):
     line_re = re.compile(r"^.*(unsigned int (catalog|module)<(.+?)>\(\))$")
 
     def read_file(filename):
@@ -103,24 +143,24 @@ def read_input(filenames: list[str], stable_ids):
     strings = filter(lambda x: not isinstance(x, str), messages)
     modules = filter(lambda x: isinstance(x, str), messages)
 
-    def get_id(stable_ids, key_fn, gen, obj):
+    def get_id(stable_ids, key_fn, string_fn, gen, obj):
         key = key_fn(obj)
         if key in stable_ids:
-            return stable_ids[key]
+            return stable_ids[key][0]
         else:
-            return next(gen)
+            return handle_typo(stable_ids, string_fn(obj), typo_distance, typo_behavior[typo_detect], gen)
 
     stable_msg_ids, stable_module_ids = stable_ids
 
     old_msg_ids = set(stable_msg_ids.values())
     msg_id_gen = itertools.filterfalse(old_msg_ids.__contains__, itertools.count(0))
-    get_msg_id = partial(get_id, stable_msg_ids, stable_msg_key, msg_id_gen)
+    get_msg_id = partial(get_id, stable_msg_ids, stable_msg_key, msg_string, msg_id_gen)
 
     old_module_ids = set(stable_module_ids.values())
     module_id_gen = itertools.filterfalse(
         old_module_ids.__contains__, itertools.count(0)
     )
-    get_module_id = partial(get_id, stable_module_ids, stable_module_key, module_id_gen)
+    get_module_id = partial(get_id, stable_module_ids, stable_module_key, module_string, module_id_gen)
 
     unique_strings = {i[0][0]: i for i in strings}.values()
     return (
@@ -406,6 +446,19 @@ def parse_cmdline():
         help="When on, stable IDs from a previous run are forgotten. By default, those strings are remembered in the output so that they will not be reused in future.",
     )
     parser.add_argument(
+        "--stable_typo_distance",
+        type=int,
+        default=0,
+        help="The Levenshtein distance used to detect typos in comparison to stable strings.",
+    )
+    parser.add_argument(
+        "--typo_detect",
+        type=str,
+        choices=["error", "warn", "fix", "fix_quiet"],
+        default="error",
+        help="What to do when detecting a typo against stable strings.",
+    )
+    parser.add_argument(
         "--module_id_max",
         type=int,
         default=127,
@@ -431,10 +484,10 @@ def main():
     stable_catalog = read_stable(args.stable_json)
     try:
         stable_ids = (
-            {stable_msg_key(msg): msg["id"] for msg in stable_catalog["messages"]},
-            {m["string"]: m["id"] for m in stable_catalog["modules"]},
+            {stable_msg_key(msg): (msg["id"], msg["msg"]) for msg in stable_catalog["messages"]},
+            {hash(m["string"]): (m["id"], m["string"]) for m in stable_catalog["modules"]},
         )
-        modules, messages = read_input(args.input, stable_ids)
+        modules, messages = read_input(args.input, stable_ids, args.stable_typo_distance, args.typo_detect)
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 

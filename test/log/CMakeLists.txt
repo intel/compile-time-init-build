@@ -38,7 +38,11 @@ gen_str_catalog(
     GUID_ID
     "01234567-89ab-cdef-0123-456789abcdef"
     GUID_MASK
-    "ffffffff-ffff-ffff-ffff-ffffffffffff")
+    "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    STABLE_TYPO_DISTANCE
+    1
+    TYPO_DETECT
+    fix_quiet)
 
 add_library(catalog_strings STATIC ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp)
 target_link_libraries(catalog_strings PUBLIC cib)

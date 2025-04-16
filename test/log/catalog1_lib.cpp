@@ -26,6 +26,7 @@ using log_env1 = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_zero_args() -> void;
+auto log_zero_args_typo() -> void;
 auto log_one_ct_arg() -> void;
 auto log_one_32bit_rt_arg() -> void;
 auto log_one_64bit_rt_arg() -> void;
@@ -37,6 +38,12 @@ auto log_zero_args() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     cfg.logger.log_msg<log_env1>(
         stdx::ct_format<"A string with no placeholders">());
+}
+
+auto log_zero_args_typo() -> void {
+    auto cfg = logging::binary::config{test_log_args_destination{}};
+    cfg.logger.log_msg<log_env1>(
+        stdx::ct_format<"A string with ni placeholders">());
 }
 
 auto log_one_ct_arg() -> void {

@@ -1,0 +1,2 @@
+levenshtein==0.27.1
+libclang==18.1.1

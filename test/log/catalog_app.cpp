@@ -11,6 +11,7 @@ template <> inline auto conc::injected_policy<> = test_conc_policy{};
 extern int log_calls;
 extern std::uint32_t last_header;
 extern auto log_zero_args() -> void;
+extern auto log_zero_args_typo() -> void;
 extern auto log_one_ct_arg() -> void;
 extern auto log_one_32bit_rt_arg() -> void;
 extern auto log_one_64bit_rt_arg() -> void;
@@ -24,6 +25,16 @@ TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
     log_calls = 0;
     log_zero_args();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+    // ID 42 is fixed by stable input
+    CHECK(last_header == ((42u << 4u) | 1u));
+}
+
+TEST_CASE("log fixed string with typo", "[catalog]") {
+    test_critical_section::count = 0;
+    log_calls = 0;
+    log_zero_args_typo();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
     // ID 42 is fixed by stable input
