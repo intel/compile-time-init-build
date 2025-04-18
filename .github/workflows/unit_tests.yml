@@ -126,13 +126,13 @@ jobs:
       - name: Install build tools
         run: |
           ${{ matrix.install }}
-          sudo apt install -y ninja-build
+          sudo apt install -y ninja-build python3-venv python3-pip
 
-      - name: Install libclang for string catalog
+      - name: Install python requirements for string catalog
         run: |
           python3 -m venv ${{github.workspace}}/test_venv
           source ${{github.workspace}}/test_venv/bin/activate
-          pip install libclang
+          pip install -r ${{github.workspace}}/tools/requirements.txt
           echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
@@ -212,7 +212,14 @@ jobs:
       - name: Install build tools
         run: |
           ${{ matrix.install }}
-          sudo apt install -y ninja-build
+          sudo apt install -y ninja-build python3-venv python3-pip
+
+      - name: Install python requirements for string catalog
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          pip install -r ${{github.workspace}}/tools/requirements.txt
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
         env:
@@ -332,7 +339,14 @@ jobs:
       - name: Install build tools
         run: |
           ${{ matrix.install }}
-          sudo apt install -y ninja-build
+          sudo apt install -y ninja-build python3-venv python3-pip
+
+      - name: Install python requirements for string catalog
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          pip install -r ${{github.workspace}}/tools/requirements.txt
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
         env:
@@ -378,7 +392,14 @@ jobs:
 
       - name: Install build tools
         run: |
-          sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build valgrind
+          sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build python3-venv python3-pip valgrind
+
+      - name: Install python requirements for string catalog
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          pip install -r ${{github.workspace}}/tools/requirements.txt
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
         env:
