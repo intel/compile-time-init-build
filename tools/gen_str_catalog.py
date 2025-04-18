@@ -118,12 +118,14 @@ typo_behavior = {
 }
 
 
-def handle_typo(stable_ids: dict, s: str, d: int, fn, gen) -> str:
+def handle_typo(stable_ids: dict, s: str, d: int, behavior: str, gen) -> str:
+    if behavior == "stable_only":
+        raise Exception(f"Error (using policy stable_only): \"{s}\" not found in stable strings.")
     if d != 0:
         from Levenshtein import distance
         for (i, value) in stable_ids.values():
             if distance(s, value) <= d:
-                if fn(s, value, i) == value:
+                if typo_behavior[behavior](s, value, i) == value:
                     return i
     return next(gen)
 
@@ -148,7 +150,7 @@ def read_input(filenames: list[str], stable_ids, typo_distance: int, typo_detect
         if key in stable_ids:
             return stable_ids[key][0]
         else:
-            return handle_typo(stable_ids, string_fn(obj), typo_distance, typo_behavior[typo_detect], gen)
+            return handle_typo(stable_ids, string_fn(obj), typo_distance, typo_detect, gen)
 
     stable_msg_ids, stable_module_ids = stable_ids
 
@@ -454,9 +456,9 @@ def parse_cmdline():
     parser.add_argument(
         "--typo_detect",
         type=str,
-        choices=["error", "warn", "fix", "fix_quiet"],
+        choices=["stable_only", "error", "warn", "fix", "fix_quiet"],
         default="error",
-        help="What to do when detecting a typo against stable strings.",
+        help="Policy to handle detecting a typo against stable strings.",
     )
     parser.add_argument(
         "--module_id_max",
