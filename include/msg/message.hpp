@@ -128,7 +128,7 @@ template <stdx::ct_string Name> struct field_name {
     using name_t = stdx::cts_t<Name>;
 
     // NOLINTNEXTLINE(misc-unconventional-assign-operator)
-    template <typename T> constexpr auto operator=(T value) {
+    template <typename T> constexpr auto operator=(T value) const {
         return field_value<Name, T>{value};
     }
 

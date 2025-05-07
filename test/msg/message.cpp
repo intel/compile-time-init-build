@@ -72,6 +72,15 @@ TEST_CASE("construct with field values", "[message]") {
     CHECK(0x0042'd00d == data[1]);
 }
 
+TEST_CASE("use field names as template args", "[message]") {
+    auto msg = []<auto F>() {
+        return test_msg{F = 0xba11};
+    }.template operator()<"f1"_field>();
+
+    auto const data = msg.data();
+    CHECK(0x8000'ba11 == data[0]);
+}
+
 TEST_CASE("construct with field defaults", "[message]") {
     test_msg msg{};
 
