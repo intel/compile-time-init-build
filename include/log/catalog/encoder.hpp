@@ -4,6 +4,7 @@
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
 #include <log/module.hpp>
+#include <log/string_id.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
@@ -20,24 +21,26 @@
 
 namespace logging::binary {
 namespace detail {
-template <typename S, typename... Args> constexpr static auto to_message() {
+template <typename S, auto Id, typename... Args>
+constexpr static auto to_message() {
     constexpr auto s = std::string_view{S::value};
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         return sc::message<
-            sc::undefined<sc::args<Args...>, char_t, s[Is]...>>{};
+            sc::undefined<sc::args<Args...>, Id, char_t, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
 template <stdx::ct_string S> constexpr static auto to_module() {
     constexpr auto s = std::string_view{S};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::module_string<sc::undefined<void, char, s[Is]...>>{};
+        return sc::module_string<sc::undefined<void, -1, char, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
-template <typename S> struct to_message_t {
-    template <typename... Args> using fn = decltype(to_message<S, Args...>());
+template <typename S, auto Id> struct to_message_t {
+    template <typename... Args>
+    using fn = decltype(to_message<S, Id, Args...>());
 };
 } // namespace detail
 
@@ -85,7 +88,8 @@ template <typename Writer> struct log_handler {
             auto builder = get_builder(Env{});
             constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = typename decltype(builder)::template convert_args<
-                detail::to_message_t<decltype(fr.str)>::template fn,
+                detail::to_message_t<decltype(fr.str), logging::get_string_id(
+                                                           Env{})>::template fn,
                 std::remove_cvref_t<Args>...>;
             using Module = decltype(detail::to_module<get_module(Env{})>());
             w(builder.template build<L>(catalog<Message>(), module<Module>(),

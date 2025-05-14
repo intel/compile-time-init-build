@@ -19,6 +19,7 @@ extern auto log_two_rt_args() -> void;
 extern auto log_rt_enum_arg() -> void;
 extern auto log_with_non_default_module_id() -> void;
 extern auto log_with_fixed_module_id() -> void;
+extern auto log_with_fixed_string_id() -> void;
 
 TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
@@ -98,4 +99,14 @@ TEST_CASE("log with fixed module id", "[catalog]") {
     log_with_fixed_module_id();
     CHECK((last_header & expected_static) == expected_static);
     CHECK((last_header & ~expected_static) == (17u << 16u));
+}
+
+TEST_CASE("log with fixed string id", "[catalog]") {
+    test_critical_section::count = 0;
+    log_calls = 0;
+    log_with_fixed_string_id();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+    // string ID 1337 is fixed by environment
+    CHECK(last_header == ((1337u << 4u) | 1u));
 }

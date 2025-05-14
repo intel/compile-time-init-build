@@ -32,6 +32,7 @@ auto log_one_64bit_rt_arg() -> void;
 auto log_one_formatted_rt_arg() -> void;
 auto log_with_non_default_module_id() -> void;
 auto log_with_fixed_module_id() -> void;
+auto log_with_fixed_string_id() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
@@ -79,5 +80,14 @@ auto log_with_fixed_module_id() -> void {
         auto cfg = logging::binary::config{test_log_args_destination{}};
         cfg.logger.log_msg<cib_log_env_t>(
             stdx::ct_format<"Fixed ModuleID string with {} placeholder">(1));
+    }
+}
+
+auto log_with_fixed_string_id() -> void {
+    CIB_WITH_LOG_ENV(logging::get_level, logging::level::TRACE,
+                     logging::get_string_id, 1337) {
+        auto cfg = logging::binary::config{test_log_args_destination{}};
+        cfg.logger.log_msg<cib_log_env_t>(
+            stdx::ct_format<"Fixed StringID string">());
     }
 }
