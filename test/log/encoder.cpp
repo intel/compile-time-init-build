@@ -83,7 +83,6 @@ constexpr auto check_at = [](auto span, auto dw_idx, std::uint32_t expected) {
 
 template <std::uint32_t... Expected>
 constexpr auto check_buffer = [](auto data) {
-    REQUIRE(data.size() > (sizeof...(Expected) - 1) * sizeof(std::uint32_t));
     auto idx = std::size_t{};
     (check_at(data, idx++, Expected), ...);
 };
@@ -102,8 +101,9 @@ struct test_log_args_destination {
 
 template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
 struct test_log_buf_destination {
-    template <std::size_t N>
-    auto log_by_buf(stdx::span<std::uint8_t const, N> data) const {
+    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
+        REQUIRE(data.size() ==
+                (sizeof...(ExpectedArgs) + 1) * sizeof(std::uint32_t));
         constexpr auto Header =
             expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
         check_buffer<Header, ExpectedArgs...>(data);
@@ -120,8 +120,7 @@ struct test_log_version_destination {
         ++num_log_args_calls;
     }
 
-    template <std::size_t N>
-    auto log_by_buf(stdx::span<std::uint8_t const, N> data) const {
+    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
         check_buffer<Header, ExpectedArgs...>(data);
         ++num_log_args_calls;
     }
@@ -212,9 +211,9 @@ TEST_CASE("log more than two arguments", "[mipi]") {
         test_critical_section::count = 0;
         auto cfg = logging::binary::config{
             test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                     18u, 19u, 20u>{}};
+                                     18u, 97u, 98u>{}};
         cfg.logger.log_msg<log_env>(
-            stdx::ct_format<"{} {} {} {}">(17u, 18u, 19u, 20u));
+            stdx::ct_format<"{} {} {} {}">(17u, 18u, 'a', 'b'));
         CHECK(test_critical_section::count == 2);
     }
 }

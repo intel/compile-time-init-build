@@ -103,7 +103,8 @@ template <> struct builder<defn::catalog_msg_t> {
         } else {
             constexpr auto header_size =
                 defn::catalog_msg_t::size<std::uint8_t>::value;
-            constexpr auto payload_size = (sizeof(id) + ... + sizeof(Ts));
+            constexpr auto payload_size =
+                (sizeof(id) + ... + sizeof(pack_as_t<Ts>));
             using storage_t =
                 std::array<std::uint8_t, header_size + payload_size>;
             return catalog_builder<storage_t>{}.template build<Level>(id, m,
