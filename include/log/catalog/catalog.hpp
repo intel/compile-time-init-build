@@ -4,7 +4,7 @@
 
 namespace sc {
 template <typename...> struct args;
-template <typename, typename T, T...> struct undefined;
+template <typename, auto, typename T, T...> struct undefined;
 
 template <typename> struct message {};
 template <typename> struct module_string {};

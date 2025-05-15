@@ -32,7 +32,7 @@ def split_args(s: str) -> list[str]:
 
 
 string_re = re.compile(
-    r"sc::message<sc::undefined<sc::args<(.*)>, char, (.*)>\s*>"
+    r"sc::message<sc::undefined<sc::args<(.*)>, (.*), char, (.*)>\s*>"
 )
 
 
@@ -40,7 +40,8 @@ def extract_string_id(line_m):
     catalog_type = line_m.group(1)
     string_m = string_re.match(line_m.group(3))
     arg_tuple = string_m.group(1)
-    string_tuple = string_m.group(2).replace("(char)", "")
+    string_id = int(string_m.group(2))
+    string_tuple = string_m.group(3).replace("(char)", "")
     string_value = "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple)))
     args = split_args(arg_tuple)
 
@@ -51,11 +52,12 @@ def extract_string_id(line_m):
             type="flow" if string_value.startswith("flow.") else "msg",
             arg_types=args,
             arg_count=len(args),
+            id=string_id
         ),
     )
 
 
-module_re = re.compile(r"sc::module_string<sc::undefined<void, char, (.*)>\s?>")
+module_re = re.compile(r"sc::module_string<sc::undefined<void, -1, char, (.*)>\s?>")
 
 
 def module_string(module) -> str:
@@ -110,7 +112,17 @@ def read_input(filenames: list[str], stable_ids):
         else:
             return next(gen)
 
+    unique_strings = {i[0][0]: i for i in strings}.values()
+
     stable_msg_ids, stable_module_ids = stable_ids
+
+    for _, msg in filter(lambda u: u[1]["id"] != -1, unique_strings):
+        stable_msg_ids[stable_msg_key(msg)] = msg["id"]
+
+    if len(stable_msg_ids) != len(set(stable_msg_ids.values())):
+        import collections
+        dupes = [item for item, count in collections.Counter(stable_msg_ids.values()).items() if count > 1]
+        raise Exception(f"Duplicate string IDs found: {dupes}.")
 
     old_msg_ids = set(stable_msg_ids.values())
     msg_id_gen = itertools.filterfalse(old_msg_ids.__contains__, itertools.count(0))
@@ -122,7 +134,6 @@ def read_input(filenames: list[str], stable_ids):
     )
     get_module_id = partial(get_id, stable_module_ids, stable_module_key, module_id_gen)
 
-    unique_strings = {i[0][0]: i for i in strings}.values()
     return (
         {m: {"string": module_string(m), "id": get_module_id(m)} for m in sorted(set(modules))},
         {item[0]: {**item[1], "id": get_msg_id(item[1])} for item in unique_strings},
@@ -144,7 +155,7 @@ def make_cpp_module_defn(m: str, text: str, n: int) -> str:
     return f"""/*
     "{text}"
  */
-template<> unsigned int module<sc::module_string<sc::undefined<void, char, {m}>>>() {{
+template<> unsigned int module<sc::module_string<sc::undefined<void, -1, char, {m}>>>() {{
     return {n};
 }}"""
 
