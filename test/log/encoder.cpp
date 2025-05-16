@@ -146,17 +146,18 @@ TEST_CASE("argument packing", "[mipi]") {
 }
 
 TEST_CASE("argument encoding", "[mipi]") {
+    static_assert(std::same_as<logging::mipi::encode_as_t<std::int32_t>,
+                               encode_32<std::int32_t>>);
+    static_assert(std::same_as<logging::mipi::encode_as_t<std::uint32_t>,
+                               encode_u32<std::uint32_t>>);
+    static_assert(std::same_as<logging::mipi::encode_as_t<std::int64_t>,
+                               encode_64<std::int64_t>>);
+    static_assert(std::same_as<logging::mipi::encode_as_t<std::uint64_t>,
+                               encode_u64<std::uint64_t>>);
     static_assert(
-        std::same_as<logging::mipi::encode_as_t<std::int32_t>, encode_32>);
-    static_assert(
-        std::same_as<logging::mipi::encode_as_t<std::uint32_t>, encode_u32>);
-    static_assert(
-        std::same_as<logging::mipi::encode_as_t<std::int64_t>, encode_64>);
-    static_assert(
-        std::same_as<logging::mipi::encode_as_t<std::uint64_t>, encode_u64>);
-    static_assert(std::same_as<logging::mipi::encode_as_t<char>, encode_32>);
-    static_assert(
-        std::same_as<logging::mipi::encode_as_t<unsigned char>, encode_u32>);
+        std::same_as<logging::mipi::encode_as_t<char>, encode_32<char>>);
+    static_assert(std::same_as<logging::mipi::encode_as_t<unsigned char>,
+                               encode_u32<unsigned char>>);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {
