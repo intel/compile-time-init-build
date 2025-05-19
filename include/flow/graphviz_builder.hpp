@@ -1,3 +1,5 @@
+#pragma once
+
 #include <flow/detail/walk.hpp>
 
 #include <stdx/tuple_algorithms.hpp>
