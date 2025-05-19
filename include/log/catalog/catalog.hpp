@@ -16,7 +16,7 @@ using module_id = std::uint32_t;
 template <typename> extern auto catalog() -> string_id;
 template <typename> extern auto module() -> module_id;
 
-struct encode_32;
-struct encode_64;
-struct encode_u32;
-struct encode_u64;
+template <typename> struct encode_32;
+template <typename> struct encode_64;
+template <typename> struct encode_u32;
+template <typename> struct encode_u64;
