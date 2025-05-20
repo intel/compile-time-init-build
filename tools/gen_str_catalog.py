@@ -163,6 +163,8 @@ def assign_ids(messages, modules, stable_data):
     stable_msgs, stable_modules = stable_data
     for msg in filter(lambda m: m.id != -1, messages):
         stable_msgs[msg.key()] = msg
+    for module in filter(lambda m: m.id != -1, modules):
+        stable_modules[module.key()] = module
 
     old_msg_ids = set(m.id for m in stable_msgs.values())
     msg_id_gen = itertools.filterfalse(old_msg_ids.__contains__, itertools.count(0))
