@@ -4,6 +4,7 @@
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>
 #include <log/module.hpp>
+#include <log/module_id.hpp>
 #include <log/string_id.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -31,10 +32,10 @@ constexpr static auto to_message() {
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
-template <stdx::ct_string S> constexpr static auto to_module() {
+template <stdx::ct_string S, auto Id> constexpr static auto to_module() {
     constexpr auto s = std::string_view{S};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::module_string<sc::undefined<void, -1, char, s[Is]...>>{};
+        return sc::module_string<sc::undefined<void, Id, char, s[Is]...>>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
@@ -91,7 +92,9 @@ template <typename Writer> struct log_handler {
                 detail::to_message_t<decltype(fr.str), logging::get_string_id(
                                                            Env{})>::template fn,
                 std::remove_cvref_t<Args>...>;
-            using Module = decltype(detail::to_module<get_module(Env{})>());
+            using Module =
+                decltype(detail::to_module<get_module(Env{}),
+                                           logging::get_module_id(Env{})>());
             w(builder.template build<L>(catalog<Message>(), module<Module>(),
                                         std::forward<Args>(args)...));
         });
