@@ -224,6 +224,7 @@ template<> auto module<{m.to_cpp_type()}>() -> module_id {{
 def write_cpp(messages, modules, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
+        f.write("\n#include <log/catalog/arguments.hpp>\n")
         f.write("\n#include <log/catalog/catalog.hpp>\n\n")
         cpp_catalog_defns = [make_cpp_catalog_defn(m) for m in messages]
         f.write("\n".join(cpp_catalog_defns))
@@ -357,9 +358,11 @@ def arg_printf_spec(arg: str):
         "encode_u32": "%u",
         "encode_64": "%lld",
         "encode_u64": "%llu",
+        "float": "%f",
+        "double": "%f",
     }
-    enc, _ = arg_type_encoding(arg)
-    return printf_dict.get(enc, "%d")
+    enc, t = arg_type_encoding(arg)
+    return printf_dict.get(t, printf_dict.get(enc, "%d"))
 
 
 def serialize_messages(

@@ -21,6 +21,8 @@ extern auto log_with_non_default_module() -> void;
 extern auto log_with_fixed_module() -> void;
 extern auto log_with_fixed_string_id() -> void;
 extern auto log_with_fixed_module_id() -> void;
+extern auto log_rt_float_arg() -> void;
+extern auto log_rt_double_arg() -> void;
 
 TEST_CASE("log zero arguments", "[catalog]") {
     test_critical_section::count = 0;
@@ -54,6 +56,22 @@ TEST_CASE("log one 64-bit runtime argument", "[catalog]") {
     log_calls = 0;
     test_critical_section::count = 0;
     log_one_64bit_rt_arg();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log one float runtime argument", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_rt_float_arg();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+}
+
+TEST_CASE("log one double runtime argument", "[catalog]") {
+    log_calls = 0;
+    test_critical_section::count = 0;
+    log_rt_double_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
 }

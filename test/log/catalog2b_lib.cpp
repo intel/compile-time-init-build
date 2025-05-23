@@ -22,10 +22,26 @@ using log_env2b = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_rt_enum_arg() -> void;
+auto log_rt_float_arg() -> void;
+auto log_rt_double_arg() -> void;
 
 auto log_rt_enum_arg() -> void {
     auto cfg = logging::binary::config{test_log_args_destination{}};
     using namespace ns;
     cfg.logger.log_msg<log_env2b>(
         stdx::ct_format<"E string with {} placeholder">(E::value));
+}
+
+auto log_rt_float_arg() -> void {
+    auto cfg = logging::binary::config{test_log_args_destination{}};
+    using namespace ns;
+    cfg.logger.log_msg<log_env2b>(
+        stdx::ct_format<"Float string with {} placeholder">(3.14f));
+}
+
+auto log_rt_double_arg() -> void {
+    auto cfg = logging::binary::config{test_log_args_destination{}};
+    using namespace ns;
+    cfg.logger.log_msg<log_env2b>(
+        stdx::ct_format<"Double string with {} placeholder">(3.14));
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <log/catalog/arguments.hpp>
 #include <log/catalog/builder.hpp>
 #include <log/catalog/catalog.hpp>
 #include <log/log.hpp>

@@ -126,38 +126,60 @@ struct test_log_version_destination {
     }
 };
 
+template <logging::level Level> struct test_log_float_args_destination {
+    auto log_by_args(std::uint32_t header, auto, auto arg) {
+        constexpr auto Header = expected_msg_header(Level, test_module_id, 1);
+        CHECK(header == Header);
+        CHECK(stdx::bit_cast<float>(arg) == expected);
+        ++num_log_args_calls;
+    }
+    float expected{};
+};
+
+template <logging::level Level> struct test_log_double_args_destination {
+    auto log_by_args(std::uint32_t header, auto, std::uint32_t lo,
+                     std::uint32_t hi) {
+        constexpr auto Header = expected_msg_header(Level, test_module_id, 1);
+        CHECK(header == Header);
+        std::array arr{lo, hi};
+        CHECK(stdx::bit_cast<double>(arr) == expected);
+        ++num_log_args_calls;
+    }
+    double expected{};
+};
+
 using log_env = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
 TEST_CASE("argument packing", "[mipi]") {
-    static_assert(
-        std::same_as<logging::mipi::pack_as_t<std::int32_t>, std::int32_t>);
-    static_assert(
-        std::same_as<logging::mipi::pack_as_t<std::uint32_t>, std::uint32_t>);
-    static_assert(
-        std::same_as<logging::mipi::pack_as_t<std::int64_t>, std::int64_t>);
-    static_assert(
-        std::same_as<logging::mipi::pack_as_t<std::uint64_t>, std::uint64_t>);
-    static_assert(std::same_as<logging::mipi::pack_as_t<char>, std::int32_t>);
-    static_assert(
-        std::same_as<logging::mipi::pack_as_t<unsigned char>, std::uint32_t>);
+    using P = logging::default_arg_packer;
+    static_assert(std::same_as<P::pack_as_t<std::int32_t>, std::int32_t>);
+    static_assert(std::same_as<P::pack_as_t<std::uint32_t>, std::uint32_t>);
+    static_assert(std::same_as<P::pack_as_t<std::int64_t>, std::int64_t>);
+    static_assert(std::same_as<P::pack_as_t<std::uint64_t>, std::uint64_t>);
+    static_assert(std::same_as<P::pack_as_t<char>, std::int32_t>);
+    static_assert(std::same_as<P::pack_as_t<unsigned char>, std::uint32_t>);
+    static_assert(std::same_as<P::pack_as_t<float>, std::uint32_t>);
+    static_assert(std::same_as<P::pack_as_t<double>, std::uint64_t>);
 }
 
 TEST_CASE("argument encoding", "[mipi]") {
-    static_assert(std::same_as<logging::mipi::encode_as_t<std::int32_t>,
-                               encode_32<std::int32_t>>);
-    static_assert(std::same_as<logging::mipi::encode_as_t<std::uint32_t>,
-                               encode_u32<std::uint32_t>>);
-    static_assert(std::same_as<logging::mipi::encode_as_t<std::int64_t>,
-                               encode_64<std::int64_t>>);
-    static_assert(std::same_as<logging::mipi::encode_as_t<std::uint64_t>,
-                               encode_u64<std::uint64_t>>);
+    using P = logging::default_arg_packer;
     static_assert(
-        std::same_as<logging::mipi::encode_as_t<char>, encode_32<char>>);
-    static_assert(std::same_as<logging::mipi::encode_as_t<unsigned char>,
-                               encode_u32<unsigned char>>);
+        std::same_as<P::encode_as_t<std::int32_t>, encode_32<std::int32_t>>);
+    static_assert(
+        std::same_as<P::encode_as_t<std::uint32_t>, encode_u32<std::uint32_t>>);
+    static_assert(
+        std::same_as<P::encode_as_t<std::int64_t>, encode_64<std::int64_t>>);
+    static_assert(
+        std::same_as<P::encode_as_t<std::uint64_t>, encode_u64<std::uint64_t>>);
+    static_assert(std::same_as<P::encode_as_t<char>, encode_32<char>>);
+    static_assert(
+        std::same_as<P::encode_as_t<unsigned char>, encode_u32<unsigned char>>);
+    static_assert(std::same_as<P::encode_as_t<float>, encode_u32<float>>);
+    static_assert(std::same_as<P::encode_as_t<double>, encode_u64<double>>);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {
@@ -169,12 +191,21 @@ TEST_CASE("log zero arguments", "[mipi]") {
     CHECK(test_critical_section::count == 2);
 }
 
-TEST_CASE("log one 32-bit argument", "[mipi]") {
+TEST_CASE("log one integral 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
         test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(17u));
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("log one floating-point 32-bit argument", "[mipi]") {
+    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
+    test_critical_section::count = 0;
+    auto cfg = logging::binary::config{
+        test_log_float_args_destination<logging::level::TRACE>{3.14f}};
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14f));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -186,6 +217,15 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
         test_log_args_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
                                   0x1234'5678u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(x));
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("log one floating-point 64-bit argument", "[mipi]") {
+    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
+    test_critical_section::count = 0;
+    auto cfg = logging::binary::config{
+        test_log_double_args_destination<logging::level::TRACE>{3.14}};
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -295,10 +335,11 @@ template <logging::level Level> struct test_catalog_args_destination {
     }
 };
 
-struct custom_builder : logging::mipi::default_builder {
-    template <auto Level, logging::mipi::packable... Ts>
+struct custom_builder : logging::mipi::default_builder<> {
+    template <auto Level, logging::packable... Ts>
     static auto build(string_id id, module_id m, Ts... args) {
-        return logging::mipi::builder<logging::mipi::defn::catalog_msg_t>{}
+        return logging::mipi::builder<logging::mipi::defn::catalog_msg_t,
+                                      logging::default_arg_packer>{}
             .template build<Level>(id, m, args...);
     }
 };
