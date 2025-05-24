@@ -35,7 +35,8 @@ inline auto logging::config<> =
 TEST_CASE("message with automatic storage", "[message]") {
     test_msg msg{};
     auto data = msg.data();
-    static_assert(std::is_same_v<decltype(data), stdx::span<std::uint32_t, 2>>);
+    STATIC_REQUIRE(
+        std::is_same_v<decltype(data), stdx::span<std::uint32_t, 2>>);
 }
 
 TEST_CASE("message with custom storage", "[message]") {
@@ -43,7 +44,7 @@ TEST_CASE("message with custom storage", "[message]") {
     msg_defn::owner_t msg{arr, "f1"_field = 0xba11};
     CHECK(0x80 == msg.get("id"_field));
     CHECK(0xba11 == msg.get("f1"_field));
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<typename decltype(msg)::storage_t, decltype(arr)>);
 }
 
@@ -53,8 +54,8 @@ TEST_CASE("message constructed from span", "[message]") {
     auto s = stdx::span{arr};
 
     msg_defn::owner_t msg{s};
-    static_assert(std::is_same_v<typename decltype(msg)::storage_t,
-                                 std::remove_const_t<decltype(arr)>>);
+    STATIC_REQUIRE(std::is_same_v<typename decltype(msg)::storage_t,
+                                  std::remove_const_t<decltype(arr)>>);
     msg.set("f1"_field = 0xba12);
     CHECK(0x8000'ba11 == arr[0]);
 }
@@ -187,8 +188,8 @@ TEST_CASE("message constructed from view", "[message]") {
     msg::const_view<msg_defn> v{arr};
 
     msg_defn::owner_t msg{v};
-    static_assert(std::is_same_v<typename decltype(msg)::storage_t,
-                                 std::remove_const_t<decltype(arr)>>);
+    STATIC_REQUIRE(std::is_same_v<typename decltype(msg)::storage_t,
+                                  std::remove_const_t<decltype(arr)>>);
     msg.set("f1"_field = 0xba12);
     CHECK(0x8000'ba11 == arr[0]);
 }
@@ -208,7 +209,7 @@ TEST_CASE("implicit construct view from oversized storage", "[message]") {
 TEST_CASE("const view from owning message", "[message]") {
     test_msg msg{};
     auto v = msg.as_const_view();
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(v.data()),
                        typename test_msg::definition_t::default_const_span_t>);
     msg.set("f1"_field = 0xba11);
@@ -218,7 +219,7 @@ TEST_CASE("const view from owning message", "[message]") {
 TEST_CASE("mutable view from owning message", "[message]") {
     test_msg msg{};
     auto v = msg.as_mutable_view();
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(v.data()),
                        typename test_msg::definition_t::default_span_t>);
     v.set("f1"_field = 0xba11);
@@ -229,7 +230,7 @@ TEST_CASE("owning from view", "[message]") {
     test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
     auto v = msg.as_mutable_view();
     auto o = v.as_owning();
-    static_assert(std::is_same_v<decltype(o), test_msg>);
+    STATIC_REQUIRE(std::is_same_v<decltype(o), test_msg>);
     CHECK(std::equal(msg.data().begin(), msg.data().end(), o.data().begin()));
 }
 
@@ -237,7 +238,7 @@ TEST_CASE("const view from mutable view", "[message]") {
     test_msg msg{};
     auto mv = msg.as_mutable_view();
     auto v = mv.as_const_view();
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(v.data()),
                        typename test_msg::definition_t::default_const_span_t>);
     msg.set("f1"_field = 0xba11);
@@ -415,10 +416,10 @@ TEST_CASE("view with external custom storage (oversized)", "[message]") {
 TEST_CASE("implicitly downsize a message view", "[message]") {
     auto const arr = std::array<std::uint32_t, 4>{0x8000'ba11, 0x0042'd00d};
     msg_defn::view_t msg{arr};
-    static_assert(std::is_same_v<decltype(msg.data()),
-                                 stdx::span<std::uint32_t const, 4>>);
+    STATIC_REQUIRE(std::is_same_v<decltype(msg.data()),
+                                  stdx::span<std::uint32_t const, 4>>);
     const_view<msg_defn> v = msg;
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(v.data()), stdx::span<std::uint32_t const, 2>>);
     CHECK(msg.data()[0] == v.data()[0]);
     CHECK(msg.data()[1] == v.data()[1]);
@@ -427,37 +428,37 @@ TEST_CASE("implicitly downsize a message view", "[message]") {
 TEST_CASE("view_of concept", "[message]") {
     auto const arr = std::array<std::uint32_t, 4>{0x8000'ba11, 0x0042'd00d};
     msg_defn::view_t msg{arr};
-    static_assert(msg::view_of<decltype(msg), msg_defn>);
+    STATIC_REQUIRE(msg::view_of<decltype(msg), msg_defn>);
 
     const_view<msg_defn> v = msg;
-    static_assert(msg::view_of<decltype(v), msg_defn>);
-    static_assert(msg::const_view_of<decltype(v), msg_defn>);
+    STATIC_REQUIRE(msg::view_of<decltype(v), msg_defn>);
+    STATIC_REQUIRE(msg::const_view_of<decltype(v), msg_defn>);
 }
 
 TEST_CASE("message fields are canonically sorted by lsb", "[message]") {
     using defn = message<"msg", field2, field1>;
-    static_assert(std::is_same_v<defn, message<"msg", field1, field2>>);
+    STATIC_REQUIRE(std::is_same_v<defn, message<"msg", field1, field2>>);
 }
 
 TEST_CASE("extend message with more fields", "[message]") {
     using base_defn = message<"msg_base", id_field, field1>;
     using defn = extend<base_defn, "msg", field2, field3>;
     using expected_defn = message<"msg", id_field, field1, field2, field3>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("extend message with duplicate field", "[message]") {
     using base_defn = message<"msg_base", id_field, field1>;
     using defn = extend<base_defn, "msg", field1>;
     using expected_defn = message<"msg", id_field, field1>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("extend message with new field constraint", "[message]") {
     using base_defn = message<"msg_base", id_field, field1>;
     using defn = extend<base_defn, "msg", field1::with_required<1>>;
     using expected_defn = message<"msg", id_field, field1::with_required<1>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("message equivalence (owning)", "[message]") {
@@ -548,23 +549,23 @@ TEST_CASE("message equivalence matcher", "[message]") {
 }
 
 TEST_CASE("message reports size", "[message]") {
-    static_assert(msg_defn::size<std::uint32_t>::value == 2);
-    static_assert(msg_defn::size<std::uint16_t>::value == 4);
-    static_assert(msg_defn::size<std::uint8_t>::value == 7);
+    STATIC_REQUIRE(msg_defn::size<std::uint32_t>::value == 2);
+    STATIC_REQUIRE(msg_defn::size<std::uint16_t>::value == 4);
+    STATIC_REQUIRE(msg_defn::size<std::uint8_t>::value == 7);
 }
 
 TEST_CASE("shift a field by bit offset", "[message]") {
     using new_field = id_field::shifted_by<3>;
     using expected_field =
         field<"id", std::uint32_t>::located<at{34_msb, 27_lsb}>;
-    static_assert(std::is_same_v<new_field, expected_field>);
+    STATIC_REQUIRE(std::is_same_v<new_field, expected_field>);
 }
 
 TEST_CASE("shift a field by byte offset", "[message]") {
     using new_field = id_field::shifted_by<1, std::uint8_t>;
     using expected_field =
         field<"id", std::uint32_t>::located<at{39_msb, 32_lsb}>;
-    static_assert(std::is_same_v<new_field, expected_field>);
+    STATIC_REQUIRE(std::is_same_v<new_field, expected_field>);
 }
 
 TEST_CASE("shift all fields in a message", "[message]") {
@@ -574,7 +575,7 @@ TEST_CASE("shift all fields in a message", "[message]") {
     using shifted_id = id_field::shifted_by<1, std::uint8_t>;
     using shifted_field1 = field1::shifted_by<1, std::uint8_t>;
     using expected_defn = message<"msg", shifted_id, shifted_field1>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("combine messages", "[message]") {
@@ -590,7 +591,7 @@ TEST_CASE("combine messages", "[message]") {
     using expected_defn =
         message<"defn", f1, f2, f3::shifted_by<1, std::uint32_t>,
                 f4::shifted_by<1, std::uint32_t>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("combine 1 message", "[message]") {
@@ -600,7 +601,7 @@ TEST_CASE("combine 1 message", "[message]") {
 
     using defn = combine<"defn", m1>;
     using expected_defn = message<"defn", f1, f2>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("pack messages", "[message]") {
@@ -617,7 +618,7 @@ TEST_CASE("pack messages", "[message]") {
         message<"defn", f1, f2,
                 f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
                 f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("pack 1 message", "[message]") {
@@ -627,7 +628,7 @@ TEST_CASE("pack 1 message", "[message]") {
 
     using defn = pack<"defn", std::uint8_t, m1>;
     using expected_defn = message<"defn", f1, f2>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("pack with empty messages", "[message]") {
@@ -648,7 +649,7 @@ TEST_CASE("pack with empty messages", "[message]") {
         message<"defn", f1, f2,
                 f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
                 f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 namespace {
@@ -666,14 +667,14 @@ namespace {
 } // namespace
 
 TEST_CASE("message with default empty environment", "[message]") {
-    static_assert(custom(msg_defn::env_t{}) == 42);
+    STATIC_REQUIRE(custom(msg_defn::env_t{}) == 42);
 }
 
 TEST_CASE("message with defined environment", "[message]") {
     using env_t = stdx::make_env_t<custom, 17>;
     using defn = message<"msg", env_t, id_field::with_required<0x80>, field1,
                          field2, field3>;
-    static_assert(custom(defn::env_t{}) == 17);
+    STATIC_REQUIRE(custom(defn::env_t{}) == 17);
 }
 
 TEST_CASE("supplement message environment", "[message]") {
@@ -681,7 +682,7 @@ TEST_CASE("supplement message environment", "[message]") {
     using defn = message<"msg", env_t, id_field::with_required<0x80>, field1,
                          field2, field3>;
     using new_defn = defn::with_env<stdx::make_env_t<custom, 18>>;
-    static_assert(custom(new_defn::env_t{}) == 18);
+    STATIC_REQUIRE(custom(new_defn::env_t{}) == 18);
 }
 
 TEST_CASE("combine appends environments", "[message]") {
@@ -692,7 +693,7 @@ TEST_CASE("combine appends environments", "[message]") {
     using m2 = message<"m2", env2_t>;
 
     using defn = combine<"defn", m1, m2>;
-    static_assert(custom(defn::env_t{}) == 18);
+    STATIC_REQUIRE(custom(defn::env_t{}) == 18);
 }
 
 TEST_CASE("pack appends environments", "[message]") {
@@ -703,5 +704,5 @@ TEST_CASE("pack appends environments", "[message]") {
     using m2 = message<"m2", env2_t>;
 
     using defn = pack<"defn", std::uint8_t, m1, m2>;
-    static_assert(custom(defn::env_t{}) == 18);
+    STATIC_REQUIRE(custom(defn::env_t{}) == 18);
 }

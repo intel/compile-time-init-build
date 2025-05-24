@@ -8,27 +8,27 @@
 TEST_CASE("predicate fulfils matcher concepts", "[match predicate]") {
     [[maybe_unused]] constexpr auto p =
         match::predicate<"P">([](int) { return true; });
-    static_assert(match::matcher<decltype(p)>);
-    static_assert(match::matcher_for<decltype(p), int>);
-    static_assert(not match::matcher_for<decltype(p), decltype([] {})>);
+    STATIC_REQUIRE(match::matcher<decltype(p)>);
+    STATIC_REQUIRE(match::matcher_for<decltype(p), int>);
+    STATIC_REQUIRE(not match::matcher_for<decltype(p), decltype([] {})>);
 }
 
 TEST_CASE("predicate describes itself", "[match predicate]") {
     using namespace stdx::literals;
     [[maybe_unused]] constexpr auto p =
         match::predicate<"P">([](int) { return true; });
-    static_assert(p.describe() == "P"_ctst);
+    STATIC_REQUIRE(p.describe() == "P"_ctst);
 }
 
 TEST_CASE("unnamed predicate", "[match predicate]") {
     using namespace stdx::literals;
     [[maybe_unused]] constexpr auto p =
         match::predicate([](int) { return true; });
-    static_assert(p.describe() == "<predicate>"_ctst);
+    STATIC_REQUIRE(p.describe() == "<predicate>"_ctst);
 }
 
 TEST_CASE("predicate matches correctly", "[match predicate]") {
     constexpr auto p = match::predicate([](int i) { return i % 2 == 0; });
-    static_assert(p(0));
-    static_assert(not p(1));
+    STATIC_REQUIRE(p(0));
+    STATIC_REQUIRE(not p(1));
 }

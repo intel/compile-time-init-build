@@ -152,7 +152,7 @@ TEST_CASE("trivially_copyable field type ", "[field insert]") {
 
 TEST_CASE("value fits in field", "[field insert]") {
     using F = field<"", std::uint32_t>::located<at{0_dw, 3_msb, 0_lsb}>;
-    static_assert(F::can_hold(15));
+    STATIC_REQUIRE(F::can_hold(15));
     CHECK(F::can_hold(15));
     CHECK(not F::can_hold(16));
 }
@@ -160,7 +160,7 @@ TEST_CASE("value fits in field", "[field insert]") {
 TEST_CASE("value fits in split field", "[field insert]") {
     using F = field<"", std::uint32_t>::located<at{0_dw, 1_msb, 0_lsb},
                                                 at{0_dw, 7_msb, 6_lsb}>;
-    static_assert(F::can_hold(15));
+    STATIC_REQUIRE(F::can_hold(15));
     CHECK(F::can_hold(15));
     CHECK(not F::can_hold(16));
 }

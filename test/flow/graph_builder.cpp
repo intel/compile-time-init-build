@@ -207,8 +207,8 @@ TEST_CASE("add dependency rhs", "[graph_builder]") {
 }
 
 TEST_CASE("reference vs non-reference", "[graph_builder]") {
-    static_assert(a.identity == flow::subgraph_identity::REFERENCE);
-    static_assert((*a).identity == flow::subgraph_identity::VALUE);
+    STATIC_REQUIRE(a.identity == flow::subgraph_identity::REFERENCE);
+    STATIC_REQUIRE((*a).identity == flow::subgraph_identity::VALUE);
 }
 
 TEST_CASE("reference in order with non-reference added twice",

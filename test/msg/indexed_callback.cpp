@@ -45,7 +45,7 @@ TEST_CASE("callback with compound match", "[indexed_callback]") {
 TEST_CASE("callback is sum of products", "[indexed_callback]") {
     constexpr auto cb = msg::callback<"", msg_defn>(
         msg::equal_to<int_f, 0> and msg::in<char_f, 'a', 'b'>, [](auto) {});
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<
             decltype(cb.matcher),
             match::or_t<
@@ -108,7 +108,7 @@ TEST_CASE("remove an indexed term from a callback", "[indexed_callback]") {
         msg::equal_to<int_f, 0> and msg::in<char_f, 'a', 'b'>, [](auto) {});
 
     constexpr auto sut = msg::remove_match_terms<int_f>(cb);
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<
             decltype(sut.matcher),
             match::or_t<equal_to_t<char_f, 'a'>, equal_to_t<char_f, 'b'>>>);
@@ -120,7 +120,7 @@ TEST_CASE("remove multiple indexed terms from a callback",
         msg::equal_to<int_f, 0> and msg::in<char_f, 'a', 'b'>, [](auto) {});
 
     constexpr auto sut = msg::remove_match_terms<int_f, char_f>(cb);
-    static_assert(std::is_same_v<decltype(sut.matcher), match::always_t>);
+    STATIC_REQUIRE(std::is_same_v<decltype(sut.matcher), match::always_t>);
 }
 
 namespace {
@@ -134,8 +134,8 @@ TEST_CASE("separate sum terms in a callback", "[indexed_callback]") {
     CHECK(cb.matcher(msg_defn::owner_t{}));
 
     auto sut = msg::separate_sum_terms(cb);
-    static_assert(stdx::is_specialization_of_v<decltype(sut), stdx::tuple>);
-    static_assert(sut.size() == 2);
+    STATIC_REQUIRE(stdx::is_specialization_of_v<decltype(sut), stdx::tuple>);
+    STATIC_REQUIRE(sut.size() == 2);
 
     auto const &cb1 = stdx::get<0>(sut);
     auto const &cb2 = stdx::get<1>(sut);

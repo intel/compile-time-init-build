@@ -230,42 +230,42 @@ constexpr auto expect_matcher = expect_matcher_t<RelOp, V>{};
 TEST_CASE("alternative matcher syntax (inequality)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field != msg::constant<0x80>, [] {});
-    static_assert(expect_matcher<std::not_equal_to<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::not_equal_to<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
 TEST_CASE("alternative matcher syntax (less)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field < msg::constant<0x80>, [] {});
-    static_assert(expect_matcher<std::less<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::less<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
 TEST_CASE("alternative matcher syntax (less than or equal)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field <= msg::constant<0x80>, [] {});
-    static_assert(expect_matcher<std::less_equal<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::less_equal<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
 TEST_CASE("alternative matcher syntax (greater)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field > msg::constant<0x80>, [] {});
-    static_assert(expect_matcher<std::greater<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::greater<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
 TEST_CASE("alternative matcher syntax (greater than or equal)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field >= msg::constant<0x80>, [] {});
-    static_assert(expect_matcher<std::greater_equal<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::greater_equal<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
 TEST_CASE("alternative matcher syntax (not)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         not("id"_field < msg::constant<0x80>), [] {});
-    static_assert(expect_matcher<std::greater_equal<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::greater_equal<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
@@ -273,7 +273,7 @@ TEST_CASE("alternative matcher syntax (and)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         "id"_field > msg::constant<0x80> and "id"_field > msg::constant<0x90>,
         [] {});
-    static_assert(expect_matcher<std::greater<>, 0x90>(
+    STATIC_REQUIRE(expect_matcher<std::greater<>, 0x90>(
         typename decltype(callback)::matcher_t{}));
 }
 
@@ -281,7 +281,7 @@ TEST_CASE("alternative matcher syntax (or)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         "id"_field > msg::constant<0x80> or "id"_field > msg::constant<0x90>,
         [] {});
-    static_assert(expect_matcher<std::greater<>, 0x80>(
+    STATIC_REQUIRE(expect_matcher<std::greater<>, 0x80>(
         typename decltype(callback)::matcher_t{}));
 }
 
@@ -289,23 +289,23 @@ TEST_CASE("alternative matcher syntax (multi-field)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>(
         "id"_field == msg::constant<0x80> and "f1"_field == msg::constant<1>,
         [] {});
-    static_assert(std::same_as<typename decltype(callback)::matcher_t,
-                               match::and_t<msg::equal_to_t<id_field, 0x80>,
-                                            msg::equal_to_t<field1, 1>>>);
+    STATIC_REQUIRE(std::same_as<typename decltype(callback)::matcher_t,
+                                match::and_t<msg::equal_to_t<id_field, 0x80>,
+                                             msg::equal_to_t<field1, 1>>>);
 }
 
 TEST_CASE("alternative matcher syntax (value in set)", "[callback]") {
     auto callback =
         msg::callback<"cb", msg_defn>("id"_field.in<0x80, 0x90>, [] {});
-    static_assert(std::same_as<typename decltype(callback)::matcher_t,
-                               match::or_t<msg::equal_to_t<id_field, 0x80>,
-                                           msg::equal_to_t<id_field, 0x90>>>);
+    STATIC_REQUIRE(std::same_as<typename decltype(callback)::matcher_t,
+                                match::or_t<msg::equal_to_t<id_field, 0x80>,
+                                            msg::equal_to_t<id_field, 0x90>>>);
 }
 
 TEST_CASE("alternative matcher syntax (value in singleton)", "[callback]") {
     auto callback = msg::callback<"cb", msg_defn>("id"_field.in<0x80>, [] {});
-    static_assert(std::same_as<typename decltype(callback)::matcher_t,
-                               msg::equal_to_t<id_field, 0x80>>);
+    STATIC_REQUIRE(std::same_as<typename decltype(callback)::matcher_t,
+                                msg::equal_to_t<id_field, 0x80>>);
 }
 
 TEST_CASE("alternative matcher syntax (and-combine matcher with matcher maker)",

@@ -13,7 +13,7 @@ TEST_CASE("a lookup with more entries than allowed", "[linear search]") {
     constexpr auto lookup = LS::make(CX_VALUE(lookup::input<int, int, 3>{
         0, std::array{lookup::entry{1, 1}, lookup::entry{2, 2},
                       lookup::entry{3, 3}}}));
-    static_assert(lookup::strategy_failed(lookup));
+    STATIC_REQUIRE(lookup::strategy_failed(lookup));
 }
 
 TEST_CASE("a lookup with no entries", "[linear search]") {

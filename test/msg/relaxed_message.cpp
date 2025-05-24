@@ -17,7 +17,7 @@ TEST_CASE("message with automatically packed fields", "[relaxed_message]") {
     using expected_defn =
         msg::message<"msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>,
                      auto_f2::located<at{1_dw, 7_msb, 0_lsb}>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("automatically packed fields are sorted by size",
@@ -26,7 +26,7 @@ TEST_CASE("automatically packed fields are sorted by size",
     using expected_defn =
         msg::message<"msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>,
                      auto_f2::located<at{1_dw, 7_msb, 0_lsb}>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("message with mixed fixed and automatically packed fields",
@@ -35,20 +35,20 @@ TEST_CASE("message with mixed fixed and automatically packed fields",
     using expected_defn =
         msg::message<"msg", fixed_f, auto_f1::located<at{1_dw, 31_msb, 0_lsb}>,
                      auto_f2::located<at{2_dw, 7_msb, 0_lsb}>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("message with no automatically packed fields", "[relaxed_message]") {
     using defn = relaxed_message<"msg", fixed_f>;
     using expected_defn = msg::message<"msg", fixed_f>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("auto field with default value", "[relaxed_message]") {
     using defn = relaxed_message<"msg", auto_f1::with_default<42>>;
     using expected_defn = msg::message<
         "msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>::with_default<42>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("auto field with const default value", "[relaxed_message]") {
@@ -56,14 +56,14 @@ TEST_CASE("auto field with const default value", "[relaxed_message]") {
     using expected_defn =
         msg::message<"msg", auto_f1::located<at{
                                 0_dw, 31_msb, 0_lsb}>::with_const_default<42>>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 TEST_CASE("auto field without default value", "[relaxed_message]") {
     using defn = relaxed_message<"msg", auto_f1::without_default>;
     using expected_defn = msg::message<
         "msg", auto_f1::located<at{0_dw, 31_msb, 0_lsb}>::without_default>;
-    static_assert(std::is_same_v<defn, expected_defn>);
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
 namespace {
@@ -82,11 +82,11 @@ namespace {
 
 TEST_CASE("message with default empty environment", "[relaxed_message]") {
     using defn = relaxed_message<"msg", auto_f1, auto_f2>;
-    static_assert(custom(defn::env_t{}) == 42);
+    STATIC_REQUIRE(custom(defn::env_t{}) == 42);
 }
 
 TEST_CASE("message with defined environment", "[message]") {
     using env_t = stdx::make_env_t<custom, 17>;
     using defn = relaxed_message<"msg", env_t, auto_f1, auto_f2>;
-    static_assert(custom(defn::env_t{}) == 17);
+    STATIC_REQUIRE(custom(defn::env_t{}) == 17);
 }

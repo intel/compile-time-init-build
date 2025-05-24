@@ -22,30 +22,30 @@ constexpr auto c = flow::action<"c">([] {});
 
 TEST_CASE("node size (empty graph)", "[graph]") {
     constexpr auto g = flow::graph<>{};
-    static_assert(node_size(g) == 0);
+    STATIC_REQUIRE(node_size(g) == 0);
 }
 
 TEST_CASE("node size (single action)", "[graph]") {
     constexpr auto g = flow::graph<>{}.add(*a >> *b);
-    static_assert(node_size(g) == 2);
+    STATIC_REQUIRE(node_size(g) == 2);
 }
 
 TEST_CASE("node size (overlapping actions)", "[graph]") {
     constexpr auto g = flow::graph<>{}.add(*a >> *b).add(b >> *c);
-    static_assert(node_size(g) == 3);
+    STATIC_REQUIRE(node_size(g) == 3);
 }
 
 TEST_CASE("edge size (empty flow)", "[graph]") {
     constexpr auto g = flow::graph<>{};
-    static_assert(edge_size(g) == 1);
+    STATIC_REQUIRE(edge_size(g) == 1);
 }
 
 TEST_CASE("edge size (single action)", "[graph]") {
     constexpr auto g = flow::graph<>{}.add(*a >> *b);
-    static_assert(edge_size(g) == 1);
+    STATIC_REQUIRE(edge_size(g) == 1);
 }
 
 TEST_CASE("edge size (overlapping actions)", "[graph]") {
     constexpr auto g = flow::graph<>{}.add(*a >> *b).add(*b >> *c);
-    static_assert(edge_size(g) == 2);
+    STATIC_REQUIRE(edge_size(g) == 2);
 }

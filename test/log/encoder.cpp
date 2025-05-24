@@ -68,7 +68,7 @@ struct test_conc_policy {
 int num_log_args_calls{};
 
 constexpr auto check = [](auto value, auto expected) {
-    static_assert(std::is_same_v<decltype(value), decltype(expected)>);
+    STATIC_REQUIRE(std::is_same_v<decltype(value), decltype(expected)>);
     CHECK(value == expected);
 };
 
@@ -155,31 +155,31 @@ template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
 TEST_CASE("argument packing", "[mipi]") {
     using P = logging::default_arg_packer;
-    static_assert(std::same_as<P::pack_as_t<std::int32_t>, std::int32_t>);
-    static_assert(std::same_as<P::pack_as_t<std::uint32_t>, std::uint32_t>);
-    static_assert(std::same_as<P::pack_as_t<std::int64_t>, std::int64_t>);
-    static_assert(std::same_as<P::pack_as_t<std::uint64_t>, std::uint64_t>);
-    static_assert(std::same_as<P::pack_as_t<char>, std::int32_t>);
-    static_assert(std::same_as<P::pack_as_t<unsigned char>, std::uint32_t>);
-    static_assert(std::same_as<P::pack_as_t<float>, std::uint32_t>);
-    static_assert(std::same_as<P::pack_as_t<double>, std::uint64_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<std::int32_t>, std::int32_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<std::uint32_t>, std::uint32_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<std::int64_t>, std::int64_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<std::uint64_t>, std::uint64_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<char>, std::int32_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<unsigned char>, std::uint32_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<float>, std::uint32_t>);
+    STATIC_REQUIRE(std::same_as<P::pack_as_t<double>, std::uint64_t>);
 }
 
 TEST_CASE("argument encoding", "[mipi]") {
     using P = logging::default_arg_packer;
-    static_assert(
+    STATIC_REQUIRE(
         std::same_as<P::encode_as_t<std::int32_t>, encode_32<std::int32_t>>);
-    static_assert(
+    STATIC_REQUIRE(
         std::same_as<P::encode_as_t<std::uint32_t>, encode_u32<std::uint32_t>>);
-    static_assert(
+    STATIC_REQUIRE(
         std::same_as<P::encode_as_t<std::int64_t>, encode_64<std::int64_t>>);
-    static_assert(
+    STATIC_REQUIRE(
         std::same_as<P::encode_as_t<std::uint64_t>, encode_u64<std::uint64_t>>);
-    static_assert(std::same_as<P::encode_as_t<char>, encode_32<char>>);
-    static_assert(
+    STATIC_REQUIRE(std::same_as<P::encode_as_t<char>, encode_32<char>>);
+    STATIC_REQUIRE(
         std::same_as<P::encode_as_t<unsigned char>, encode_u32<unsigned char>>);
-    static_assert(std::same_as<P::encode_as_t<float>, encode_u32<float>>);
-    static_assert(std::same_as<P::encode_as_t<double>, encode_u64<double>>);
+    STATIC_REQUIRE(std::same_as<P::encode_as_t<float>, encode_u32<float>>);
+    STATIC_REQUIRE(std::same_as<P::encode_as_t<double>, encode_u64<double>>);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {
@@ -330,7 +330,7 @@ template <logging::level Level> struct test_catalog_args_destination {
             expected_catalog32_header(Level, test_module_id);
         CHECK(header == Header);
         CHECK(id == test_string_id);
-        static_assert(sizeof...(Args) == 0);
+        STATIC_REQUIRE(sizeof...(Args) == 0);
         ++num_catalog_args_calls;
     }
 };

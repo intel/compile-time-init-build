@@ -18,13 +18,13 @@ struct test_builder_meta {
 } // namespace
 
 TEST_CASE("builder_meta concept") {
-    static_assert(cib::builder_meta<test_builder_meta>);
+    STATIC_REQUIRE(cib::builder_meta<test_builder_meta>);
 }
 
 TEST_CASE(
     "builder_meta builder and interface type traits return correct values") {
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<TestBuilder, cib::builder_t<test_builder_meta>>);
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<TestInterface, cib::interface_t<test_builder_meta>>);
 }

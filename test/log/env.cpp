@@ -28,23 +28,23 @@ namespace {
 } // namespace
 
 TEST_CASE("override environment", "[log_env]") {
-    static_assert(custom(cib_log_env_t{}) == 42);
+    STATIC_REQUIRE(custom(cib_log_env_t{}) == 42);
     CIB_LOG_ENV(custom, 1);
-    static_assert(custom(cib_log_env_t{}) == 1);
+    STATIC_REQUIRE(custom(cib_log_env_t{}) == 1);
     {
         CIB_LOG_ENV(custom, 2);
-        static_assert(custom(cib_log_env_t{}) == 2);
+        STATIC_REQUIRE(custom(cib_log_env_t{}) == 2);
     }
 }
 
 TEST_CASE("supplement environment", "[log_env]") {
     CIB_LOG_ENV(custom, 1);
-    static_assert(custom(cib_log_env_t{}) == 1);
+    STATIC_REQUIRE(custom(cib_log_env_t{}) == 1);
     {
         using namespace stdx::literals;
         CIB_LOG_ENV(logging::get_module, "hello");
-        static_assert(custom(cib_log_env_t{}) == 1);
-        static_assert(logging::get_module(cib_log_env_t{}) == "hello"_cts);
+        STATIC_REQUIRE(custom(cib_log_env_t{}) == 1);
+        STATIC_REQUIRE(logging::get_module(cib_log_env_t{}) == "hello"_cts);
     }
 }
 
@@ -52,8 +52,8 @@ TEST_CASE("multi-value environment", "[log_env]") {
     CIB_LOG_ENV(custom, 1, logging::get_module, "hello");
 
     using namespace stdx::literals;
-    static_assert(custom(cib_log_env_t{}) == 1);
-    static_assert(logging::get_module(cib_log_env_t{}) == "hello"_cts);
+    STATIC_REQUIRE(custom(cib_log_env_t{}) == 1);
+    STATIC_REQUIRE(logging::get_module(cib_log_env_t{}) == "hello"_cts);
 }
 
 namespace {

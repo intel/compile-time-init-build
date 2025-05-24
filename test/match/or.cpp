@@ -10,35 +10,35 @@
 
 TEST_CASE("OR fulfils matcher concept", "[match or]") {
     using T = match::or_t<test_matcher, test_matcher>;
-    static_assert(match::matcher<T>);
-    static_assert(match::matcher_for<T, int>);
+    STATIC_REQUIRE(match::matcher<T>);
+    STATIC_REQUIRE(match::matcher_for<T, int>);
 }
 
 TEST_CASE("OR describes itself", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    static_assert(e.describe() ==
-                  stdx::ct_format<"({}) or ({})">(test_m<0>{}.describe(),
-                                                  test_m<1>{}.describe()));
+    STATIC_REQUIRE(e.describe() ==
+                   stdx::ct_format<"({}) or ({})">(test_m<0>{}.describe(),
+                                                   test_m<1>{}.describe()));
 }
 
 TEST_CASE("OR description flattens", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{} or test_m<2>{};
-    static_assert(e.describe() == stdx::ct_format<"({}) or ({}) or ({})">(
-                                      test_m<0>{}.describe(),
-                                      test_m<1>{}.describe(),
-                                      test_m<2>{}.describe()));
+    STATIC_REQUIRE(e.describe() == stdx::ct_format<"({}) or ({}) or ({})">(
+                                       test_m<0>{}.describe(),
+                                       test_m<1>{}.describe(),
+                                       test_m<2>{}.describe()));
 }
 
 TEST_CASE("OR describes a match", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    static_assert(e.describe_match(1) == stdx::ct_format<"({}) or ({})">(
-                                             test_m<0>{}.describe_match(1),
-                                             test_m<1>{}.describe_match(1)));
+    STATIC_REQUIRE(e.describe_match(1) == stdx::ct_format<"({}) or ({})">(
+                                              test_m<0>{}.describe_match(1),
+                                              test_m<1>{}.describe_match(1)));
 }
 
 TEST_CASE("OR match description flattens", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{} or test_m<2>{};
-    static_assert(
+    STATIC_REQUIRE(
         e.describe_match(1) ==
         stdx::ct_format<"({}) or ({}) or ({})">(test_m<0>{}.describe_match(1),
                                                 test_m<1>{}.describe_match(1),
@@ -47,19 +47,19 @@ TEST_CASE("OR match description flattens", "[match or]") {
 
 TEST_CASE("OR matches correctly", "[match or]") {
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(e), match::or_t<test_m<0>, test_m<1>> const>);
-    static_assert(e(1));
-    static_assert(not e(0));
+    STATIC_REQUIRE(e(1));
+    STATIC_REQUIRE(not e(0));
 }
 
 TEST_CASE("OR simplifies correctly", "[match or]") {
     constexpr auto e = test_matcher{} and test_matcher{};
-    static_assert(std::is_same_v<decltype(e), test_matcher const>);
+    STATIC_REQUIRE(std::is_same_v<decltype(e), test_matcher const>);
 }
 
 TEST_CASE("any expression simplifies", "[match or]") {
     constexpr auto m = match::any(test_m<0>{}, test_m<1>{}, match::never);
-    static_assert(
+    STATIC_REQUIRE(
         std::is_same_v<decltype(m), match::or_t<test_m<0>, test_m<1>> const>);
 }

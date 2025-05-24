@@ -15,8 +15,8 @@ struct without_enable_field {};
 } // namespace
 
 TEST_CASE("detect enable_field", "[dynamic controller]") {
-    static_assert(interrupt::has_enable_field<with_enable_field>);
-    static_assert(not interrupt::has_enable_field<without_enable_field>);
+    STATIC_REQUIRE(interrupt::has_enable_field<with_enable_field>);
+    STATIC_REQUIRE(not interrupt::has_enable_field<without_enable_field>);
 }
 
 namespace {
