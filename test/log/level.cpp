@@ -22,8 +22,8 @@ std::string buffer{};
 
 namespace logging {
 template <custom_level L>
-[[nodiscard]] constexpr auto format_as(level_wrapper<L>) -> std::string_view {
-    static_assert(L == custom_level::THE_ONE_LEVEL);
+[[nodiscard]] auto format_as(level_wrapper<L>) -> std::string_view {
+    STATIC_REQUIRE(L == custom_level::THE_ONE_LEVEL);
     return "THE_ONE_LEVEL";
 }
 } // namespace logging

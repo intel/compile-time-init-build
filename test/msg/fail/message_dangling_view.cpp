@@ -15,6 +15,6 @@ auto main() -> int {
 #if defined(__clang__)
     [[maybe_unused]] auto v = msg::owning<msg_defn>{}.as_const_view();
 #else
-    static_assert(false, "-Wdangling");
+    STATIC_REQUIRE(false, "-Wdangling");
 #endif
 }

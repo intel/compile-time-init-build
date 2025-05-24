@@ -11,7 +11,7 @@ using no_flows_config_t = interrupt::irq<42_irq, 17, interrupt::policies<>>;
 }
 
 TEST_CASE("config models concept", "[irq_impl]") {
-    static_assert(interrupt::irq_config<no_flows_config_t>);
+    STATIC_REQUIRE(interrupt::irq_config<no_flows_config_t>);
 }
 
 TEST_CASE("config can enable/disable its irq", "[irq_impl]") {
@@ -29,21 +29,21 @@ TEST_CASE("config enables its irq with priority", "[irq_impl]") {
 }
 
 TEST_CASE("config default status policy is clear first", "[irq_impl]") {
-    static_assert(std::is_same_v<no_flows_config_t::status_policy_t,
-                                 interrupt::clear_status_first>);
+    STATIC_REQUIRE(std::is_same_v<no_flows_config_t::status_policy_t,
+                                  interrupt::clear_status_first>);
 }
 
 TEST_CASE("config status policy can be supplied", "[irq_impl]") {
     using config_t =
         interrupt::irq<42_irq, 17,
                        interrupt::policies<interrupt::clear_status_last>>;
-    static_assert(std::is_same_v<config_t::status_policy_t,
-                                 interrupt::clear_status_last>);
+    STATIC_REQUIRE(std::is_same_v<config_t::status_policy_t,
+                                  interrupt::clear_status_last>);
 }
 
 TEST_CASE("impl models concept", "[irq_impl]") {
     using impl_t = interrupt::irq_impl<no_flows_config_t, test_nexus>;
-    static_assert(interrupt::irq_interface<impl_t>);
+    STATIC_REQUIRE(interrupt::irq_interface<impl_t>);
 }
 
 namespace {
@@ -54,7 +54,7 @@ using flow_config_t = interrupt::irq<17_irq, 42, interrupt::policies<>, T>;
 TEST_CASE("impl runs a flow", "[irq_impl]") {
     using impl_t =
         interrupt::irq_impl<flow_config_t<std::true_type>, test_nexus>;
-    static_assert(impl_t::active);
+    STATIC_REQUIRE(impl_t::active);
     flow_run<std::true_type> = false;
     impl_t::run();
     CHECK(flow_run<std::true_type>);
@@ -73,12 +73,12 @@ TEST_CASE("impl can init its interrupt", "[irq_impl]") {
 TEST_CASE("impl is inactive when flow is not active", "[irq_impl]") {
     using impl_t =
         interrupt::irq_impl<flow_config_t<std::false_type>, test_nexus>;
-    static_assert(not impl_t::active);
+    STATIC_REQUIRE(not impl_t::active);
 }
 
 TEST_CASE("impl is inactive when there are no flows", "[irq_impl]") {
     using impl_t = interrupt::irq_impl<no_flows_config_t, test_nexus>;
-    static_assert(not impl_t::active);
+    STATIC_REQUIRE(not impl_t::active);
 }
 
 TEST_CASE("impl has no enable fields", "[irq_impl]") {
