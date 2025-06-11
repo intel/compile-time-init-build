@@ -9,6 +9,7 @@
 #include <cib/detail/runtime_conditional.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/type_traits.hpp>
 
 namespace cib {
 /**
@@ -46,6 +47,12 @@ constexpr static detail::components<Components...> components{};
 template <typename... Services>
 constexpr static detail::exports<Services...> exports{};
 
+namespace detail {
+template <typename T>
+using maybe_funcptr_t =
+    stdx::conditional_t<stdx::is_function_v<T>, std::decay_t<T>, T>;
+}
+
 /**
  * Extend a service with new functionality.
  *
@@ -57,7 +64,7 @@ constexpr static detail::exports<Services...> exports{};
  */
 template <typename Service, typename... Args>
 [[nodiscard]] CONSTEVAL auto extend(Args const &...args) {
-    return detail::extend<Service, Args...>{args...};
+    return detail::extend<Service, detail::maybe_funcptr_t<Args>...>{args...};
 }
 
 template <stdx::ct_string Name>

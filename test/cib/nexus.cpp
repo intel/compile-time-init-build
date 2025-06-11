@@ -46,10 +46,14 @@ struct Foo {
         cib::extend<TestCallback<2>>([]() { is_callback_invoked<2> = true; }));
 };
 
+namespace {
+auto test_cb_1() { is_callback_invoked<1> = true; }
+} // namespace
+
 struct Bar {
     constexpr static auto config = cib::config(
         cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; }),
-        cib::extend<TestCallback<1>>([]() { is_callback_invoked<1> = true; }));
+        cib::extend<TestCallback<1>>(test_cb_1));
 };
 
 struct Gorp {
