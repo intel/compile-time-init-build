@@ -8,8 +8,7 @@ Everything in the msg library is in the `msg` namespace.
 === Fields
 
 A `field` represents a value, specified in bits, inside a unit of addressable
-storage. Currently in the _cib_ library, storage is assumed to be in units of
-`std::uint32_t`. A field is a view type: it defines how to access storage, but
+storage. A field is a view type: it defines how to access storage, but
 it is an empty type.
 
 Two things specify a `field`:
@@ -32,7 +31,7 @@ A field may also specify a xref:match.adoc#_what_is_a_matcher[`matcher`]; this
 can be used to verify that a particular storage area contains the field. By
 default this is xref:match.adoc#_basic_matchers[`match::always`].
 
-For example, a field type looks like this:
+For example, a field declaration looks like this:
 [source,cpp]
 ----
 using namespace msg;
@@ -44,6 +43,19 @@ using my_field =
                          24_lsb}>;  // least significant bit
 ----
 
+Or like this:
+[source,cpp]
+----
+using namespace msg;
+using my_field_spec = field<"my field", std::uint32_t>;
+
+// these two declarations specify the same locations
+using my_field1 = my_field_spec::located_at<{1_dw, 23_msb, 20_lsb}>;
+using my_field2 = my_field_spec::located_at<{55_msb, 52_lsb}>;
+----
+The 32-bit word offset in storage may be omitted in favour of using "raw" bit
+positions, according to convention.
+
 A field can specify multiple `at` arguments if it has several disjoint parts. In
 that case, earlier `at` arguments specify more significant bits in the field,
 with later `at` arguments being less significant. For example:
@@ -51,10 +63,24 @@ with later `at` arguments being less significant. For example:
 ----
 using namespace msg;
 using my_field =
-    field<"my field",               // name
-          std::uint16_t>            // type
-            ::located<at{0_dw, 31_msb, 24_lsb},  // high byte
-                      at{0_dw,  7_msb,  0_lsb}>; // low byte
+    field<"my field", std::uint16_t>
+    ::located<at{0_dw, 31_msb, 24_lsb},  // high byte
+              at{0_dw,  7_msb,  0_lsb}>; // low byte
+----
+
+The maximum size of a field is 64 bits.
+
+NOTE: It is a compile-time error to specify a field location where the number of
+bits in storage exceeds the capacity of the field's type. (The inverse is fine:
+it's common to have limited bits in storage handled by larger types.)
+[source,cpp]
+----
+using namespace msg;
+
+// this is a compilation error:
+// the field location is 9 bits, but the field type only holds 8 bits
+using my_field = field<"my field", std::uint8_t>
+                 ::located<at{8_msb, 0_lsb}>;
 ----
 
 Fields also expose several matcher aliases which can typically be used to
@@ -78,7 +104,7 @@ For example, a message type looks like this:
 ----
 using my_message_defn = msg::message<
     "my_message",                      // name
-    my_field::with_required<0x80>>;     // field(s)
+    my_field::with_required<0x80>>;    // field(s)
 
 using my_message = msg::owning<my_message_defn>;
 ----
@@ -155,7 +181,7 @@ using msg_defn = extend<
 ----
 
 The combined definition incorporates all the fields of the messages. And as
-shown, the combination might typically be `extend`ed with a constraint on the
+shown, the combination might typically be `extend`​ed with a constraint on the
 header field.
 
 Other times it is useful to automatically concatenate or `pack` messages
