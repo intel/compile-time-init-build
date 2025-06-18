@@ -16,6 +16,12 @@ TEST_CASE("single bit", "[field extract]") {
     CHECK(0b1u == F::extract(data));
 }
 
+TEST_CASE("from integral type", "[field extract]") {
+    using F = field<"", std::uint32_t>::located<at{0_dw, 1_msb, 1_lsb}>;
+    std::uint32_t data{0b010};
+    CHECK(0b1u == F::extract(data));
+}
+
 TEST_CASE("within one storage element", "[field extract]") {
     using F = field<"", std::uint32_t>::located<at{0_dw, 16_msb, 5_lsb}>;
     std::array<std::uint32_t, 1> data{0b11'1010'1010'1110'0000};
