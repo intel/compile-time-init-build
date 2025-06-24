@@ -17,7 +17,7 @@ using config_b = interrupt::root<
     interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1, flow_2>>;
 } // namespace
 
-TEST_CASE("init enables interrupts", "[flow]") {
+TEST_CASE("init enables interrupts", "[manager]") {
     auto m = interrupt::manager<config_a, test_nexus>{};
     inited = false;
     enabled<17_irq> = false;
@@ -30,7 +30,7 @@ TEST_CASE("init enables interrupts", "[flow]") {
     CHECK(priority<17_irq> == 42);
 }
 
-TEST_CASE("run single flow", "[flow]") {
+TEST_CASE("run single flow", "[manager]") {
     auto m = interrupt::manager<config_a, test_nexus>{};
     flow_run<flow_1> = false;
 
@@ -39,7 +39,7 @@ TEST_CASE("run single flow", "[flow]") {
     CHECK(flow_run<flow_1>);
 }
 
-TEST_CASE("run multiple flows", "[flow]") {
+TEST_CASE("run multiple flows", "[manager]") {
     auto m = interrupt::manager<config_b, test_nexus>{};
     flow_run<flow_1> = false;
     flow_run<flow_2> = false;
@@ -58,7 +58,7 @@ struct alt_nexus {
 };
 } // namespace
 
-TEST_CASE("run flow across multiple nexi", "[flow]") {
+TEST_CASE("run flow across multiple nexi", "[manager]") {
     auto m = interrupt::manager<config_a, test_nexus, alt_nexus>{};
     flow_run<flow_1> = false;
     flow_run<alt_flow<flow_1>> = false;
@@ -93,7 +93,7 @@ using config_shared =
          interrupt::irq<38_irq, 39, interrupt::policies<>, flow_38>>;
 } // namespace
 
-TEST_CASE("init enables mcu interrupts", "[flow]") {
+TEST_CASE("init enables mcu interrupts", "[manager]") {
     auto m = interrupt::manager<config_shared, test_nexus>{};
     inited = false;
     enabled<33_irq> = false;
@@ -111,7 +111,7 @@ TEST_CASE("init enables mcu interrupts", "[flow]") {
     CHECK(priority<38_irq> == 39);
 }
 
-TEST_CASE("init enables dynamic interrupts", "[flow]") {
+TEST_CASE("init enables dynamic interrupts", "[manager]") {
     auto m = interrupt::manager<config_shared, test_nexus>{};
     enable_field_t<33'1>::value = false;
     enable_field_t<33'2>::value = false;
@@ -122,7 +122,7 @@ TEST_CASE("init enables dynamic interrupts", "[flow]") {
     CHECK(enable_field_t<33'2>::value);
 }
 
-TEST_CASE("run flows if sub_irq is enabled", "[flow]") {
+TEST_CASE("run flows if sub_irq is enabled", "[manager]") {
     auto m = interrupt::manager<config_shared, test_nexus>{};
     enable_field_t<33'1>::value = true;
     status_field_t<33'1>::value = true;
@@ -137,7 +137,7 @@ TEST_CASE("run flows if sub_irq is enabled", "[flow]") {
     CHECK(not flow_run<flow_33_2>);
 }
 
-TEST_CASE("init enables mcu interrupt if any flow is active", "[flow]") {
+TEST_CASE("init enables mcu interrupt if any flow is active", "[manager]") {
     using config_t = root<interrupt::shared_irq<
         33_irq, 34, interrupt::policies<>,
         interrupt::sub_irq<enable_field_t<33'0>, status_field_t<33'0>,
@@ -158,7 +158,7 @@ TEST_CASE("init enables mcu interrupt if any flow is active", "[flow]") {
 }
 
 TEST_CASE("init does not enable mcu interrupt if all flows are inactive",
-          "[flow]") {
+          "[manager]") {
     using config_t = root<interrupt::shared_irq<
         33_irq, 34, interrupt::policies<>,
         interrupt::sub_irq<enable_field_t<33'0>, status_field_t<33'0>,
@@ -191,7 +191,7 @@ using config_shared_sub = root<interrupt::shared_irq<
                            interrupt::policies<>, flow_33_2_2>>>>;
 } // namespace
 
-TEST_CASE("run flows for shared sub irqs if enabled", "[flow]") {
+TEST_CASE("run flows for shared sub irqs if enabled", "[manager]") {
     auto m = interrupt::manager<config_shared_sub, test_nexus>{};
     enable_field_t<33'1>::value = false;
 
@@ -212,4 +212,50 @@ TEST_CASE("run flows for shared sub irqs if enabled", "[flow]") {
     CHECK(not flow_run<flow_33_1>);
     CHECK(flow_run<flow_33_2_1>);
     CHECK(not flow_run<flow_33_2_2>);
+}
+
+namespace {
+using config_shared_no_enable = root<interrupt::shared_irq<
+    33_irq, 34, interrupt::policies<>,
+    interrupt::sub_irq<interrupt::enable_t<>, status_field_t<33'1>,
+                       interrupt::policies<>, flow_33_1>>>;
+using config_shared_no_status = root<interrupt::shared_irq<
+    33_irq, 34, interrupt::policies<>,
+    interrupt::sub_irq<enable_field_t<33'1>, interrupt::status_t<>,
+                       interrupt::policies<>, flow_33_1>>>;
+} // namespace
+
+TEST_CASE("run flows with no enable field", "[manager]") {
+    auto m = interrupt::manager<config_shared_no_enable, test_nexus>{};
+    status_field_t<33'1>::value = true;
+    flow_run<flow_33_1> = false;
+
+    m.run<33_irq>();
+
+    CHECK(not status_field_t<33'2'1>::value);
+    CHECK(flow_run<flow_33_1>);
+}
+
+TEST_CASE("run flows with no status field", "[manager]") {
+    auto m = interrupt::manager<config_shared_no_status, test_nexus>{};
+    enable_field_t<33'1>::value = true;
+    flow_run<flow_33_1> = false;
+
+    m.run<33_irq>();
+
+    CHECK(flow_run<flow_33_1>);
+}
+
+namespace {
+using config_shared_id = root<interrupt::shared_irq<
+    33_irq, 34, interrupt::policies<>,
+    interrupt::id_irq<enable_field_t<33'0>, interrupt::policies<>>>>;
+} // namespace
+
+TEST_CASE("init enables id interrupts", "[manager]") {
+    auto m = interrupt::manager<config_shared_id, test_nexus>{};
+
+    enable_field_t<33'0>::value = false;
+    m.init();
+    CHECK(enable_field_t<33'0>::value);
 }

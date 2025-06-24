@@ -57,15 +57,20 @@ template <typename F> constexpr auto write(field_value_t<F> v) {
 struct test_flow_1_t : public flow::service<"1"> {};
 struct test_flow_2_t : public flow::service<"2"> {};
 
-using en_field_1_t = mock_field_t<1, mock_register_t, 0, 0>;
-using sts_field_t = mock_field_t<2, mock_register_t, 1, 1>;
-using en_field_2_t = mock_field_t<3, mock_register_t, 2, 2>;
+using en_field_0_t = mock_field_t<1, mock_register_t, 0, 0>;
+using en_field_1_t = mock_field_t<1, mock_register_t, 1, 1>;
+using sts_field_t = mock_field_t<2, mock_register_t, 2, 2>;
+using en_field_2_t = mock_field_t<3, mock_register_t, 3, 3>;
 
+struct test_resource_0;
 struct test_resource_1;
 struct test_resource_2;
 
 using config_t = interrupt::root<interrupt::shared_irq<
     0_irq, 0, interrupt::policies<>,
+    interrupt::id_irq<
+        en_field_0_t,
+        interrupt::policies<interrupt::required_resources<test_resource_0>>>,
     interrupt::sub_irq<
         en_field_1_t, sts_field_t,
         interrupt::policies<interrupt::required_resources<test_resource_1>>,
@@ -79,35 +84,50 @@ using dynamic_t = interrupt::dynamic_controller<config_t>;
 
 auto reset_dynamic_state() -> void {
     register_value = 0;
+
     dynamic_t::disable<test_flow_1_t, test_flow_2_t>();
+    dynamic_t::turn_on_resource<test_resource_0>();
     dynamic_t::turn_on_resource<test_resource_1>();
     dynamic_t::turn_on_resource<test_resource_2>();
+
+    dynamic_t::enable_by_field<true, en_field_0_t>();
+    CHECK(register_value == 0b1);
 }
 } // namespace
 
 TEST_CASE("enable one irq", "[dynamic controller]") {
     reset_dynamic_state();
     dynamic_t::enable<test_flow_1_t>();
-    CHECK(register_value == 0b1);
+    CHECK(register_value == 0b11);
 }
 
 TEST_CASE("enable multiple irqs", "[dynamic controller]") {
     reset_dynamic_state();
     dynamic_t::enable<test_flow_1_t, test_flow_2_t>();
-    CHECK(register_value == 0b101);
+    CHECK(register_value == 0b1011);
 }
 
-TEST_CASE("disabling resource disables irq that requires it",
+TEST_CASE("disabling resource disables sub_irq that requires it",
           "[dynamic controller]") {
     reset_dynamic_state();
 
     dynamic_t::enable<test_flow_2_t>();
-    CHECK(register_value == 0b100);
+    CHECK(register_value == 0b1001);
 
     dynamic_t::turn_off_resource<test_resource_2>();
-    CHECK(register_value == 0);
+    CHECK(register_value == 0b1);
     dynamic_t::turn_on_resource<test_resource_2>();
-    CHECK(register_value == 0b100);
+    CHECK(register_value == 0b1001);
+}
+
+TEST_CASE("disabling resource disables id_irq that requires it",
+          "[dynamic controller]") {
+    reset_dynamic_state();
+
+    dynamic_t::turn_off_resource<test_resource_0>();
+    CHECK(register_value == 0);
+    dynamic_t::turn_on_resource<test_resource_0>();
+    CHECK(register_value == 0b1);
 }
 
 TEST_CASE("disabling resource disables only irqs that require it",
@@ -115,12 +135,12 @@ TEST_CASE("disabling resource disables only irqs that require it",
     reset_dynamic_state();
 
     dynamic_t::enable<test_flow_1_t, test_flow_2_t>();
-    CHECK(register_value == 0b101);
+    CHECK(register_value == 0b1011);
 
     dynamic_t::turn_off_resource<test_resource_2>();
-    CHECK(register_value == 0b1);
+    CHECK(register_value == 0b11);
     dynamic_t::turn_on_resource<test_resource_2>();
-    CHECK(register_value == 0b101);
+    CHECK(register_value == 0b1011);
 }
 
 TEST_CASE("disable resource that multiple irqs require",
@@ -128,10 +148,10 @@ TEST_CASE("disable resource that multiple irqs require",
     reset_dynamic_state();
 
     dynamic_t::enable<test_flow_1_t, test_flow_2_t>();
-    CHECK(register_value == 0b101);
+    CHECK(register_value == 0b1011);
 
     dynamic_t::turn_off_resource<test_resource_1>();
-    CHECK(register_value == 0);
+    CHECK(register_value == 0b1);
     dynamic_t::turn_on_resource<test_resource_1>();
-    CHECK(register_value == 0b101);
+    CHECK(register_value == 0b1011);
 }
