@@ -57,6 +57,19 @@ struct sub_irq_impl : Config {
     }
 };
 
+template <typename Config> struct id_irq_impl : Config {
+    constexpr static bool active = true;
+
+    using Config::enable_field;
+    using Config::status_field;
+
+    [[nodiscard]] static auto get_interrupt_enables() {
+        return stdx::make_tuple(enable_field);
+    }
+
+    static auto run() -> void {}
+};
+
 template <typename Config, sub_irq_interface... Subs>
 struct shared_irq_impl : Config {
     constexpr static bool active = (Subs::active or ...);

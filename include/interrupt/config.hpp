@@ -39,6 +39,15 @@ template <irq_num_t Number, priority_t Priority> struct super_config {
     constexpr static auto irq_number = Number;
 };
 
+namespace fields {
+template <bool V> struct field_t {};
+template <bool V> struct op_t {};
+
+template <bool V> constexpr auto read(field_t<V>) -> op_t<V> { return {}; }
+template <bool V> constexpr auto clear(field_t<V>) -> op_t<V> { return {}; }
+template <bool V> constexpr auto apply(op_t<V>) { return V; }
+} // namespace fields
+
 template <typename EnableField, typename StatusField> struct sub_config {
     template <bool Enable> constexpr static auto enable() -> void {}
     constexpr static auto enable_field = EnableField{};
@@ -72,6 +81,9 @@ template <typename... Flows> class flow_config {
 };
 } // namespace detail
 
+template <bool V = true> using enable_t = detail::fields::field_t<V>;
+template <bool V = true> using status_t = detail::fields::field_t<V>;
+
 template <base_irq_config... Cfgs>
 struct root : detail::parent_config<Cfgs...> {
     template <typename T> using dynamic_controller_t = dynamic_controller<T>;
@@ -93,6 +105,14 @@ struct sub_irq : detail::policy_config<Policies>,
                  detail::sub_config<EnableField, StatusField>,
                  detail::flow_config<Flows...> {
     template <typename... Nexi> using built_t = sub_irq_impl<sub_irq, Nexi...>;
+};
+
+template <typename EnableField, typename Policies>
+struct id_irq : detail::policy_config<Policies>,
+                detail::parent_config<>,
+                detail::sub_config<EnableField, status_t<>> {
+    template <typename...> using built_t = id_irq_impl<id_irq>;
+    template <typename> constexpr static bool triggers_flow = false;
 };
 
 template <irq_num_t Number, priority_t Priority, typename Policies,
