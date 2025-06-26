@@ -387,7 +387,7 @@ struct message {
 
         template <detail::storage_like S>
         // NOLINTNEXTLINE(google-explicit-constructor)
-        explicit(false) view_t(S const &s) : storage{s} {}
+        constexpr explicit(false) view_t(S const &s) : storage{s} {}
 
         template <detail::storage_like S, some_field_value... Vs>
         constexpr explicit view_t(S &s, Vs... vs) : storage{s} {
@@ -400,7 +400,7 @@ struct message {
             : storage{s.data()} {}
 
         template <typename S, some_field_value... Vs>
-        explicit(true) constexpr view_t(owner_t<S> &s LIFETIMEBOUND, Vs... vs)
+        constexpr explicit(true) view_t(owner_t<S> &s LIFETIMEBOUND, Vs... vs)
             : storage{s.data()} {
             this->set(vs...);
         }
@@ -470,7 +470,7 @@ struct message {
             this->set(Fields{}...);
         }
 
-        template <some_field_value... Vs> explicit constexpr owner_t(Vs... vs) {
+        template <some_field_value... Vs> constexpr explicit owner_t(Vs... vs) {
             using defaulted_fields = boost::mp11::mp_transform<
                 name_for,
                 boost::mp11::mp_copy_if<boost::mp11::mp_list<Fields...>,
@@ -493,7 +493,7 @@ struct message {
         }
 
         template <detail::storage_like S, some_field_value... Vs>
-        explicit constexpr owner_t(S const &s, Vs... vs) {
+        constexpr explicit owner_t(S const &s, Vs... vs) {
             static_assert(std::is_same_v<typename S::value_type,
                                          typename storage_t::value_type>,
                           "Attempted to construct owning message with "
@@ -506,7 +506,7 @@ struct message {
         }
 
         template <detail::storage_like S, some_field_value... Vs>
-        explicit constexpr owner_t(view_t<S> s, Vs... vs)
+        constexpr explicit owner_t(view_t<S> s, Vs... vs)
             : owner_t{s.data(), vs...} {}
 
         [[nodiscard]] constexpr auto data() LIFETIMEBOUND {
