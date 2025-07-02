@@ -279,21 +279,21 @@ enum struct lsb_t : std::uint32_t {};
 
 inline namespace literals {
 // NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL auto operator""_bi(unsigned long long int v) -> byte_index_t {
+CONSTEVAL_UDL auto operator""_bi(unsigned long long int v) -> byte_index_t {
     return static_cast<byte_index_t>(v);
 }
-CONSTEVAL auto operator""_dwi(unsigned long long int v) -> dword_index_t {
+CONSTEVAL_UDL auto operator""_dwi(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
-CONSTEVAL auto operator""_dw(unsigned long long int v) -> dword_index_t {
+CONSTEVAL_UDL auto operator""_dw(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
 // NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL auto operator""_lsb(unsigned long long int v) -> lsb_t {
+CONSTEVAL_UDL auto operator""_lsb(unsigned long long int v) -> lsb_t {
     return static_cast<lsb_t>(v);
 }
 // NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL auto operator""_msb(unsigned long long int v) -> msb_t {
+CONSTEVAL_UDL auto operator""_msb(unsigned long long int v) -> msb_t {
     return static_cast<msb_t>(v);
 }
 } // namespace literals
