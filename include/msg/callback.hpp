@@ -46,15 +46,14 @@ struct callback {
     auto log_mismatch(auto const &data) const -> void {
         CIB_LOG_ENV(logging::get_level, logging::level::INFO);
         {
+            auto const desc = msg::call_with_message<Msg>(
+                [&]<typename T>(T &&t) -> decltype(matcher.describe_match(
+                                           std::forward<T>(t))) {
+                    return matcher.describe_match(std::forward<T>(t));
+                },
+                data);
             CIB_APPEND_LOG_ENV(typename Msg::env_t);
-            CIB_LOG(
-                "    {} - F:({})", stdx::cts_t<Name>{},
-                msg::call_with_message<Msg>(
-                    [&]<typename T>(T &&t) -> decltype(matcher.describe_match(
-                                               std::forward<T>(t))) {
-                        return matcher.describe_match(std::forward<T>(t));
-                    },
-                    data));
+            CIB_LOG("    {} - F:({})", stdx::cts_t<Name>{}, desc);
         }
     }
 
