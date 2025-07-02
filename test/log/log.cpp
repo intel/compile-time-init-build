@@ -87,7 +87,7 @@ TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
     CHECK(panicked);
 }
 
-TEST_CASE("CIB_FATAL can format stack arguments", "[log]") {
+TEST_CASE("CIB_FATAL can format stack arguments (1)", "[log]") {
     reset_test_state();
     expected_why = "Hello {}";
     expected_args = std::make_tuple(stdx::make_tuple(42));
@@ -99,10 +99,38 @@ TEST_CASE("CIB_FATAL can format stack arguments", "[log]") {
     CHECK(panicked);
 }
 
+TEST_CASE("CIB_FATAL can format stack arguments (2)", "[log]") {
+    reset_test_state();
+    expected_why = "Hello {}";
+    expected_args =
+        std::make_tuple(stdx::make_tuple(std::string_view{"world"}));
+
+    auto x = std::string_view{"world"};
+    CIB_FATAL("Hello {}", x);
+    CAPTURE(buffer);
+    CHECK(buffer.find("Hello world") != std::string::npos);
+    CHECK(panicked);
+}
+
+TEST_CASE("CIB_FATAL formats compile-time arguments where possible", "[log]") {
+    using namespace stdx::literals;
+    reset_test_state();
+    expected_why = "Hello 42";
+    expected_args = std::make_tuple(stdx::make_tuple());
+
+    []<stdx::ct_string S>() {
+        CIB_FATAL("{} {}", S, 42);
+    }.template operator()<"Hello">();
+
+    CAPTURE(buffer);
+    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(panicked);
+}
+
 TEST_CASE("CIB_FATAL passes extra arguments to panic", "[log]") {
     reset_test_state();
     expected_why = "Hello {}";
-    expected_args = std::make_tuple(stdx::make_tuple(42), 17);
+    expected_args = std::make_tuple(stdx::make_tuple(42), stdx::ct<17>());
 
     auto x = 42;
     CIB_FATAL("Hello {}", x, 17);
@@ -124,7 +152,7 @@ TEST_CASE("CIB_ASSERT is equivalent to CIB_FATAL on failure", "[log]") {
 TEST_CASE("CIB_ASSERT passes arguments to panic", "[log]") {
     reset_test_state();
     expected_why = "Assertion failure: true == false";
-    expected_args = std::make_tuple(stdx::make_tuple(), 42);
+    expected_args = std::make_tuple(stdx::make_tuple(), stdx::ct<42>());
 
     CIB_ASSERT(true == false, 42);
     CAPTURE(buffer);

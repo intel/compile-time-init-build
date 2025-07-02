@@ -310,13 +310,61 @@ TEST_CASE("log version information (long with string)", "[mipi]") {
     CHECK(num_log_args_calls == 1);
 }
 
+namespace {
+std::vector<std::uint32_t> expected_args{};
+
+template <logging::level Level> struct test_log_injected_destination {
+    template <typename... Args>
+    auto log_by_args(std::uint32_t header, Args... args) {
+        ++num_log_args_calls;
+        auto const Header = expected_msg_header(Level, test_module_id,
+                                                std::size(expected_args));
+        REQUIRE(header == Header);
+        REQUIRE(sizeof...(Args) == std::size(expected_args));
+        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            (check(args, expected_args[Is]), ...);
+        }(std::make_index_sequence<sizeof...(Args)>{});
+    }
+};
+} // namespace
+
 template <>
-inline auto logging::config<> =
-    logging::binary::config{test_log_args_destination<logging::level::TRACE>{}};
+inline auto logging::config<> = logging::binary::config{
+    test_log_injected_destination<logging::level::TRACE>{}};
 
 TEST_CASE("injection", "[mipi]") {
     test_critical_section::count = 0;
+    expected_args.clear();
     CIB_TRACE("Hello");
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("injection - log runtime arg", "[mipi]") {
+    test_critical_section::count = 0;
+    expected_args = std::vector<std::uint32_t>{42, 17};
+    auto x = 17;
+    CIB_TRACE("Hello {}", x);
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("injection - log implicit compile-time arg (int)", "[mipi]") {
+    test_critical_section::count = 0;
+    expected_args.clear();
+    CIB_TRACE("Hello {}", 42);
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("injection - log implicit compile-time arg (string)", "[mipi]") {
+    test_critical_section::count = 0;
+    expected_args.clear();
+    CIB_TRACE("Hello {}", stdx::ct_string{"world"});
+    CHECK(test_critical_section::count == 2);
+}
+
+TEST_CASE("injection - log explicit compile-time arg", "[mipi]") {
+    test_critical_section::count = 0;
+    expected_args.clear();
+    CIB_TRACE("Hello {}", stdx::ct<42>());
     CHECK(test_critical_section::count == 2);
 }
 

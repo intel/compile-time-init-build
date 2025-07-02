@@ -120,7 +120,8 @@ target_sources(
               include/log/flavor.hpp
               include/log/level.hpp
               include/log/log.hpp
-              include/log/module.hpp)
+              include/log/module.hpp
+              include/log/pp_map.hpp)
 
 add_library(cib_msg INTERFACE)
 target_compile_features(cib_msg INTERFACE cxx_std_20)
