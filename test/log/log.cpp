@@ -81,7 +81,7 @@ TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
     reset_test_state();
     expected_why = "Hello 42";
 
-    CIB_FATAL("{} {}", "Hello"_ctst, stdx::ct<42>());
+    CIB_FATAL("{} {}", "Hello", 42);
     CAPTURE(buffer);
     CHECK(buffer.find("Hello 42") != std::string::npos);
     CHECK(panicked);
@@ -115,27 +115,28 @@ TEST_CASE("CIB_FATAL can format stack arguments (2)", "[log]") {
 TEST_CASE("CIB_FATAL formats compile-time arguments where possible", "[log]") {
     using namespace stdx::literals;
     reset_test_state();
-    expected_why = "Hello 42";
+    expected_why = "Hello 17";
     expected_args = std::make_tuple(stdx::make_tuple());
 
     []<stdx::ct_string S>() {
-        CIB_FATAL("{} {}", S, 42);
+        CIB_FATAL("{} {}", S, 17);
     }.template operator()<"Hello">();
 
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(buffer.find("Hello 17") != std::string::npos);
     CHECK(panicked);
 }
 
 TEST_CASE("CIB_FATAL passes extra arguments to panic", "[log]") {
     reset_test_state();
     expected_why = "Hello {}";
-    expected_args = std::make_tuple(stdx::make_tuple(42), stdx::ct<17>());
+    expected_args = std::make_tuple(stdx::make_tuple(17), 18);
 
-    auto x = 42;
-    CIB_FATAL("Hello {}", x, 17);
+    auto x = 17;
+    auto y = 18;
+    CIB_FATAL("Hello {}", x, y);
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(buffer.find("Hello 17") != std::string::npos);
     CHECK(panicked);
 }
 
@@ -152,9 +153,10 @@ TEST_CASE("CIB_ASSERT is equivalent to CIB_FATAL on failure", "[log]") {
 TEST_CASE("CIB_ASSERT passes arguments to panic", "[log]") {
     reset_test_state();
     expected_why = "Assertion failure: true == false";
-    expected_args = std::make_tuple(stdx::make_tuple(), stdx::ct<42>());
+    expected_args = std::make_tuple(stdx::make_tuple(), 17);
 
-    CIB_ASSERT(true == false, 42);
+    auto x = 17;
+    CIB_ASSERT(true == false, x);
     CAPTURE(buffer);
     CHECK(buffer.find(expected_why) != std::string::npos);
     CHECK(panicked);

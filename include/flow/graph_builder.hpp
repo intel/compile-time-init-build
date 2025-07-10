@@ -75,8 +75,8 @@ struct graph_builder {
         for_each(
             [&]<typename Lhs, typename Rhs, typename Cond>(
                 dsl::edge<Lhs, Rhs, Cond> const &) {
-                auto lhs = get<name_for<Lhs>>(named_nodes);
-                auto rhs = get<name_for<Rhs>>(named_nodes);
+                auto const lhs = get<name_for<Lhs>>(named_nodes);
+                auto const rhs = get<name_for<Rhs>>(named_nodes);
 
                 using lhs_t = std::remove_cvref_t<decltype(lhs)>;
                 using rhs_t = std::remove_cvref_t<decltype(rhs)>;
@@ -84,7 +84,7 @@ struct graph_builder {
                 using rhs_cond_t = std::remove_cvref_t<decltype(rhs.condition)>;
 
                 using edge_ps_t = decltype(Cond::predicates);
-                auto node_ps = stdx::to_unsorted_set(stdx::tuple_cat(
+                constexpr auto node_ps = stdx::to_unsorted_set(stdx::tuple_cat(
                     lhs_t::condition.predicates, rhs_t::condition.predicates));
 
                 stdx::for_each(
@@ -95,11 +95,9 @@ struct graph_builder {
                             "weaker than those on {}[{}] or {}[{}]. "
                             "Specifically, the sequence is missing the "
                             "predicate: {}",
-                            CX_VALUE(lhs_t::ct_name), CX_VALUE(rhs_t::ct_name),
-                            CX_VALUE(Cond::ct_name), CX_VALUE(lhs_t::ct_name),
-                            CX_VALUE(lhs_cond_t::ct_name),
-                            CX_VALUE(rhs_t::ct_name),
-                            CX_VALUE(rhs_cond_t::ct_name), CX_VALUE(P));
+                            lhs_t::ct_name, rhs_t::ct_name, Cond::ct_name,
+                            lhs_t::ct_name, lhs_cond_t::ct_name, rhs_t::ct_name,
+                            rhs_cond_t::ct_name, P);
                     },
                     node_ps);
 
@@ -174,6 +172,7 @@ struct graph_builder {
             return x + ", "_ctst + y;
         });
 
+    // NOLINTNEXTLINE (readability-function-cognitive-complexity)
     constexpr static void check_for_missing_nodes(auto nodes,
                                                   auto mentioned_nodes) {
         constexpr auto get_name = []<typename N>(N) ->
@@ -187,21 +186,24 @@ struct graph_builder {
         using missing_nodes_t =
             boost::mp11::mp_set_difference<mentioned_node_names_t,
                                            node_names_t>;
+        constexpr auto missing_nodes = error_steps<missing_nodes_t>;
         STATIC_ASSERT(
             (std::is_same_v<node_names_t, mentioned_node_names_t>),
             "One or more steps are referenced in the flow ({}) but not "
-            "explicitly added with the * operator. The missing steps are: {}.",
-            CX_VALUE(Name), CX_VALUE(error_steps<missing_nodes_t>));
+            "explicitly added with the * operator. The missing steps are: "
+            "{}.",
+            Name, missing_nodes);
 
         constexpr auto duplicates = stdx::transform(
             [](auto e) { return stdx::get<0>(e); },
             stdx::filter<detail::is_duplicated>(stdx::gather(node_names)));
         using duplicate_nodes_t = decltype(duplicates);
+        constexpr auto dup_nodes = error_steps<duplicate_nodes_t>;
         STATIC_ASSERT(
             stdx::tuple_size_v<duplicate_nodes_t> == 0,
             "One or more steps in the flow ({}) are explicitly added more than "
             "once using the * operator. The duplicate steps are: {}.",
-            CX_VALUE(Name), CX_VALUE(error_steps<duplicate_nodes_t>));
+            Name, dup_nodes);
     }
 
     template <typename Graph>

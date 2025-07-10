@@ -355,9 +355,10 @@ TEST_CASE("injection - log implicit compile-time arg (int)", "[mipi]") {
 }
 
 TEST_CASE("injection - log implicit compile-time arg (string)", "[mipi]") {
+    using namespace stdx::literals;
     test_critical_section::count = 0;
     expected_args.clear();
-    CIB_TRACE("Hello {}", stdx::ct_string{"world"});
+    CIB_TRACE("Hello {}", "world"_cts);
     CHECK(test_critical_section::count == 2);
 }
 
