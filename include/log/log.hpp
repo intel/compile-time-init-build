@@ -4,12 +4,12 @@
 #include <log/flavor.hpp>
 #include <log/level.hpp>
 #include <log/module.hpp>
-#include <log/pp_map.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
+#include <stdx/pp_map.hpp>
 #if __cpp_pack_indexing < 202311L
 #include <stdx/tuple.hpp>
 #endif
@@ -74,32 +74,13 @@ template <stdx::ct_string Msg> constexpr auto cx_log_wrap(int, auto &&...args) {
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#define CIB_CX_WRAP1(X)                                                        \
-    [&](auto f) {                                                              \
-        if constexpr (::logging::detail::is_already_ct<decltype(f())>) {       \
-            return f();                                                        \
-        } else if constexpr (requires {                                        \
-                                 stdx::ct<[&]() constexpr { return X; }()>;    \
-                             }) {                                              \
-            return stdx::ct<f()>();                                            \
-        } else {                                                               \
-            return f();                                                        \
-        }                                                                      \
-    }([&] { return X; })
+#define CIB_LOG(...)                                                           \
+    logging::log<cib_log_env_t>(__FILE__, __LINE__, STDX_CT_FORMAT(__VA_ARGS__))
 
-#define CIB_CX_WRAP(...) __VA_OPT__(, CIB_CX_WRAP1(__VA_ARGS__))
-
-#define CIB_LOG(MSG, ...)                                                      \
-    logging::log<cib_log_env_t>(__FILE__, __LINE__,                            \
-                                logging::detail::cx_log_wrap<MSG>(             \
-                                    0 CIB_MAP(CIB_CX_WRAP, __VA_ARGS__)))
-
-#define CIB_LOG_WITH_LEVEL(LEVEL, MSG, ...)                                    \
+#define CIB_LOG_WITH_LEVEL(LEVEL, ...)                                         \
     logging::log<                                                              \
         stdx::extend_env_t<cib_log_env_t, logging::get_level, LEVEL>>(         \
-        __FILE__, __LINE__,                                                    \
-        logging::detail::cx_log_wrap<MSG>(                                     \
-            0 CIB_MAP(CIB_CX_WRAP, __VA_ARGS__)))
+        __FILE__, __LINE__, STDX_CT_FORMAT(__VA_ARGS__))
 
 #define CIB_TRACE(...)                                                         \
     CIB_LOG_WITH_LEVEL(logging::level::TRACE __VA_OPT__(, ) __VA_ARGS__)
@@ -160,7 +141,7 @@ template <stdx::ct_string Fmt, typename Env, typename F, typename L>
 
 #define CIB_FATAL(MSG, ...)                                                    \
     logging::detail::panic<MSG, cib_log_env_t>(                                \
-        __FILE__, __LINE__ CIB_MAP(CIB_CX_WRAP, __VA_ARGS__))
+        __FILE__, __LINE__ __VA_OPT__(, STDX_MAP(CX_WRAP, __VA_ARGS__)))
 
 #define CIB_ASSERT(expr, ...)                                                  \
     ((expr)                                                                    \
