@@ -379,7 +379,16 @@ TEST_CASE("less_than_or_equal_to matcher", "[message]") {
 
 TEST_CASE("describe a message", "[message]") {
     test_msg m{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
-    CIB_INFO("{}", m.describe());
+    auto const desc = m.describe();
+#if __clang_major__ == 14
+    // workaround: clang-14 ICE with CIB_INFO here
+    logging::log<stdx::extend_env_t<cib_log_env_t, logging::get_level,
+                                    logging::level::INFO>>(
+        __FILE__, __LINE__, stdx::ct_format<"{}">(desc));
+#else
+    CIB_INFO("{}", desc);
+#endif
+
     CAPTURE(log_buffer);
     CHECK(log_buffer.find("msg(f1: 0xba11, id: 0x80, f3: 0xd00d, f2: 0x42)") !=
           std::string::npos);

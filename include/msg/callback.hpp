@@ -28,14 +28,15 @@ struct callback {
     }
 
     template <stdx::ct_string Extra = "", typename... Args>
+    // NOLINTNEXTLINE (readability-function-cognitive-complexity)
     [[nodiscard]] auto handle(auto const &data, Args &&...args) const -> bool {
         CIB_LOG_ENV(logging::get_level, logging::level::INFO);
         if (msg::call_with_message<Msg>(matcher, data)) {
             CIB_APPEND_LOG_ENV(typename Msg::env_t);
+            auto const desc = matcher.describe();
             CIB_LOG("Incoming message matched [{}], because [{}]{}, executing "
                     "callback",
-                    stdx::cts_t<Name>{}, matcher.describe(),
-                    stdx::cts_t<Extra>{});
+                    stdx::cts_t<Name>{}, desc, stdx::cts_t<Extra>{});
             msg::call_with_message<Msg>(callable, data,
                                         std::forward<Args>(args)...);
             return true;
