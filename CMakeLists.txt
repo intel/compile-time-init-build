@@ -25,7 +25,7 @@ include(cmake/string_catalog.cmake)
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
 fmt_recipe(11.1.3)
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#0ddce52")
-add_versioned_package("gh:intel/cpp-std-extensions#effadd4")
+add_versioned_package("gh:intel/cpp-std-extensions#3023efe")
 add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#22c8006")
 
 set(GEN_STR_CATALOG
@@ -120,8 +120,7 @@ target_sources(
               include/log/flavor.hpp
               include/log/level.hpp
               include/log/log.hpp
-              include/log/module.hpp
-              include/log/pp_map.hpp)
+              include/log/module.hpp)
 
 add_library(cib_msg INTERFACE)
 target_compile_features(cib_msg INTERFACE cxx_std_20)
