@@ -356,6 +356,9 @@ template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
 template <stdx::ct_string Name, typename Env, typename... Fields>
 struct message {
     using fields_t = stdx::type_list<Fields...>;
+    using num_fields_t = std::integral_constant<std::size_t, sizeof...(Fields)>;
+    template <std::size_t I> using nth_field_t = stdx::nth_t<I, Fields...>;
+
     using env_t = Env;
     using access_t = msg_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
