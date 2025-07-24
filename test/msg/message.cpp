@@ -1,5 +1,6 @@
 #include <log/fmt/logger.hpp>
 #include <msg/message.hpp>
+#include <msg/message_destructure.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
@@ -73,6 +74,24 @@ TEST_CASE("construct with field values", "[message]") {
     CHECK(0x0042'd00d == data[1]);
 }
 
+TEST_CASE("message supports tuple protocol", "[message]") {
+    [[maybe_unused]] test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42,
+                                  "f3"_field = 0xd00d};
+    STATIC_REQUIRE(std::tuple_size_v<test_msg> == 4);
+    STATIC_REQUIRE(
+        std::is_same_v<std::tuple_element_t<0, test_msg>, std::uint32_t>);
+}
+
+TEST_CASE("destructure owning message", "[message]") {
+    test_msg msg{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
+    STATIC_REQUIRE(std::tuple_size_v<test_msg> == 4);
+    auto const [f1, id, f3, f2] = msg;
+    CHECK(0x80 == id);
+    CHECK(0xba11 == f1);
+    CHECK(0x42 == f2);
+    CHECK(0xd00d == f3);
+}
+
 TEST_CASE("use field names as template args", "[message]") {
     auto msg = []<auto F>() {
         return test_msg{F = 0xba11};
@@ -121,6 +140,18 @@ TEST_CASE("view with read-only external storage", "[message]") {
     CHECK(0xba11 == msg.get("f1"_field));
     CHECK(0x42 == msg.get("f2"_field));
     CHECK(0xd00d == msg.get("f3"_field));
+}
+
+TEST_CASE("destructure message view", "[message]") {
+    auto const arr =
+        typename msg_defn::default_storage_t{0x8000'ba11, 0x0042'd00d};
+    const_view<msg_defn> msg{arr};
+
+    auto const [f1, id, f3, f2] = msg;
+    CHECK(0x80 == id);
+    CHECK(0xba11 == f1);
+    CHECK(0x42 == f2);
+    CHECK(0xd00d == f3);
 }
 
 TEST_CASE("view with external storage (oversized)", "[message]") {
