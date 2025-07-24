@@ -3,6 +3,8 @@
 #include <interrupt/fwd.hpp>
 #include <interrupt/policies.hpp>
 
+#include <stdx/ct_conversions.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -61,4 +63,27 @@ concept nexus_for = requires {
     T::template service<Flow>();
     { T::template service<Flow>.active } -> std::same_as<bool const &>;
 };
+
+namespace detail {
+template <typename T> constexpr auto config_string1() {
+    if constexpr (requires {
+                      []<auto N>(stdx::ct_string<N>) {}(T::config());
+                  }) {
+        return stdx::ct<T::config()>();
+    } else if constexpr (requires {
+                             []<auto N>(stdx::ct_string<N>) {}(T::name);
+                         }) {
+        return stdx::ct<T::name>();
+    } else {
+        constexpr auto s = stdx::type_as_string<T>();
+        return stdx::ct<stdx::ct_string<s.size() + 1>{s}>();
+    }
+}
+
+template <typename... Ts> constexpr auto config_string_for() {
+    using namespace stdx::literals;
+    return stdx::tuple{config_string1<Ts>()...}.join(
+        ""_ctst, [](auto lhs, auto rhs) { return lhs + ", "_ctst + rhs; });
+}
+} // namespace detail
 } // namespace interrupt

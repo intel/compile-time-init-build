@@ -34,16 +34,15 @@ struct test_hal {
 } // namespace
 template <> inline auto interrupt::injected_hal<> = test_hal{};
 
-namespace {
 template <typename T> inline bool flow_run{};
 
-template <typename T> struct flow {
+template <typename T> struct flow_t {
     auto operator()() const { flow_run<T> = true; }
     constexpr static bool active{T::value};
 };
 
 struct test_nexus {
-    template <typename T> constexpr static auto service = flow<T>{};
+    template <typename T> constexpr static auto service = flow_t<T>{};
 };
 
 template <auto> struct enable_field_t {
@@ -64,4 +63,3 @@ template <typename Field> constexpr auto clear(Field) {
 template <typename... Ops> constexpr auto apply(Ops... ops) {
     return (ops(), ...);
 }
-} // namespace

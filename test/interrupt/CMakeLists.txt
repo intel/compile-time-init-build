@@ -1,6 +1,7 @@
 add_tests(
     FILES
     dynamic_controller
+    id_irq_impl
     irq_impl
     manager
     shared_irq_impl

@@ -4,6 +4,8 @@
 #include <interrupt/dynamic_controller.hpp>
 #include <interrupt/hal.hpp>
 
+#include <stdx/ct_format.hpp>
+#include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
@@ -14,11 +16,14 @@ namespace interrupt {
 namespace detail {
 template <typename Dynamic, irq_interface... Impls> struct manager {
     void init() const {
-        // TODO: log exact interrupt manager configuration
-        //       (should be a single compile-time string with no arguments)
         hal::init();
         init_mcu_interrupts();
         init_sub_interrupts();
+    }
+
+    constexpr static auto config() {
+        return +stdx::ct_format<"interrupt::root<{}>">(
+            detail::config_string_for<Impls...>());
     }
 
     void init_mcu_interrupts() const { (Impls::init_mcu_interrupts(), ...); }
