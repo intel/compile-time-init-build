@@ -259,6 +259,17 @@ TEST_CASE("log more than two arguments", "[mipi]") {
     }
 }
 
+TEST_CASE("log more than two arguments whose size fits in two uint32_ts",
+          "[mipi]") {
+    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
+    test_critical_section::count = 0;
+    auto cfg = logging::binary::config{
+        test_log_buf_destination<logging::level::TRACE, log_env, 42u, 'a', 'b',
+                                 'c'>{}};
+    cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {} {}">('a', 'b', 'c'));
+    CHECK(test_critical_section::count == 2);
+}
+
 TEST_CASE("log to multiple destinations", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
