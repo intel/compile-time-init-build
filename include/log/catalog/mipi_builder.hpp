@@ -67,22 +67,20 @@ template <packer P> struct builder<defn::catalog_msg_t, P> {
     template <auto Level, typename... Ts>
     static auto build(string_id id, module_id m, Ts... args) {
         using namespace msg;
-        if constexpr ((0 + ... + sizeof(Ts)) <= sizeof(std::uint32_t) * 2) {
+        constexpr auto payload_size =
+            (sizeof(id) + ... + sizeof(typename P::template pack_as_t<Ts>));
+        if constexpr (payload_size <= sizeof(uint32_t) * 3) {
             constexpr auto header_size =
                 defn::catalog_msg_t::size<std::uint32_t>::value;
-            constexpr auto payload_size =
-                stdx::sized8{(sizeof(id) + ... +
-                              sizeof(typename P::template pack_as_t<Ts>))}
-                    .in<std::uint32_t>();
             using storage_t =
-                std::array<std::uint32_t, header_size + payload_size>;
+                std::array<std::uint32_t,
+                           header_size +
+                               stdx::sized8{payload_size}.in<std::uint32_t>()>;
             return catalog_builder<storage_t, P>{}.template build<Level>(
                 id, m, args...);
         } else {
             constexpr auto header_size =
                 defn::catalog_msg_t::size<std::uint8_t>::value;
-            constexpr auto payload_size =
-                (sizeof(id) + ... + sizeof(typename P::template pack_as_t<Ts>));
             using storage_t =
                 std::array<std::uint8_t, header_size + payload_size>;
             return catalog_builder<storage_t, P>{}.template build<Level>(
