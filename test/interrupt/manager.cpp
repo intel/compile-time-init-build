@@ -7,10 +7,10 @@
 
 #include <type_traits>
 
-namespace {
 struct flow_1 : std::true_type {};
 struct flow_2 : std::true_type {};
 
+namespace {
 using config_a =
     interrupt::root<interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1>>;
 using config_b = interrupt::root<
@@ -28,6 +28,18 @@ TEST_CASE("init enables interrupts", "[manager]") {
     CHECK(inited);
     CHECK(enabled<17_irq>);
     CHECK(priority<17_irq> == 42);
+}
+
+TEST_CASE("manager can dump config", "[manager]") {
+    using namespace stdx::literals;
+    constexpr auto s1 = interrupt::manager<config_a, test_nexus>::config();
+    STATIC_REQUIRE(
+        s1 ==
+        "interrupt::root<interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1>>"_cts);
+    constexpr auto s2 = interrupt::manager<config_b, test_nexus>::config();
+    STATIC_REQUIRE(
+        s2 ==
+        "interrupt::root<interrupt::irq<17_irq, 42, interrupt::policies<>, flow_1, flow_2>>"_cts);
 }
 
 TEST_CASE("run single flow", "[manager]") {
@@ -54,7 +66,7 @@ namespace {
 template <typename Flow> struct alt_flow : Flow {};
 
 struct alt_nexus {
-    template <typename T> constexpr static auto service = flow<alt_flow<T>>{};
+    template <typename T> constexpr static auto service = flow_t<alt_flow<T>>{};
 };
 } // namespace
 

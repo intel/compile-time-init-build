@@ -7,8 +7,10 @@
 #include <interrupt/impl.hpp>
 #include <interrupt/policies.hpp>
 
+#include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/utility.hpp>
 
 namespace interrupt {
 namespace detail {
@@ -96,6 +98,13 @@ struct irq : detail::policy_config<Policies>,
              detail::super_config<Number, Priority>,
              detail::flow_config<Flows...> {
     template <typename... Nexi> using built_t = irq_impl<irq, Nexi...>;
+
+    constexpr static auto config() {
+        using namespace stdx::literals;
+        return +stdx::ct_format<"interrupt::irq<{}_irq, {}, {}>">(
+            stdx::ct<stdx::to_underlying(Number)>(), stdx::ct<Priority>(),
+            detail::config_string_for<Policies, Flows...>());
+    }
 };
 
 template <typename EnableField, typename StatusField, typename Policies,
@@ -105,6 +114,13 @@ struct sub_irq : detail::policy_config<Policies>,
                  detail::sub_config<EnableField, StatusField>,
                  detail::flow_config<Flows...> {
     template <typename... Nexi> using built_t = sub_irq_impl<sub_irq, Nexi...>;
+
+    constexpr static auto config() {
+        using namespace stdx::literals;
+        return +stdx::ct_format<"interrupt::sub_irq<{}>">(
+            detail::config_string_for<EnableField, StatusField, Policies,
+                                      Flows...>());
+    }
 };
 
 template <typename EnableField, typename Policies>
@@ -113,6 +129,12 @@ struct id_irq : detail::policy_config<Policies>,
                 detail::sub_config<EnableField, status_t<>> {
     template <typename...> using built_t = id_irq_impl<id_irq>;
     template <typename> constexpr static bool triggers_flow = false;
+
+    constexpr static auto config() {
+        using namespace stdx::literals;
+        return +stdx::ct_format<"interrupt::id_irq<{}>">(
+            detail::config_string_for<EnableField, Policies>());
+    }
 };
 
 template <irq_num_t Number, priority_t Priority, typename Policies,
@@ -131,6 +153,13 @@ struct shared_irq : detail::policy_config<Policies>,
     template <typename Flow>
     constexpr static bool triggers_flow =
         (... or Cfgs::template triggers_flow<Flow>);
+
+    constexpr static auto config() {
+        using namespace stdx::literals;
+        return +stdx::ct_format<"interrupt::shared_irq<{}_irq, {}, {}>">(
+            stdx::ct<stdx::to_underlying(Number)>(), stdx::ct<Priority>(),
+            detail::config_string_for<Policies, Cfgs...>());
+    }
 };
 
 template <typename EnableField, typename StatusField, typename Policies,
@@ -149,5 +178,12 @@ struct shared_sub_irq : detail::policy_config<Policies>,
     template <typename Flow>
     constexpr static bool triggers_flow =
         (... or Cfgs::template triggers_flow<Flow>);
+
+    constexpr static auto config() {
+        using namespace stdx::literals;
+        return +stdx::ct_format<"interrupt::shared_sub_irq<{}>">(
+            detail::config_string_for<EnableField, StatusField, Policies,
+                                      Cfgs...>());
+    }
 };
 } // namespace interrupt
