@@ -2,6 +2,8 @@
 
 #include <interrupt/concepts.hpp>
 
+#include <stdx/ct_string.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <type_traits>
@@ -46,10 +48,28 @@ TEST_CASE("impl models concept", "[irq_impl]") {
     STATIC_REQUIRE(interrupt::irq_interface<impl_t>);
 }
 
+TEST_CASE("impl can dump config (no flows)", "[irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t = interrupt::irq_impl<no_flows_config_t, test_nexus>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(s ==
+                   "interrupt::irq<42_irq, 17, interrupt::policies<>>"_cts);
+}
+
 namespace {
 template <typename T>
 using flow_config_t = interrupt::irq<17_irq, 42, interrupt::policies<>, T>;
 } // namespace
+
+TEST_CASE("impl can dump config (some flows)", "[irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t =
+        interrupt::irq_impl<flow_config_t<std::true_type>, test_nexus>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(
+        s ==
+        "interrupt::irq<17_irq, 42, interrupt::policies<>, std::integral_constant<bool, true>>"_cts);
+}
 
 TEST_CASE("impl runs a flow", "[irq_impl]") {
     using impl_t =

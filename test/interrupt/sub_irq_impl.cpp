@@ -34,10 +34,29 @@ TEST_CASE("impl models concept", "[sub_irq_impl]") {
     STATIC_REQUIRE(interrupt::sub_irq_interface<impl_t>);
 }
 
+TEST_CASE("impl can dump config (no flows)", "[sub_irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t = interrupt::sub_irq_impl<no_flows_config_t, test_nexus>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(
+        s ==
+        "interrupt::sub_irq<enable_field_t<0>, status_field_t<0>, interrupt::policies<>>"_cts);
+}
+
 namespace {
 template <typename T>
 using flow_config_t = interrupt::sub_irq<enable_field_t<0>, status_field_t<0>,
                                          interrupt::policies<>, T>;
+}
+
+TEST_CASE("impl can dump config (some flows)", "[sub_irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t =
+        interrupt::sub_irq_impl<flow_config_t<std::true_type>, test_nexus>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(
+        s ==
+        "interrupt::sub_irq<enable_field_t<0>, status_field_t<0>, interrupt::policies<>, std::integral_constant<bool, true>>"_cts);
 }
 
 TEST_CASE("impl runs a flow when enabled and status", "[sub_irq_impl]") {

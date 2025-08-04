@@ -46,6 +46,14 @@ TEST_CASE("impl models concept", "[shared_irq_impl]") {
     STATIC_REQUIRE(interrupt::irq_interface<impl_t>);
 }
 
+TEST_CASE("impl can dump config (no subs)", "[shared_irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t = interrupt::shared_irq_impl<no_flows_config_t>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(
+        s == "interrupt::shared_irq<42_irq, 17, interrupt::policies<>>"_cts);
+}
+
 namespace {
 template <typename T, auto N>
 using sub_config_t = interrupt::sub_irq<enable_field_t<N>, status_field_t<N>,
@@ -55,6 +63,15 @@ template <typename T>
 using flow_config_t = interrupt::shared_irq<17_irq, 42, interrupt::policies<>,
                                             sub_config_t<T, 0>>;
 } // namespace
+
+TEST_CASE("impl can dump config (some subs)", "[shared_irq_impl]") {
+    using namespace stdx::literals;
+    using impl_t = interrupt::shared_irq_impl<flow_config_t<std::true_type>>;
+    constexpr auto s = impl_t::config();
+    STATIC_REQUIRE(
+        s ==
+        "interrupt::shared_irq<17_irq, 42, interrupt::policies<>, interrupt::sub_irq<enable_field_t<0>, status_field_t<0>, interrupt::policies<>, std::integral_constant<bool, true>>>"_cts);
+}
 
 TEST_CASE("impl runs a flow", "[shared_irq_impl]") {
     using sub_impl_t =
