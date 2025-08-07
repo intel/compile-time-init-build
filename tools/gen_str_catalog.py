@@ -202,6 +202,19 @@ def read_input(filenames: list[str], stable_data):
     return assign_ids(unique_messages, unique_modules, stable_data)
 
 
+def make_cpp_scoped_enum_decl(e: str, ut: str) -> str:
+    parts = e.split("::")
+    enum = parts[-1]
+    if "(anonymous namespace)" in parts or "{anonymous}" in parts:
+        raise Exception(
+            f"Scoped enum {e} is inside an anonymous namespace and cannot be forward declared."
+        )
+    if len(parts) > 1:
+        ns = "::".join(parts[:-1])
+        return f"namespace {ns} {{ enum struct {enum} : {ut}; }}"
+    return f"enum struct {enum} : {ut};"
+
+
 def make_cpp_catalog_defn(m: Message) -> str:
     return f"""/*
     "{m.text}"
@@ -221,11 +234,16 @@ template<> auto module<{m.to_cpp_type()}>() -> module_id {{
 }}"""
 
 
-def write_cpp(messages, modules, extra_headers: list[str], filename: str):
+def write_cpp(messages, modules, scoped_enums, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
         f.write("\n#include <log/catalog/arguments.hpp>\n")
         f.write("\n#include <log/catalog/catalog.hpp>\n\n")
+        scoped_enum_decls = [
+            make_cpp_scoped_enum_decl(e, ut) for e, ut in scoped_enums.items()
+        ]
+        f.write("\n".join(scoped_enum_decls))
+        f.write("\n\n")
         cpp_catalog_defns = [make_cpp_catalog_defn(m) for m in messages]
         f.write("\n".join(cpp_catalog_defns))
         f.write("\n\n")
@@ -251,18 +269,15 @@ def extract_enums(filename: str):
     index = Index.create()
     translation_unit = index.parse(filename)
 
-    enums = {}
+    enums: dict[str, dict] = {}
     for node in translation_unit.cursor.walk_preorder():
         if node.kind == CursorKind.ENUM_DECL:
-            enums.update(
-                {
-                    fq_name(node): {
-                        e.spelling: e.enum_value
-                        for e in node.walk_preorder()
-                        if e.kind == CursorKind.ENUM_CONSTANT_DECL
-                    }
-                }
-            )
+            new_decl = {
+                e.spelling: e.enum_value
+                for e in node.walk_preorder()
+                if e.kind == CursorKind.ENUM_CONSTANT_DECL
+            }
+            enums[fq_name(node)] = enums.get(fq_name(node), {}) | new_decl
     return enums
 
 
@@ -274,11 +289,11 @@ def write_json(
     )
     for m in stable_data.get("messages"):
         j = m.to_json()
-        if not j in d["messages"]:
+        if j not in d["messages"]:
             d["messages"].append(j)
     for m in stable_data.get("modules"):
         j = m.to_json()
-        if not j in d["modules"]:
+        if j not in d["modules"]:
             d["modules"].append(j)
 
     str_catalog = dict(**d, enums=dict())
@@ -347,9 +362,13 @@ def serialize_modules(client_node: et.Element, modules: list[Module]):
 
 
 def arg_type_encoding(arg):
-    string_re = re.compile(r"encode_(32|u32|64|u64)<(.*)>")
+    string_re = re.compile(r"encode_(32|u32|64|u64|enum)<(.*)>")
     m = string_re.match(arg)
-    return (f"encode_{m.group(1)}", m.group(2))
+    if "enum" in m.group(1):
+        args_re = re.compile(r"(.*), (.*)")
+        args_m = args_re.match(m.group(2))
+        return (f"encode_{m.group(1)}", args_m.group(1), args_m.group(2))
+    return (f"encode_{m.group(1)}", m.group(2), m.group(2))
 
 
 def arg_printf_spec(arg: str):
@@ -360,9 +379,20 @@ def arg_printf_spec(arg: str):
         "encode_u64": "%llu",
         "float": "%f",
         "double": "%f",
+        "int": "%d",
+        "unsigned int": "%u",
+        "short": "%d",
+        "unsigned short": "%u",
+        "signed char": "%d",
+        "unsigned char": "%u",
+        "char": "%c",
+        "long": "%ld",
+        "unsigned long": "%lu",
+        "long long": "%lld",
+        "unsigned long long": "%llu",
     }
-    enc, t = arg_type_encoding(arg)
-    return printf_dict.get(t, printf_dict.get(enc, "%d"))
+    enc, _, ut = arg_type_encoding(arg)
+    return printf_dict.get(ut, printf_dict.get(enc, "%d"))
 
 
 def serialize_messages(
@@ -539,8 +569,15 @@ def main():
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 
+    scoped_enums = {}
     if args.cpp_output is not None:
-        write_cpp(messages, modules, args.cpp_headers, args.cpp_output)
+        for m in messages:
+            for i, arg_type in enumerate(m.args):
+                enc, enum, ut = arg_type_encoding(arg_type)
+                if "enum" in enc:
+                    scoped_enums.update({enum: ut})
+
+        write_cpp(messages, modules, scoped_enums, args.cpp_headers, args.cpp_output)
 
     stable_output = dict(messages=[], modules=[])
     if not args.forget_old_ids:
@@ -563,14 +600,13 @@ def main():
                 }
                 for m in messages:
                     for i, arg_type in enumerate(m.args):
-                        _, enum = arg_type_encoding(arg_type)
+                        _, enum, _ = arg_type_encoding(arg_type)
                         if enum in enums:
                             m.enum_lookup = (i + 1, enums[enum][0])
             except Exception as e:
                 print(
                     f"Couldn't extract enum info ({str(e)}), enum lookup will not be available"
                 )
-
         else:
             print("XML output without C++ output: enum lookup will not be available")
 
