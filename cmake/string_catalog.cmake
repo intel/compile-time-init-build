@@ -10,7 +10,8 @@ function(gen_str_catalog)
         VERSION
         GUID_ID
         GUID_MASK
-        MODULE_ID_MAX)
+        MODULE_ID_MAX
+        OUTPUTS_TARGET)
     set(multiValueArgs INPUT_JSON INPUT_LIBS INPUT_HEADERS STABLE_JSON)
     cmake_parse_arguments(SC "${options}" "${oneValueArgs}" "${multiValueArgs}"
                           ${ARGN})
@@ -86,5 +87,10 @@ function(gen_str_catalog)
     if(SC_OUTPUT_LIB)
         add_library(${SC_OUTPUT_LIB} STATIC ${SC_OUTPUT_CPP})
         target_link_libraries(${SC_OUTPUT_LIB} PUBLIC cib)
+    endif()
+    if(SC_OUTPUTS_TARGET)
+        add_custom_target(
+            ${SC_OUTPUTS_TARGET} DEPENDS ${SC_OUTPUT_CPP} ${SC_OUTPUT_XML}
+                                         ${SC_OUTPUT_JSON})
     endif()
 endfunction()
