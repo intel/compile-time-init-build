@@ -24,6 +24,14 @@ namespace fmt_detail {
 using namespace std::string_view_literals;
 constexpr std::array level_text{"MAX"sv,  "FATAL"sv, "ERROR"sv, "WARN"sv,
                                 "INFO"sv, "USER1"sv, "USER2"sv, "TRACE"sv};
+
+template <typename T> auto decay_enum_value(T const &t) -> decltype(auto) {
+    if constexpr (requires { format_as(t); } or not std::is_enum_v<T>) {
+        return (t);
+    } else {
+        return stdx::to_underlying(t);
+    }
+}
 } // namespace fmt_detail
 
 template <logging::level L>
@@ -55,7 +63,8 @@ template <typename TDestinations> struct log_handler {
                 constexpr auto fmtstr =
                     std::string_view{decltype(fr.str)::value};
                 fr.args.apply([&](auto const &...args) {
-                    ::fmt::format_to(out, fmtstr, args...);
+                    ::fmt::format_to(out, fmtstr,
+                                     fmt_detail::decay_enum_value(args)...);
                 });
                 *out = '\n';
             },

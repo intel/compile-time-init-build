@@ -53,11 +53,33 @@ TEST_CASE("logging doesn't use dynamic memory", "[fmt_logger]") {
 }
 
 TEST_CASE("logging behavior can be properly overridden", "[fmt_logger]") {
-    buffer.reserve(100);
     buffer.clear();
     log_test_override();
     CAPTURE(buffer);
     CHECK(buffer.substr(buffer.size() - std::size("Hello")) == "Hello\n");
+}
+
+namespace detail {
+enum struct E1 { A, B, C };
+enum struct E2 { A, B, C };
+[[maybe_unused]] static auto format_as(E2) { return 42; }
+} // namespace detail
+
+TEST_CASE("fmt logger can deal with runtime enum values", "[fmt_logger]") {
+    buffer.clear();
+    auto x = detail::E1::A;
+    CIB_INFO("Hello {}", x);
+    CAPTURE(buffer);
+    CHECK(buffer.substr(buffer.size() - std::size("Hello 0")) == "Hello 0\n");
+}
+
+TEST_CASE("fmt logger can deal with formattable runtime enum values",
+          "[fmt_logger]") {
+    buffer.clear();
+    auto x = detail::E2::A;
+    CIB_INFO("Hello {}", x);
+    CAPTURE(buffer);
+    CHECK(buffer.substr(buffer.size() - std::size("Hello 42")) == "Hello 42\n");
 }
 
 TEST_CASE("log levels are properly represented", "[fmt_logger]") {
