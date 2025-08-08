@@ -90,7 +90,8 @@ function(gen_str_catalog)
     endif()
     if(SC_OUTPUTS_TARGET)
         add_custom_target(
-            ${SC_OUTPUTS_TARGET} DEPENDS ${SC_OUTPUT_CPP} ${SC_OUTPUT_XML}
-                                         ${SC_OUTPUT_JSON})
+            ${SC_OUTPUTS_TARGET}
+            DEPENDS ${SC_OUTPUT_CPP} ${SC_OUTPUT_XML} ${SC_OUTPUT_JSON}
+            SOURCES ${SC_OUTPUT_CPP} ${SC_OUTPUT_XML} ${SC_OUTPUT_JSON})
     endif()
 endfunction()
