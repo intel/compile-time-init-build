@@ -7,12 +7,6 @@ using cib_log_env_t = stdx::env<>;
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 
-#ifdef __clang__
-#define CIB_PRAGMA_SEMI
-#else
-#define CIB_PRAGMA_SEMI ;
-#endif
-
 #define CIB_LOG_ENV_DECL(...)                                                  \
     [[maybe_unused]] typedef decltype([] {                                     \
         return stdx::extend_env_t<cib_log_env_t, __VA_ARGS__>{};               \
@@ -26,16 +20,16 @@ using cib_log_env_t = stdx::env<>;
 #define CIB_LOG_ENV(...)                                                       \
     STDX_PRAGMA(diagnostic push)                                               \
     STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
-    CIB_LOG_ENV_DECL(__VA_ARGS__)                                              \
-    CIB_PRAGMA_SEMI                                                            \
-    STDX_PRAGMA(diagnostic pop)
+    CIB_LOG_ENV_DECL(__VA_ARGS__);                                             \
+    STDX_PRAGMA(diagnostic pop)                                                \
+    static_assert(true)
 
 #define CIB_APPEND_LOG_ENV(E)                                                  \
     STDX_PRAGMA(diagnostic push)                                               \
     STDX_PRAGMA(diagnostic ignored "-Wshadow")                                 \
-    CIB_APPEND_LOG_ENV_DECL(E)                                                 \
-    CIB_PRAGMA_SEMI                                                            \
-    STDX_PRAGMA(diagnostic pop)
+    CIB_APPEND_LOG_ENV_DECL(E);                                                \
+    STDX_PRAGMA(diagnostic pop)                                                \
+    static_assert(true)
 
 #define CIB_WITH_LOG_ENV(...)                                                  \
     STDX_PRAGMA(diagnostic push)                                               \
