@@ -17,7 +17,7 @@
 namespace flow {
 namespace detail {
 template <stdx::ct_string FlowName, typename CTNode>
-constexpr auto run_func() -> void {
+constexpr static auto run_func = []() -> void {
     if (CTNode::condition) {
         if constexpr (not FlowName.empty()) {
             logging::log<
@@ -28,7 +28,7 @@ constexpr auto run_func() -> void {
         }
         typename CTNode::func_t{}();
     }
-}
+};
 } // namespace detail
 
 template <stdx::ct_string Name, std::size_t NumSteps> struct impl {
