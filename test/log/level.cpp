@@ -5,6 +5,7 @@
 #include <stdx/ct_conversions.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
+#include <stdx/span.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -47,9 +48,13 @@ namespace {
 int log_calls{};
 
 struct test_destination {
-    auto log_by_args(std::uint32_t header, auto id, auto &&...) {
-        CHECK(header == 0x01'5a'00'53);
-        CHECK(id == 0xdeadbeef);
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        using namespace msg;
+        auto const msg =
+            msg::const_view<logging::mipi::defn::catalog_msg_t>{pkt};
+        CHECK(msg.get("severity"_f) ==
+              stdx::to_underlying(custom_level::THE_ONE_LEVEL));
         ++log_calls;
     }
 };

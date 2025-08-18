@@ -69,23 +69,13 @@ template <packer P> struct builder<defn::catalog_msg_t, P> {
         using namespace msg;
         constexpr auto payload_size =
             (sizeof(id) + ... + sizeof(typename P::template pack_as_t<Ts>));
-        if constexpr (payload_size <= sizeof(uint32_t) * 3) {
-            constexpr auto header_size =
-                defn::catalog_msg_t::size<std::uint32_t>::value;
-            using storage_t =
-                std::array<std::uint32_t,
-                           header_size +
-                               stdx::sized8{payload_size}.in<std::uint32_t>()>;
-            return catalog_builder<storage_t, P>{}.template build<Level>(
-                id, m, args...);
-        } else {
-            constexpr auto header_size =
-                defn::catalog_msg_t::size<std::uint8_t>::value;
-            using storage_t =
-                std::array<std::uint8_t, header_size + payload_size>;
-            return catalog_builder<storage_t, P>{}.template build<Level>(
-                id, m, args...);
-        }
+        constexpr auto header_size =
+            defn::catalog_msg_t::size<std::uint32_t>::value;
+        using storage_t =
+            std::array<std::uint32_t, header_size + stdx::sized8{payload_size}
+                                                        .in<std::uint32_t>()>;
+        return catalog_builder<storage_t, P>{}.template build<Level>(id, m,
+                                                                     args...);
     }
 };
 
