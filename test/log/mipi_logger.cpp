@@ -1,6 +1,7 @@
 #include <log/catalog/encoder.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/span.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -17,10 +18,11 @@ template <> inline auto version::config<> = version_config{};
 namespace {
 template <auto Header, auto... ExpectedArgs>
 struct test_log_version_destination {
-    template <typename... Args>
-    auto log_by_args(std::uint32_t header, Args... args) {
-        CHECK(header == Header);
-        (check(args, ExpectedArgs), ...);
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        std::uint32_t const *p = pkt.data();
+        CHECK(*p++ == Header);
+        (check(*p++, ExpectedArgs), ...);
     }
 };
 } // namespace

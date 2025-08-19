@@ -88,60 +88,62 @@ constexpr auto check_buffer = [](auto data) {
 };
 
 template <logging::level Level, auto... ExpectedArgs>
-struct test_log_args_destination {
-    template <typename... Args>
-    auto log_by_args(std::uint32_t header, Args... args) {
-        constexpr auto Header =
-            expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
-        CHECK(header == Header);
-        (check(args, ExpectedArgs), ...);
-        ++num_log_args_calls;
-    }
-};
+struct test_log_destination {
+    constexpr static auto Header =
+        expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
 
-template <logging::level Level, typename ModuleId, auto... ExpectedArgs>
-struct test_log_buf_destination {
-    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
-        REQUIRE(data.size() ==
-                (sizeof...(ExpectedArgs) + 1) * sizeof(std::uint32_t));
-        constexpr auto Header =
-            expected_msg_header(Level, test_module_id, sizeof...(ExpectedArgs));
-        check_buffer<Header, ExpectedArgs...>(data);
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        std::uint32_t const *p = pkt.data();
+        REQUIRE(pkt.size() == 1 + sizeof...(ExpectedArgs));
+        CHECK(*p++ == Header);
+        (check(*p++, ExpectedArgs), ...);
         ++num_log_args_calls;
     }
 };
 
 template <std::uint32_t Header, std::uint32_t... ExpectedArgs>
 struct test_log_version_destination {
-    template <typename... Args>
-    auto log_by_args(std::uint32_t header, Args... args) {
-        CHECK(header == Header);
-        (check(args, ExpectedArgs), ...);
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        std::uint32_t const *p = pkt.data();
+        REQUIRE(pkt.size() == 1 + sizeof...(ExpectedArgs));
+        CHECK(*p++ == Header);
+        (check(*p++, ExpectedArgs), ...);
         ++num_log_args_calls;
     }
 
-    auto log_by_buf(stdx::span<std::uint8_t const> data) const {
-        check_buffer<Header, ExpectedArgs...>(data);
+    auto operator()(stdx::span<std::uint8_t const> pkt) const {
+        check_buffer<Header, ExpectedArgs...>(pkt);
         ++num_log_args_calls;
     }
 };
 
-template <logging::level Level> struct test_log_float_args_destination {
-    auto log_by_args(std::uint32_t header, auto, auto arg) {
-        constexpr auto Header = expected_msg_header(Level, test_module_id, 1);
-        CHECK(header == Header);
-        CHECK(stdx::bit_cast<float>(arg) == expected);
+template <logging::level Level> struct test_log_float_destination {
+    constexpr static auto Header =
+        expected_msg_header(Level, test_module_id, 1);
+
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        std::uint32_t const *p = pkt.data();
+        REQUIRE(pkt.size() == 3);
+        CHECK(*p++ == Header);
+        CHECK(stdx::bit_cast<float>(p[1]) == expected);
         ++num_log_args_calls;
     }
     float expected{};
 };
 
-template <logging::level Level> struct test_log_double_args_destination {
-    auto log_by_args(std::uint32_t header, auto, std::uint32_t lo,
-                     std::uint32_t hi) {
-        constexpr auto Header = expected_msg_header(Level, test_module_id, 1);
-        CHECK(header == Header);
-        std::array arr{lo, hi};
+template <logging::level Level> struct test_log_double_destination {
+    constexpr static auto Header =
+        expected_msg_header(Level, test_module_id, 1);
+
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        std::uint32_t const *p = pkt.data();
+        REQUIRE(pkt.size() == 4);
+        CHECK(*p++ == Header);
+        std::array arr{p[1], p[2]};
         CHECK(stdx::bit_cast<double>(arr) == expected);
         ++num_log_args_calls;
     }
@@ -185,8 +187,8 @@ TEST_CASE("argument encoding", "[mipi]") {
 TEST_CASE("log zero arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
-        test_log_args_destination<logging::level::TRACE>{}};
+    auto cfg =
+        logging::binary::config{test_log_destination<logging::level::TRACE>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"Hello">());
     CHECK(test_critical_section::count == 2);
 }
@@ -195,7 +197,7 @@ TEST_CASE("log one integral 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
-        test_log_args_destination<logging::level::TRACE, 42u, 17u>{}};
+        test_log_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(17u));
     CHECK(test_critical_section::count == 2);
 }
@@ -204,7 +206,7 @@ TEST_CASE("log one floating-point 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
-        test_log_float_args_destination<logging::level::TRACE>{3.14f}};
+        test_log_float_destination<logging::level::TRACE>{3.14f}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14f));
     CHECK(test_critical_section::count == 2);
 }
@@ -214,8 +216,8 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
     test_critical_section::count = 0;
     auto x = std::uint64_t{0x1234'5678'90ab'cdefull};
     auto cfg = logging::binary::config{
-        test_log_args_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
-                                  0x1234'5678u>{}};
+        test_log_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
+                             0x1234'5678u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(x));
     CHECK(test_critical_section::count == 2);
 }
@@ -224,7 +226,7 @@ TEST_CASE("log one floating-point 64-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
-        test_log_double_args_destination<logging::level::TRACE>{3.14}};
+        test_log_double_destination<logging::level::TRACE>{3.14}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14));
     CHECK(test_critical_section::count == 2);
 }
@@ -233,40 +235,8 @@ TEST_CASE("log two arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto cfg = logging::binary::config{
-        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
+        test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {}">(17u, 18u));
-    CHECK(test_critical_section::count == 2);
-}
-
-TEST_CASE("log more than two arguments", "[mipi]") {
-    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
-    {
-        test_critical_section::count = 0;
-        auto cfg = logging::binary::config{
-            test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                     18u, 19u>{}};
-        cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {} {}">(17u, 18u, 19u));
-        CHECK(test_critical_section::count == 2);
-    }
-    {
-        test_critical_section::count = 0;
-        auto cfg = logging::binary::config{
-            test_log_buf_destination<logging::level::TRACE, log_env, 42u, 17u,
-                                     18u, 97u, 98u>{}};
-        cfg.logger.log_msg<log_env>(
-            stdx::ct_format<"{} {} {} {}">(17u, 18u, 'a', 'b'));
-        CHECK(test_critical_section::count == 2);
-    }
-}
-
-TEST_CASE("log more than two arguments whose size fits in two uint32_ts",
-          "[mipi]") {
-    CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
-    test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
-        test_log_buf_destination<logging::level::TRACE, log_env, 42u, 'a', 'b',
-                                 'c'>{}};
-    cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {} {}">('a', 'b', 'c'));
     CHECK(test_critical_section::count == 2);
 }
 
@@ -275,8 +245,8 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
     auto cfg = logging::binary::config{
-        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{},
-        test_log_args_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
+        test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{},
+        test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
 
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 4);
@@ -325,16 +295,18 @@ namespace {
 std::vector<std::uint32_t> expected_args{};
 
 template <logging::level Level> struct test_log_injected_destination {
-    template <typename... Args>
-    auto log_by_args(std::uint32_t header, Args... args) {
+
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
         ++num_log_args_calls;
         auto const Header = expected_msg_header(Level, test_module_id,
                                                 std::size(expected_args));
-        REQUIRE(header == Header);
-        REQUIRE(sizeof...(Args) == std::size(expected_args));
-        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            (check(args, expected_args[Is]), ...);
-        }(std::make_index_sequence<sizeof...(Args)>{});
+
+        std::uint32_t const *p = pkt.data();
+        CHECK(*p++ == Header);
+        for (auto &e : expected_args) {
+            check(*p++, e);
+        }
     }
 };
 } // namespace
@@ -384,13 +356,14 @@ namespace {
 int num_catalog_args_calls{};
 
 template <logging::level Level> struct test_catalog_args_destination {
-    template <typename... Args>
-    auto log_by_args(std::uint32_t header, std::uint32_t id, Args...) {
-        constexpr auto Header =
-            expected_catalog32_header(Level, test_module_id);
-        CHECK(header == Header);
-        CHECK(id == test_string_id);
-        STATIC_REQUIRE(sizeof...(Args) == 0);
+    constexpr static auto Header =
+        expected_catalog32_header(Level, test_module_id);
+
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
+        REQUIRE(pkt.size() == 2);
+        CHECK(pkt[0] == Header);
+        CHECK(pkt[1] == test_string_id);
         ++num_catalog_args_calls;
     }
 };
@@ -416,4 +389,27 @@ TEST_CASE("log with overridden builder", "[mipi]") {
 
     cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());
     CHECK(num_catalog_args_calls == 1);
+}
+
+namespace {
+int num_custom_writer_calls{};
+
+struct custom_writer {
+    auto operator()(stdx::span<std::uint32_t const>) const -> void {
+        ++num_custom_writer_calls;
+    }
+};
+} // namespace
+
+TEST_CASE("log with overridden writer", "[mipi]") {
+    using catalog_env =
+        stdx::make_env_t<logging::get_level, logging::level::TRACE,
+                         logging::binary::get_writer, custom_writer{}>;
+
+    num_custom_writer_calls = 0;
+    auto cfg =
+        logging::binary::config{test_log_destination<logging::level::TRACE>{}};
+
+    cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());
+    CHECK(num_custom_writer_calls == 1);
 }

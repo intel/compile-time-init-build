@@ -3,6 +3,7 @@
 #include <log/catalog/arguments.hpp>
 #include <log/catalog/builder.hpp>
 #include <log/catalog/catalog.hpp>
+#include <log/catalog/writer.hpp>
 #include <log/log.hpp>
 #include <log/module.hpp>
 #include <log/module_id.hpp>
@@ -44,40 +45,23 @@ template <typename S, auto Id> struct to_message_t {
     template <typename... Args>
     using fn = decltype(to_message<S, Id, Args...>());
 };
+
 } // namespace detail
 
 template <typename Destinations> struct log_writer {
-    template <std::size_t N>
-    auto operator()(stdx::span<std::uint8_t const, N> msg) -> void {
+    auto operator()(auto msg) -> void {
         stdx::for_each(
             [&]<typename Dest>(Dest &dest) {
-                conc::call_in_critical_section<Dest>(
-                    [&] { dest.log_by_buf(msg); });
+                conc::call_in_critical_section<Dest>([&] { dest(msg); });
             },
             dests);
-    }
-
-    template <std::size_t N>
-    auto operator()(stdx::span<std::uint32_t const, N> msg) -> void {
-        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            stdx::for_each(
-                [&]<typename Dest>(Dest &dest) {
-                    conc::call_in_critical_section<Dest>(
-                        [&] { dest.log_by_args(msg[Is]...); });
-                },
-                dests);
-        }(std::make_index_sequence<N>{});
-    }
-
-    auto operator()(auto const &msg) -> void {
-        this->operator()(msg.as_const_view().data());
     }
 
     Destinations dests;
 };
 template <typename T> log_writer(T) -> log_writer<T>;
 
-template <typename Writer> struct log_handler {
+template <writer_like Writer> struct log_handler {
     template <typename Env, typename FilenameStringType,
               typename LineNumberType, typename FmtResult>
     auto log(FilenameStringType, LineNumberType, FmtResult const &fr) -> void {
@@ -86,8 +70,9 @@ template <typename Writer> struct log_handler {
 
     template <typename Env, typename FmtResult>
     auto log_msg(FmtResult const &fr) -> void {
+        auto builder = get_builder(Env{});
+        writer_like auto writer = stdx::query<Env>(get_writer, w);
         fr.args.apply([&]<typename... Args>(Args &&...args) {
-            auto builder = get_builder(Env{});
             constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = typename decltype(builder)::template convert_args<
                 detail::to_message_t<decltype(fr.str), logging::get_string_id(
@@ -96,26 +81,31 @@ template <typename Writer> struct log_handler {
             using Module =
                 decltype(detail::to_module<get_module(Env{}),
                                            logging::get_module_id(Env{})>());
-            w(builder.template build<L>(catalog<Message>(), module<Module>(),
-                                        std::forward<Args>(args)...));
+            auto const pkt =
+                builder.template build<L>(catalog<Message>(), module<Module>(),
+                                          std::forward<Args>(args)...);
+            writer(pkt.as_const_view().data());
         });
     }
 
     template <typename Env, auto Version, stdx::ct_string S = "">
     auto log_version() -> void {
         auto builder = get_builder(Env{});
-        w(builder.template build_version<Version, S>());
+        writer_like auto writer = stdx::query<Env>(get_writer, w);
+        auto const pkt = builder.template build_version<Version, S>();
+        writer(pkt.as_const_view().data());
     }
 
     Writer w;
 };
 
-template <typename... TDestinations> struct config {
-    using destinations_tuple_t = stdx::tuple<TDestinations...>;
-    constexpr explicit config(TDestinations... dests)
+template <writer_like... Dests> struct config {
+    using destinations_tuple_t = stdx::tuple<Dests...>;
+    constexpr explicit config(Dests... dests)
         : logger{log_writer{stdx::tuple{std::move(dests)...}}} {}
 
     log_handler<log_writer<destinations_tuple_t>> logger;
 };
+
 template <typename... Ts> config(Ts...) -> config<Ts...>;
 } // namespace logging::binary
