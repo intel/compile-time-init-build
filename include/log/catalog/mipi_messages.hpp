@@ -2,7 +2,11 @@
 
 #include <msg/message.hpp>
 
+#include <cstdint>
+
 namespace logging::mipi {
+using unit_t = std::uint32_t;
+
 namespace defn {
 using msg::at;
 using msg::dword_index_t;
@@ -11,9 +15,13 @@ using msg::message;
 using msg::operator""_msb;
 using msg::operator""_lsb;
 
-enum struct type : uint8_t { Build = 0, Short32 = 1, Catalog = 3 };
-enum struct build_subtype : uint8_t { Compact32 = 0, Compact64 = 1, Long = 2 };
-enum struct catalog_subtype : uint8_t { Id32_Pack32 = 1 };
+enum struct type : std::uint8_t { Build = 0, Short32 = 1, Catalog = 3 };
+enum struct build_subtype : std::uint8_t {
+    Compact32 = 0,
+    Compact64 = 1,
+    Long = 2
+};
+enum struct catalog_subtype : std::uint8_t { Id32_Pack32 = 1 };
 
 using type_f = field<"type", type>::located<at{dword_index_t{0}, 3_msb, 0_lsb}>;
 using opt_len_f =
@@ -58,9 +66,11 @@ using severity_f = field<"severity", std::uint8_t>::located<at{dword_index_t{0},
 using module_id_f =
     field<"module_id",
           std::uint8_t>::located<at{dword_index_t{0}, 22_msb, 16_lsb}>;
+using unit_f =
+    field<"unit", std::uint16_t>::located<at{dword_index_t{0}, 15_msb, 12_lsb}>;
 
 using catalog_msg_t =
-    message<"catalog", type_f::with_required<type::Catalog>, severity_f,
+    message<"catalog", type_f::with_required<type::Catalog>, severity_f, unit_f,
             module_id_f,
             catalog_subtype_f::with_required<catalog_subtype::Id32_Pack32>>;
 } // namespace defn

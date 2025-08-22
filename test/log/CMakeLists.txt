@@ -1,9 +1,10 @@
 add_tests(
     FILES
+    env
     level
     log
     module_id
-    env
+    unit
     LIBRARIES
     cib_log)
 add_tests(FILES fmt_logger LIBRARIES cib_log_fmt)

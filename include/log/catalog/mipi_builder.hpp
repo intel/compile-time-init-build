@@ -24,7 +24,7 @@ concept packer = std::integral<typename T::template pack_as_t<int>> and
 template <typename, packer> struct builder;
 
 template <packer P> struct builder<defn::short32_msg_t, P> {
-    template <auto Level> static auto build(string_id id, module_id) {
+    template <auto Level> static auto build(string_id id, module_id, unit_t) {
         using namespace msg;
         return owning<defn::short32_msg_t>{"payload"_field = id};
     }
@@ -32,10 +32,10 @@ template <packer P> struct builder<defn::short32_msg_t, P> {
 
 template <typename Storage, packer P> struct catalog_builder {
     template <auto Level, packable... Ts>
-    static auto build(string_id id, module_id m, Ts... args) {
+    static auto build(string_id id, module_id m, unit_t u, Ts... args) {
         using namespace msg;
-        defn::catalog_msg_t::owner_t<Storage> message{"severity"_field = Level,
-                                                      "module_id"_field = m};
+        defn::catalog_msg_t::owner_t<Storage> message{
+            "severity"_field = Level, "module_id"_field = m, "unit"_field = u};
 
         using V = typename Storage::value_type;
         constexpr auto header_size = defn::catalog_msg_t::size<V>::value;
@@ -65,7 +65,7 @@ template <typename Storage, packer P> struct catalog_builder {
 
 template <packer P> struct builder<defn::catalog_msg_t, P> {
     template <auto Level, typename... Ts>
-    static auto build(string_id id, module_id m, Ts... args) {
+    static auto build(string_id id, module_id m, unit_t u, Ts... args) {
         using namespace msg;
         constexpr auto payload_size =
             (sizeof(id) + ... + sizeof(typename P::template pack_as_t<Ts>));
@@ -74,7 +74,7 @@ template <packer P> struct builder<defn::catalog_msg_t, P> {
         using storage_t =
             std::array<std::uint32_t, header_size + stdx::sized8{payload_size}
                                                         .in<std::uint32_t>()>;
-        return catalog_builder<storage_t, P>{}.template build<Level>(id, m,
+        return catalog_builder<storage_t, P>{}.template build<Level>(id, m, u,
                                                                      args...);
     }
 };
@@ -115,13 +115,13 @@ template <packer P> struct builder<defn::normal_build_msg_t, P> {
 
 template <packer P = logging::default_arg_packer> struct default_builder {
     template <auto Level, packable... Ts>
-    static auto build(string_id id, module_id m, Ts... args) {
+    static auto build(string_id id, module_id m, unit_t unit, Ts... args) {
         if constexpr (sizeof...(Ts) == 0u) {
-            return builder<defn::short32_msg_t, P>{}.template build<Level>(id,
-                                                                           m);
+            return builder<defn::short32_msg_t, P>{}.template build<Level>(
+                id, m, unit);
         } else {
             return builder<defn::catalog_msg_t, P>{}.template build<Level>(
-                id, m, args...);
+                id, m, unit, args...);
         }
     }
 
