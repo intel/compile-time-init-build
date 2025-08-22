@@ -8,6 +8,7 @@
 #include <log/module.hpp>
 #include <log/module_id.hpp>
 #include <log/string_id.hpp>
+#include <log/unit.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
@@ -17,7 +18,6 @@
 #include <conc/concurrency.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -81,9 +81,10 @@ template <writer_like Writer> struct log_handler {
             using Module =
                 decltype(detail::to_module<get_module(Env{}),
                                            logging::get_module_id(Env{})>());
+            auto const unit = get_unit(Env{})();
             auto const pkt =
                 builder.template build<L>(catalog<Message>(), module<Module>(),
-                                          std::forward<Args>(args)...);
+                                          unit, std::forward<Args>(args)...);
             writer(pkt.as_const_view().data());
         });
     }

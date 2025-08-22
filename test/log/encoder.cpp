@@ -370,10 +370,11 @@ template <logging::level Level> struct test_catalog_args_destination {
 
 struct custom_builder : logging::mipi::default_builder<> {
     template <auto Level, logging::packable... Ts>
-    static auto build(string_id id, module_id m, Ts... args) {
+    static auto build(string_id id, module_id m, logging::mipi::unit_t u,
+                      Ts... args) {
         return logging::mipi::builder<logging::mipi::defn::catalog_msg_t,
                                       logging::default_arg_packer>{}
-            .template build<Level>(id, m, args...);
+            .template build<Level>(id, m, u, args...);
     }
 };
 } // namespace
