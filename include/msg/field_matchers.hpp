@@ -186,7 +186,7 @@ struct rel_matcher_t {
         if constexpr (stdx::range<Msg>) {
             return Field::extract(msg);
         } else {
-            return Field::extract(std::data(msg));
+            return msg.get(Field{});
         }
     }
 };

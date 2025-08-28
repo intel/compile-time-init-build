@@ -33,6 +33,11 @@ template <>
 inline auto logging::config<> =
     logging::fmt::config{std::back_inserter(log_buffer)};
 
+TEST_CASE("get a field from a message", "[message]") {
+    using F = msg_defn::field_t<"f1">;
+    STATIC_REQUIRE(std::is_same_v<F, field1>);
+}
+
 TEST_CASE("message with automatic storage", "[message]") {
     test_msg msg{};
     auto data = msg.data();
@@ -681,6 +686,56 @@ TEST_CASE("pack with empty messages", "[message]") {
                 f3::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>,
                 f4::shifted_by<m1::size<std::uint8_t>::value, std::uint8_t>>;
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
+}
+
+TEST_CASE("field matchers work with packed messages", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m2 = message<"m2", f3, f4>;
+
+    constexpr auto m = msg::equal_to_t<f3, 3>{};
+    using defn = pack<"defn", std::uint8_t, m1, m2>;
+    constexpr owning<defn> msg{"f1"_field = 1, "f2"_field = 2, "f3"_field = 3,
+                               "f4"_field = 4};
+    STATIC_REQUIRE(m(msg));
+}
+
+TEST_CASE("a packed message matches itself", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m2 = message<"m2", f3::with_equal_to<3>, f4>;
+
+    using defn = pack<"defn", std::uint8_t, m1, m2>;
+    constexpr owning<defn> msg{"f1"_field = 1, "f2"_field = 2, "f3"_field = 3,
+                               "f4"_field = 4};
+    STATIC_REQUIRE(defn::matcher_t{}(msg));
+}
+
+TEST_CASE("correct field matchers can be post-defined", "[message]") {
+    using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m1 = message<"m1", f1, f2>;
+
+    using f3 = field<"f3", std::uint32_t>::located<at{15_msb, 0_lsb}>;
+    using f4 = field<"f4", std::uint32_t>::located<at{23_msb, 16_lsb}>;
+    using m2 = message<"m2", f3, f4>;
+
+    using defn = pack<"defn", std::uint8_t, m1, m2>;
+    constexpr owning<defn> msg{"f1"_field = 1, "f2"_field = 2, "f3"_field = 3,
+                               "f4"_field = 4};
+
+    constexpr auto m_wrong = msg::equal_to_t<f3, 3>{};
+    STATIC_REQUIRE(not m_wrong(msg.data()));
+    constexpr auto m_right = msg::equal_to_t<defn::field_t<"f3">, 3>{};
+    STATIC_REQUIRE(m_right(msg.data()));
 }
 
 namespace {
