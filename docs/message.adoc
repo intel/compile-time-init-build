@@ -210,6 +210,34 @@ The second parameter to `pack` (`std::uint8_t` in the example above) defines how
 the messages are packed together - in this case, each subsequent message is
 byte-aligned.
 
+CAUTION: After combining or packing messages, the fields inside them may have
+moved!
+
+Any matchers defined on the original fields may cause problems when matching
+against raw data, because they will be looking in the wrong place. (Matching
+when the message type is known is OK, because the field is resolved by its
+name.)
+
+To avoid matcher problems, define matchers after combining or packing messages.
+To help with this, use the `field_t` alias on the message definition if needed.
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint32_t>::located<at{0_dw, 5_msb, 0_lsb}>;
+using header_defn = message<"header", type_f>;
+
+using data_f = field<"data">, std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using payload_defn = message<"payload", data_f>;
+
+using msg_defn = extend<
+    pack<"msg", std::uint8_t, header_defn, payload_defn>,
+    type_f::with_required<1>>;
+
+// msg_defn does not contain data_f because packing moved it
+// but we can get the actual data field by name, if we need it
+using new_data_f = msg_defn::field_t<"data">;
+----
+
 ==== Owning vs view types
 
 An owning message uses underlying storage: by default, this is a `std::array` of

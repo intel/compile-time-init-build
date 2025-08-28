@@ -209,8 +209,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, some_field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
-        using Field = std::remove_cvref_t<decltype(stdx::get<name_for<V>>(
-            FieldsTuple{}))>;
+        using Field = field_t<name_for<V>>;
         check<Field, std::remove_cvref_t<R>>();
         Field::insert(std::forward<R>(r),
                       static_cast<typename Field::value_type>(v.value));
@@ -218,20 +217,19 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <typename N, stdx::range R>
     constexpr static auto set_default(R &&r) -> void {
-        using Field =
-            std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
-        check<Field, std::remove_cvref_t<R>>();
-        Field::insert_default(std::forward<R>(r));
+        check<field_t<N>, std::remove_cvref_t<R>>();
+        field_t<N>::insert_default(std::forward<R>(r));
     }
 
     template <typename N, stdx::range R> constexpr static auto get(R &&r) {
-        using Field =
-            std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
-        check<Field, std::remove_cvref_t<R>>();
-        return Field::extract(std::forward<R>(r));
+        check<field_t<N>, std::remove_cvref_t<R>>();
+        return field_t<N>::extract(std::forward<R>(r));
     }
 
   public:
+    template <typename N>
+    using field_t = std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
+
     template <stdx::range R, stdx::ct_string... Ns>
     constexpr static auto set(R &&r, field_name<Ns>...) -> void {
         (set_default<Ns>(r), ...);
@@ -368,6 +366,9 @@ struct message {
     using size =
         std::integral_constant<std::size_t,
                                detail::storage_size<Fields...>::template in<T>>;
+
+    template <stdx::ct_string N>
+    using field_t = typename access_t::template field_t<stdx::cts_t<N>>;
 
     template <template <typename, std::size_t> typename C, typename T>
     using custom_storage_t = typename access_t::template storage_t<C, T>;
