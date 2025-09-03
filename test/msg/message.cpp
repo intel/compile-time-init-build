@@ -614,7 +614,7 @@ TEST_CASE("shift all fields in a message", "[message]") {
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
-TEST_CASE("combine messages", "[message]") {
+TEST_CASE("overlay messages", "[message]") {
     using f1 = field<"f1", std::uint32_t>::located<at{23_msb, 16_lsb}>;
     using f2 = field<"f2", std::uint32_t>::located<at{15_msb, 0_lsb}>;
     using m1 = message<"m1", f1, f2>;
@@ -623,19 +623,19 @@ TEST_CASE("combine messages", "[message]") {
     using f4 = field<"f4", std::uint32_t>::located<at{15_msb, 0_lsb}>;
     using m2 = message<"m2", f3, f4>;
 
-    using defn = combine<"defn", m1, m2::shifted_by<1, std::uint32_t>>;
+    using defn = overlay<"defn", m1, m2::shifted_by<1, std::uint32_t>>;
     using expected_defn =
         message<"defn", f1, f2, f3::shifted_by<1, std::uint32_t>,
                 f4::shifted_by<1, std::uint32_t>>;
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
-TEST_CASE("combine 1 message", "[message]") {
+TEST_CASE("overlay 1 message", "[message]") {
     using f1 = field<"f1", std::uint32_t>::located<at{15_msb, 0_lsb}>;
     using f2 = field<"f2", std::uint32_t>::located<at{23_msb, 16_lsb}>;
     using m1 = message<"m1", f1, f2>;
 
-    using defn = combine<"defn", m1>;
+    using defn = overlay<"defn", m1>;
     using expected_defn = message<"defn", f1, f2>;
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
@@ -771,14 +771,14 @@ TEST_CASE("supplement message environment", "[message]") {
     STATIC_REQUIRE(custom(new_defn::env_t{}) == 18);
 }
 
-TEST_CASE("combine appends environments", "[message]") {
+TEST_CASE("overlay appends environments", "[message]") {
     using env1_t = stdx::make_env_t<custom, 17>;
     using m1 = message<"m1", env1_t>;
 
     using env2_t = stdx::make_env_t<custom, 18>;
     using m2 = message<"m2", env2_t>;
 
-    using defn = combine<"defn", m1, m2>;
+    using defn = overlay<"defn", m1, m2>;
     STATIC_REQUIRE(custom(defn::env_t{}) == 18);
 }
 
