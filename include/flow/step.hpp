@@ -41,7 +41,7 @@ template <stdx::ct_string Type, stdx::ct_string Name, typename F>
                    cib::detail::always_condition_t, F>{};
 }
 
-constexpr auto empty_func = []() {};
+constexpr auto empty_func = []() -> void {};
 } // namespace detail
 
 template <stdx::ct_string Name, typename F>

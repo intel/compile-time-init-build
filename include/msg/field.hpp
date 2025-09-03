@@ -202,7 +202,7 @@ struct bits_locator_t {
     template <std::uint32_t NumBits>
     constexpr static auto fits_inside() -> bool {
         constexpr auto Msb = Lsb + BitSize - 1;
-        return Index * 32 + Msb <= NumBits;
+        return (Index * 32) + Msb <= NumBits;
     }
 
     template <typename T> constexpr static auto extent_in() -> std::size_t {
