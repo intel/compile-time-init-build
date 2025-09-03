@@ -172,7 +172,7 @@ repetition. For example, adding a payload message to a header:
 using type_f = field<"type", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
 using header_defn = message<"header", type_f>;
 
-using data_f = field<"data", std::uint32_t>::located<at{0_dw, 15_msb, 7_lsb}>;
+using data_f = field<"data", std::uint32_t>::located<at{0_dw, 15_msb, 8_lsb}>;
 using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
