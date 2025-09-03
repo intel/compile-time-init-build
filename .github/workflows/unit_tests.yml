@@ -13,7 +13,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 20
+  DEFAULT_LLVM_VERSION: 21
   DEFAULT_GCC_VERSION: 14
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 13, 14, 16, 17, 18, 19, 20]
+        version: [12, 13, 14, 16, 17, 18, 19, 20, 21]
         cxx_standard: [20]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
@@ -36,6 +36,15 @@ jobs:
             cc: "clang"
             cxx: "clang++"
             cxx_flags: "-stdlib=libstdc++"
+          - version: 21
+            compiler: clang
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 21
+            toolchain_root: "/usr/lib/llvm-21"
+          - version: 21
+            compiler: clang
+            stdlib: libc++
+            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 21 && sudo apt install -y libc++-21-dev libc++abi-21-dev
+            cxx_flags: "-stdlib=libc++"
           - version: 20
             compiler: clang
             install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20 all
@@ -101,6 +110,8 @@ jobs:
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: gcc
+            version: 21
           - compiler: gcc
             version: 20
           - compiler: gcc
