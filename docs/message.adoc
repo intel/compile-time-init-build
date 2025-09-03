@@ -162,7 +162,7 @@ using msg1_defn = extend<header_defn, "msg", type_f::with_required<1>, payload_f
 using msg2_defn = extend<header_defn, "msg", type_f::with_required<2>, payload_f>;
 ----
 
-==== Combining and packing messages
+==== Overlaying and packing messages
 
 It is sometimes useful to combine multiple message definitions, to avoid
 repetition. For example, adding a payload message to a header:
@@ -176,13 +176,22 @@ using data_f = field<"data", std::uint32_t>::located<at{0_dw, 15_msb, 7_lsb}>;
 using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
-    combine<"msg", header_defn, payload_defn>,
+    overlay<"msg", header_defn, payload_defn>,
     type_f::with_required<1>>;
+
+// resulting message layout:
+// byte   |0       |1       |
+// bit    |01234567|01234567|
+// field  |header  |payload |
 ----
 
-The combined definition incorporates all the fields of the messages. And as
-shown, the combination might typically be `extend`​ed with a constraint on the
-header field.
+The resulting definition incorporates all the fields of the messages.
+And as shown, the combination might typically be `extend`​ed with a constraint on
+the header field.
+
+NOTE: It is possible to have overlapping message fields! Fields just determine
+which parts of the data are read/written, and overlapping field definitions are
+sometimes useful.
 
 Other times it is useful to automatically concatenate or `pack` messages
 together, where the field locations in each message start at 0.
@@ -193,7 +202,7 @@ using type_f = field<"type", std::uint32_t>::located<at{0_dw, 5_msb, 0_lsb}>;
 using header_defn = message<"header", type_f>;
 
 // note: data_f collides with type_f under a naive combination
-using data_f = field<"data">, std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using data_f = field<"data", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
 using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
@@ -201,17 +210,16 @@ using msg_defn = extend<
     type_f::with_required<1>>;
 
 // resulting message layout:
-// byte   0        1
-// bit    01234567 01234567
-// field  |type|xx |data  |
+// byte   |0        |1       |
+// bit    |012345|67|01234567|
+// field  |type  |xx|data    |
 ----
 
 The second parameter to `pack` (`std::uint8_t` in the example above) defines how
 the messages are packed together - in this case, each subsequent message is
 byte-aligned.
 
-CAUTION: After combining or packing messages, the fields inside them may have
-moved!
+CAUTION: After packing messages, the fields inside them may have moved!
 
 Any matchers defined on the original fields may cause problems when matching
 against raw data, because they will be looking in the wrong place. (Matching
@@ -236,6 +244,34 @@ using msg_defn = extend<
 // msg_defn does not contain data_f because packing moved it
 // but we can get the actual data field by name, if we need it
 using new_data_f = msg_defn::field_t<"data">;
+----
+
+==== Relaxed messages
+
+During prototyping, it can be useful to specify message types, but not worry
+about where they are located yet. The compiler can automatically place them in
+storage for us, and this is what `relaxed_message` is for.
+
+[source,cpp]
+----
+// just prototyping: we want field types, but we don't care about layout yet
+using type_f = field<"type", std::uint8_t>;
+using data_f = field<"data", std::uint32_t>;
+using msg_defn = relaxed_message<"msg", type_f, data_f>;
+
+// msg_defn has both fields, at unspecified locations
+----
+
+[source,cpp]
+----
+// we want to fix the type, but we don't care about the rest
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 3_msb, 0_lsb}>;
+using field0_f = field<"f0", std::uint8_t>;
+using field1_f = field<"f1", std::uint16_t>;
+using field2_f = field<"f2", std::uint32_t>;
+using msg_defn = relaxed_message<"msg", type_f, field0_f, field1_f, field2_f>;
+
+// msg_defn has type as the first 4 bits; the other fields are at unspecified locations
 ----
 
 ==== Owning vs view types

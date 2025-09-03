@@ -699,26 +699,26 @@ using shifted_msgs =
                                 msg_offsets<AlignTo, Msgs...>,
                                 stdx::type_list<Msgs..., msg::message<"end">>>;
 
-template <stdx::ct_string Name, stdx::envlike Env> struct combiner {
+template <stdx::ct_string Name, stdx::envlike Env> struct overlayer {
     template <typename... Fields> using fn = msg::message<Name, Env, Fields...>;
 };
 
-template <stdx::ct_string Name> struct combine_q {
+template <stdx::ct_string Name> struct overlay_q {
     template <typename... Msgs>
         requires(sizeof...(Msgs) > 0)
     using fn = boost::mp11::mp_apply_q<
-        combiner<Name, stdx::append_env_t<typename Msgs::env_t...>>,
+        overlayer<Name, stdx::append_env_t<typename Msgs::env_t...>>,
         boost::mp11::mp_append<typename Msgs::fields_t...>>;
 };
 } // namespace detail
 
 template <stdx::ct_string Name, typename... Msgs>
     requires(sizeof...(Msgs) > 0)
-using combine = typename detail::combine_q<Name>::template fn<Msgs...>;
+using overlay = typename detail::overlay_q<Name>::template fn<Msgs...>;
 
 template <stdx::ct_string Name, typename AlignTo, typename... Msgs>
     requires(sizeof...(Msgs) > 0)
-using pack = boost::mp11::mp_apply_q<detail::combine_q<Name>,
+using pack = boost::mp11::mp_apply_q<detail::overlay_q<Name>,
                                      detail::shifted_msgs<AlignTo, Msgs...>>;
 
 namespace detail {
@@ -739,7 +739,7 @@ struct field_locator<Name, Env, Fields...> {
     using unlocated_fields = boost::mp11::mp_second<fields>;
 
     using located_msg =
-        boost::mp11::mp_apply_q<combiner<Name, stdx::env<>>, located_fields>;
+        boost::mp11::mp_apply_q<overlayer<Name, stdx::env<>>, located_fields>;
 
     using auto_fields =
         boost::mp11::mp_sort<unlocated_fields, field_size_sort_fn>;
