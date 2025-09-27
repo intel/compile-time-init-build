@@ -53,24 +53,4 @@ _cib_ contains several parts that work together:
 Various sub-libraries within CIB form a dependency graph. `cib` is an omnibus
 library that contains all the functionality.
 
-[mermaid, format="svg"]
-----
-flowchart BT
-  nexus(cib_nexus)
-  log(cib_log)
-  match(cib_match)
-  lookup(cib_lookup)
-
-  flow(cib_flow) --> nexus
-  flow --> log
-
-  log_fmt(cib_log_fmt) --> log
-  msg(cib_msg) --> log & match
-  msg --> lookup
-
-  log_binary(cib_log_binary) --> msg
-  seq(cib_seq) --> flow
-
-  interrupt(cib_interrupt)
-  cib --> seq & log_fmt & log_binary & interrupt
-----
+mermaid::library_deps.mmd[format="svg"]
