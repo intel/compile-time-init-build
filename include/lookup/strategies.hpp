@@ -4,26 +4,30 @@
 #include <lookup/strategy_failed.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/type_traits.hpp>
+
+#include <algorithm>
+#include <array>
+#include <iterator>
 
 namespace lookup {
-template <typename...> struct strategies;
-
-template <> struct strategies<> {
+struct fail_strategy_t {
     [[nodiscard]] CONSTEVAL static auto make(compile_time auto)
         -> strategy_failed_t {
         return {};
     }
 };
 
-template <typename T, typename... Ts> struct strategies<T, Ts...> {
+template <typename... Ts> struct strategies {
     [[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
-        constexpr auto candidate = T::make(input);
-
-        if constexpr (strategy_failed(candidate)) {
-            return strategies<Ts...>::make(input);
-        } else {
-            return candidate;
-        }
+        constexpr auto idx = [&] {
+            constexpr auto results =
+                std::array{not strategy_failed(Ts::make(input))...};
+            return std::distance(
+                std::cbegin(results),
+                std::find(std::cbegin(results), std::cend(results), true));
+        }();
+        return stdx::nth_t<idx, Ts..., fail_strategy_t>::make(input);
     }
 };
 } // namespace lookup
