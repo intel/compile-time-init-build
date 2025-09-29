@@ -170,7 +170,8 @@ constexpr auto with_mask(T const mask, std::array<T, S> const &keys)
 }
 
 template <typename T, typename V, std::size_t S>
-constexpr auto get_keys(std::array<entry<T, V>, S> const &entries) {
+constexpr auto get_keys(std::array<entry<T, V>, S> const &entries)
+    -> std::array<detail::raw_integral_t<T>, S> {
     using raw_t = detail::raw_integral_t<T>;
     std::array<raw_t, S> new_keys{};
 
@@ -373,7 +374,8 @@ struct pseudo_pext_lookup {
             return empty_impl<key_type, value_type, default_value>{};
 
         } else if constexpr (use_indirect_strategy) {
-            constexpr auto storage = [&]() {
+            constexpr auto storage =
+                [&]() -> std::remove_const_t<decltype(input.entries)> {
                 auto s = input.entries;
 
                 // sort by the hashed key to group all the buckets together
@@ -416,8 +418,9 @@ struct pseudo_pext_lookup {
                 return s;
             }();
 
-            constexpr auto lookup_table = [&]() {
-                using lookup_idx_t = detail::uint_for_<storage.size()>;
+            using lookup_idx_t = detail::uint_for_<storage.size()>;
+            constexpr auto lookup_table =
+                [&]() -> std::array<lookup_idx_t, lookup_table_size> {
                 std::array<lookup_idx_t, lookup_table_size> t{};
 
                 t.fill(0);
@@ -442,7 +445,9 @@ struct pseudo_pext_lookup {
                 p, lookup_table, storage};
 
         } else {
-            constexpr auto storage = [&]() {
+            constexpr auto storage =
+                [&]() -> std::array<entry<raw_key_type, value_type>,
+                                    lookup_table_size> {
                 std::array<entry<raw_key_type, value_type>, lookup_table_size>
                     s{};
 

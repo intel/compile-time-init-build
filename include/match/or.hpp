@@ -24,9 +24,9 @@ template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
         auto r = simplify(m.rhs);
 
         if constexpr (implies(l, r)) {
-            return r;
+            return [&] { return r; }();
         } else if constexpr (implies(r, l)) {
-            return l;
+            return [&] { return l; }();
         } else if constexpr (implies(negate(l), r) or implies(negate(r), l)) {
             return always;
         } else {

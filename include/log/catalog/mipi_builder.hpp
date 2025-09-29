@@ -32,7 +32,8 @@ template <packer P> struct builder<defn::short32_msg_t, P> {
 
 template <typename Storage, packer P> struct catalog_builder {
     template <auto Level, packable... Ts>
-    static auto build(string_id id, module_id m, unit_t u, Ts... args) {
+    static auto build(string_id id, module_id m, unit_t u, Ts... args)
+        -> defn::catalog_msg_t::owner_t<Storage> {
         using namespace msg;
         defn::catalog_msg_t::owner_t<Storage> message{
             "severity"_field = Level, "module_id"_field = m, "unit"_field = u};
