@@ -1,0 +1,22 @@
+flowchart TD
+  a(WAKE_UP)
+  b(selfcare::SHOWER)
+  c(selfcare::GET_DRESSED)
+  d(food::MAKE_COFFEE)
+  e(food::DRINK_COFFEE)
+  a --> b
+  b --> c
+  c --> d
+  d --> e
+  f(food::MAKE_BREAKFAST)
+  g(food::EAT_BREAKFAST)
+  h(childcare::PACK_SCHOOL_LUNCHES)
+  i(childcare::SEND_KIDS_TO_SCHOOL)
+  d --> h
+  h --> e
+  e --> f
+  f --> g
+  g --> i
+  j(exercise::RIDE_STATIONARY_BIKE)
+  a --> j
+  j --> b
