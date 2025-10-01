@@ -1,0 +1,30 @@
+block
+columns 6
+  app_cpp("main.cpp") lib_cpp("lib.cpp") space:4
+  space:3 ud("undefined_symbols.txt") space:2
+  space:6
+  block:B:2
+    columns 2
+    obj("main.o")
+    lib("lib.a")
+    space
+    strings("strings.a")
+  end space
+  block:A:3
+    gen_cpp("strings.cpp")
+    gen_json("strings.json")
+    gen_xml("strings.xml")
+  end
+  space:6
+  space app("a.out") space:2 log("log decoder") space
+
+  app_cpp-- "compile" -->obj
+  lib_cpp-- "compile" -->lib
+  lib-- "nm" -->ud
+  ud-- "generate" -->A
+  gen_cpp-- "compile" -->strings
+  gen_cpp-- "compile" -->strings
+  B-- "link + LTO" -->app
+  gen_json-->log
+  gen_xml-->log
+  app-- "run" -->log

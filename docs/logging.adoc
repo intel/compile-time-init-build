@@ -6,7 +6,7 @@ https://github.com/intel/compile-time-init-build/tree/main/include/log.
 Everything in the logging library is in the `logging` namespace, although most
 user code will use macros.
 
-Logging in _cib_ is in two parts:
+Logging in `cib` is in two parts:
 
 - the interface, in https://github.com/intel/compile-time-init-build/tree/main/include/log/log.hpp[log.hpp]
 - an implementation, which can be specified at the top level
@@ -17,9 +17,61 @@ Three possible logger implementations are provided:
 - one using binary encoding in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/encoder.hpp[catalog/encoder.hpp], using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] by default
 - the default implementation: the null logger which accepts everything, but never produces output
 
-=== Log levels
+=== Getting started
 
-_cib_ offers 6 well-known and 2 user-defined log levels, according to the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec].
+To get started using CIB logging, include `log.hpp` and use a log macro to output logs:
+[source,cpp]
+----
+#include <log/log.hpp>
+
+auto func() {
+  CIB_INFO("Calling func");
+}
+----
+
+And link against the `cib_log` library:
+[source,cmake]
+----
+target_link_libraries(my_lib PUBLIC cib_log)
+----
+
+This is suitable usage for a library header. Notice: this code has not yet made
+any decision about which logging implementation to use. And in fact the default
+logger will produce no output.
+
+To select a logging implementation for an application, we need to include the
+appropriate implementation header and specialize a variable template:
+[source,cpp]
+----
+#include <log/fmt/logger.hpp>
+#include <iostream>
+
+template <>
+inline auto logging::config<> =
+    logging::fmt::config{std::ostream_iterator<char>(std::cout)};
+----
+
+And of course link against the appropriate library:
+[source,cmake]
+----
+target_link_libraries(my_app PUBLIC cib_log_fmt)
+----
+
+This will mean that the application uses the fmt logger to output to
+`std::cout`. Any header-only library code that uses the log macros will
+automatically use the correct logger.
+
+The provided fmt logger implementation can output to multiple destinations by
+constructing `logging::fmt::config` with multiple `ostream` iterators.
+
+CAUTION: If you have multiple translation units, all TUs that use logging must
+see the same specialization of the `logging::config` variable template --
+otherwise you will have an ODR violation. This includes any compiled (not
+header-only) library code.
+
+=== Log levels
+`cib` offers 6 well-known and 2 user-defined log levels, according to the
+https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec].
 
 [source,cpp]
 ----
@@ -35,10 +87,24 @@ enum struct level {
 };
 ----
 
+C++ does not allow inheritance from an enumeration type, but one way to name
+the user-defined levels is to use a `struct` to contain the enumeration values:
+
+[source,cpp]
+----
+struct app_level {
+    using enum logging::level;
+    constexpr static auto APP1 = USER1;
+};
+----
+
+There are other possibilities, but this "scopes" the enumeration values for the
+application while keeping the type (`logging::level`) the same so that library
+functions still work.
+
 === Log macros
 
-_cib_ log macros follow the log levels:
-
+`cib` log macros follow the log levels:
 [source,cpp]
 ----
 CIB_TRACE(...);
@@ -48,33 +114,112 @@ CIB_ERROR(...);
 CIB_FATAL(...);
 ----
 
+These macros are defined using the lower level macro `CIB_LOG_WITH_LEVEL`, so to
+provide a new macro using a user-defined log level can be done:
+[source,cpp]
+----
+#define LOG_APP1(...) CIB_LOG_WITH_LEVEL(app_level::APP1 __VA_OPT__(, ) __VA_ARGS__)
+----
+
 `CIB_FATAL` causes a call to
 https://intel.github.io/cpp-std-extensions/#_panic_hpp[`stdx::panic`], and
 `CIB_ASSERT(expression)` is equivalent to `CIB_FATAL` in the case where the
 expression evaluates to `false`.
 
-=== Selecting a logger
-
-In order to use logging in a header, it suffices only to include
-https://github.com/intel/compile-time-init-build/tree/main/include/log/log.hpp[log.hpp]
-and use the macros. Header-only clients of logging do not need to know the
-implementation selected.
-
-To use logging in a translation unit, specialize the `logging::config` variable
-template. Left unspecialized, the null logger will be used.
+=== Log formatting
+Under the hood, `cib` uses https://github.com/fmtlib/fmt[`fmt`] to format logs
+before outputting them. All formatting that can be done at compile time, is done
+at compile time. Some examples:
 
 [source,cpp]
 ----
-// use fmt logging to std::cout
-template <>
-inline auto logging::config<> = logging::fmt::config{std::ostream_iterator<char>{std::cout}};
+CIB_INFO("The answer is: {}", 42);   // compile-time formatted
+CIB_INFO("The answer is: {}", "42"); // compile-time formatted
+
+static constexpr auto x = 42;
+CIB_INFO("The answer is: {}", x);    // compile-time formatted
+CIB_INFO("42 is an {}", 42, int);    // compile-time formatted
+
+auto y = 42;
+CIB_INFO("The answer is: {}", y);    // runtime formatted
+CIB_INFO("{} is an {}", y, int);     // compile-time (int) and runtime (y) formatted
 ----
 
-The provided `fmt` implementation can output to multiple destinations by constructing
-`logging::fmt::config` with multiple `ostream` iterators.
+NOTE: We can pass types as well as values to the log macros for formatting.
+Types are converted to string representations.
 
-CAUTION: Be sure that each translation unit sees the same specialization of
-`logging::config`! Otherwise you will have an https://en.cppreference.com/w/cpp/language/definition[ODR violation].
+=== Binary loggers
+An application can select the binary logger by specializing the
+`logging::config` variable template and providing a destination that will
+receive binary data:
+[source,cpp]
+----
+#include <log/catalog/encoder.hpp>
+#include <stdx/span.hpp>
+
+struct log_destination {
+    template <std::size_t N>
+    auto operator()(stdx::span<std::uint32_t const, N> data) const {}
+};
+
+template <>
+inline auto logging::config<> = logging::binary::config{log_destination{}};
+----
+
+And linking against the binary log library:
+[source,cmake]
+----
+target_link_libraries(my_app PUBLIC cib_log_binary)
+----
+
+The log destination must provide a function call operator (`operator()`) that
+receives a span of the binary data to be written.
+
+==== The build process
+
+On a constrained system, space for text can be limited-to-nonexistent. The
+`cib_log_binary` library encodes strings at build time so that string IDs are
+sent at runtime and string data is not stored in the executable.
+
+- First, each string constant contains string character data in its type.
+- The binary logger calls the function template specialization
+  https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/catalog.hpp[`catalog`]
+  to get the ID corresponding to each string constant.
+
+But: the `catalog` function template is just that -- only a template -- to
+begin with. It is specialized as follows:
+
+- The application is built as a library.
+- Running `nm` on that library reveals missing symbols: precisely the function
+  specializations that are required for all the string constants.
+- Those symbols are used to generate the template specializations in another
+  file, which itself is compiled into a library.
+- String data is recovered from the symbol types and used to generate the
+  catalog collateral in XML and/or JSON format.
+- Link-time optimization inlines the `catalog` function template
+  specializations, each of which is a one-line function that returns an ID.
+
+mermaid::log_build_process.mmd[format="svg"]
+
+NOTE: No logging exists in `main.cpp`: it's just a stub providing `main` that
+calls into the application's library code.
+
+Thus no string data exists in the executable, but the correct IDs are used for
+logging, and at runtime a log decoder can reconstitute the actual strings. The
+XML and JSON collateral also contains information about any runtime arguments
+that need to be interpolated into the string and whose values are sent by the
+binary logger along with the ID.
+
+==== Tooling support
+
+The process of generating log strings from the type information revealed by
+missing symbols is automated by a
+https://github.com/intel/compile-time-init-build/blob/main/tools/gen_str_catalog.py[python
+script] provided and by a
+https://github.com/intel/compile-time-init-build/blob/main/cmake/string_catalog.cmake[CMake
+wrapper function (`gen_str_catalog`)] that drives the process. See
+https://github.com/intel/compile-time-init-build/blob/main/test/CMakeLists.txt[the
+test] that exercises that functionality for an example.
 
 === Implementing a logger
 
@@ -86,8 +231,8 @@ implementation is a matter of defining this structure appropriately.
 ----
 struct my_logger_config {
   struct {
-    template <typename Env, typename File, typename Line, typename Msg>
-    auto log(File, Line, Msg const &msg) -> void {
+    template <typename Env, typename File, typename Line, typename FR>
+    auto log(File, Line, FR const &fr) -> void {
       // log according to my mechanism
     }
   } logger;
@@ -97,30 +242,31 @@ struct my_logger_config {
 Notice that the first template parameters to log is the
 xref:logging.adoc#_logging_environments[environment].
 
-The first two runtime parameters receive preprocessor `\_​_FILE_​\_` and `__LINE_​_` values
-respectively. The `msg` argument is a structure containing a
-compile-time format string and runtime
-arguments to be interpolated into it. It supports an `apply` function, so one
-way to implement `log` is:
+The first two runtime parameters receive preprocessor `\_​_FILE_​\_` and
+`__LINE_​_` values respectively. The `fr` argument is a
+https://intel.github.io/cpp-std-extensions/#_ct_format_hpp[`stdx::format_result`]
+structure containing a
+https://intel.github.io/cpp-std-extensions/#_cts_t[compile-time format string]
+and runtime arguments to be interpolated into it. One way to implement `log` is:
 
 [source,cpp]
 ----
 struct my_logger_config {
   struct {
-    template <typename Env, typename File, typename Line, typename Msg>
-    auto log(File, Line, Msg const &msg) -> void {
-      msg.apply([] <typename Str> (Str, auto const&... args) {
-        std::print(Str::value, args...);
+    template <typename Env, typename File, typename Line, typename FR>
+    auto log(File, Line, FR const &fr) -> void {
+      constexpr auto fmtstr = std::string_view{decltype(fr.str)::value};
+      fr.args.apply([&](auto const &...args) {
+        ::fmt::print(fmtstr, args...);
       });
     }
   } logger;
 };
 ----
 
-NOTE: `Str::value` here is a compile-time `std::string_view`.
-
-To use the custom implementation, as with any built-in choice of logger,
-specialize `logging::config`:
+In fact this is similar to how the `fmt` logger is implemented. To use the
+custom implementation, as with any built-in choice of logger, specialize
+`logging::config`:
 
 [source,cpp]
 ----
@@ -142,13 +288,16 @@ template <>
 inline auto logging::config<secure_tag> = my_logger_config{};
 ----
 
-And this backend can be most easily used by defining macros in terms of the
-`CIB_LOG` macro:
+And this backend can be used by defining macros in terms of the `logging::log`
+function:
 
 [source,cpp]
 ----
-#define SECURE_TRACE(...) CIB_LOG(secure_tag, logging::level::TRACE, __VA_ARGS__)
-#define SECURE_INFO(...) CIB_LOG(secure_tag, logging::level::INFO, __VA_ARGS__)
+#define SECURE_TRACE(MSG, ...)                                  \
+    logging::log<stdx::extend_env_t<cib_log_env_t,              \
+        logging::get_flavor, stdx::type_identity<secure_t>{}>>( \
+        __FILE__, __LINE__, stdx::ct_format<MSG>(__VA_ARGS__))
+
 // etc
 ----
 
@@ -157,7 +306,7 @@ And this backend can be most easily used by defining macros in terms of the
 It can be helpful to scope or filter log messages by associating them with
 module IDs. Several logging backends have support for this idea. Tagging every
 log call site gets verbose and error-prone, so instead the approach taken by
-_cib_ is to override log modules by using `CIB_LOG_MODULE` declarations at
+`cib` is to override log modules by using `CIB_LOG_MODULE` declarations at
 namespace, class or function scope.
 
 [source,cpp]
@@ -184,53 +333,6 @@ struct my_struct {
 };
 }
 ----
-
-=== Efficient logging with MIPI Sys-T
-
-On a constrained system, space for text can be limited-to-nonexistent. `cib`
-uses `stdx::ct_format` and the
-https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/mipi_encoder.hpp[MIPI
-Sys-T logging config] to solve this problem.
-
-- First, each string constant contains string character data in its type.
-- The MIPI logger calls the function template specialization
-  https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/catalog.hpp[`catalog`]
-  to get the catalog ID corresponding to each string constant.
-
-But: the `catalog` function template is just that -- only a template -- to
-begin with. It is specialized as follows:
-
-- The application is built as a library.
-- Running `nm` on that library reveals missing symbols: precisely the function
-  specializations that are required for all the string constants.
-- Those symbols are used to generate the template specializations in another
-  file, which itself is compiled into a library.
-- String data is recovered from the symbol types and used to generate the
-  catalog collateral in XML and/or JSON format.
-- Link-time optimization inlines the `catalog` function template
-  specializations, each of which is a one-line function that returns a
-  catalog ID.
-
-Thus no string data exists in the executable, but the correct catalog IDs are
-used in logging, and the remote log handler can reconstitute the actual strings.
-The XML and JSON collateral also contains information about any runtime
-arguments that need to be interpolated into the string and whose values are sent
-by the MIPI Sys-T logger after the catalog ID.
-
-==== Tooling support
-
-The process of generating log strings from the type information revealed by
-missing symbols is automated by a
-https://github.com/intel/compile-time-init-build/blob/main/tools/gen_str_catalog.py[python
-script] provided and by a
-https://github.com/intel/compile-time-init-build/blob/main/cmake/string_catalog.cmake[CMake
-wrapper function (`gen_str_catalog`)] that drives the process. See
-https://github.com/intel/compile-time-init-build/blob/main/test/CMakeLists.txt[the
-test] that exercises that functionality for an example.
-
-NOTE: This process assigns IDs to both strings and
-xref:logging.adoc#_modules[log modules]. `catalog` is specialized for catalog
-IDs; `module` is specialized for module IDs.
 
 === Version logging
 
@@ -298,7 +400,7 @@ CIB_TRACE("Hello");  // logs with secure back end
 A temporary override of values can be done with `CIB_WITH_LOG_ENV`:
 [source,cpp]
 ----
-CIB_WITH LOG_ENV(logging::get_level, logging::level::TRACE,
+CIB_WITH_LOG_ENV(logging::get_level, logging::level::TRACE,
                  logging::get_flavor, secure_tag) {
   CIB_LOG("Hello");  // logs a TRACE with secure back end
 }
@@ -310,11 +412,49 @@ on the environment.
 ----
 struct my_logger_config {
   struct {
-    template <typename Env, typename File, typename Line, typename Msg>
-    auto log(File, Line, Msg const &msg) -> void {
+    template <typename Env, typename File, typename Line, typename FR>
+    auto log(File, Line, FR const &fr) -> void {
       constexpr auto level = get_level(Env{}).value;
       // ...
     }
   } logger;
 };
 ----
+
+=== Queries
+
+Much of the behavior of a log call can be customized using values queried from
+an environment:
+
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/level.hpp[severity]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/flavor.hpp[flavor] (typically secure or otherwise)
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/module.hpp[module]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/unit.hpp[unit]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/string_id.hpp[string ID] or https://github.com/intel/compile-time-init-build/blob/main/include/log/module_id.hpp[module ID]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/builder.hpp[binary builder]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/writer.hpp[binary writer]
+
+The binary logger in particular can have both the builder and the writer
+(destination) customized in this way. The defaults provide binary logging
+according to the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec], but
+any binary format can be provided by customizing the builder.
+
+The string ID or module ID can also be fixed for a particular call, and the ID
+generation process will heed IDs fixed in this way.
+
+==== Runtime queries
+
+If a query value is not known at compile time, it may be provided at runtime by
+a function (non-capturing lambda expression). This is useful for the `unit`
+value which is somewhat similar to `module`, but primarily intended to
+distinguish between multiple runtime instances.
+
+[source,cpp]
+----
+logging::mipi::unit_t my_unit = discover_unit();
+CIB_LOG_ENV(logging::get_unit, [] { return my_unit; });
+CIB_TRACE("Hello");
+----
+
+See the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] for more
+details.
