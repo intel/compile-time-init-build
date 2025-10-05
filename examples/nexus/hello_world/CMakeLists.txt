@@ -32,7 +32,14 @@ if(NOT TARGET cib)
 endif()
 
 if(COMMAND add_example)
-    add_example(NAME hello_world FILES main.cpp dont_panic.cpp)
+    add_example(
+        NAME
+        hello_world
+        FILES
+        main.cpp
+        dont_panic.cpp
+        LIBS
+        cib)
 else()
     add_executable(hello_world main.cpp dont_panic.cpp)
     target_link_libraries(hello_world cib)

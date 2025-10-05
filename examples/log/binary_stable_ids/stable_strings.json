@@ -1,0 +1,18 @@
+{
+    "messages": [
+        {
+            "msg": "Hello",
+            "type": "msg",
+            "arg_types": [],
+            "arg_count": 0,
+            "id": 42
+        }
+    ],
+    "modules": [
+        {
+            "string": "default",
+            "id": 0
+        }
+    ],
+    "enums": {}
+}

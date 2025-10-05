@@ -221,6 +221,38 @@ wrapper function (`gen_str_catalog`)] that drives the process. See
 https://github.com/intel/compile-time-init-build/blob/main/test/CMakeLists.txt[the
 test] that exercises that functionality for an example.
 
+`gen_str_catalog` is the CMake function that drives the string catalog generation.
+
+[source,cpp]
+----
+gen_str_catalog(
+    GEN_STR_CATALOG <python-file>
+    OUTPUT_CPP <output-cpp-file>
+    OUTPUT_JSON <output-json-file>
+    OUTPUT_XML <output-xml-file>
+    INPUT_LIBS <lib-files...>
+    INPUT_JSON <json-files...>
+    STABLE_JSON <json-files...>
+    INPUT_HEADERS <header-files...>
+    CLIENT_NAME <client-name>
+    VERSION <version>
+    GUID_ID <guid>
+    GUID_MASK <guid>
+    MODULE_ID_MAX <max-id>
+    OUTPUT_LIB <target-name>
+    OUTPUTS_TARGET <target-name>
+    FORGET_OLD_IDS)
+----
+- `INPUT_LIBS` is a required argument: this will be the input libraries from which the undefined symbols are extracted.
+- `OUTPUT_{CPP,JSON,XML}` are the generated files. Also required.
+- `INPUT_JSON` is optional extra JSON that will be copied verbatim into the generated JSON.
+- `STABLE_JSON` is optional information about stable string and module IDs -- for example, from a previous build.
+- `CLIENT_NAME`, `VERSION`, `GUID_ID` and `GUID_MASK` are all optional input fields for the MIPI-SyS-T XML.
+- `MODULE_ID_MAX` is an optional upper bound on the assigned module IDs. This is useful to limit module ID bit-space.
+- `OUTPUT_LIB` is an optional (`STATIC`) library target consisting of the `OUTPUT_CPP` file.
+- `FORGET_OLD_IDS` is optional, and if present disregards the `STABLE_JSON` information.
+- `GEN_STR_CATALOG` is optional, and allows pointing to a different python script.
+
 === Implementing a logger
 
 Each logging implementation (configuration) provides a customization point: a
@@ -458,3 +490,20 @@ CIB_TRACE("Hello");
 
 See the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] for more
 details.
+
+=== Examples/How-Tos
+
+I want to...
+
+- ...use the fmt logger...
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/fmt_normal[...as my normal logger]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/fmt_tests[...in tests, to make sure my code logs correctly]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/fmt_multi[...to output to multiple places (stdout, file, etc)]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/fmt_custom_level[...with a custom level enumeration]
+- ...use the binary logger...
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/binary_normal[...as my normal logger]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/binary_custom[...with my own binary format]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/binary_stable_ids[...and keep string IDs stable from build to build]
+  * https://github.com/intel/compile-time-init-build/tree/main/examples/log/binary_fixed_id[...and fix a string ID in code]
+- https://github.com/intel/compile-time-init-build/tree/main/examples/log/custom[...use my own logger]
+- https://github.com/intel/compile-time-init-build/tree/main/examples/log/secure[...use a secure logger as well as a "normal" one]

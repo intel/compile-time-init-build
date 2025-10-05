@@ -188,10 +188,16 @@ target_sources(
               BASE_DIRS
               include
               FILES
+              include/log/module_id.hpp
+              include/log/string_id.hpp
+              include/log/unit.hpp
+              include/log/catalog/arguments.hpp
+              include/log/catalog/builder.hpp
               include/log/catalog/catalog.hpp
               include/log/catalog/encoder.hpp
               include/log/catalog/mipi_builder.hpp
-              include/log/catalog/mipi_messages.hpp)
+              include/log/catalog/mipi_messages.hpp
+              include/log/catalog/writer.hpp)
 
 add_library(cib_nexus INTERFACE)
 target_compile_features(cib_nexus INTERFACE cxx_std_20)
