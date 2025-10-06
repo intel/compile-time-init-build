@@ -91,7 +91,7 @@ template <stdx::ct_string Msg> constexpr auto cx_log_wrap(int, auto &&...args) {
 #define CIB_ERROR(...)                                                         \
     CIB_LOG_WITH_LEVEL(logging::level::ERROR __VA_OPT__(, ) __VA_ARGS__)
 
-namespace logging::detail {
+namespace logging {
 template <stdx::ct_string Fmt, typename Env, typename F, typename L>
 [[nodiscard]] constexpr auto panic(F file, L line, auto &&...args) {
     STDX_PRAGMA(diagnostic push)
@@ -102,14 +102,12 @@ template <stdx::ct_string Fmt, typename Env, typename F, typename L>
 
     constexpr auto N = stdx::num_fmt_specifiers<Fmt>;
     constexpr auto sz = sizeof...(args);
-    using env_t =
-        stdx::extend_env_t<Env, logging::get_level, logging::level::FATAL>;
 
 #if __cpp_pack_indexing >= 202311L
     auto s = [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return stdx::ct_format<Fmt>(FWD(args...[Is])...);
     }(std::make_index_sequence<N>{});
-    logging::log<env_t>(file, line, s);
+    log<Env>(file, line, s);
 
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         stdx::panic<decltype(s.str)::value>(std::move(s).args,
@@ -127,7 +125,7 @@ template <stdx::ct_string Fmt, typename Env, typename F, typename L>
     auto s = stdx::get<0>(std::move(t)).apply([](auto &&...fmt_args) {
         return stdx::ct_format<Fmt>(FWD(fmt_args)...);
     });
-    logging::log<env_t>(file, line, s);
+    log<Env>(file, line, s);
 
     stdx::get<1>(std::move(t)).apply([&](auto &&...extra_args) {
         stdx::panic<decltype(s.str)::value>(std::move(s).args,
@@ -137,10 +135,11 @@ template <stdx::ct_string Fmt, typename Env, typename F, typename L>
 
     STDX_PRAGMA(diagnostic pop)
 }
-} // namespace logging::detail
+} // namespace logging
 
 #define CIB_FATAL(MSG, ...)                                                    \
-    logging::detail::panic<MSG, cib_log_env_t>(                                \
+    logging::panic<MSG, stdx::extend_env_t<cib_log_env_t, logging::get_level,  \
+                                           logging::level::FATAL>>(            \
         __FILE__, __LINE__ __VA_OPT__(, STDX_MAP(CX_WRAP, __VA_ARGS__)))
 
 #define CIB_ASSERT(expr, ...)                                                  \

@@ -161,3 +161,28 @@ TEST_CASE("CIB_ASSERT passes arguments to panic", "[log]") {
     CHECK(buffer.find(expected_why) != std::string::npos);
     CHECK(panicked);
 }
+
+namespace {
+enum struct custom_level { THE_ONE_LEVEL = 5 };
+}
+
+namespace logging {
+template <custom_level L>
+[[nodiscard]] auto format_as(level_wrapper<L>) -> std::string_view {
+    STATIC_REQUIRE(L == custom_level::THE_ONE_LEVEL);
+    return "THE_ONE_LEVEL";
+}
+} // namespace logging
+
+#define CUSTOM_FATAL(MSG, ...)                                                 \
+    logging::panic<MSG, stdx::extend_env_t<cib_log_env_t, logging::get_level,  \
+                                           custom_level::THE_ONE_LEVEL>>(      \
+        __FILE__, __LINE__ __VA_OPT__(, STDX_MAP(CX_WRAP, __VA_ARGS__)))
+
+TEST_CASE("panic works with custom level", "[log]") {
+    reset_test_state();
+
+    CUSTOM_FATAL("Hello");
+    CAPTURE(buffer);
+    CHECK(buffer.find("THE_ONE_LEVEL") != std::string::npos);
+}
