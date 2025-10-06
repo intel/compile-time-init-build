@@ -792,3 +792,18 @@ TEST_CASE("pack appends environments", "[message]") {
     using defn = pack<"defn", std::uint8_t, m1, m2>;
     STATIC_REQUIRE(custom(defn::env_t{}) == 18);
 }
+
+TEST_CASE("read indexing operator on message", "[message]") {
+    test_msg const msg{};
+    CHECK(0x80 == msg["id"_field]);
+}
+
+// This test causes clang-14 with libc++ to crash...
+#if not __clang__ or __clang_major__ > 14
+TEST_CASE("write indexing operator on message", "[message]") {
+    test_msg msg{};
+    CHECK((0 == msg["f1"_field]));
+    msg["f1"_field] = 0xba11;
+    CHECK((0xba11 == msg["f1"_field]));
+}
+#endif

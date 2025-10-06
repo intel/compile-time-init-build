@@ -344,10 +344,35 @@ template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
     [[nodiscard]] constexpr auto get(auto f) const {
         return Access::get(as_derived().data(), f);
     }
+
     constexpr auto set(auto... fs) -> void {
         Access::set(as_derived().data(), fs...);
     }
     constexpr auto set() -> void {}
+
+    template <stdx::ct_string N> struct proxy {
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
+        msg_base &b;
+
+        // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+        constexpr auto operator=(auto val) const && -> void {
+            b.set(field_name<N>{} = val);
+        }
+
+        using V = decltype(b.get(std::declval<field_name<N>>()));
+
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr operator V() const { return b.get(field_name<N>{}); }
+    };
+
+    template <stdx::ct_string N>
+    [[nodiscard]] constexpr auto operator[](field_name<N> f) const {
+        return get(f);
+    }
+    template <stdx::ct_string N>
+    [[nodiscard]] constexpr auto operator[](field_name<N>) LIFETIMEBOUND {
+        return proxy<N>{*this};
+    }
 
     [[nodiscard]] constexpr auto describe() const {
         return Access::describe(as_derived().data());
