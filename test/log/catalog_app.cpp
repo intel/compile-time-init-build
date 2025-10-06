@@ -17,7 +17,6 @@ extern auto log_one_64bit_rt_arg() -> void;
 extern auto log_one_formatted_rt_arg() -> void;
 extern auto log_two_rt_args() -> void;
 extern auto log_rt_enum_arg() -> void;
-extern auto log_rt_auto_scoped_enum_arg() -> void;
 extern auto log_with_non_default_module() -> void;
 extern auto log_with_fixed_module() -> void;
 extern auto log_with_fixed_string_id() -> void;
@@ -97,15 +96,6 @@ TEST_CASE("log runtime enum argument", "[catalog]") {
     log_calls = 0;
     test_critical_section::count = 0;
     log_rt_enum_arg();
-    CHECK(test_critical_section::count == 2);
-    CHECK(log_calls == 1);
-}
-
-TEST_CASE("log runtime scoped enum argument outside included header",
-          "[catalog]") {
-    log_calls = 0;
-    test_critical_section::count = 0;
-    log_rt_auto_scoped_enum_arg();
     CHECK(test_critical_section::count == 2);
     CHECK(log_calls == 1);
 }

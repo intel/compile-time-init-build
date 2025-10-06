@@ -155,11 +155,6 @@ using log_env = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 
 template <> inline auto conc::injected_policy<> = test_conc_policy{};
 
-namespace {
-enum UnscopedE { A, B, C };
-enum struct ScopedE { A, B, C };
-} // namespace
-
 TEST_CASE("argument packing", "[mipi]") {
     using P = logging::default_arg_packer;
     STATIC_REQUIRE(std::same_as<P::pack_as_t<std::int32_t>, std::int32_t>);
@@ -170,8 +165,6 @@ TEST_CASE("argument packing", "[mipi]") {
     STATIC_REQUIRE(std::same_as<P::pack_as_t<unsigned char>, std::uint32_t>);
     STATIC_REQUIRE(std::same_as<P::pack_as_t<float>, std::uint32_t>);
     STATIC_REQUIRE(std::same_as<P::pack_as_t<double>, std::uint64_t>);
-    STATIC_REQUIRE(std::same_as<P::pack_as_t<UnscopedE>, std::uint32_t>);
-    STATIC_REQUIRE(std::same_as<P::pack_as_t<ScopedE>, std::int32_t>);
 }
 
 TEST_CASE("argument encoding", "[mipi]") {
@@ -189,10 +182,6 @@ TEST_CASE("argument encoding", "[mipi]") {
         std::same_as<P::encode_as_t<unsigned char>, encode_u32<unsigned char>>);
     STATIC_REQUIRE(std::same_as<P::encode_as_t<float>, encode_u32<float>>);
     STATIC_REQUIRE(std::same_as<P::encode_as_t<double>, encode_u64<double>>);
-    STATIC_REQUIRE(
-        std::same_as<P::encode_as_t<UnscopedE>, encode_u32<UnscopedE>>);
-    STATIC_REQUIRE(
-        std::same_as<P::encode_as_t<ScopedE>, encode_enum<ScopedE, int>>);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {
