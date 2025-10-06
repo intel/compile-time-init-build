@@ -36,7 +36,9 @@ The library dependencies are:
 - https://github.com/intel/cpp-std-extensions[C++ std extensions (`stdx`)]
 - https://github.com/intel/cpp-baremetal-concurrency[Baremetal Concurrency (`conc`)]
 - https://github.com/intel/cpp-senders-and-receivers[Baremetal Senders and Receivers (`async`)]
-- https://github.com/fmtlib/fmt[fmt]
+- https://github.com/fmtlib/fmt[fmtlib]
+
+NOTE: `fmtlib` is used at compile-time only; there is no runtime formatting in `cib`.
 
 === Functionality
 
@@ -54,3 +56,23 @@ Various sub-libraries within CIB form a dependency graph. `cib` is an omnibus
 library that contains all the functionality.
 
 mermaid::library_deps.mmd[format="svg"]
+
+=== Getting Started
+
+`cib` is a header-only library, so you can get started by cloning the repository
+(or bringing it in as a submodule) and adding the include directory to your
+build target. Depending on which part(s) of `cib` you are using, you may also
+need to pull in the dependencies.
+
+Alternatively, consuming `cib` with https://github.com/cpm-cmake/CPM.cmake[CPM]
+can be a couple of lines:
+
+[source,cmake]
+----
+cpmaddpackage("gh:intel/compile-time-init-build#1abcdef")
+
+target_link_libraries(my_project PUBLIC cib)
+----
+
+Where `1abcdef` is the git hash. You can also use any of the sub-libraries (for
+example, `cib_log_binary`) in this way.
