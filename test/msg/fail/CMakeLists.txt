@@ -13,7 +13,11 @@ add_compile_fail_test(message_cmp_view.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(message_const_field_write.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(message_dangling_view.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(message_dup_fieldnames.cpp LIBRARIES warnings cib_msg)
+add_compile_fail_test(message_get_nonexistent_field.cpp LIBRARIES warnings
+                      cib_msg)
 add_compile_fail_test(message_incompatible_matcher.cpp LIBRARIES warnings
+                      cib_msg)
+add_compile_fail_test(message_set_nonexistent_field.cpp LIBRARIES warnings
                       cib_msg)
 add_compile_fail_test(message_uninitialized_field.cpp LIBRARIES warnings
                       cib_msg)

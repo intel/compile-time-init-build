@@ -198,7 +198,10 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
     using FieldsTuple =
         decltype(stdx::make_indexed_tuple<name_for>(Fields{}...));
 
-    template <typename Field, stdx::range R> constexpr static auto check() {
+    template <typename N, stdx::range R> constexpr static auto check() {
+        static_assert((std::is_same_v<N, name_for<Fields>> or ...),
+                      "Field does not belong to this message!");
+        using Field = field_t<N>;
         constexpr auto belongs = (std::is_same_v<typename Field::field_id,
                                                  typename Fields::field_id> or
                                   ...);
@@ -209,20 +212,20 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, some_field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
+        check<name_for<V>, std::remove_cvref_t<R>>();
         using Field = field_t<name_for<V>>;
-        check<Field, std::remove_cvref_t<R>>();
         Field::insert(std::forward<R>(r),
                       static_cast<typename Field::value_type>(v.value));
     }
 
     template <typename N, stdx::range R>
     constexpr static auto set_default(R &&r) -> void {
-        check<field_t<N>, std::remove_cvref_t<R>>();
+        check<N, std::remove_cvref_t<R>>();
         field_t<N>::insert_default(std::forward<R>(r));
     }
 
     template <typename N, stdx::range R> constexpr static auto get(R &&r) {
-        check<field_t<N>, std::remove_cvref_t<R>>();
+        check<N, std::remove_cvref_t<R>>();
         return field_t<N>::extract(std::forward<R>(r));
     }
 
@@ -341,10 +344,35 @@ template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
     [[nodiscard]] constexpr auto get(auto f) const {
         return Access::get(as_derived().data(), f);
     }
+
     constexpr auto set(auto... fs) -> void {
         Access::set(as_derived().data(), fs...);
     }
     constexpr auto set() -> void {}
+
+    template <stdx::ct_string N> struct proxy {
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
+        msg_base &b;
+
+        // NOLINTNEXTLINE(misc-unconventional-assign-operator)
+        constexpr auto operator=(auto val) const && -> void {
+            b.set(field_name<N>{} = val);
+        }
+
+        using V = decltype(b.get(std::declval<field_name<N>>()));
+
+        // NOLINTNEXTLINE(google-explicit-constructor)
+        constexpr operator V() const { return b.get(field_name<N>{}); }
+    };
+
+    template <stdx::ct_string N>
+    [[nodiscard]] constexpr auto operator[](field_name<N> f) const {
+        return get(f);
+    }
+    template <stdx::ct_string N>
+    [[nodiscard]] constexpr auto operator[](field_name<N>) LIFETIMEBOUND {
+        return proxy<N>{*this};
+    }
 
     [[nodiscard]] constexpr auto describe() const {
         return Access::describe(as_derived().data());
