@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(daily_routine LANGUAGES CXX)
+project(custom LANGUAGES CXX)
 
 if(NOT TARGET cib)
     # to fetch cib, either use CPM (https://github.com/cpm-cmake/CPM.cmake) or
@@ -32,8 +32,8 @@ if(NOT TARGET cib)
 endif()
 
 if(COMMAND add_example)
-    add_example(NAME daily_routine FILES main.cpp LIBS cib)
+    add_example(NAME custom FILES main.cpp LIBS cib_log)
 else()
-    add_executable(daily_routine main.cpp)
-    target_link_libraries(daily_routine cib)
+    add_executable(custom main.cpp)
+    target_link_libraries(custom cib_log)
 endif()

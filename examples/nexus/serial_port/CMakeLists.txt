@@ -32,7 +32,7 @@ if(NOT TARGET cib)
 endif()
 
 if(COMMAND add_example)
-    add_example(NAME serial_port FILES main.cpp)
+    add_example(NAME serial_port FILES main.cpp LIBS cib)
 else()
     add_executable(serial_port main.cpp)
     target_link_libraries(serial_port cib)

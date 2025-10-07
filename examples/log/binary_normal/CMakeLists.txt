@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(daily_routine LANGUAGES CXX)
+project(binary_normal LANGUAGES CXX)
 
 if(NOT TARGET cib)
     # to fetch cib, either use CPM (https://github.com/cpm-cmake/CPM.cmake) or
@@ -32,8 +32,33 @@ if(NOT TARGET cib)
 endif()
 
 if(COMMAND add_example)
-    add_example(NAME daily_routine FILES main.cpp LIBS cib)
+    transform_to_example(binary_normal_lib binary_normal_lib)
+    transform_to_example(binary_normal_strings_lib binary_normal_strings_lib)
+    transform_to_example(binary_normal binary_normal)
 else()
-    add_executable(daily_routine main.cpp)
-    target_link_libraries(daily_routine cib)
+    set(binary_normal_lib binary_normal_lib)
+    set(binary_normal_strings_lib binary_normal_strings_lib)
+    set(binary_normal binary_normal)
 endif()
+
+# build the bulk of the code as a library
+add_library(${binary_normal_lib} lib.cpp)
+target_link_libraries(${binary_normal_lib} PRIVATE cib_log_binary)
+
+# generate the strings from that library
+gen_str_catalog(
+    OUTPUT_CPP
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp
+    OUTPUT_JSON
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.json
+    OUTPUT_XML
+    ${CMAKE_CURRENT_BINARY_DIR}/strings.xml
+    INPUT_LIBS
+    ${binary_normal_lib}
+    OUTPUT_LIB
+    ${binary_normal_strings_lib})
+
+# link a stub executable with the "main" library and the strings library
+add_executable(${binary_normal} main.cpp)
+target_link_libraries(${binary_normal} ${binary_normal_lib}
+                      ${binary_normal_strings_lib})
