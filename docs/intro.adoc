@@ -55,7 +55,7 @@ _cib_ contains several parts that work together:
 Various sub-libraries within CIB form a dependency graph. `cib` is an omnibus
 library that contains all the functionality.
 
-mermaid::library_deps.mmd[format="svg"]
+mermaid::library_deps.mmd[format="svg" config="mermaid.conf"]
 
 === Getting Started
 

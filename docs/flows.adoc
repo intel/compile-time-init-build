@@ -72,7 +72,7 @@ to the flow.
 If we only use the `morning` component in our project, the `MorningRoutine` flow
 graph would look like the following:
 
-mermaid::morning_flow1.mmd[format="svg"]
+mermaid::morning_flow1.mmd[format="svg" config="mermaid.conf"]
 
 The power of `flow` services comes when more than one component adds actions to
 the flow. Flows can be extended by inserting additional actions with new
@@ -102,7 +102,7 @@ struct childcare {
 
 The new steps are inserted into the existing `flow`​'s dependency graph:
 
-mermaid::morning_flow2.mmd[format="svg"]
+mermaid::morning_flow2.mmd[format="svg" config="mermaid.conf"]
 
 Multiple independent components can add actions to the same `flow`. This is the
 power of `flow` services, they can be extended by multiple independent
@@ -128,7 +128,7 @@ all without the `MorningRoutine` source code having known about the new
 functionality. We can mix and match new components without modifying the
 original source code.
 
-mermaid::morning_flow3.mmd[format="svg"]
+mermaid::morning_flow3.mmd[format="svg" config="mermaid.conf"]
 
 The `cib` library will take care of initializing and building all services,
 including `flow` services. For `flow`​s, this means the dependency graph will be

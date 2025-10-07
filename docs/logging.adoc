@@ -199,7 +199,7 @@ begin with. It is specialized as follows:
 - Link-time optimization inlines the `catalog` function template
   specializations, each of which is a one-line function that returns an ID.
 
-mermaid::log_build_process.mmd[format="svg"]
+mermaid::log_build_process.mmd[format="svg" config="mermaid.conf"]
 
 NOTE: No logging exists in `main.cpp`: it's just a stub providing `main` that
 calls into the application's library code.
