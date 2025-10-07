@@ -247,6 +247,7 @@ gen_str_catalog(
 - `OUTPUT_{CPP,JSON,XML}` are the generated files. Also required.
 - `INPUT_JSON` is optional extra JSON that will be copied verbatim into the generated JSON.
 - `STABLE_JSON` is optional information about stable string and module IDs -- for example, from a previous build.
+- `INPUT_HEADERS` are C++ header files that are `#include`​d in the `OUTPUT_CPP` file.
 - `CLIENT_NAME`, `VERSION`, `GUID_ID` and `GUID_MASK` are all optional input fields for the MIPI-SyS-T XML.
 - `MODULE_ID_MAX` is an optional upper bound on the assigned module IDs. This is useful to limit module ID bit-space.
 - `OUTPUT_LIB` is an optional (`STATIC`) library target consisting of the `OUTPUT_CPP` file.
