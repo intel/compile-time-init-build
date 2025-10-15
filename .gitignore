@@ -1,10 +1,20 @@
-build/
-/cmake-build-*
-/venv
-/.vscode
-/.idea
-/.cache
-/.DS_Store
+# ignore all directories that start with .
+**/.*/
+
+# ignore conventionally-named build directories
+**/build*/
+**/*build/
+# and some other build directories
+**/cmake-build-*/
+
+# ignore conventionally-named python virtual env directories
+# (this is only necessary before Python 3.13)
+**/venv*/
+**/*venv/
+# and __pycache__ directories
+**/__pycache__/
+
+# ignore files provided by CICD
 /.clang-format
 /.clang-tidy
 /.cmake-format.yaml
