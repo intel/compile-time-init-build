@@ -11,17 +11,36 @@ on:
 
 env:
   DEBIAN_FRONTEND: noninteractive
-  USER_LLVM_VERSION: 14
+  CMAKE_GENERATOR: Ninja
   USER_CMAKE_VERSION: 3.25
 
 jobs:
   usage_test:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cpp_implementation: [FREESTANDING, HOSTED]
+        compiler: [clang, gcc]
+        include:
+          - compiler: clang
+            cc: "clang"
+            cxx: "clang++"
+            install: sudo apt update && sudo apt install -y clang-14
+            toolchain_root: "/usr/lib/llvm-14"
+          - compiler: gcc
+            cc: "gcc-12"
+            cxx: "g++-12"
+            install: sudo apt update && sudo apt install -y gcc-12 g++-12
+            toolchain_root: "/usr"
+
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Install compiler
-        run: sudo apt update && sudo apt-get install -y clang-${{env.USER_LLVM_VERSION}}
+        run: |
+          ${{ matrix.install }}
+          sudo apt install -y ninja-build
 
       - name: Install cmake
         run: |
@@ -29,11 +48,11 @@ jobs:
           pip3 install --force cmake==${{env.USER_CMAKE_VERSION}}
 
       - name: Configure CMake
-        working-directory: ${{github.workspace}}/usage_test
         env:
-          CC: "/usr/lib/llvm-${{env.USER_LLVM_VERSION}}/bin/clang"
-          CXX: "/usr/lib/llvm-${{env.USER_LLVM_VERSION}}/bin/clang++"
-        run: ~/.local/bin/cmake -B build
+          CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
+          CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
+        working-directory: ${{github.workspace}}/usage_test
+        run: ~/.local/bin/cmake -B build -DCPP_IMPLEMENTATION=${{matrix.cpp_implementation}}
 
       - name: Build
         working-directory: ${{github.workspace}}/usage_test

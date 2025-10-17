@@ -274,7 +274,6 @@ target_compile_features(cib INTERFACE cxx_std_20)
 target_link_libraries_system(
     cib
     INTERFACE
-    async
     cib_flow
     cib_interrupt
     cib_log
@@ -285,8 +284,6 @@ target_link_libraries_system(
     cib_msg
     cib_nexus
     cib_seq
-    concurrency
-    fmt::fmt-header-only
     stdx)
 
 target_sources(
