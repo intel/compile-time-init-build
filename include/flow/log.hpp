@@ -3,7 +3,10 @@
 #include <log/env.hpp>
 #include <log/log.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
+#include <stdx/env.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <type_traits>
 
@@ -32,4 +35,21 @@ constexpr static auto get_log_env() {
         return log_env_t{};
     }
 }
+
+namespace log_policies {
+struct none {
+    template <typename> ALWAYS_INLINE static auto log(auto &&...) -> void {}
+};
+
+struct normal {
+    template <typename Env, typename... Args>
+    ALWAYS_INLINE static auto log(Args &&...args) -> void {
+        logging::log<Env>(std::forward<Args>(args)...);
+    }
+};
+} // namespace log_policies
+
+template <stdx::ct_string Name>
+using log_policy_t =
+    stdx::conditional_t<Name.empty(), log_policies::none, log_policies::normal>;
 } // namespace flow

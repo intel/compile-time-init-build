@@ -14,7 +14,8 @@
 namespace seq {
 enum struct direction : std::uint8_t { FORWARD, BACKWARD };
 
-template <stdx::ct_string, std::size_t NumSteps> struct impl {
+template <stdx::ct_string, typename LogPolicy, std::size_t NumSteps>
+struct impl {
     stdx::cx_vector<func_ptr, NumSteps> _forward_steps{};
     stdx::cx_vector<func_ptr, NumSteps> _backward_steps{};
     std::size_t next_step{};

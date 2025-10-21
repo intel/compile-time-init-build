@@ -211,6 +211,18 @@ struct MyFlow : public flow::service<> {};
 struct MyFlowWithLogging : public flow::service<"MyFlowWithLogging"> {};
 ----
 
+Alternatively, a flow's logging can be silenced by giving it a different logging
+policy:
+
+[source,cpp]
+----
+// declare a named flow without logging
+struct EarlyInitFlow : public flow::service<"EarlyInit", flow::log_policies::none> {};
+----
+
+This can be useful for dealing with "early initialization" steps and flows which
+happen before logging is initialized.
+
 ==== `action`
 
 Defines a new `flow` action. All `flow` actions are created with a name and a

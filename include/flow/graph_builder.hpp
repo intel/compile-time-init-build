@@ -59,7 +59,8 @@ template <typename T> using name_for = typename T::name_t;
 }
 
 template <stdx::ct_string Name,
-          template <stdx::ct_string, std::size_t> typename Impl>
+          template <stdx::ct_string, typename, std::size_t> typename Impl,
+          typename LogPolicy = log_policy_t<Name>>
 struct graph_builder {
     // NOLINTBEGIN(readability-function-cognitive-complexity)
     template <typename Output, std::size_t N, std::size_t E>
@@ -219,7 +220,7 @@ struct graph_builder {
         constexpr auto node_capacity = stdx::tuple_size_v<decltype(node_set)>;
         constexpr auto edge_capacity = edge_size(node_set, edges);
 
-        using output_t = Impl<Graph::name, node_capacity>;
+        using output_t = Impl<Graph::name, LogPolicy, node_capacity>;
         static_assert(
             all_of(
                 []<typename N>(N const &) {
@@ -245,7 +246,8 @@ struct graph_builder {
             constexpr auto name = built->name;
 
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return detail::inlined_func_list<name, functionPtrs[Is]...>{};
+                return detail::inlined_func_list<name, LogPolicy,
+                                                 functionPtrs[Is]...>{};
             }(std::make_index_sequence<size>{});
         }
 
@@ -264,8 +266,8 @@ struct graph_builder {
     }
 };
 
-template <stdx::ct_string Name = "",
-          typename Renderer = graph_builder<Name, impl>,
+template <stdx::ct_string Name = "", typename LogPolicy = log_policy_t<Name>,
+          typename Renderer = graph_builder<Name, impl, LogPolicy>,
           flow::dsl::subgraph... Fragments>
 class graph {
     template <typename Tag>
@@ -279,7 +281,7 @@ class graph {
     template <flow::dsl::subgraph... Ns>
     [[nodiscard]] constexpr auto add(Ns &&...ns) {
         return fragments.apply([&](auto &...frags) {
-            return graph<Name, Renderer, Fragments...,
+            return graph<Name, LogPolicy, Renderer, Fragments...,
                          stdx::remove_cvref_t<Ns>...>{
                 {frags..., std::forward<Ns>(ns)...}};
         });
