@@ -530,6 +530,12 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                                   msg::equal_to_t<field_t, V>, Ats...>;
 
     // ======================================================================
+    // retype field
+    template <typename U>
+    using with_new_type =
+        field_t<Name, U, detail::with_default<U>, match::always_t, Ats...>;
+
+    // ======================================================================
     // shift a field
     template <auto N, typename Unit = bit_unit>
     using shifted_by =
