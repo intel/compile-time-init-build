@@ -385,6 +385,7 @@ struct message {
     using num_fields_t = std::integral_constant<std::size_t, sizeof...(Fields)>;
     template <std::size_t I> using nth_field_t = stdx::nth_t<I, Fields...>;
 
+    using name_t = stdx::cts_t<Name>;
     using env_t = Env;
     using access_t = msg_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
@@ -789,4 +790,37 @@ struct field_locator<Name, Env, Fields...> {
 
 template <stdx::ct_string Name, typename... Ts>
 using relaxed_message = typename detail::field_locator<Name, Ts...>::msg_type;
+
+namespace detail {
+template <typename Msg> struct replace_fields_q {
+    template <typename... Fs>
+    using fn = ::msg::message<Msg::name_t::value, typename Msg::env_t, Fs...>;
+};
+
+template <typename Msg, stdx::ct_string OldName, stdx::ct_string NewName>
+struct with_renamed_field {
+    using split_fields = boost::mp11::mp_partition_q<typename Msg::fields_t,
+                                                     matching_name<OldName>>;
+
+    using untouched_fs = boost::mp11::mp_second<split_fields>;
+    static_assert(boost::mp11::mp_count_if_q<untouched_fs,
+                                             matching_name<NewName>>::value ==
+                      0,
+                  "rename_field: New field name already exists in message");
+
+    using replaced_fs = boost::mp11::mp_first<split_fields>;
+    static_assert(not boost::mp11::mp_empty<replaced_fs>::value,
+                  "rename_field: Old field name not found in message");
+
+    using new_f = typename boost::mp11::mp_first<
+        replaced_fs>::template with_new_name<NewName>;
+
+    using new_fields = boost::mp11::mp_push_back<untouched_fs, new_f>;
+    using msg = boost::mp11::mp_apply_q<replace_fields_q<Msg>, new_fields>;
+};
+} // namespace detail
+
+template <typename Msg, stdx::ct_string OldName, stdx::ct_string NewName>
+using rename_field =
+    typename detail::with_renamed_field<Msg, OldName, NewName>::msg;
 } // namespace msg
