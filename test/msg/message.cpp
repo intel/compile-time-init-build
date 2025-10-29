@@ -497,6 +497,14 @@ TEST_CASE("extend message with new field constraint", "[message]") {
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
+TEST_CASE("extend message with retyped field", "[message]") {
+    using base_defn = message<"msg_base", id_field, field1>;
+    using defn = extend<base_defn, "msg", field1::with_new_type<std::uint16_t>>;
+    using expected_defn =
+        message<"msg", id_field, field1::with_new_type<std::uint16_t>>;
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
+}
+
 TEST_CASE("message equivalence (owning)", "[message]") {
     test_msg m1{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
     test_msg m2{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
