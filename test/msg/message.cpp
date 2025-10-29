@@ -505,6 +505,15 @@ TEST_CASE("extend message with retyped field", "[message]") {
     STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
 }
 
+TEST_CASE("rename field in message", "[message]") {
+    using base_defn = message<"msg_base", id_field, field1>;
+    using defn = rename_field<base_defn, "f1", "f1_new">;
+    using expected_f =
+        field<"f1_new", std::uint32_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+    using expected_defn = message<"msg_base", id_field, expected_f>;
+    STATIC_REQUIRE(std::is_same_v<defn, expected_defn>);
+}
+
 TEST_CASE("message equivalence (owning)", "[message]") {
     test_msg m1{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};
     test_msg m2{"f1"_field = 0xba11, "f2"_field = 0x42, "f3"_field = 0xd00d};

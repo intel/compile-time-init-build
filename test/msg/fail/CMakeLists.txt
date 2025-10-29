@@ -21,4 +21,6 @@ add_compile_fail_test(message_set_nonexistent_field.cpp LIBRARIES warnings
                       cib_msg)
 add_compile_fail_test(message_uninitialized_field.cpp LIBRARIES warnings
                       cib_msg)
+add_compile_fail_test(rename_field_duplicate.cpp LIBRARIES warnings cib_msg)
+add_compile_fail_test(rename_field_not_found.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(view_upsize.cpp LIBRARIES warnings cib_msg)
