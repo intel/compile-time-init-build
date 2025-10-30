@@ -26,7 +26,6 @@ using log_env2b = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
 auto log_rt_enum_arg() -> void;
-auto log_rt_auto_scoped_enum_arg() -> void;
 auto log_rt_float_arg() -> void;
 auto log_rt_double_arg() -> void;
 
@@ -34,18 +33,7 @@ auto log_rt_enum_arg() -> void {
     auto cfg = logging::binary::config{test_log_destination{}};
     using namespace ns;
     cfg.logger.log_msg<log_env2b>(
-        stdx::ct_format<"E string with {} placeholder">(VAL));
-}
-
-namespace some_ns {
-enum struct E { A, B, C };
-}
-
-auto log_rt_auto_scoped_enum_arg() -> void {
-    auto cfg = logging::binary::config{test_log_destination{}};
-    using namespace some_ns;
-    cfg.logger.log_msg<log_env2b>(
-        stdx::ct_format<"E (scoped) string with {} placeholder">(E::A));
+        stdx::ct_format<"E string with {} placeholder">(E::value));
 }
 
 auto log_rt_float_arg() -> void {
