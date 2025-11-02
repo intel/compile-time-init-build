@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cib/detail/runtime_conditional.hpp>
-#include <flow/subgraph_identity.hpp>
+#include <flow/dsl/subgraph_identity.hpp>
 #include <log/log.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -32,7 +32,7 @@ struct ct_step : rt_step {
     using is_subgraph = void;
     using name_t = stdx::cts_t<Name>;
 
-    constexpr static auto identity = flow::subgraph_identity::VALUE;
+    constexpr static auto identity = flow::dsl::subgraph_identity::VALUE;
 
     constexpr static auto condition = cib::detail::always_condition;
 

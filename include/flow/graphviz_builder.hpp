@@ -1,7 +1,8 @@
 #pragma once
 
-#include <flow/detail/walk.hpp>
+#include <flow/dsl/walk.hpp>
 
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
 #include <set>
@@ -9,9 +10,7 @@
 #include <string_view>
 
 namespace flow {
-using VizFunctionPtr = auto (*)() -> std::string;
-
-struct graphviz_builder {
+template <stdx::ct_string Name> struct graphviz_builder {
     template <typename Graph>
     [[nodiscard]] static auto build(Graph const &input) {
         auto const nodes = flow::dsl::get_nodes(input);
@@ -54,6 +53,9 @@ struct graphviz_builder {
         return output;
     }
 
+    constexpr static auto name = Name;
+    using interface_t = auto (*)() -> std::string;
+
     template <typename Initialized> class built_flow {
         static auto built() {
             auto const v = Initialized::value;
@@ -64,10 +66,8 @@ struct graphviz_builder {
 
       public:
         // NOLINTNEXTLINE(google-explicit-constructor)
-        constexpr explicit(false) operator VizFunctionPtr() const {
-            return run;
-        }
-        auto operator()() const -> std::string { return run(); }
+        constexpr explicit(false) operator interface_t() const { return run; }
+        auto operator()() const { return run(); }
         constexpr static bool active = true;
     };
 

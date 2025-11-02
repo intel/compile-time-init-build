@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cib/detail/runtime_conditional.hpp>
-#include <flow/detail/walk.hpp>
-#include <flow/subgraph_identity.hpp>
+#include <flow/dsl/subgraph_identity.hpp>
+#include <flow/dsl/walk.hpp>
 
 #include <stdx/tuple_algorithms.hpp>
 
@@ -72,7 +72,7 @@ template <flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs>
 }
 
 template <typename Cond, flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs,
-          flow::subgraph_identity Identity, typename EdgeCond>
+          flow::dsl::subgraph_identity Identity, typename EdgeCond>
 constexpr auto
 make_runtime_conditional(Cond, flow::dsl::seq<Lhs, Rhs, Identity, EdgeCond>) {
     auto lhs = make_runtime_conditional(Cond{}, Lhs{});

@@ -10,7 +10,8 @@ namespace {
 int attempt_count;
 std::string result{};
 
-using builder = flow::graph_builder<"test_seq", seq::impl>;
+using builder =
+    flow::graph_builder<"test_seq", flow::log_policies::normal, seq::impl>;
 } // namespace
 
 TEST_CASE("build and run empty seq", "[seq]") {

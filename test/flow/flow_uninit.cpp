@@ -1,5 +1,5 @@
 #include <cib/built.hpp>
-#include <flow/builder.hpp>
+#include <flow/service.hpp>
 
 #include <stdx/panic.hpp>
 
