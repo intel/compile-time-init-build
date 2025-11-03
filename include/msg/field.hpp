@@ -362,20 +362,21 @@ template <at... Ats> constexpr inline auto field_size = (0u + ... + Ats.size());
 
 template <typename T, T V = T{}> struct with_default {
     constexpr static auto default_value = V;
-    template <typename F> using default_matcher_t = msg::equal_to_t<F, V>;
     using is_mutable_t = void;
     template <T X> constexpr static auto is_compatible_value = true;
 };
 
 template <typename T, T V = T{}> struct with_const_default {
     constexpr static auto default_value = V;
-    template <typename F> using default_matcher_t = msg::equal_to_t<F, V>;
     template <T X> constexpr static auto is_compatible_value = X == V;
 };
 
 struct without_default {
-    template <typename F> using default_matcher_t = match::never_t;
     using is_mutable_t = void;
+    template <auto X> constexpr static auto is_compatible_value = true;
+};
+
+struct uninitialized {
     template <auto X> constexpr static auto is_compatible_value = true;
 };
 
@@ -383,7 +384,8 @@ template <typename T>
 concept has_default_value = requires { T::default_value; };
 
 template <typename T>
-using has_default_value_t = std::bool_constant<has_default_value<T>>;
+using initializable_t = std::bool_constant<has_default_value<T> or
+                                           std::is_base_of_v<uninitialized, T>>;
 
 template <typename T>
 concept is_mutable_value = requires { typename T::is_mutable_t; };
@@ -488,6 +490,8 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     using without_default =
         field_t<Name, T, detail::without_default, M, Ats...>;
+
+    using uninitialized = field_t<Name, T, detail::uninitialized, M, Ats...>;
 
     // ======================================================================
     // matcher values
