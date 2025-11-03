@@ -497,7 +497,7 @@ struct message {
         constexpr owner_t() {
             using uninit_fields =
                 boost::mp11::mp_remove_if<boost::mp11::mp_list<Fields...>,
-                                          has_default_value_t>;
+                                          initializable_t>;
             static_assert(boost::mp11::mp_empty<uninit_fields>::value,
                           "All fields must be initialized or defaulted");
             this->set(Fields{}...);
@@ -507,7 +507,7 @@ struct message {
             using defaulted_fields = boost::mp11::mp_transform<
                 name_for,
                 boost::mp11::mp_copy_if<boost::mp11::mp_list<Fields...>,
-                                        has_default_value_t>>;
+                                        initializable_t>>;
             using initialized_fields =
                 boost::mp11::mp_transform<name_for,
                                           boost::mp11::mp_list<Vs...>>;

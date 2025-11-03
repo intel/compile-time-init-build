@@ -824,3 +824,19 @@ TEST_CASE("write indexing operator on message", "[message]") {
     CHECK((0xba11 == msg["f1"_field]));
 }
 #endif
+
+namespace {
+using bit_field1 =
+    field<"f1",
+          std::uint32_t>::located<at{0_dw, 0_msb, 0_lsb}>::with_required<1>;
+using all_fields =
+    field<"all", std::uint32_t>::located<at{0_dw, 31_msb, 0_lsb}>;
+
+using overlap_msg_defn = message<"msg", bit_field1, all_fields::uninitialized>;
+} // namespace
+
+TEST_CASE("message with uninitialized field", "[message]") {
+    owning<overlap_msg_defn> msg{};
+    auto data = msg.data();
+    CHECK(data[0] == 1);
+}
