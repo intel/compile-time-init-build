@@ -30,6 +30,13 @@ template <typename CTNode, typename Output>
 concept is_output_compatible = requires(CTNode n) {
     { Output::create_node(n) } -> std::same_as<typename Output::node_t>;
 };
+
+template <typename T>
+constexpr static auto error_steps =
+    T{}.join(stdx::cts_t<"">{}, [](auto x, auto y) {
+        using namespace stdx::literals;
+        return x + ", "_ctst + y;
+    });
 } // namespace detail
 
 template <typename T> using name_for = typename T::name_t;
@@ -165,13 +172,6 @@ struct graph_builder {
         return std::optional<Output>{std::in_place, span_t{ordered_list}};
     }
 
-    template <typename T>
-    constexpr static auto error_steps =
-        T{}.join(stdx::cts_t<"">{}, [](auto x, auto y) {
-            using namespace stdx::literals;
-            return x + ", "_ctst + y;
-        });
-
     // NOLINTNEXTLINE (readability-function-cognitive-complexity)
     constexpr static void check_for_missing_nodes(auto nodes,
                                                   auto mentioned_nodes) {
@@ -186,24 +186,22 @@ struct graph_builder {
         using missing_nodes_t =
             boost::mp11::mp_set_difference<mentioned_node_names_t,
                                            node_names_t>;
-        constexpr auto missing_nodes = error_steps<missing_nodes_t>;
         STATIC_ASSERT(
             (std::is_same_v<node_names_t, mentioned_node_names_t>),
             "One or more steps are referenced in the flow ({}) but not "
             "explicitly added with the * operator. The missing steps are: "
             "{}.",
-            Name, missing_nodes);
+            Name, detail::error_steps<missing_nodes_t>);
 
         constexpr auto duplicates = stdx::transform(
             [](auto e) { return stdx::get<0>(e); },
             stdx::filter<detail::is_duplicated>(stdx::gather(node_names)));
         using duplicate_nodes_t = decltype(duplicates);
-        constexpr auto dup_nodes = error_steps<duplicate_nodes_t>;
         STATIC_ASSERT(
             stdx::tuple_size_v<duplicate_nodes_t> == 0,
             "One or more steps in the flow ({}) are explicitly added more than "
             "once using the * operator. The duplicate steps are: {}.",
-            Name, dup_nodes);
+            Name, detail::error_steps<duplicate_nodes_t>);
     }
 
     template <typename Graph>
