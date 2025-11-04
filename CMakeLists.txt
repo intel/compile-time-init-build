@@ -9,7 +9,7 @@ project(
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
 include(cmake/get_cpm.cmake)
-if(PROJECT_IS_TOP_LEVEL)
+if(${PROJECT_NAME}_IS_TOP_LEVEL)
     cpmaddpackage("gh:intel/cicd-repo-infrastructure#dev")
 else()
     cpmaddpackage("gh:intel/cicd-repo-infrastructure#3e2bef0")
@@ -298,7 +298,7 @@ target_sources(
               include/cib/cib.hpp
               include/cib/top.hpp)
 
-if(PROJECT_IS_TOP_LEVEL)
+if(${PROJECT_NAME}_IS_TOP_LEVEL)
     add_docs(docs)
     clang_tidy_interface(cib)
     clang_tidy_interface(cib_flow)
