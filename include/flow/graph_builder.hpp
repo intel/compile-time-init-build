@@ -1,8 +1,7 @@
 #pragma once
 
-#include <flow/common.hpp>
-#include <flow/detail/walk.hpp>
-#include <flow/impl.hpp>
+#include <flow/dsl/walk.hpp>
+#include <flow/func_list.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
@@ -58,9 +57,9 @@ template <typename T> using name_for = typename T::name_t;
     });
 }
 
-template <stdx::ct_string Name,
-          template <stdx::ct_string, typename, std::size_t> typename Impl,
-          typename LogPolicy = log_policy_t<Name>>
+template <stdx::ct_string Name, typename LogPolicy = log_policy_t<Name>,
+          template <stdx::ct_string, typename, std::size_t> typename Impl =
+              func_list>
 struct graph_builder {
     // NOLINTBEGIN(readability-function-cognitive-complexity)
     template <typename Output, std::size_t N, std::size_t E>
@@ -234,6 +233,9 @@ struct graph_builder {
         return topo_sort<output_t>(g);
     }
 
+    constexpr static auto name = Name;
+    using interface_t = auto (*)() -> void;
+
     template <typename Initialized> class built_flow {
         constexpr static auto built() {
             constexpr auto v = Initialized::value;
@@ -241,22 +243,19 @@ struct graph_builder {
             static_assert(built.has_value(),
                           "Topological sort failed: cycle in flow");
 
-            constexpr auto functionPtrs = built->functionPtrs;
-            constexpr auto size = std::size(functionPtrs);
-            constexpr auto name = built->name;
-
+            using impl_t = typename decltype(built)::value_type;
+            constexpr auto nodes = built->nodes;
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return detail::inlined_func_list<name, LogPolicy,
-                                                 functionPtrs[Is]...>{};
-            }(std::make_index_sequence<size>{});
+                return typename impl_t::template finalized_t<nodes[Is]...>{};
+            }(std::make_index_sequence<std::size(nodes)>{});
         }
 
         constexpr static auto run() { built()(); }
 
       public:
         // NOLINTNEXTLINE(google-explicit-constructor)
-        constexpr explicit(false) operator FunctionPtr() const { return run; }
-        constexpr auto operator()() const -> void { run(); }
+        constexpr explicit(false) operator interface_t() const { return run; }
+        constexpr auto operator()() const { return run(); }
         constexpr static bool active = decltype(built())::active;
     };
 
@@ -264,35 +263,5 @@ struct graph_builder {
     [[nodiscard]] constexpr static auto render() -> built_flow<Initialized> {
         return {};
     }
-};
-
-template <stdx::ct_string Name = "", typename LogPolicy = log_policy_t<Name>,
-          typename Renderer = graph_builder<Name, impl, LogPolicy>,
-          flow::dsl::subgraph... Fragments>
-class graph {
-    template <typename Tag>
-    friend constexpr auto tag_invoke(Tag, graph const &g) {
-        return g.fragments.apply([](auto const &...frags) {
-            return stdx::tuple_cat(Tag{}(frags)...);
-        });
-    }
-
-  public:
-    template <flow::dsl::subgraph... Ns>
-    [[nodiscard]] constexpr auto add(Ns &&...ns) {
-        return fragments.apply([&](auto &...frags) {
-            return graph<Name, LogPolicy, Renderer, Fragments...,
-                         stdx::remove_cvref_t<Ns>...>{
-                {frags..., std::forward<Ns>(ns)...}};
-        });
-    }
-
-    template <typename BuilderValue>
-    [[nodiscard]] constexpr static auto build() {
-        return Renderer::template render<BuilderValue>();
-    }
-
-    constexpr static auto name = Name;
-    stdx::tuple<Fragments...> fragments;
 };
 } // namespace flow

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <flow/subgraph_identity.hpp>
+#include <flow/dsl/subgraph_identity.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>

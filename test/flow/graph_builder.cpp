@@ -17,12 +17,12 @@ constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
 
-using builder = flow::graph_builder<"test_flow", flow::impl>;
+using builder = flow::graph_builder<"test_flow">;
 } // namespace
 
 template <auto... Vs> struct run_flow_t {
     struct wrapper {
-        constexpr static auto value = flow::graph<>{}.add(Vs...);
+        constexpr static auto value = flow::builder<>{}.add(Vs...);
     };
 
     auto operator()() const -> void { builder::render<wrapper>()(); }
@@ -207,8 +207,8 @@ TEST_CASE("add dependency rhs", "[graph_builder]") {
 }
 
 TEST_CASE("reference vs non-reference", "[graph_builder]") {
-    STATIC_REQUIRE(a.identity == flow::subgraph_identity::REFERENCE);
-    STATIC_REQUIRE((*a).identity == flow::subgraph_identity::VALUE);
+    STATIC_REQUIRE(a.identity == flow::dsl::subgraph_identity::REFERENCE);
+    STATIC_REQUIRE((*a).identity == flow::dsl::subgraph_identity::VALUE);
 }
 
 TEST_CASE("reference in order with non-reference added twice",
@@ -219,8 +219,8 @@ TEST_CASE("reference in order with non-reference added twice",
 #endif
 
 TEST_CASE("alternate builder", "[graph_builder]") {
-    using alt_builder = flow::graphviz_builder;
-    auto g = flow::graph<"debug">{}.add(*a && (*b >> *c));
+    using alt_builder = flow::graphviz_builder<"debug">;
+    auto g = flow::builder_for<alt_builder>{}.add(*a && (*b >> *c));
     auto const flow = alt_builder::build(g);
     auto expected = std::string{
         R"__debug__(digraph debug {

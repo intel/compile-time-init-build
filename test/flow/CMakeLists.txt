@@ -10,9 +10,9 @@ add_unit_test(
 
 add_tests(
     FILES
+    builder
     flow
     flow_uninit
-    graph
     graph_builder
     logging
     log_levels

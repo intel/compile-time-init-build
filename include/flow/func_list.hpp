@@ -1,6 +1,5 @@
 #pragma once
 
-#include <flow/common.hpp>
 #include <flow/log.hpp>
 #include <log/log.hpp>
 
@@ -11,18 +10,10 @@
 
 #include <algorithm>
 #include <array>
-#include <concepts>
 #include <cstddef>
 #include <iterator>
 
 namespace flow {
-template <typename T>
-concept log_policy = requires {
-    {
-        T::template log<default_log_env>(stdx::ct_format<"">())
-    } -> std::same_as<void>;
-};
-
 namespace detail {
 template <stdx::ct_string FlowName, log_policy LogPolicy, typename CTNode>
 constexpr static auto run_func = []() -> void {
@@ -35,28 +26,7 @@ constexpr static auto run_func = []() -> void {
         typename CTNode::func_t{}();
     }
 };
-} // namespace detail
 
-template <stdx::ct_string Name, log_policy LogPolicy, std::size_t NumSteps>
-struct impl {
-    using node_t = FunctionPtr;
-    std::array<FunctionPtr, NumSteps> functionPtrs{};
-
-    constexpr static auto name = Name;
-
-    template <typename CTNode>
-    constexpr static auto create_node(CTNode) -> node_t {
-        constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode>;
-        return fp;
-    }
-
-    constexpr explicit(true) impl(stdx::span<node_t const, NumSteps> steps) {
-        std::copy(std::cbegin(steps), std::cend(steps),
-                  std::begin(functionPtrs));
-    }
-};
-
-namespace detail {
 template <stdx::ct_string Name, log_policy LogPolicy, auto... FuncPtrs>
 struct inlined_func_list {
     constexpr static auto active = sizeof...(FuncPtrs) > 0;
@@ -75,4 +45,24 @@ struct inlined_func_list {
     }
 };
 } // namespace detail
+
+template <stdx::ct_string Name, log_policy LogPolicy, std::size_t NumSteps>
+struct func_list {
+    using node_t = auto (*)() -> void;
+    std::array<node_t, NumSteps> nodes{};
+
+    template <typename CTNode>
+    constexpr static auto create_node(CTNode) -> node_t {
+        constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode>;
+        return fp;
+    }
+
+    constexpr explicit(true)
+        func_list(stdx::span<node_t const, NumSteps> steps) {
+        std::copy(std::cbegin(steps), std::cend(steps), std::begin(nodes));
+    }
+
+    template <node_t... Fs>
+    using finalized_t = detail::inlined_func_list<Name, LogPolicy, Fs...>;
+};
 } // namespace flow

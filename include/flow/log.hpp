@@ -4,11 +4,14 @@
 #include <log/log.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/env.hpp>
 #include <stdx/type_traits.hpp>
 
+#include <concepts>
 #include <type_traits>
+#include <utility>
 
 namespace flow {
 using default_log_env =
@@ -52,4 +55,11 @@ struct normal {
 template <stdx::ct_string Name>
 using log_policy_t =
     stdx::conditional_t<Name.empty(), log_policies::none, log_policies::normal>;
+
+template <typename T>
+concept log_policy = requires {
+    {
+        T::template log<default_log_env>(stdx::ct_format<"">())
+    } -> std::same_as<void>;
+};
 } // namespace flow

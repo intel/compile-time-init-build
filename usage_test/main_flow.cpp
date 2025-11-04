@@ -1,13 +1,15 @@
 #include <flow/builder.hpp>
-#include <flow/common.hpp>
-#include <flow/detail/par.hpp>
-#include <flow/detail/seq.hpp>
-#include <flow/detail/walk.hpp>
+#include <flow/dsl/par.hpp>
+#include <flow/dsl/seq.hpp>
+#include <flow/dsl/subgraph_identity.hpp>
+#include <flow/dsl/walk.hpp>
 #include <flow/flow.hpp>
+#include <flow/func_list.hpp>
 #include <flow/graph_builder.hpp>
 #include <flow/graphviz_builder.hpp>
-#include <flow/impl.hpp>
+#include <flow/log.hpp>
 #include <flow/run.hpp>
+#include <flow/service.hpp>
 #include <flow/step.hpp>
 
 #if __STDC_HOSTED__ == 0
