@@ -138,7 +138,7 @@ CIB_INFO("The answer is: {}", "42"); // compile-time formatted
 
 static constexpr auto x = 42;
 CIB_INFO("The answer is: {}", x);    // compile-time formatted
-CIB_INFO("42 is an {}", 42, int);    // compile-time formatted
+CIB_INFO("{} is an {}", 42, int);    // compile-time formatted
 
 auto y = 42;
 CIB_INFO("The answer is: {}", y);    // runtime formatted
