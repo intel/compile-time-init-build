@@ -248,11 +248,11 @@ target_sources(
               include/flow/flow.hpp
               include/flow/func_list.hpp
               include/flow/graph_builder.hpp
-              include/flow/graphviz_builder.hpp
               include/flow/log.hpp
               include/flow/run.hpp
               include/flow/service.hpp
-              include/flow/step.hpp)
+              include/flow/step.hpp
+              include/flow/viz_builder.hpp)
 
 add_library(cib_seq INTERFACE)
 target_compile_features(cib_seq INTERFACE cxx_std_20)

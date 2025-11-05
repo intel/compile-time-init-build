@@ -6,11 +6,11 @@
 #include <flow/flow.hpp>
 #include <flow/func_list.hpp>
 #include <flow/graph_builder.hpp>
-#include <flow/graphviz_builder.hpp>
 #include <flow/log.hpp>
 #include <flow/run.hpp>
 #include <flow/service.hpp>
 #include <flow/step.hpp>
+#include <flow/viz_builder.hpp>
 
 #if __STDC_HOSTED__ == 0
 extern "C" auto main() -> int;

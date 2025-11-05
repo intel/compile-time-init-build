@@ -1,7 +1,7 @@
 #include <cib/cib.hpp>
 #include <cib/func_decl.hpp>
 #include <flow/flow.hpp>
-#include <flow/graphviz_builder.hpp>
+#include <flow/viz_builder.hpp>
 #include <log/fmt/logger.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -50,23 +50,33 @@ TEST_CASE("run empty flow through cib::nexus", "[flow]") {
 
 namespace {
 template <stdx::ct_string Name>
-using alt_builder = flow::builder_for<flow::graphviz_builder<Name>>;
+using alt_builder = flow::builder_for<flow::viz_builder<Name, flow::mermaid>>;
 
 struct VizFlow : public flow::service_for<alt_builder<"debug">> {};
-struct VizConfig {
+struct VizCondConfig {
     constexpr static auto config =
-        cib::config(cib::exports<VizFlow>, cib::extend<VizFlow>(*a));
+        cib::config(cib::exports<VizFlow>, cib::extend<VizFlow>(*a),
+                    when<true>(cib::extend<VizFlow>(a >> *b)));
 };
 } // namespace
 
 TEST_CASE("visualize flow", "[flow]") {
-    cib::nexus<VizConfig> nexus{};
+    cib::nexus<VizCondConfig> nexus{};
     auto viz = nexus.service<VizFlow>();
     auto expected = std::string{
-        R"__debug__(digraph debug {
-start -> a
-a -> end
-})__debug__"};
+        R"__debug__(---
+title: debug
+---
+flowchart TD
+  _start((start))
+  _end((end))
+  _a(a)
+  _b(b)
+  _a --when--> _b
+  _start --> _a
+  _a --> _end
+  _b --when--> _end
+)__debug__"};
     CHECK(viz == expected);
 }
 

@@ -18,15 +18,16 @@ struct ct_node {
     using is_subgraph = void;
     using name_t = stdx::cts_t<Name>;
     using func_t = F;
+    using cond_t = Cond;
 
     constexpr static auto ct_type = Type;
     constexpr static auto ct_name = Name;
     constexpr static auto identity = Identity;
-    constexpr static auto condition = Cond{};
+    constexpr static auto condition = cond_t{};
 
     constexpr auto operator*() const {
         if constexpr (Identity == dsl::subgraph_identity::REFERENCE) {
-            return ct_node<Type, Name, dsl::subgraph_identity::VALUE, Cond,
+            return ct_node<Type, Name, dsl::subgraph_identity::VALUE, cond_t,
                            F>{};
         } else {
             return ct_node{};
@@ -42,6 +43,9 @@ template <stdx::ct_string Type, stdx::ct_string Name, typename F>
 }
 
 constexpr auto empty_func = []() -> void {};
+
+template <typename Node>
+constexpr bool is_milestone = Node::ct_type == stdx::ct_string{"milestone"};
 } // namespace detail
 
 template <stdx::ct_string Name, typename F>
