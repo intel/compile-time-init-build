@@ -342,13 +342,10 @@ what happens by default when we run the flow.
 ----
 // the default flow builder and service
 template <stdx::ct_string Name = "">
-using builder = flow::graph<Name, flow::graph_builder<impl>>;
+using builder = flow::builder_for<flow::graph_builder<Name>>;
 
 template <stdx::ct_string Name = "">
-struct service {
-  using builder_t = builder<Name>;
-  using interface_t = flow::FunctionPtr;
-};
+using service = flow::service_for<builder<Name>>;
 
 // declare a flow service
 struct MorningRoutine : public service<"MorningRoutine"> {};
@@ -358,9 +355,7 @@ nexus.service<"MorningRoutine">();
 ----
 
 Here `graph_builder` is the type that renders the flow description into the
-array of function pointers, and `flow::FunctionPtr` is the type-erased interface
-(here a function taking no arguments and returning `void`) that is called to run
-a flow.
+array of function pointers.
 
 But given a flow, other renderings are possible.
 
@@ -368,19 +363,14 @@ But given a flow, other renderings are possible.
 ----
 // a flow builder and service that produces a graphviz rendering
 template <stdx::ct_string Name = "">
-using viz_builder = flow::graph<Name, flow::graphviz_builder>;
+using viz_builder = flow::graph<Name, flow::viz_builder>;
 
 template <stdx::ct_string Name = "">
-struct viz_service {
-  using builder_t = builder<Name>;
-  using interface_t = flow::VizFunctionPtr;
-};
+using viz_service = flow::service_for<viz_builder>;
 ----
 
 Here, `viz_service` will produce a graphviz rendering of a flow using the
-`graphviz_builder`. `flow::VizFunctionPtr` is the type-erased interface once
-more, and it is defined to take no arguments and return a `std::string`. When we "run"
-the flow, we get the graphviz rendering.
+`viz_builder`. When we "run" the flow, we get the graphviz rendering.
 
 [source,cpp]
 ----
@@ -392,6 +382,6 @@ struct MorningRoutine : public viz_service<"MorningRoutine"> {};
 auto graphviz_str = nexus.service<"MorningRoutine">();
 ----
 
-`graphviz_builder` is available as a debugging aid. But in general, having the
+`viz_builder` is available as a debugging aid. But in general, having the
 flow rendering separate from the flow definition enables any kind of rendering
-with correponding runtime behaviour.
+with corresponding runtime behaviour.
