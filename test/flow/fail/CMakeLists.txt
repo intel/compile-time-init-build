@@ -1,6 +1,7 @@
 add_compile_fail_test(cyclic_flow.cpp LIBRARIES cib)
 
 function(add_formatted_errors_tests)
+    add_compile_fail_test(debug_subgraph.cpp LIBRARIES cib)
     add_compile_fail_test(only_reference_added.cpp LIBRARIES cib)
     add_compile_fail_test(mismatched_flow_runtime_conditional.cpp LIBRARIES cib)
     add_compile_fail_test(node_explicitly_added_twice.cpp LIBRARIES cib)

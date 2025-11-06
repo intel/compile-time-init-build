@@ -49,10 +49,9 @@ TEST_CASE("run empty flow through cib::nexus", "[flow]") {
 }
 
 namespace {
-template <stdx::ct_string Name>
-using alt_builder = flow::builder_for<flow::viz_builder<Name, flow::mermaid>>;
-
-struct VizFlow : public flow::service_for<alt_builder<"debug">> {};
+struct VizFlow
+    : public flow::service_for<
+          flow::builder_for<flow::viz_builder<"debug", flow::mermaid>>> {};
 struct VizCondConfig {
     constexpr static auto config =
         cib::config(cib::exports<VizFlow>, cib::extend<VizFlow>(*a),
@@ -60,10 +59,11 @@ struct VizCondConfig {
 };
 } // namespace
 
-TEST_CASE("visualize flow", "[flow]") {
+TEST_CASE("visualize flow (mermaid)", "[flow]") {
+    using namespace std::string_view_literals;
     cib::nexus<VizCondConfig> nexus{};
-    auto viz = nexus.service<VizFlow>();
-    auto expected = std::string{
+    constexpr auto viz = nexus.service<VizFlow>();
+    constexpr auto expected =
         R"__debug__(---
 title: debug
 ---
@@ -74,10 +74,9 @@ flowchart TD
   _b(b)
   _a --when--> _b
   _start --> _a
-  _a --> _end
   _b --when--> _end
-)__debug__"};
-    CHECK(viz == expected);
+)__debug__"sv;
+    STATIC_REQUIRE(viz == expected);
 }
 
 TEST_CASE("add single action through cib::nexus", "[flow]") {

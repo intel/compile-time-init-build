@@ -2,6 +2,7 @@
 
 #include <flow/dsl/walk.hpp>
 #include <flow/func_list.hpp>
+#include <flow/graph_common.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
@@ -38,31 +39,6 @@ constexpr static auto error_steps =
         return x + ", "_ctst + y;
     });
 } // namespace detail
-
-template <typename T> using name_for = typename T::name_t;
-
-[[nodiscard]] constexpr auto edge_size(auto const &nodes, auto const &edges)
-    -> std::size_t {
-    auto const edge_capacities = transform(
-        [&]<typename N>(N const &) {
-            return edges.fold_left(
-                std::size_t{}, []<typename E>(auto acc, E const &) {
-                    if constexpr (std::is_same_v<name_for<typename E::source_t>,
-                                                 name_for<N>> or
-                                  std::is_same_v<name_for<typename E::dest_t>,
-                                                 name_for<N>>) {
-                        return ++acc;
-                    } else {
-                        return acc;
-                    }
-                });
-        },
-        nodes);
-
-    return edge_capacities.fold_left(std::size_t{1}, [](auto acc, auto next) {
-        return std::max(acc, next);
-    });
-}
 
 template <stdx::ct_string Name, typename LogPolicy = log_policy_t<Name>,
           template <stdx::ct_string, typename, std::size_t> typename Impl =
