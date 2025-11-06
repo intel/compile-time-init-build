@@ -219,10 +219,11 @@ TEST_CASE("reference in order with non-reference added twice",
 #endif
 
 TEST_CASE("alternate builder (graphviz)", "[graph_builder]") {
+    using namespace stdx::literals;
     using alt_builder = flow::viz_builder<"debug">;
-    auto g = flow::builder_for<alt_builder>{}.add(*a && (*b >> *c));
-    auto const flow = alt_builder::build(g);
-    auto expected = std::string{
+    constexpr auto g = flow::builder_for<alt_builder>{}.add(*a && (*b >> *c));
+    constexpr auto flow = alt_builder::build(g);
+    constexpr auto expected =
         R"__debug__(digraph debug {
   start
   end
@@ -234,15 +235,17 @@ TEST_CASE("alternate builder (graphviz)", "[graph_builder]") {
   start -> b
   a -> end
   c -> end
-})__debug__"};
-    CHECK(flow == expected);
+})__debug__"_cts;
+    STATIC_REQUIRE(flow == expected);
 }
 
 TEST_CASE("alternate builder (mermaid)", "[graph_builder]") {
+    using namespace stdx::literals;
     using alt_builder = flow::viz_builder<"debug", flow::mermaid>;
-    auto g = flow::builder_for<alt_builder>{}.add(*a && (*b >> *c));
-    auto const flow = alt_builder::build(g);
-    auto expected = std::string{
+    constexpr auto g = flow::builder_for<alt_builder>{}.add(*a && (*b >> *c));
+    constexpr auto flow = alt_builder::build(g);
+
+    constexpr auto expected =
         R"__debug__(---
 title: debug
 ---
@@ -257,6 +260,6 @@ flowchart TD
   _start --> _b
   _a --> _end
   _c --> _end
-)__debug__"};
-    CHECK(flow == expected);
+)__debug__"_cts;
+    STATIC_REQUIRE(flow == expected);
 }
