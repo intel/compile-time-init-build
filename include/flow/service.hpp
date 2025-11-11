@@ -22,5 +22,5 @@ template <typename Builder> struct service_for {
 };
 
 template <stdx::ct_string Name = "", typename LogPolicy = log_policy_t<Name>>
-using service = service_for<builder<Name, LogPolicy>>;
+struct service : service_for<builder<Name, LogPolicy>> {};
 } // namespace flow

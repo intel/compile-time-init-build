@@ -45,7 +45,7 @@ struct debug_builder {
 
         using viz_t = viz_builder<name, Renderer>;
         STATIC_ASSERT(
-            false, "subgraph debug\n\n{}",
+            false, "subgraph debug\n~~~~START\n{}~~~~END",
             (viz_t::template visualize<subgraph_nodes_t, subgraph_edges_t>()));
     }
 
