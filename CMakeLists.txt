@@ -20,6 +20,7 @@ find_package(
     COMPONENTS Interpreter
     REQUIRED)
 
+include(cmake/debug_flow.cmake)
 include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")

@@ -1,0 +1,13 @@
+#include <flow/debug_builder.hpp>
+#include <flow/service.hpp>
+#include <flow/viz_builder.hpp>
+
+namespace flow {
+template <stdx::ct_string Start, stdx::ct_string End, typename Renderer>
+using debug_service
+    = service_for<builder_for<debug_builder<Start, End, Renderer>>>;
+
+template <typename LogPolicy>
+struct service<"@FLOW_NAME@", LogPolicy>
+    : debug_service<"@START_NODE@", "@END_NODE@", @RENDERER@> {};
+} // namespace flow

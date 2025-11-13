@@ -139,6 +139,17 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build python3-venv python3-pip
 
+      - name: Setup Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+
+      - name: Install Asciidoctor & Mermaid
+        run: |
+          npm install -g @mermaid-js/mermaid-cli@11.12.0
+          npx puppeteer browsers install chrome-headless-shell
+          sudo gem install asciidoctor asciidoctor-diagram rouge
+
       - name: Restore CPM cache
         env:
           cache-name: cpm-cache-0
