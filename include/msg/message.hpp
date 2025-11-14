@@ -700,9 +700,16 @@ call_with_message(F &&f, S &&s, Args &&...args) -> decltype(auto) {
                          }) {
         return std::forward<F>(f)(typename Msg::view_t{std::forward<S>(s)},
                                   std::forward<Args>(args)...);
-    } else {
+    } else if constexpr (requires {
+                             std::forward<F>(f)(
+                                 typename Msg::owner_t{std::forward<S>(s)},
+                                 std::forward<Args>(args)...);
+                         }) {
         return std::forward<F>(f)(typename Msg::owner_t{std::forward<S>(s)},
                                   std::forward<Args>(args)...);
+    } else {
+        static_assert(stdx::always_false_v<Msg, F, S>,
+                      "No call option for call_with_message");
     }
 }
 
