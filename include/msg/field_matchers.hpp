@@ -130,6 +130,15 @@ template <typename RelOp> constexpr auto to_string() {
         return "!="_ctst;
     }
 }
+
+template <typename Field, typename Msg>
+[[nodiscard]] constexpr static auto extract_field(Msg const &msg) {
+    if constexpr (stdx::range<Msg>) {
+        return Field::extract(msg);
+    } else {
+        return msg.get(Field{});
+    }
+}
 } // namespace detail
 
 template <typename RelOp, typename Field, typename Field::type ExpectedValue>
@@ -138,7 +147,7 @@ struct rel_matcher_t {
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
-        return RelOp{}(extract_field(msg), ExpectedValue);
+        return RelOp{}(detail::extract_field<Field>(msg), ExpectedValue);
     }
 
     [[nodiscard]] constexpr auto describe() const {
@@ -157,12 +166,12 @@ struct rel_matcher_t {
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
         if constexpr (std::integral<typename Field::type>) {
             return stdx::ct_format<"{} (0x{:x}) {} 0x{:x}">(
-                Field::name, extract_field(msg), detail::to_string<RelOp>(),
-                stdx::ct<ExpectedValue>());
+                Field::name, detail::extract_field<Field>(msg),
+                detail::to_string<RelOp>(), stdx::ct<ExpectedValue>());
         } else {
             return stdx::ct_format<"{} ({}) {} {}">(
-                Field::name, extract_field(msg), detail::to_string<RelOp>(),
-                stdx::ct<ExpectedValue>());
+                Field::name, detail::extract_field<Field>(msg),
+                detail::to_string<RelOp>(), stdx::ct<ExpectedValue>());
         }
     }
 
@@ -179,15 +188,6 @@ struct rel_matcher_t {
                rel_matcher_t<RelOp, Field, OtherValue>) -> bool {
         return ExpectedValue == OtherValue or
                RelOp{}(ExpectedValue, OtherValue);
-    }
-
-    template <typename Msg>
-    [[nodiscard]] constexpr static auto extract_field(Msg const &msg) {
-        if constexpr (stdx::range<Msg>) {
-            return Field::extract(msg);
-        } else {
-            return msg.get(Field{});
-        }
     }
 };
 
@@ -341,4 +341,31 @@ template <typename Field>
 using equal_default_t = equal_to_t<Field, Field::default_value>;
 template <typename Field>
 constexpr auto equal_default = equal_default_t<Field>{};
+
+template <typename Field, auto P> struct pred_matcher_t {
+    using is_matcher = void;
+
+    template <typename MsgType>
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
+        return P(detail::extract_field<Field>(msg));
+    }
+
+    [[nodiscard]] constexpr auto describe() const {
+        return stdx::ct_format<"<predicate>({})">(Field::name);
+    }
+
+    template <typename MsgType>
+    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
+        if constexpr (std::integral<typename Field::type>) {
+            return stdx::ct_format<"<predicate>({}(0x{:x}))">(
+                Field::name, detail::extract_field<Field>(msg));
+        } else {
+            return stdx::ct_format<"<predicate>({}({}))">(
+                Field::name, detail::extract_field<Field>(msg));
+        }
+    }
+};
+
+template <typename Field, auto P>
+constexpr auto pred_matcher = pred_matcher_t<Field, P>{};
 } // namespace msg

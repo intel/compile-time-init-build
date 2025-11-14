@@ -344,3 +344,30 @@ TEST_CASE("alternative matcher syntax (or-combine matcher with matcher maker)",
     CHECK(cb2.handle(msg_match));
     CHECK(dispatched);
 }
+
+namespace {
+using extended_msg_defn =
+    message<"msg", id_field::with_equal_to<0x80>, field1, field2, field3>;
+
+constexpr auto pred = match::predicate([](msg::viewlike auto) { return true; });
+} // namespace
+
+TEST_CASE("callback matches message by predicates with different constraints",
+          "[callback]") {
+    auto callback = msg::callback<"cb", extended_msg_defn>(pred, [] {});
+    auto const msg_match = msg::owning<extended_msg_defn>{"id"_field = 0x80};
+    CHECK(callback.is_match(msg_match));
+}
+
+namespace {
+constexpr auto field_pred = [](std::uint32_t id) { return id == 0x80; };
+} // namespace
+
+TEST_CASE("callback matches message by custom predicate on field",
+          "[callback]") {
+    using defn = message<"msg", id_field::with_predicate<field_pred>, field1,
+                         field2, field3>;
+    auto callback = msg::callback<"cb", defn>([] {});
+    auto const msg_match = msg::owning<defn>{"id"_field = 0x80};
+    CHECK(callback.is_match(msg_match));
+}

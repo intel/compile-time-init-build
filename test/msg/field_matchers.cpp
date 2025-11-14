@@ -236,3 +236,34 @@ TEST_CASE("not_equal_to X and less_than Y is less_than Y (X >= Y)",
     STATIC_REQUIRE(
         std::is_same_v<decltype(m), msg::less_than_t<test_field, 6> const>);
 }
+
+TEST_CASE("predicate matcher description", "[field matchers]") {
+    using namespace stdx::literals;
+    constexpr auto m =
+        msg::pred_matcher_t<test_field, [](std::uint32_t) { return true; }>{};
+    constexpr auto desc = m.describe();
+    STATIC_REQUIRE(desc.str == "<predicate>(test_field)"_ctst);
+}
+
+TEST_CASE("predicate matcher description of match", "[field matchers]") {
+    using namespace stdx::literals;
+    using msg_data = std::array<std::uint32_t, 1>;
+
+    constexpr auto m =
+        msg::pred_matcher_t<test_field, [](std::uint32_t) { return true; }>{};
+    constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
+    STATIC_REQUIRE(desc.str == "<predicate>(test_field(0x{:x}))"_ctst);
+    STATIC_REQUIRE(desc.args == stdx::tuple{1});
+}
+
+TEST_CASE("predicate matcher description of match (enum field)",
+          "[field matchers]") {
+    using namespace stdx::literals;
+    using msg_data = std::array<std::uint32_t, 1>;
+
+    constexpr auto m =
+        msg::pred_matcher_t<test_enum_field, [](auto) { return true; }>{};
+    constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
+    STATIC_REQUIRE(desc.str == "<predicate>(enum_field({}))"_ctst);
+    STATIC_REQUIRE(desc.args == stdx::tuple{E::B});
+}
