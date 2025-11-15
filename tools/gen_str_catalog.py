@@ -183,7 +183,7 @@ def assign_ids(messages, modules, stable_data):
 
 
 def read_input(filenames: list[str], stable_data):
-    line_re = re.compile(r"^.*unsigned int (catalog|module)<(.+?)>\(\)$")
+    line_re = re.compile(r"^.*unsigned (?:int|long) (catalog|module)<(.+?)>\(\)$")
 
     def read_file(filename):
         with open(filename, "r") as f:
