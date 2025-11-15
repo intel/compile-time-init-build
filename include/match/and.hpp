@@ -15,7 +15,8 @@ namespace match {
 template <matcher, matcher> struct or_t;
 
 template <matcher L, matcher R> struct and_t : bin_op_t<and_t, "and", L, R> {
-    [[nodiscard]] constexpr auto operator()(auto const &event) const -> bool {
+    [[nodiscard]] constexpr auto operator()(auto const &event) const
+        -> decltype(this->lhs(event) and this->rhs(event)) {
         return this->lhs(event) and this->rhs(event);
     }
 

@@ -20,7 +20,8 @@ template <matcher M> struct not_t {
     using is_matcher = void;
     [[no_unique_address]] M m;
 
-    [[nodiscard]] constexpr auto operator()(auto const &event) const -> bool {
+    [[nodiscard]] constexpr auto operator()(auto const &event) const
+        -> decltype(not m(event)) {
         return not m(event);
     }
 

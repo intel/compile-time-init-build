@@ -86,6 +86,13 @@ template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
                                 std::forward<F>(f));
     }
 
+    template <stdx::callable F>
+    [[nodiscard]] constexpr auto operator()(F &&f) const {
+        using matcher_t = typename Msg::matcher_t;
+        return callback<Name, Msg, matcher_t, std::remove_cvref_t<F>>{
+            matcher_t{}, std::forward<F>(f)};
+    }
+
   private:
     template <typename N> struct matching_name {
         template <typename Field>

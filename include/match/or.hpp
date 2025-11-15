@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <match/bin_op.hpp>
@@ -14,7 +15,8 @@ namespace match {
 template <matcher, matcher> struct and_t;
 
 template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
-    [[nodiscard]] constexpr auto operator()(auto const &event) const -> bool {
+    [[nodiscard]] constexpr auto operator()(auto const &event) const
+        -> decltype(this->lhs(event) or this->rhs(event)) {
         return this->lhs(event) or this->rhs(event);
     }
 

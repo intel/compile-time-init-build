@@ -527,6 +527,10 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
         field_t<Name, T, Default, msg::less_than_or_equal_to_t<field_t, V>,
                 Ats...>;
 
+    template <auto P>
+    using with_predicate =
+        field_t<Name, T, Default, msg::pred_matcher_t<field_t, P>, Ats...>;
+
     // ======================================================================
     // "const value" for construction and matching
     template <T V>
