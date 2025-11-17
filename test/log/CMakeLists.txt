@@ -40,6 +40,8 @@ gen_str_catalog(
     "01234567-89ab-cdef-0123-456789abcdef"
     GUID_MASK
     "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    RESERVED_IDS
+    "1,1000-1005,1010"
     OUTPUTS_TARGET
     test_catalog_json)
 
