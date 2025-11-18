@@ -70,3 +70,27 @@ def test_module_cpp_type():
 def test_module_json():
     m = gen.Module("abc", 42)
     assert m.to_json() == {"string": "abc", "id": 42}
+
+
+test_ints = "1-5,8-10,15"
+
+
+def test_intervals():
+    m = gen.Intervals(test_ints)
+    assert m.contains(1)
+    assert m.contains(5)
+    assert not m.contains(6)
+    assert m.contains(8)
+    assert m.contains(10)
+    assert m.contains(15)
+
+
+def test_empty_intervals():
+    m = gen.Intervals("")
+    assert not m.contains(1)
+
+
+def test_intervals_repr():
+    m = gen.Intervals(test_ints)
+    assert f"{m}" == "1-5,8-10,15"
+    assert repr(m) == 'Intervals("1-5,8-10,15")'

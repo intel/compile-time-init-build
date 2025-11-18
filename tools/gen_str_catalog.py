@@ -31,6 +31,31 @@ def split_args(s: str) -> list[str]:
     return args
 
 
+class Intervals:
+    def __init__(self, text: str):
+        self.intervals = []
+        for i in text.split(","):
+            rng = i.split("-")
+            if rng != [""]:
+                start = int(rng[0], 0)
+                self.intervals.append(
+                    (start, int(rng[1], 0) if len(rng) == 2 else start)
+                )
+
+    def contains(self, v: int) -> bool:
+        return any(map(lambda x: v >= x[0] and v <= x[1], self.intervals))
+
+    def __str__(self):
+        rngs = map(
+            lambda x: f"{x[0]}-{x[1]}" if x[0] != x[1] else f"{x[0]}",
+            self.intervals,
+        )
+        return ",".join(rngs)
+
+    def __repr__(self):
+        return f'Intervals("{self}")'
+
+
 class Message:
     cpp_prefix: str = "sc::message<sc::undefined"
 
@@ -152,7 +177,7 @@ def assign_ids_with(items, id_fn):
     return list(sorted_items)
 
 
-def assign_ids(messages, modules, stable_data):
+def assign_ids(messages, modules, stable_data, reserved_ids):
     def get_id(stables, gen, obj):
         key = obj.key()
         if key in stables:
@@ -167,7 +192,10 @@ def assign_ids(messages, modules, stable_data):
         stable_modules[module.key()] = module
 
     old_msg_ids = set(m.id for m in stable_msgs.values())
-    msg_id_gen = itertools.filterfalse(old_msg_ids.__contains__, itertools.count(0))
+    msg_id_gen = itertools.filterfalse(
+        lambda x: old_msg_ids.__contains__(x) or reserved_ids.contains(x),
+        itertools.count(0),
+    )
     get_msg_id = partial(get_id, stable_msgs, msg_id_gen)
 
     old_module_ids = set(m.id for m in stable_modules.values())
@@ -182,7 +210,7 @@ def assign_ids(messages, modules, stable_data):
     )
 
 
-def read_input(filenames: list[str], stable_data):
+def read_input(filenames: list[str], stable_data, reserved_ids):
     line_re = re.compile(r"^.*unsigned (?:int|long) (catalog|module)<(.+?)>\(\)$")
 
     def read_file(filename):
@@ -199,7 +227,7 @@ def read_input(filenames: list[str], stable_data):
     modules = filter(lambda x: isinstance(x, Module), items)
     unique_modules = {m.key(): m for m in modules}.values()
 
-    return assign_ids(unique_messages, unique_modules, stable_data)
+    return assign_ids(unique_messages, unique_modules, stable_data, reserved_ids)
 
 
 def make_cpp_scoped_enum_decl(e: str, ut: str) -> str:
@@ -542,6 +570,12 @@ def parse_cmdline():
         default=127,
         help="The maximum value of a module ID.",
     )
+    parser.add_argument(
+        "--reserved_ids",
+        type=lambda x: Intervals(x),
+        default="",
+        help="A list of (inclusive) ranges of string IDs that should be reserved and not used. e.g. '1-5,10-15,20'",
+    )
     return parser.parse_args()
 
 
@@ -565,7 +599,7 @@ def main():
 
     stable_data = read_stable(args.stable_json)
     try:
-        messages, modules = read_input(args.input, stable_data)
+        messages, modules = read_input(args.input, stable_data, args.reserved_ids)
     except Exception as e:
         raise Exception(f"{str(e)} from file {args.input}")
 
