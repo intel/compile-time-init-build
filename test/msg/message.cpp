@@ -840,3 +840,12 @@ TEST_CASE("message with uninitialized field", "[message]") {
     auto data = msg.data();
     CHECK(data[0] == 1);
 }
+
+TEST_CASE("field extents", "[message]") {
+    using f1 = msg::detail::bits_locator_t<0, 1, 0>;
+    STATIC_CHECK(f1::extent_in<std::uint32_t>() == 1);
+    STATIC_CHECK(f1::extent_in<std::uint8_t>() == 1);
+    using f2 = msg::detail::bits_locator_t<0, 1, 31>;
+    STATIC_CHECK(f2::extent_in<std::uint32_t>() == 1);
+    STATIC_CHECK(f2::extent_in<std::uint8_t>() == 4);
+}

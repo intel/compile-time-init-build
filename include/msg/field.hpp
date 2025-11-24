@@ -206,8 +206,8 @@ struct bits_locator_t {
     }
 
     template <typename T> constexpr static auto extent_in() -> std::size_t {
-        constexpr auto msb = Lsb + BitSize - 1;
-        constexpr auto msb_extent = (msb + CHAR_BIT - 1) / CHAR_BIT;
+        constexpr auto msb_exclusive = Lsb + BitSize;
+        constexpr auto msb_extent = (msb_exclusive + CHAR_BIT - 1) / CHAR_BIT;
         constexpr auto base_extent = Index * sizeof(std::uint32_t);
         constexpr auto extent = base_extent + msb_extent;
         return (extent + sizeof(T) - 1) / sizeof(T);
