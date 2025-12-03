@@ -132,7 +132,7 @@ jobs:
             stdlib: libc++
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install build tools
         run: |
@@ -230,7 +230,7 @@ jobs:
             stdlib: libstdc++
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install build tools
         run: |
@@ -282,7 +282,7 @@ jobs:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
     steps:
       - name: Checkout target branch
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           ref: ${{github.base_ref}}
 
@@ -291,7 +291,7 @@ jobs:
         id: target_branch
 
       - name: Checkout PR branch
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install build tools
         run: |
@@ -358,7 +358,7 @@ jobs:
             toolchain_root: "/usr"
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install build tools
         run: |
@@ -413,7 +413,7 @@ jobs:
   valgrind:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install build tools
         run: |
