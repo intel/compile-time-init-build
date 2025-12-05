@@ -12,13 +12,12 @@
 #include <stdx/ranges.hpp>
 #include <stdx/span.hpp>
 #include <stdx/type_traits.hpp>
+#include <stdx/udls.hpp>
 
 #include <algorithm>
 #include <climits>
 #include <concepts>
 #include <cstdint>
-#include <iterator>
-#include <limits>
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -274,8 +273,8 @@ template <bits_locator... BLs> struct field_locator_t {
 
 enum struct byte_index_t : std::uint32_t {};
 enum struct dword_index_t : std::uint32_t {};
-enum struct msb_t : std::uint32_t {};
-enum struct lsb_t : std::uint32_t {};
+using msb_t = stdx::msb_t;
+using lsb_t = stdx::lsb_t;
 
 inline namespace literals {
 // NOLINTNEXTLINE(google-runtime-int)
@@ -288,14 +287,8 @@ CONSTEVAL_UDL auto operator""_dwi(unsigned long long int v) -> dword_index_t {
 CONSTEVAL_UDL auto operator""_dw(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
-// NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL_UDL auto operator""_lsb(unsigned long long int v) -> lsb_t {
-    return static_cast<lsb_t>(v);
-}
-// NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL_UDL auto operator""_msb(unsigned long long int v) -> msb_t {
-    return static_cast<msb_t>(v);
-}
+using stdx::literals::operator""_msb;
+using stdx::literals::operator""_lsb;
 } // namespace literals
 
 struct bit_unit {};
