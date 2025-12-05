@@ -5,6 +5,473 @@ See code at
 https://github.com/intel/compile-time-init-build/tree/main/include/msg.
 Everything in the msg library is in the `msg` namespace.
 
+The message library provides zero-overhead compile-time optimized abstractions for
+defining, matching, and dispatching messages based on bit-level field specifications.
+It is designed for embedded systems and high-performance applications where runtime
+overhead must be minimized.
+
+=== Before you begin
+
+**Prerequisites**
+
+The `msg` library requires a C++20 compiler and the CIB framework with dependencies.
+See xref:intro.adoc#_compiler_and_c_version_support[Compiler support] and
+xref:intro.adoc#_dependencies[Dependencies] for details. For installation, see
+xref:intro.adoc#_getting_started[Getting Started].
+
+**Key headers for `msg`**
+
+[source,cpp]
+----
+#include <msg/message.hpp>    // Core: field, message definitions
+#include <msg/callback.hpp>   // Callback handling
+#include <msg/service.hpp>    // Service types (service, indexed_service)
+#include <cib/cib.hpp>        // CIB framework integration
+----
+
+**Repository layout**
+
+Message library headers are located under `include/msg/`:
+
+[source,text]
+----
+include/msg/
+├── message.hpp           # Core message and field definitions
+├── callback.hpp          # Callback handling
+├── service.hpp           # Service base types
+├── indexed_service.hpp   # Indexed dispatch services
+└── field_matchers.hpp    # Field matcher helpers
+----
+
+**Start here**
+
+Get started quickly with these steps:
+
+1. **xref:_quick_start[Quick Start]** - Run the minimal example (5 minutes)
+2. **xref:_tutorial_building_a_simple_protocol[Tutorial]** - Build a simple protocol (20 minutes)
+3. **xref:_troubleshooting[Troubleshooting]** - Bookmark for when things go wrong
+4. **xref:_api_quick_reference[API Quick Reference]** - Keep handy while coding
+
+=== Core Concepts
+
+The `msg` library is built around four main components that work together to provide a powerful and flexible system for message-based communication: `field`, `message`, `matcher`, and `service`.
+
+`field`::
+Defines the structure and location of a piece of data within a message, down to the bit level.
+
+`message`::
+A collection of fields that defines a complete message type.
+
+`matcher`::
+A compile-time predicate that can be used to check if a message meets certain criteria (e.g., if a field has a specific value).
+
+`service`::
+A dispatching mechanism that uses matchers to route incoming messages to the correct callback functions.
+
+The following diagram shows how these components relate to each other:
+
+[source,mermaid]
+----
+graph TD
+    subgraph "Define"
+        A[field: bit-level data] --> B(message: collection of fields);
+    end
+
+    subgraph "Dispatch"
+        C[matcher: checks field values] --> D{service: routes messages};
+        B --> C;
+        E[callback: handles message] --> D;
+    end
+
+    subgraph "Runtime"
+        F[Incoming Data] --> D;
+        D -- if match --> E;
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#ccf,stroke:#333,stroke-width:2px
+    style E fill:#cfc,stroke:#333,stroke-width:2px
+    style D fill:#fcf,stroke:#333,stroke-width:4px
+----
+
+==== Workflow at a glance
+
+The typical development workflow when using the `msg` library follows this pattern:
+
+[cols="1,2,2", options="header"]
+|===
+| Phase | Activity | Key Files
+
+| **1. Define**
+| Define fields, messages, and matchers
+| Your project headers
+
+| **2. Register**
+| Create services and callbacks, configure with CIB
+| Your project source files
+
+| **3. Build**
+| Compile and link with CIB
+| CMakeLists.txt, compiler output
+
+| **4. Run**
+| Initialize nexus, handle messages
+| Runtime execution
+
+| **5. Debug**
+| Use `log_mismatch`, `describe_match`, logging
+| Debug logs, GDB
+|===
+
+**Typical development loop:**
+
+[source,mermaid]
+----
+flowchart LR
+    A[Define Fields] --> B[Define Messages]
+    B --> C[Create Matchers]
+    C --> D[Define Callbacks]
+    D --> E[Configure Service]
+    E --> F{Build}
+    F -->|Success| G[Run & Test]
+    F -->|Error| H{Error Type}
+    H -->|Compile Error| A
+    H -->|Link Error| E
+    G --> I{Works?}
+    I -->|No - Callback not firing| J[Debug Matcher]
+    I -->|No - Wrong values| K[Debug Fields]
+    I -->|Yes| L[Done]
+    J --> C
+    K --> A
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#ccf,stroke:#333,stroke-width:2px
+    style D fill:#cfc,stroke:#333,stroke-width:2px
+    style E fill:#fcf,stroke:#333,stroke-width:2px
+    style F fill:#ffc,stroke:#333,stroke-width:2px
+    style G fill:#cff,stroke:#333,stroke-width:2px
+    style L fill:#cfc,stroke:#333,stroke-width:4px
+----
+
+**Key CIB integration points:**
+
+- **`cib::exports<Service>`**: Declares a service for use in the project
+- **`cib::extend<Service>(callbacks...)`**: Registers callbacks with a service
+- **`cib::nexus<Project>`**: The runtime instance that manages services
+- **`cib::service<Service>`**: Access point to call service methods at runtime
+
+==== Quick Reference Tables
+
+**Field literals and units** (in `msg::literals` namespace):
+
+[cols="1,2,2", options="header"]
+|===
+| Literal | Meaning | Example
+
+| `_dw`, `_dwi`
+| Dword (32-bit word) index
+| `at{2_dw, 7_msb, 0_lsb}` = bits [7:0] of dword 2
+
+| `_bi`
+| Byte index
+| `at{3_bi, 7_msb, 0_lsb}` = all 8 bits of byte 3
+
+| `_msb`
+| Most significant bit position
+| `at{31_msb, 24_lsb}` = bits [31:24]
+
+| `_lsb`
+| Least significant bit position
+| `at{31_msb, 24_lsb}` = bits [31:24]
+|===
+
+**Field modifiers**:
+
+[cols="1,2,2", options="header"]
+|===
+| Modifier | Purpose | When to use
+
+| `with_required<V>`
+| Fixed value (default + matcher)
+| Message type discriminators
+
+| `with_default<V>`
+| Mutable default value
+| Optional fields with runtime defaults
+
+| `with_const_default<V>`
+| Compile-time constant default
+| Optional fields with fixed defaults
+
+| `without_default`
+| No default (must initialize)
+| Required fields without default
+
+| `uninitialized`
+| Can remain uninitialized
+| Reserved/padding fields
+
+| `with_matcher<M>`
+| Custom matcher
+| Complex validation logic
+
+| `with_equal_to<V>`
+| Equality matcher
+| Exact value matching
+
+| `with_in<V1,V2...>`
+| Set membership matcher
+| Multiple valid values
+|===
+
+**Matcher helpers**:
+
+[cols="1,2,2", options="header"]
+|===
+| Helper | Meaning | Example
+
+| `equal_to_t<F, V>`
+| Field equals value
+| `equal_to_t<type_f, 0x42>{}`
+
+| `not_equal_to_t<F, V>`
+| Field not equals value
+| `not_equal_to_t<status_f, 0xFF>{}`
+
+| `in_t<F, V1, V2...>`
+| Field in set
+| `in_t<id_f, 0x10, 0x20, 0x30>{}`
+
+| `greater_than_t<F, V>`
+| Field > value
+| `greater_than_t<priority_f, 5>{}`
+
+| `greater_than_or_equal_to_t<F, V>`
+| Field >= value
+| `greater_than_or_equal_to_t<priority_f, 2>{}`
+
+| `less_than_t<F, V>`
+| Field < value
+| `less_than_t<count_f, 100>{}`
+
+| `less_than_or_equal_to_t<F, V>`
+| Field \<= value
+| `less_than_or_equal_to_t<count_f, 100>{}`
+
+| `M1 and M2`
+| Both matchers must match
+| `m1 and m2 and m3`
+
+| `M1 or M2`
+| Either matcher must match
+| `m1 or m2 or m3`
+
+| `not M`
+| Matcher must not match
+| `not equal_to_t<f, 0>{}`
+
+| `match::all(M...)`
+| All matchers must match
+| `match::all(m1, m2, m3)`
+
+| `match::any(M...)`
+| Any matcher must match
+| `match::any(m1, m2, m3)`
+
+| `match::predicate<N>(λ)`
+| Custom lambda matcher
+| `predicate<"even">(λ)`
+|===
+
+**Service types and when to use them**:
+
+[cols="2,3,3,2", options="header"]
+|===
+| Service Type | How it works | When to use | Template param
+
+| `service<MsgBase>`
+| Linear scan of all callbacks
+| \<10 callbacks, simple dispatch
+| `const_view<T>`
+
+| `indexed_service<Indices, MsgBase>`
+| O(1) lookup via indexed fields
+| Many callbacks, hot paths
+| `owning<T>`
+|===
+
+=== Quick Start
+
+Here's a minimal example to get you started with the message library:
+
+[source,cpp]
+----
+#include <msg/message.hpp>
+#include <msg/callback.hpp>
+#include <msg/service.hpp>
+
+using namespace msg;
+
+// 1. Define a field with bit-level location
+using type_field =
+    field<"type", std::uint8_t>
+        ::located<at{0_dw, 7_msb, 0_lsb}>;
+
+// 2. Define a message with the field
+using my_msg_defn = message<"my_msg", type_field::with_required<0x80>>;
+
+// 3. Create a service for handling messages
+struct my_service : msg::service<const_view<my_msg_defn>> {};
+
+// 4. Define a callback to handle messages
+constexpr auto my_callback = msg::callback<"handler", my_msg_defn>(
+    my_msg_defn::matcher_t{},
+    [](msg::const_view<my_msg_defn>) {
+        // Handle the message
+    }
+);
+
+// 5. Configure with CIB
+struct my_project {
+    constexpr static auto config = cib::config(
+        cib::exports<my_service>,
+        cib::extend<my_service>(my_callback)
+    );
+};
+
+// 6. Use it
+cib::nexus<my_project> nx{};
+nx.init();
+cib::service<my_service>->handle(owning<my_msg_defn>{});
+----
+
+=== Tutorial: Building a Simple Protocol
+
+This tutorial will guide you through the process of creating a simple message-based protocol, from defining the message structure to handling different message types with an indexed service.
+
+Our protocol will have two message types:
+- A `Command` message, to instruct a device to perform an action.
+- A `Telemetry` message, for the device to report its status.
+
+Both messages will share a common header.
+
+==== Step 1: Define the Fields
+
+First, we define the individual data fields that will make up our messages. We need a `type` field for the header, a `command_id` for the command message, and a `status` field for the telemetry message.
+
+[source,cpp]
+----
+#include <msg/message.hpp>
+#include <msg/service.hpp>
+#include <msg/callback.hpp>
+
+using namespace msg;
+
+// A 2-bit field to distinguish message types
+using type_field = field<"type", std::uint8_t>::located<at{0_dw, 1_msb, 0_lsb}>;
+
+// A 6-bit command identifier
+using command_id_field = field<"command_id", std::uint8_t>::located<at{0_dw, 7_msb, 2_lsb}>;
+
+// An 8-bit status code
+using status_field = field<"status", std::uint8_t>::located<at{0_dw, 15_msb, 8_lsb}>;
+----
+
+==== Step 2: Define the Message Structures
+
+Now, we'll use our fields to define the message structures. We'll start with a common `header_defn`, and then `extend` it to create our specific message types.
+
+[source,cpp]
+----
+// A common header with just the type field
+using header_defn = message<"header", type_field>;
+
+// Command message: header + command_id
+// We use with_required to fix the type field to 0b01
+using command_defn = extend<header_defn, "Command",
+    type_field::with_required<0b01>,
+    command_id_field
+>;
+
+// Telemetry message: header + status
+// We use with_required to fix the type field to 0b10
+using telemetry_defn = extend<header_defn, "Telemetry",
+    type_field::with_required<0b10>,
+    status_field
+>;
+----
+
+==== Step 3: Create a Service and Callbacks
+
+Next, we'll set up a service to handle our messages. We'll create an `indexed_service` that indexes on the `type_field` for efficient dispatch.
+
+The indexed service needs a base message type containing the indexed field(s). We can specify an explicit storage size for this base message to ensure it's large enough for all message variants. The callbacks can then use the extended message types (`command_defn` and `telemetry_defn`) from Step 2.
+
+[source,cpp]
+----
+// Create a base message with the indexed field and explicit storage size
+// The storage must be large enough for any extended message variant
+using base_msg_defn = message<"base_msg", type_field>;
+using base_msg_storage = base_msg_defn::owner_t<std::array<std::uint32_t, 2>>;
+
+// Create an indexed service that dispatches based on the 'type' field
+using protocol_service = indexed_service<
+    msg::index_spec<type_field>,
+    base_msg_storage
+>;
+
+// A callback for command messages using the extended command_defn from Step 2
+constexpr auto command_handler = callback<"CommandHandler", command_defn>(
+    command_defn::matcher_t{},  // Uses the matcher from with_required<0b01>
+    [](const_view<command_defn> cmd) {
+        // handle the command...
+        auto const command_id = cmd.get("command_id"_field);
+    }
+);
+
+// A callback for telemetry messages using the extended telemetry_defn from Step 2
+constexpr auto telemetry_handler = callback<"TelemetryHandler", telemetry_defn>(
+    telemetry_defn::matcher_t{},  // Uses the matcher from with_required<0b10>
+    [](const_view<telemetry_defn> tlm) {
+        // handle the telemetry...
+        auto const status = tlm.get("status"_field);
+    }
+);
+----
+
+==== Step 4: Configure and Use the Service
+
+Finally, we'll use `cib` to configure our service and its callbacks, and then use it to handle some messages.
+
+[source,cpp]
+----
+#include <cib/cib.hpp>
+
+struct MyProject {
+    constexpr static auto config = cib::config(
+        cib::exports<protocol_service>,
+        cib::extend<protocol_service>(command_handler, telemetry_handler)
+    );
+};
+
+void run_protocol() {
+    cib::nexus<MyProject> nexus{};
+    nexus.init();
+
+    // Create and handle a command message (type=0b01)
+    owning<protocol_msg_defn> cmd_msg{"type"_field = 0b01, "command_id"_field = 42};
+    cib::service<protocol_service>->handle(cmd_msg);
+
+    // Create and handle a telemetry message (type=0b10)
+    owning<protocol_msg_defn> tlm_msg{"type"_field = 0b10, "status"_field = 0xAA};
+    cib::service<protocol_service>->handle(tlm_msg);
+}
+----
+This tutorial has shown how to use the `msg` library to define a simple protocol, create different message types, and efficiently dispatch them to the correct handlers using an indexed service. From here, you can explore more advanced features like custom matchers, multi-part fields, and asynchronous message sending.
+
+
 === Fields
 
 A `field` represents a value, specified in bits, inside a unit of addressable
@@ -50,11 +517,55 @@ using namespace msg;
 using my_field_spec = field<"my field", std::uint32_t>;
 
 // these two declarations specify the same locations
-using my_field1 = my_field_spec::located_at<{1_dw, 23_msb, 20_lsb}>;
-using my_field2 = my_field_spec::located_at<{55_msb, 52_lsb}>;
+using my_field1 = my_field_spec::located<at{1_dw, 23_msb, 20_lsb}>;
+using my_field2 = my_field_spec::located<at{55_msb, 52_lsb}>;
 ----
 The 32-bit word offset in storage may be omitted in favour of using "raw" bit
 positions, according to convention.
+
+==== Field template parameters
+
+The `field` template takes the following parameters:
+
+[source,cpp]
+----
+template <stdx::ct_string Name,               // compile-time field name
+          typename T = std::uint32_t,         // value type
+          typename Default = /* ... */,       // default value behavior
+          match::matcher M = match::always_t> // compile-time matcher
+using field = /* ... */;
+----
+
+- **Name**: A compile-time string literal specifying the field name
+- **T**: The C++ type used to represent the field value (max 64 bits)
+- **Default**: Specifies default value behavior (see below)
+- **M**: An optional matcher for compile-time validation
+
+==== Field location specification
+
+Field locations are specified using the `at` type with user-defined literals:
+
+[source,cpp]
+----
+using namespace msg::literals;
+
+// Specify location with dword index, MSB, and LSB
+at{0_dw, 31_msb, 24_lsb}   // bits 31-24 of dword 0
+
+// Or with raw bit positions
+at{31_msb, 24_lsb}         // bits 31-24 (dword inferred)
+
+// Or with byte index
+at{3_bi, 7_msb, 0_lsb}     // all 8 bits of byte 3
+----
+
+**User-defined literals** (in `msg::literals` namespace):
+- `operator""_dw` or `operator""_dwi`: Dword (32-bit word) index
+- `operator""_bi`: Byte index
+- `operator""_msb`: Most significant bit position
+- `operator""_lsb`: Least significant bit position
+
+==== Multi-part fields
 
 A field can specify multiple `at` arguments if it has several disjoint parts. In
 that case, earlier `at` arguments specify more significant bits in the field,
@@ -83,6 +594,156 @@ using my_field = field<"my field", std::uint8_t>
                  ::located<at{8_msb, 0_lsb}>;
 ----
 
+==== Field API reference
+
+===== Static member functions
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto extract(auto const &data) -> T;
+----
+
+Extracts the field value from the given storage. The storage can be any range-like
+object (e.g., `std::array`, `stdx::span`).
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto insert(auto &data, T const &value) -> void;
+----
+
+Inserts the field value into the given storage, preserving other bits.
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto insert_default(auto &data) -> void;
+----
+
+Inserts the default value (if any) into the given storage. Only available if the
+field has a default value configured.
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto fits_inside<DataType>() -> bool;
+----
+
+Returns `true` if the field's bit locations fit within `DataType`'s size.
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto can_hold(T value) -> bool;
+----
+
+Returns `true` if the field can hold the given value (i.e., the value fits in
+the number of bits specified by the field locations).
+
+[source,cpp]
+----
+[[nodiscard]] constexpr static auto describe(T value) -> /* string type */;
+----
+
+Returns a compile-time string describing the field with the given value.
+
+===== Member type aliases
+
+[source,cpp]
+----
+using value_type = T;
+using name_t = /* compile-time string type */;
+using matcher_t = M;
+----
+
+==== Field type modification
+
+Fields expose several type aliases for creating variants with different characteristics:
+
+===== Default value specification
+
+[source,cpp]
+----
+// Field with mutable default value V
+using my_field_with_default = my_field_spec::with_default<V>;
+
+// Field with constant (compile-time) default value V
+using my_field_const_default = my_field_spec::with_const_default<V>;
+
+// Field without default (must be explicitly initialized)
+using my_field_no_default = my_field_spec::without_default;
+
+// Field that can be left uninitialized
+using my_field_uninit = my_field_spec::uninitialized;
+----
+
+**Usage example:**
+[source,cpp]
+----
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+
+// Message with default type value
+using msg1 = message<"msg1", type_f::with_default<0x42>>;
+
+// Message with required type value (combines default + matcher)
+using msg2 = message<"msg2", type_f::with_required<0x80>>;
+----
+
+The difference between `with_default` and `with_const_default`:
+- `with_default<V>`: The default value can be changed at runtime
+- `with_const_default<V>`: The default value is fixed at compile-time
+
+===== Matcher specification
+
+[source,cpp]
+----
+// Field with custom matcher
+using my_field_matched = my_field_spec::with_matcher<SomeMatcher>;
+
+// Field with equality matcher
+using my_field_eq = my_field_spec::with_equal_to<V>;
+
+// Field with set membership matcher (matches any of V1, V2, ...)
+using my_field_in = my_field_spec::with_in<V1, V2, V3>;
+
+// Relational matchers
+using my_field_gt = my_field_spec::with_greater_than<V>;
+using my_field_gte = my_field_spec::with_greater_than_or_equal_to<V>;
+using my_field_lt = my_field_spec::with_less_than<V>;
+using my_field_lte = my_field_spec::with_less_than_or_equal_to<V>;
+
+// Convenience: required value (combines default + equality matcher)
+using my_field_req = my_field_spec::with_required<V>;
+----
+
+**`with_required<V>` is equivalent to:**
+[source,cpp]
+----
+my_field_spec::with_const_default<V>::with_equal_to<V>
+----
+
+This is commonly used for message type fields that must have a specific value.
+
+===== Type and name modification
+
+[source,cpp]
+----
+// Change the field's value type
+using my_field_u16 = my_field_spec::with_new_type<std::uint16_t>;
+
+// Rename the field
+using my_field_renamed = my_field_spec::with_new_name<"new_name">;
+----
+
+===== Location modification
+
+[source,cpp]
+----
+// Specify field locations (required before use)
+using my_field_located = my_field_spec::located<at{0_dw, 7_msb, 0_lsb}>;
+
+// Shift field location by N units
+using my_field_shifted = my_field::shifted_by<8, std::uint8_t>;  // shift by 8 bytes
+----
+
+==== Field matchers
+
 Fields also expose several matcher aliases which can typically be used to
 specify field values for a given message type; an example of this follows
 shortly. Further, fields expose aliases for expressing themselves as fields with
@@ -90,8 +751,390 @@ the given matchers.
 
 Field matchers can be found in
 https://github.com/intel/compile-time-init-build/tree/main/include/msg/field_matchers.hpp.
-The most commonly used field matchers are `equal_to_t` (for testing if a field
-has a certain value) and `in_t` (for testing if a field value lies within a set).
+
+===== Available field matchers
+
+All field matchers are templates parameterized by the field type and expected value(s):
+
+**Equality matchers:**
+[source,cpp]
+----
+// Match if field equals expected value
+msg::equal_to_t<my_field, 42>
+
+// Match if field does not equal expected value
+msg::not_equal_to_t<my_field, 17>
+
+// Match if field equals its default value
+msg::equal_default_t<my_field>
+----
+
+**Relational matchers:**
+[source,cpp]
+----
+// Comparison matchers
+msg::less_than_t<my_field, 100>
+msg::less_than_or_equal_to_t<my_field, 100>
+msg::greater_than_t<my_field, 10>
+msg::greater_than_or_equal_to_t<my_field, 10>
+----
+
+**Set membership matcher:**
+[source,cpp]
+----
+// Match if field value is in the given set
+msg::in_t<my_field, 1, 3, 5, 7, 9>
+----
+
+This is equivalent to an OR of multiple `equal_to` matchers:
+[source,cpp]
+----
+equal_to_t<my_field, 1> or equal_to_t<my_field, 3> or /* ... */
+----
+
+===== Matcher methods
+
+All matchers provide the following interface:
+
+[source,cpp]
+----
+// Test if message matches
+[[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool;
+
+// Get compile-time description of matcher
+[[nodiscard]] constexpr static auto describe() -> /* string type */;
+
+// Describe match result with actual values
+[[nodiscard]] constexpr auto describe_match(MsgType const &msg) const -> /* string type */;
+----
+
+==== Field name literals
+
+The message library provides user-defined literals for working with field names at runtime:
+
+[source,cpp]
+----
+using namespace msg::literals;
+
+// Create a field name object
+auto name = "my_field"_field;
+
+// Use with message get/set
+auto value = my_msg.get("my_field"_field);
+my_msg.set("my_field"_field = 42);
+
+// Use in message construction
+auto msg = owning<my_msg_defn>{"my_field"_field = 42, "other"_field = 17};
+----
+
+===== Matcher maker syntax
+
+Field name literals can be combined with comparison operators to create "matcher makers"
+that generate appropriate matchers for a specific message type:
+
+[source,cpp]
+----
+using namespace msg::literals;
+
+// Equality
+auto matcher = "priority"_field == constant<3>;
+
+// Inequality
+auto matcher = "priority"_field != constant<0>;
+
+// Relational comparisons
+auto matcher = "priority"_field < constant<10>;
+auto matcher = "priority"_field <= constant<10>;
+auto matcher = "priority"_field > constant<5>;
+auto matcher = "priority"_field >= constant<5>;
+
+// Set membership (using .in<> member)
+auto matcher = "priority"_field.in<1, 3, 5>;
+----
+
+The `msg::constant<Value>` wrapper is used to indicate compile-time constant values.
+
+**Matcher makers are resolved to actual matchers using `make_matcher`:**
+[source,cpp]
+----
+// In a callback definition
+auto cb = msg::callback<"handler", my_msg_defn>(
+    msg::make_matcher<my_msg_defn>("priority"_field >= constant<2>),
+    [](auto) { /* ... */ }
+);
+----
+
+NOTE: In many contexts (like callback definitions), matcher makers are automatically
+converted to matchers, so you can use the comparison syntax directly.
+
+==== Matcher composition
+
+Matchers can be composed using Boolean operators to create complex matching conditions.
+The matcher system automatically simplifies expressions at compile-time for optimal performance.
+
+===== Boolean operators
+
+**Conjunction (AND):**
+[source,cpp]
+----
+// All matchers must match
+auto m = msg::greater_than_t<priority, 2>{} and msg::less_than_t<priority, 10>{};
+
+// Or using the & operator
+auto m = msg::equal_to_t<type, 0x42>{} & msg::greater_than_t<data, 100>{};
+
+// Using match::all() for multiple matchers
+auto m = match::all(matcher1, matcher2, matcher3);
+----
+
+**Disjunction (OR):**
+[source,cpp]
+----
+// Any matcher must match
+auto m = msg::equal_to_t<id, 0x100>{} or msg::equal_to_t<id, 0x200>{};
+
+// Or using the | operator
+auto m = msg::in_t<id, 0x100, 0x200, 0x300>{};  // Equivalent to OR of equal_to
+
+// Using match::any() for multiple matchers
+auto m = match::any(matcher1, matcher2, matcher3);
+----
+
+**Negation (NOT):**
+[source,cpp]
+----
+// Matcher must not match
+auto m = not msg::equal_to_t<status, 0xFF>{};
+// This automatically becomes msg::not_equal_to_t<status, 0xFF>
+----
+
+===== Complex compositions
+
+[source,cpp]
+----
+using priority_f = field<"priority", std::uint8_t>::located<at{0_dw, 7_msb, 6_lsb}>;
+using urgent_f = field<"urgent", bool>::located<at{0_dw, 8_msb, 8_lsb}>;
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 15_msb, 9_lsb}>;
+
+// Complex: (priority > 2 OR urgent) AND type != 0
+auto complex_matcher =
+    (msg::greater_than_t<priority_f, 2>{} or msg::equal_to_t<urgent_f, true>{})
+    and msg::not_equal_to_t<type_f, 0>{};
+
+// Range check: 10 <= value <= 100
+auto range_matcher =
+    msg::greater_than_or_equal_to_t<value_f, 10>{}
+    and msg::less_than_or_equal_to_t<value_f, 100>{};
+
+// Whitelist: id must be one of several values
+auto whitelist = msg::in_t<id_f, 0x10, 0x20, 0x30, 0x40>{};
+
+// Blacklist: id must NOT be any of these values
+auto blacklist = not msg::in_t<id_f, 0xFF, 0xFE, 0xFD>{};
+----
+
+===== Automatic simplification
+
+The matcher system performs compile-time simplification:
+
+[source,cpp]
+----
+// Redundant AND simplifies
+auto m = msg::equal_to_t<id, 5>{} and msg::equal_to_t<id, 5>{};
+// Simplifies to: msg::equal_to_t<id, 5>
+
+// Contradictory AND simplifies to never
+auto m = msg::equal_to_t<id, 5>{} and msg::equal_to_t<id, 6>{};
+// Simplifies to: match::never_t (can never match)
+
+// Implied conditions are removed
+auto m = msg::equal_to_t<id, 5>{} and msg::not_equal_to_t<id, 6>{};
+// Simplifies to: msg::equal_to_t<id, 5>
+// (if id == 5, then id != 6 is always true)
+
+// Double negation simplifies
+auto m = not not msg::equal_to_t<id, 5>{};
+// Simplifies to: msg::equal_to_t<id, 5>
+----
+
+==== Creating custom matchers
+
+You can create custom matchers for specialized matching logic that isn't covered by the built-in field matchers.
+
+===== Matcher requirements
+
+A custom matcher must satisfy the following requirements:
+
+1. **Type tag**: `using is_matcher = void;`
+2. **Match operator**: `operator()(Event const &) const -> bool`
+3. **Description**: `describe() const` - returns a compile-time string
+4. **Match description**: `describe_match(Event const &) const` - describes the match result
+
+===== Method 1: Custom struct matcher
+
+[source,cpp]
+----
+struct valid_data_range {
+    using is_matcher = void;  // Required type tag
+
+    template<typename MsgType>
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
+        auto data = data_field::extract(msg);
+        return data >= 10 && data <= 100;
+    }
+
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "data in valid range [10, 100]"_ctst;
+    }
+
+    template<typename MsgType>
+    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
+        auto data = data_field::extract(msg);
+        auto matches = (*this)(msg);
+        return stdx::ct_format<"{}(data={} in [10,100])">(
+            matches ? 'T' : 'F', data);
+    }
+};
+
+// Use in callback
+auto cb = msg::callback<"validator", msg_defn>(
+    valid_data_range{},
+    [](auto) { /* handle valid messages */ }
+);
+----
+
+===== Method 2: Predicate matchers
+
+For simple lambda-based matchers, use `match::predicate`:
+
+[source,cpp]
+----
+// Named predicate
+constexpr auto even_data = match::predicate<"even_data">(
+    [](auto const &msg) {
+        return data_field::extract(msg) % 2 == 0;
+    }
+);
+
+// Unnamed predicate (uses default name "<predicate>")
+constexpr auto positive_value = match::predicate(
+    [](auto const &msg) {
+        return value_field::extract(msg) > 0;
+    }
+);
+
+// Compose with other matchers
+auto cb = msg::callback<"handler", msg_defn>(
+    even_data and msg::greater_than_t<value_field, 100>{},
+    [](auto) { /* handle */ }
+);
+----
+
+===== Method 3: Advanced custom matchers with optimizations
+
+For matchers that support negation, implication checking, and simplification:
+
+[source,cpp]
+----
+template <typename Field, auto Min, auto Max>
+struct range_matcher {
+    using is_matcher = void;
+
+    template<typename MsgType>
+    [[nodiscard]] constexpr auto operator()(MsgType const &msg) const -> bool {
+        auto value = Field::extract(msg);
+        return value >= Min && value <= Max;
+    }
+
+    [[nodiscard]] constexpr static auto describe() {
+        return stdx::ct_format<"{} in [{}, {}]">(
+            stdx::cts_t<Field::name_t>{}, Min, Max);
+    }
+
+    template<typename MsgType>
+    [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
+        auto value = Field::extract(msg);
+        return stdx::ct_format<"{}({}={} in [{}, {}])">(
+            (*this)(msg) ? 'T' : 'F',
+            stdx::cts_t<Field::name_t>{}, value, Min, Max);
+    }
+
+    // Optional: Support negation
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::negate_t, range_matcher const &) {
+        // Return matcher for: value < Min OR value > Max
+        return msg::less_than_t<Field, Min>{}
+            or msg::greater_than_t<Field, Max>{};
+    }
+
+    // Optional: Support implication checking (for simplification)
+    template <auto OtherMin, auto OtherMax>
+    [[nodiscard]] friend constexpr auto
+    tag_invoke(match::implies_t,
+               range_matcher const &,
+               range_matcher<Field, OtherMin, OtherMax> const &) -> bool {
+        // This range implies another if it's fully contained
+        return Min >= OtherMin && Max <= OtherMax;
+    }
+};
+
+// Usage
+using temperature_f = field<"temp", std::int16_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+
+constexpr auto normal_temp = range_matcher<temperature_f, 20, 25>{};
+constexpr auto valid_temp = range_matcher<temperature_f, 0, 50>{};
+
+// Simplification: normal_temp implies valid_temp
+auto m = normal_temp and valid_temp;
+// Simplifies to just: normal_temp
+// (because if temp in [20,25], it's automatically in [0,50])
+----
+
+===== Complete example: Custom matcher in action
+
+[source,cpp]
+----
+// Define message
+using checksum_f = field<"checksum", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using data_f = field<"data", std::uint32_t>::located<at{0_dw, 31_msb, 8_lsb}>;
+using packet_defn = message<"packet", checksum_f, data_f>;
+
+// Custom checksum validator
+struct checksum_valid {
+    using is_matcher = void;
+
+    [[nodiscard]] constexpr auto operator()(auto const &msg) const -> bool {
+        auto checksum = checksum_f::extract(msg);
+        auto data = data_f::extract(msg);
+
+        // Simple XOR checksum
+        std::uint8_t calc = 0;
+        for (int i = 0; i < 4; ++i) {
+            calc ^= (data >> (i * 8)) & 0xFF;
+        }
+        return checksum == calc;
+    }
+
+    [[nodiscard]] constexpr static auto describe() {
+        using namespace stdx::literals;
+        return "valid_checksum"_ctst;
+    }
+
+    [[nodiscard]] constexpr auto describe_match(auto const &msg) const {
+        return stdx::ct_format<"{}(checksum valid)">(
+            (*this)(msg) ? 'T' : 'F');
+    }
+};
+
+// Use with callback
+auto packet_handler = msg::callback<"packet_handler", packet_defn>(
+    checksum_valid{} and msg::not_equal_to_t<data_f, 0>{},
+    [](auto) {
+        // Process valid packet with non-zero data
+    }
+);
+----
 
 === Messages
 
@@ -112,6 +1155,170 @@ using my_message = msg::owning<my_message_defn>;
 Here the message has only one field. `with_required<0x80>` is an alias
 specialization that expresses `my_field` with a matcher that is
 `equal_to_t<0x80>`.
+
+==== Message template parameters
+
+[source,cpp]
+----
+template <stdx::ct_string Name, typename... Fields>
+using message = /* ... */;
+----
+
+- **Name**: Compile-time string literal for the message name
+- **Fields**: Zero or more field types (or an environment type)
+
+Messages can optionally include an "environment" type (satisfying `stdx::envlike`)
+among the fields. The environment is accessible through the message's `env_t` member type.
+
+==== Message member types
+
+[source,cpp]
+----
+// Type list of all fields
+using fields_t = /* type_list<field1, field2, ...> */;
+
+// Number of fields
+using num_fields_t = /* std::integral_constant<std::size_t, N> */;
+
+// Get field type by index
+template <std::size_t I>
+using nth_field_t = /* field type */;
+
+// Get field type by name
+template <stdx::ct_string Name>
+using field_t = /* field type */;
+
+// Message name
+using name_t = /* compile-time string */;
+
+// Environment type (if any)
+using env_t = /* environment type or void */;
+
+// Default storage type
+using default_storage_t = std::array<std::uint32_t, N>;
+
+// Conjunction of all field matchers
+using matcher_t = /* combined matcher */;
+
+// Message access helper
+using access_t = /* access helper type */;
+----
+
+==== Message construction
+
+**Default construction** (all fields get default values):
+[source,cpp]
+----
+owning<my_msg_defn> msg{};
+----
+
+NOTE: This is only valid if all fields have default values or are marked as `uninitialized`.
+
+**Construction with field values:**
+[source,cpp]
+----
+using namespace msg::literals;
+
+owning<my_msg_defn> msg{
+    "field1"_field = value1,
+    "field2"_field = value2
+};
+----
+
+**Construction from existing storage:**
+[source,cpp]
+----
+std::array<std::uint32_t, 4> storage = {0x12345678, 0xABCDEF00, 0, 0};
+
+// Copy from storage (owning)
+owning<my_msg_defn> msg{storage};
+
+// View over storage (mutable)
+mutable_view<my_msg_defn> mut_view{storage};
+
+// View over storage (const)
+std::array<std::uint32_t, 4> const const_storage = storage;
+const_view<my_msg_defn> cview{const_storage};
+----
+
+==== Message field access
+
+**Get field value:**
+[source,cpp]
+----
+auto value = msg.get("my_field"_field);
+----
+
+**Set field values:**
+[source,cpp]
+----
+// Set single field
+msg.set("my_field"_field = 42);
+
+// Set multiple fields
+msg.set("field1"_field = 10, "field2"_field = 20);
+----
+
+**Operator[] access:**
+[source,cpp]
+----
+// For const messages, returns field value directly
+auto value = const_msg["my_field"_field];
+
+// For mutable messages, returns proxy object that supports assignment
+msg["my_field"_field] = 42;
+----
+
+==== Storage access
+
+**Get underlying storage:**
+[source,cpp]
+----
+auto data = msg.data();  // returns stdx::span
+----
+
+This always returns a (const-observing) `stdx::span` over the underlying data.
+
+**Custom storage types:**
+[source,cpp]
+----
+// Owning message with custom storage element type
+auto msg = my_msg_defn::owner_t{std::array<std::uint8_t, 16>{}};
+----
+
+You can use `std::uint8_t`, `std::uint16_t`, `std::uint32_t`, or `std::uint64_t`
+as the storage element type.
+
+==== Message conversion
+
+**Convert between owning and view types:**
+[source,cpp]
+----
+owning<my_msg_defn> msg{};
+
+// Convert to views (always explicit)
+auto mut_view = msg.as_mutable_view();
+auto cview = msg.as_const_view();
+
+// Convert view to owning (always a copy)
+owning<my_msg_defn> msg_copy = mut_view.as_owning();
+----
+
+**Implicit conversions:**
+- Owning → const_view ✓ (implicit)
+- Owning → mutable_view ✗ (must use `as_mutable_view()`)
+- mutable_view → const_view ✓ (implicit)
+- View → owning ✗ (must use `as_owning()`, performs copy)
+
+==== Message description
+
+**Get formatted description:**
+[source,cpp]
+----
+auto desc = msg.describe();  // returns compile-time formatted string
+----
+
+This returns a human-readable string showing the message name and all field values.
 
 ==== Field ordering
 
@@ -177,7 +1384,7 @@ using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
     overlay<"msg", header_defn, payload_defn>,
-    type_f::with_required<1>>;
+    "msg", type_f::with_required<1>>;
 
 // resulting message layout:
 // byte   |0       |1       |
@@ -207,7 +1414,7 @@ using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
     pack<"msg", std::uint8_t, header_defn, payload_defn>,
-    type_f::with_required<1>>;
+    "msg", type_f::with_required<1>>;
 
 // resulting message layout:
 // byte   |0        |1       |
@@ -234,16 +1441,63 @@ To help with this, use the `field_t` alias on the message definition if needed.
 using type_f = field<"type", std::uint32_t>::located<at{0_dw, 5_msb, 0_lsb}>;
 using header_defn = message<"header", type_f>;
 
-using data_f = field<"data">, std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using data_f = field<"data", std::uint32_t>::located<at{0_dw, 7_msb, 0_lsb}>;
 using payload_defn = message<"payload", data_f>;
 
 using msg_defn = extend<
     pack<"msg", std::uint8_t, header_defn, payload_defn>,
-    type_f::with_required<1>>;
+    "msg", type_f::with_required<1>>;
 
 // msg_defn does not contain data_f because packing moved it
 // but we can get the actual data field by name, if we need it
 using new_data_f = msg_defn::field_t<"data">;
+----
+
+==== Message composition reference
+
+**`extend<BaseMsg, NewName, NewFields...>`**
+
+Extends a base message with a new name and additional fields. Fields with the
+same name as those in the base message will override the base field.
+
+[source,cpp]
+----
+using extended = extend<base_msg, "new_msg", additional_field>;
+----
+
+**`overlay<Name, Msgs...>`**
+
+Combines multiple messages into one. Fields from later messages override those
+from earlier messages if they have the same name. Field locations are preserved.
+
+[source,cpp]
+----
+using combined = overlay<"combined", header_msg, payload_msg>;
+----
+
+Use `overlay` when you want to combine messages that already have compatible
+field locations.
+
+**`pack<Name, AlignmentType, Msgs...>`**
+
+Concatenates messages sequentially, aligning each message according to
+`AlignmentType`. This shifts field locations in later messages.
+
+[source,cpp]
+----
+using packed = pack<"packed", std::uint8_t, msg1, msg2, msg3>;
+----
+
+Use `pack` when messages have overlapping field locations and you want to
+concatenate them end-to-end.
+
+**`rename_field<Msg, OldName, NewName>`**
+
+Creates a new message with a field renamed.
+
+[source,cpp]
+----
+using renamed = rename_field<my_msg, "old_field", "new_field">;
 ----
 
 ==== Relaxed messages
@@ -276,59 +1530,172 @@ using msg_defn = relaxed_message<"msg", type_f, field0_f, field1_f, field2_f>;
 
 ==== Owning vs view types
 
-An owning message uses underlying storage: by default, this is a `std::array` of
-`std::uint32_t` whose size is enough to hold all the fields in the message.
+The message library provides three ways to work with message data, each serving different use cases:
+
+**Owning messages** (`msg::owning<DefnType>`):
+- Own their storage (typically `std::array<std::uint32_t, N>`)
+- Can be created, modified, and moved independently
+- Useful for creating messages from scratch
+- Always perform a copy when constructed from another source
+
+**Mutable views** (`msg::mutable_view<DefnType>`):
+- Reference external storage via `stdx::span<T, N>`
+- Allow reading and writing fields
+- Zero-copy: modifications affect the underlying storage
+- Useful for modifying messages in-place (e.g., DMA buffers, shared memory)
+
+**Const views** (`msg::const_view<DefnType>`):
+- Reference external storage via `stdx::span<T const, N>`
+- Allow reading fields only
+- Zero-copy: no data is copied
+- Useful for processing received messages without allocation
+
+The relationship between these types can be visualized as follows:
+
+[source,mermaid]
+----
+graph TD
+    subgraph "Owning Message"
+        A[owning<T>]
+        A -- contains --> B(std::array<...>);
+    end
+
+    subgraph "External Data"
+        C[std::array or other buffer]
+    end
+
+    subgraph "Views (Zero-Copy)"
+        D[mutable_view<T>]
+        E[const_view<T>]
+        D -- references --> C;
+        E -- references --> C;
+    end
+
+    A -- copy to --> C;
+    C -- copy to --> A;
+    A -- references --> D;
+    A -- references --> E;
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#f9f,stroke:#333,stroke-width:1px
+    style C fill:#ccf,stroke:#333,stroke-width:2px
+    style D fill:#cfc,stroke:#333,stroke-width:2px
+    style E fill:#cfc,stroke:#333,stroke-width:2px
+----
+
+===== Type declarations
+
 [source,cpp]
 ----
-// by default, my_message will contain a std::array<std::uint32_t, 1>
-using my_message = msg::owning<my_message_defn>;
+using my_msg_defn = message<"my_msg", /* fields */>;
 
-// two corresponding default view types:
+// Owning message - contains std::array<std::uint32_t, N>
+using my_msg_owning = msg::owning<my_msg_defn>;
 
-// holds a stdx::span<std::uint32_t, 1>
-using mutable_view = msg::mutable_view<my_message_defn>;
+// Mutable view - contains stdx::span<std::uint32_t, N>
+using my_msg_mut_view = msg::mutable_view<my_msg_defn>;
 
-// holds a stdx::span<std::uint32_t const, 1>
-using const_view = msg::const_view<my_message_defn>;
+// Const view - contains stdx::span<std::uint32_t const, N>
+using my_msg_const_view = msg::const_view<my_msg_defn>;
 ----
 
-The storage for a message can be customized with a tailored `std::array`:
+===== Construction patterns
+
 [source,cpp]
 ----
-// an owning message with the same fields and access, but different storage:
-auto msg = my_message_defn::owner_t{std::array<std::uint8_t, 4>{}};
+// 1. Create owning message with field values
+owning<my_msg_defn> msg{"field1"_field = 42};
 
-// another way to get the view types from that owning message
+// 2. Create view over existing storage
+std::array<std::uint32_t, 4> buffer = {0, 0, 0, 0};
+mutable_view<my_msg_defn> mut_view{buffer};  // can modify buffer
+const_view<my_msg_defn> cview{buffer};       // read-only
+
+// 3. Create owning message from storage (copies data)
+owning<my_msg_defn> msg_copy{buffer};
+
+// 4. Custom storage element type
+auto msg = my_msg_defn::owner_t{std::array<std::uint8_t, 16>{}};
+----
+
+===== Conversions
+
+[source,cpp]
+----
+owning<my_msg_defn> msg{};
+
+// Owning → const view (implicit)
+const_view<my_msg_defn> cview = msg;
+
+// Owning → mutable view (explicit)
 auto mut_view = msg.as_mutable_view();
-auto const_view = msg.as_const_view();
+
+// View → owning (explicit, performs copy)
+owning<my_msg_defn> msg_copy = cview.as_owning();
+
+// Mutable view → const view (implicit)
+mutable_view<my_msg_defn> mv{buffer};
+const_view<my_msg_defn> cv = mv;
 ----
 
-View types are implicitly constructible from the corresponding owning types, or
-from an appropriate `std::array` or `stdx::span`, where they are const. A
-mutable view type must be constructed explicitly.
+===== When to use each type
 
-Owning types can also be constructed from views, arrays and spans - but always
-explicitly: since they are owning, they always incur a copy.
+**Use `owning<>` when:**
+- Creating messages from scratch
+- Message lifetime is independent of source data
+- You need to store messages in containers
+- Building messages for transmission
 
-Fields can be set and retrieved in a message, including on construction:
+**Use `mutable_view<>` when:**
+- Modifying messages in pre-allocated buffers (DMA, shared memory)
+- Processing messages without copying
+- Building messages in fixed storage
+- Implementing zero-copy message pipelines
+
+**Use `const_view<>` when:**
+- Processing received messages
+- Reading message fields without modification
+- Passing messages to callbacks (most callback handlers)
+- Implementing read-only message analysis
+
+===== Service parameter types
+
+**Important:** Services and indexed services have different parameter requirements:
+
 [source,cpp]
 ----
-auto msg = my_message{"my_field"_field = 42};
-auto f = my_message.get("my_field"_field);    // 42
-my_message.set("my_field"_field = 17);
+// Regular service: use VIEW type
+struct my_service : msg::service<const_view<my_msg_defn>> {};
+
+// Indexed service: use OWNING type
+struct my_indexed_service
+    : msg::indexed_service<indices, owning<my_msg_defn>> {};
 ----
 
-Fields can also be set and retrieved on mutable view type messages. For obvious
-reasons, calling `set` on a const view type is a compile error. Likewise,
-setting a field during construction of a const view type is not possible.
+This difference exists because indexed services perform more complex operations on messages
+during the build process.
 
-The raw data underlying a message can be obtained with a call to `data`:
+===== Field operations on different types
+
+All three types support field access, but with different capabilities:
+
 [source,cpp]
 ----
-auto data = msg.data();
-----
+// All types: get() works
+auto value = msg.get("field"_field);        // owning
+auto value = mut_view.get("field"_field);   // mutable view
+auto value = cview.get("field"_field);      // const view
 
-This always returns a (const-observing) `stdx::span` over the underlying data.
+// Owning and mutable view: set() works
+msg.set("field"_field = 42);                // owning - OK
+mut_view.set("field"_field = 42);           // mutable view - OK
+cview.set("field"_field = 42);              // const view - COMPILE ERROR
+
+// Owning and mutable view: operator[] assignment works
+msg["field"_field] = 42;                    // owning - OK
+mut_view["field"_field] = 42;               // mutable view - OK
+cview["field"_field] = 42;                  // const view - COMPILE ERROR
+----
 
 === Message equivalence
 
@@ -354,11 +1721,11 @@ messages; when a matcher successfully matches, the callback(s) registered will b
 [source,cpp]
 ----
 // given the above field and message types, define a service
-struct my_service : msg::service<my_message> {};
+struct my_service : msg::service<const_view<my_message_defn>> {};
 
 // define a callback with the matcher from the message definition
-constexpr auto my_callback = msg::callback<"my_callback">(
-    typename my_message_defn::matcher_t{},
+constexpr auto my_callback = msg::callback<"my_callback", my_message_defn>(
+    my_message_defn::matcher_t{},
     [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // define a project
@@ -380,7 +1747,7 @@ my_nexus.init();
 
 // handling this message calls my callback
 using msg::operator""_field;
-cib::service<my_service>->handle(my_message{"my field"_field = 0x80});
+cib::service<my_service>->handle(owning<my_message_defn>{"my field"_field = 0x80});
 ----
 
 Notice in this case that our callback is defined with the `matcher_t` from the
@@ -392,13 +1759,110 @@ the following message will not call the callback:
 ----
 // handling this message does not call my callback
 // because my_message's field matcher does not match
-cib::service<my_service>->handle(my_message{"my_field"_field = 0x81});
+cib::service<my_service>->handle(owning<my_message_defn>{"my_field"_field = 0x81});
 ----
 
 NOTE: Because message view types are implicitly constructible from an owning
 message type _or_ from an appropriate `std::array`, it is possible to set up a
 service and handler that works with "raw data" in the form of a `std::array`,
 but whose callbacks and matchers take the appropriate message view types.
+
+==== Callbacks API reference
+
+**Callback construction:**
+[source,cpp]
+----
+template <stdx::ct_string Name, typename Msg>
+constexpr inline auto callback;
+
+// Usage:
+auto cb = msg::callback<"callback_name", msg_defn>(
+    matcher,
+    [](msg::const_view<msg_defn>) { /* handler */ }
+);
+----
+
+**Callback member types:**
+[source,cpp]
+----
+using msg_t = /* message type */;
+using matcher_t = /* matcher type */;
+using callable_t = /* callable type */;
+
+template <typename NewMatcher>
+using rebind_matcher = /* callback with new matcher */;
+----
+
+**Callback methods:**
+[source,cpp]
+----
+// Test if message data matches
+[[nodiscard]] constexpr auto is_match(auto const &data) const -> bool;
+
+// Handle message if it matches (returns true if handled)
+[[nodiscard]] constexpr auto handle(auto const &data, auto&&... args) const -> bool;
+
+// Log why message didn't match
+constexpr auto log_mismatch(auto const &data) const -> void;
+----
+
+==== Runtime conditional callbacks
+
+You can add runtime conditions to callbacks using `make_runtime_conditional`:
+
+[source,cpp]
+----
+bool runtime_flag = true;
+
+auto conditional_cb = make_runtime_conditional(
+    [&]() { return runtime_flag; },
+    msg::callback<"conditional", msg_defn>(
+        matcher,
+        [](auto) { /* ... */ }
+    )
+);
+----
+
+The callback will only be invoked if both the compile-time matcher passes and
+the runtime condition returns `true`.
+
+==== Handlers and Services
+
+**Handler interface:**
+[source,cpp]
+----
+template <typename MsgBase, typename... ExtraCallbackArgs>
+struct handler_interface {
+    virtual auto is_match(MsgBase const &msg) const -> bool = 0;
+    virtual auto handle(MsgBase const &msg, ExtraCallbackArgs... args) const -> bool = 0;
+    virtual ~handler_interface() = default;
+};
+----
+
+**Service definition:**
+[source,cpp]
+----
+template <typename MsgBase, typename... ExtraCallbackArgs>
+struct service {
+    using builder_t = handler_builder</* ... */>;
+    using interface_t = handler_interface<MsgBase, ExtraCallbackArgs...> const *;
+
+    static auto uninitialized() -> interface_t;
+};
+----
+
+**Usage with CIB:**
+[source,cpp]
+----
+// Define service
+struct my_service : msg::service<const_view<my_msg_defn>> {};
+
+// Export and extend
+constexpr auto config = cib::config(
+    cib::exports<my_service>,
+    cib::extend<my_service>(callback1, callback2, callback3)
+);
+----
 
 This machinery for handling messages with callbacks is fairly basic and can be
 found in
@@ -420,20 +1884,103 @@ build indices on:
 using my_indices = msg::index_spec<my_field>;
 
 // the service is now an indexed_service
-struct my_indexed_service : msg::indexed_service<my_indices, my_message> {};
+struct my_indexed_service : msg::indexed_service<my_indices, owning<my_message_defn>> {};
 
-// this time, the callback is an indexed_callback
-constexpr auto my_callback = msg::indexed_callback<"my_indexed_callback">(
-    typename my_message_defn::matcher_t{},
+// callbacks are defined the same way as for non-indexed services
+constexpr auto my_callback = msg::callback<"my_callback", my_message_defn>(
+    my_message_defn::matcher_t{},
     [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // everything else is the same
 ----
 
+==== Choosing fields to index
+
+Select fields for indexing based on:
+
+1. **Selectivity**: Fields with many distinct values that effectively partition
+   the callback space are good candidates
+2. **Usage frequency**: Fields commonly used in matchers benefit from indexing
+3. **Distribution**: Fields with uniform value distribution work better than
+   heavily skewed distributions
+
+**Example:**
+[source,cpp]
+----
+using msg_type = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using msg_priority = field<"priority", std::uint8_t>::located<at{0_dw, 15_msb, 8_lsb}>;
+using msg_id = field<"id", std::uint32_t>::located<at{0_dw, 31_msb, 16_lsb}>;
+
+// Index on type (highly selective, frequently used in matchers)
+// and priority (moderately selective)
+using indices = msg::index_spec<msg_type, msg_priority>;
+
+struct my_service : msg::indexed_service<indices, owning<my_msg_defn>> {};
+----
+
+NOTE: Each indexed field adds memory overhead for the lookup table. Index only
+the most selective fields to balance performance and memory usage.
+
+==== Indexed service configuration
+
+**Index specification template:**
+[source,cpp]
+----
+template <typename... Fields>
+using index_spec = /* tuple of temp_index<Fields, 512, 256>... */;
+----
+
+The numbers (512, 256) represent:
+- **EntryCapacity**: Maximum number of distinct field values (default: 512)
+- **CallbackCapacity**: Maximum number of callbacks (default: 256)
+
+**Custom capacities:**
+[source,cpp]
+----
+// For more distinct values or callbacks
+using large_index = msg::temp_index<my_field, 1024, 512>;
+using my_indices = mp11::mp_list<large_index>;
+
+struct my_service : msg::indexed_service<my_indices, owning<my_msg_defn>> {};
+----
+
 === How does indexing work?
 
-NOTE: This section documents the details of indexed callbacks. It's not required
-to understand this to _use_ indexed callbacks.
+NOTE: This section contains advanced implementation details. See xref:_indexing_internals[Appendix A: Indexing Internals] for the full technical explanation. The information below is not required to _use_ indexed callbacks.
+
+Indexing is a two-phase process: a compile-time phase to build the index, and a runtime phase to use it for dispatching.
+
+[source,mermaid]
+----
+flowchart TD
+    subgraph "Compile Time"
+        A[Callback with Matcher] --> B{Sum of Products};
+        B --> C{Extract Field Terms};
+        C --> D[Build Index Map: value -> bitset];
+    end
+
+    subgraph "Runtime"
+        E[Incoming Message] --> F{Extract Indexed Fields};
+        F --> G[Lookup in Index Maps];
+        G --> H{Intersect Bitsets};
+        H --> I{Iterate Resulting Callbacks};
+        I --> J{Run Remaining Matchers};
+        J -- if match --> K[Execute Callback];
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#ccf,stroke:#333,stroke-width:2px
+    style C fill:#ccf,stroke:#333,stroke-width:2px
+    style D fill:#cfc,stroke:#333,stroke-width:2px
+
+    style E fill:#f9f,stroke:#333,stroke-width:2px
+    style F fill:#ccf,stroke:#333,stroke-width:2px
+    style G fill:#ccf,stroke:#333,stroke-width:2px
+    style H fill:#ccf,stroke:#333,stroke-width:2px
+    style I fill:#ccf,stroke:#333,stroke-width:2px
+    style J fill:#fcf,stroke:#333,stroke-width:2px
+    style K fill:#cfc,stroke:#333,stroke-width:4px
+----
 
 Indexing callbacks properly, interacting with arbitrary matchers, and calling
 the appropriate callbacks on reception of a message involves several pieces that
@@ -445,22 +1992,15 @@ minimal effort at runtime.
 For each field in the `msg::index_spec`, we build a map from field values to
 bitsets, where the values in the bitsets represent callback indices.
 
-NOTE: The bitsets may be run-length encoded by using the `rle_indexed_service`
-inplace of the `indexed_service`. This may be useful if you have limited space
-and/or a large set of possible callbacks.
-See xref:implementation_details.adoc#run_length_encoded_message_indices[Run Length
-Encoding Implementation Details]
-
-
-Each `indexed_callback` has a matcher that may be an
+Each callback has a matcher that may be an
 xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
-expression]. The `indexed_callback` construction process ensures that this
-matcher is in xref:match.adoc#_disjunctive_normal_form[sum of products form].
-The process of handling messages works by set intersection on the bitsets, so
-each separate `or`​ed term at the top level within each matcher (as well as each
-matcher itself) must conceptually map to a separate callback.
+expression]. When used with an indexed service, the callback construction process
+ensures that this matcher is in xref:match.adoc#_disjunctive_normal_form[sum of
+products form]. The process of handling messages works by set intersection on the
+bitsets, so each separate `or`​ed term at the top level within each matcher (as
+well as each matcher itself) must conceptually map to a separate callback.
 
-The initialization process when `indexed_callback`​s are added to the builder
+The initialization process when callbacks are added to the indexed builder
 takes care of this top-level concern, so that at build time, each callback
 matcher is a suitable Boolean term (either a single term, a negation or a
 conjunction, but not a disjunction).
@@ -651,3 +2191,1759 @@ compile time.
 For each callback, we now run the remaining matcher expression to deal with any
 unindexed but constrained fields, and call the callback if it passes. Bob's your
 uncle.
+
+=== Send and receive
+
+NOTE: For detailed information on async message integration, see xref:_async_send_receive[Appendix B: Async Send/Receive Integration].
+
+The message library integrates with the async library for sending and receiving
+messages asynchronously. Basic usage:
+
+==== Send action
+
+[source,cpp]
+----
+template <typename F, typename... Args>
+constexpr auto send(F &&f, Args &&...args);
+----
+
+Creates a send action that can be piped to receivers:
+
+[source,cpp]
+----
+auto action = msg::send([](auto& msg) {
+    msg.set("type"_field = 0x42, "data"_field = 100);
+    return msg;
+});
+----
+
+==== Receive action
+
+[source,cpp]
+----
+template <stdx::ct_string Name, typename... RecvArgs, typename F, typename... Args>
+constexpr auto then_receive(F &&f, Args &&...args);
+----
+
+Creates a receiver for asynchronous message handling:
+
+[source,cpp]
+----
+auto receiver = msg::then_receive<"handler">(
+    [](msg::const_view<my_msg_defn>) {
+        // Process received message
+    }
+);
+----
+
+==== Integration with async library
+
+The send/receive functions integrate with CIB's async library using trigger
+schedulers:
+
+[source,cpp]
+----
+// Define async flow
+auto msg_flow = msg::send(create_message)
+              | msg::then_receive<"process">(process_message);
+
+// Execute asynchronously
+async::execute(msg_flow);
+----
+
+See the async library documentation for more details on asynchronous workflows.
+
+=== Examples and How-Tos
+
+==== Hardware register modeling
+
+Model hardware registers with precise bit-level control:
+
+[source,cpp]
+----
+using namespace msg;
+
+// 32-bit control register fields
+using enable = field<"enable", bool>::located<at{0_dw, 0_msb, 0_lsb}>;
+using mode = field<"mode", std::uint8_t>::located<at{0_dw, 3_msb, 1_lsb}>;
+using value = field<"value", std::uint16_t>::located<at{0_dw, 31_msb, 16_lsb}>;
+
+using ctrl_reg_defn = message<"control_register", enable, mode, value>;
+
+// Map to hardware register
+extern volatile std::uint32_t* CTRL_REG;
+
+// Read register
+std::array<std::uint32_t, 1> reg_data = {*CTRL_REG};
+const_view<ctrl_reg_defn> reg_view{reg_data};
+auto enabled = reg_view.get("enable"_field);
+auto current_mode = reg_view.get("mode"_field);
+
+// Modify register
+std::array<std::uint32_t, 1> new_data = {*CTRL_REG};
+mutable_view<ctrl_reg_defn> reg_mut{new_data};
+reg_mut.set("enable"_field = true, "mode"_field = 0x3);
+*CTRL_REG = new_data[0];
+----
+
+==== Protocol message handling
+
+Handle different message types efficiently with indexing:
+
+[source,cpp]
+----
+using namespace msg;
+
+// CAN-like message fields
+using msg_id = field<"id", std::uint16_t>::located<at{0_dw, 28_msb, 18_lsb}>;
+using data_len = field<"len", std::uint8_t>::located<at{0_dw, 3_msb, 0_lsb}>;
+using data = field<"data", std::uint64_t>
+    ::located<at{1_dw, 31_msb, 0_lsb}, at{2_dw, 31_msb, 0_lsb}>;
+
+using can_msg_defn = message<"CAN", msg_id, data_len, data>;
+
+// Index on message ID for fast dispatch
+using indices = msg::index_spec<msg_id>;
+struct can_service : msg::indexed_service<indices, owning<can_msg_defn>> {};
+
+// Handlers for specific message IDs
+auto handle_heartbeat = msg::callback<"heartbeat", can_msg_defn>(
+    msg::equal_to_t<msg_id, 0x100>{},
+    [](auto) { process_heartbeat(); }
+);
+
+auto handle_telemetry = msg::callback<"telemetry", can_msg_defn>(
+    msg::equal_to_t<msg_id, 0x200>{},
+    [](auto) { process_telemetry(); }
+);
+
+auto handle_command = msg::callback<"command", can_msg_defn>(
+    msg::in_t<msg_id, 0x300, 0x301, 0x302>{},
+    [](auto) { process_command(); }
+);
+
+// Configuration
+struct can_project {
+    constexpr static auto config = cib::config(
+        cib::exports<can_service>,
+        cib::extend<can_service>(handle_heartbeat, handle_telemetry, handle_command)
+    );
+};
+----
+
+==== Complex field matching
+
+Use Boolean matcher expressions for sophisticated message filtering:
+
+[source,cpp]
+----
+using namespace msg;
+
+using priority = field<"priority", std::uint8_t>::located<at{0_dw, 7_msb, 6_lsb}>;
+using urgent = field<"urgent", bool>::located<at{0_dw, 8_msb, 8_lsb}>;
+using type = field<"type", std::uint8_t>::located<at{0_dw, 15_msb, 9_lsb}>;
+
+using msg_defn = message<"complex", priority, urgent, type>;
+
+// High priority messages (priority >= 2)
+auto high_priority_cb = msg::callback<"high_pri", msg_defn>(
+    msg::greater_than_or_equal_to_t<priority, 2>{},
+    [](auto) { handle_high_priority(); }
+);
+
+// Urgent messages of specific types
+auto urgent_specific_cb = msg::callback<"urgent_specific", msg_defn>(
+    msg::equal_to_t<urgent, true>{} and msg::in_t<type, 5, 7, 9>{},
+    [](auto) { handle_urgent_specific(); }
+);
+
+// Complex: high priority OR urgent, but not type 0
+auto complex_cb = msg::callback<"complex", msg_defn>(
+    (msg::greater_than_t<priority, 2>{} or msg::equal_to_t<urgent, true>{})
+    and msg::not_equal_to_t<type, 0>{},
+    [](auto) { handle_complex(); }
+);
+----
+
+==== Zero-copy DMA buffer processing
+
+Process messages directly in DMA buffers without copying:
+
+[source,cpp]
+----
+using namespace msg;
+
+// DMA buffer (hardware-owned memory)
+extern std::array<std::uint32_t, 256> dma_rx_buffer;
+
+// Message definition
+using msg_type = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using payload = field<"payload", std::uint32_t>::located<at{0_dw, 31_msb, 8_lsb}>;
+using dma_msg_defn = message<"dma_msg", msg_type, payload>;
+
+// Process without copying
+void process_dma_message() {
+    // Create const view over DMA buffer (zero copy)
+    const_view<dma_msg_defn> msg{dma_rx_buffer};
+
+    // Extract fields directly from hardware buffer
+    auto type = msg.get("type"_field);
+    auto data = msg.get("payload"_field);
+
+    // Process based on type
+    if (type == 0x80) {
+        // Handle without copying
+        process_type_80(data);
+    }
+}
+----
+
+==== Message composition patterns
+
+When to use `extend`, `overlay`, and `pack`:
+
+[source,cpp]
+----
+using namespace msg;
+
+// Base definitions
+using header_f = field<"header", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using header = message<"hdr", header_f>;
+
+using payload_f = field<"payload", std::uint32_t>::located<at{0_dw, 31_msb, 8_lsb}>;
+using payload = message<"pay", payload_f>;
+
+// Use EXTEND to add fields to existing message
+using extended = extend<header, "extended_msg", payload_f>;
+// Result: header_f at [7:0], payload_f at [31:8]
+
+// Use OVERLAY when fields already have compatible locations
+using overlaid = overlay<"overlaid_msg", header, payload>;
+// Result: Both fields at original locations (may overlap)
+
+// Use PACK to concatenate messages end-to-end
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 5_msb, 0_lsb}>;
+using data_f = field<"data", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+
+using msg1 = message<"m1", type_f>;
+using msg2 = message<"m2", data_f>;
+
+// Pack with byte alignment
+using packed = pack<"packed_msg", std::uint8_t, msg1, msg2>;
+// Result: type_f at [5:0], data_f shifted to next byte [15:8]
+----
+
+==== Testing strategies
+
+Testing message handlers and matchers:
+
+[source,cpp]
+----
+#include <catch2/catch_test_macros.hpp>
+
+using namespace msg;
+
+TEST_CASE("Message field access", "[msg]") {
+    using test_field = field<"value", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+    using test_msg = message<"test", test_field>;
+
+    SECTION("Set and get field") {
+        owning<test_msg> msg{};
+        msg.set("value"_field = 42);
+        REQUIRE(msg.get("value"_field) == 42);
+    }
+
+    SECTION("Field extraction from raw data") {
+        std::array<std::uint32_t, 1> data = {0x2A};
+        const_view<test_msg> view{data};
+        REQUIRE(view.get("value"_field) == 42);
+    }
+}
+
+TEST_CASE("Matchers", "[msg]") {
+    using test_field = field<"value", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+    using test_msg = message<"test", test_field>;
+
+    SECTION("Equal matcher") {
+        auto matcher = msg::equal_to_t<test_field, 42>{};
+        owning<test_msg> msg{"value"_field = 42};
+        REQUIRE(matcher(msg));
+
+        msg.set("value"_field = 43);
+        REQUIRE_FALSE(matcher(msg));
+    }
+
+    SECTION("Range matcher") {
+        auto matcher = msg::greater_than_t<test_field, 10>{}
+                   and msg::less_than_t<test_field, 20>{};
+
+        owning<test_msg> msg{"value"_field = 15};
+        REQUIRE(matcher(msg));
+    }
+}
+
+TEST_CASE("Callback handling", "[msg]") {
+    using test_field = field<"type", std::uint8_t>
+        ::located<at{0_dw, 7_msb, 0_lsb}>
+        ::with_required<0x80>;
+    using test_msg = message<"test", test_field>;
+
+    bool called = false;
+    auto cb = msg::callback<"test_cb", test_msg>(
+        test_msg::matcher_t{},
+        [&](auto) { called = true; }
+    );
+
+    SECTION("Matching message calls callback") {
+        owning<test_msg> msg{};
+        cb.handle(msg);
+        REQUIRE(called);
+    }
+
+    SECTION("Non-matching message doesn't call callback") {
+        std::array<std::uint32_t, 1> data = {0x42};  // wrong type
+        const_view<test_msg> view{data};
+        cb.handle(view);
+        REQUIRE_FALSE(called);
+    }
+}
+----
+
+=== Best Practices
+
+==== Performance considerations
+
+**1. Use indexed services for hot paths**
+
+If you have more than ~5 callbacks and messages arrive frequently, use indexed services:
+
+[source,cpp]
+----
+// Good: indexed service for performance
+using indices = msg::index_spec<frequently_checked_field>;
+struct hot_path_service : msg::indexed_service<indices, owning<msg_defn>> {};
+----
+
+**2. Choose indexed fields wisely**
+
+Index the most selective fields that appear in the most matchers:
+
+[source,cpp]
+----
+// Good: type field is highly selective (many distinct values)
+using indices = msg::index_spec<msg_type>;
+
+// Bad: boolean field is not selective (only 2 values)
+using indices = msg::index_spec<enabled>;  // Don't do this
+----
+
+**3. Use const views when possible**
+
+Const views allow compiler optimizations and prevent accidental modifications:
+
+[source,cpp]
+----
+// Good: use const view for read-only access
+auto process_message(msg::const_view<msg_defn> m) {
+    return m.get("data"_field);
+}
+
+// Less optimal: owning message forces copy
+auto process_message(msg::owning<msg_defn> m) {  // Copies!
+    return m.get("data"_field);
+}
+----
+
+**4. Avoid copying large messages**
+
+Use views for zero-copy access to existing data:
+
+[source,cpp]
+----
+extern std::array<std::uint32_t, 64> large_buffer;
+
+// Good: zero-copy view
+const_view<large_msg_defn> view{large_buffer};
+
+// Bad: copies 256 bytes
+owning<large_msg_defn> msg{large_buffer};
+----
+
+==== Performance guidance decision table
+
+Use this table to choose the right approach for common scenarios:
+
+[cols="2,3,3,4", options="header"]
+|===
+| Scenario | Service Type | Storage Choice | Matcher Tips
+
+| **Protocol dispatch** +
+(10-100 message types, frequent)
+| `indexed_service` +
+Index on message type field
+| `owning<T>` for indexed service +
+`const_view<T>` in callbacks
+| Use `with_required<V>` for type field; +
+combine with other matchers as needed
+
+| **DMA buffer processing** +
+(zero-copy, read hardware buffers)
+| `service` (if <10 types) +
+`indexed_service` (if many)
+| `const_view<T>` over DMA buffer +
+No copying!
+| Keep matchers simple; +
+complex logic in callbacks
+
+| **Hardware registers** +
+(read/modify/write operations)
+| Not applicable +
+(direct field access)
+| `mutable_view<T>` over register memory +
+or `owning<T>` for read-modify-write
+| Use field `extract`/`insert` directly; +
+matchers rarely needed
+
+| **Telemetry aggregation** +
+(many sources, filtering)
+| `indexed_service` +
+Index on source ID
+| `const_view<T>` in callbacks +
+Store aggregated data separately
+| Index on source field; +
+use range matchers for filtering
+
+| **Command processing** +
+(moderate volume, priority-based)
+| `indexed_service` +
+Index on command ID
+| `owning<T>` for indexed service
+| Combine ID matcher with priority: +
+`equal_to<id, V> and greater_than<pri, 2>`
+
+| **Event logging** +
+(high volume, simple dispatch)
+| `service` with few callbacks +
+OR direct field access
+| `const_view<T>` +
+Minimize copies
+| Matchers for filtering only; +
+extract fields directly in logger
+
+| **Shared memory IPC** +
+(zero-copy between processes)
+| `indexed_service` for routing
+| `const_view<T>` for reading +
+`mutable_view<T>` for writing
+| Careful with lifetime; +
+ensure buffer outlives views
+|===
+
+**General guidelines:**
+
+- **<10 callbacks**: Use `service` (linear scan is fast enough)
+- **10-50 callbacks**: Use `indexed_service` with 1 indexed field
+- **>50 callbacks**: Use `indexed_service` with 2+ indexed fields
+- **Hot path** (>1MHz message rate): Use indexed service, const views, minimal matcher complexity
+- **Cold path** (<1kHz): Simple service is fine
+
+==== Design patterns
+
+**1. Use required fields for message types**
+
+[source,cpp]
+----
+using msg_type = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+
+// Good: each message variant has required type value
+using heartbeat_msg = message<"heartbeat", msg_type::with_required<0x01>, /* ... */>;
+using telemetry_msg = message<"telemetry", msg_type::with_required<0x02>, /* ... */>;
+using command_msg = message<"command", msg_type::with_required<0x03>, /* ... */>;
+----
+
+**2. Use message composition for reusability**
+
+[source,cpp]
+----
+// Define reusable header
+using std_header = message<"header", timestamp, sequence, /* ... */>;
+
+// Extend for specific message types
+using data_msg = extend<std_header, "data", data_fields...>;
+using error_msg = extend<std_header, "error", error_fields...>;
+----
+
+**3. Separate concerns with services**
+
+[source,cpp]
+----
+// Good: separate services for different subsystems
+struct telemetry_service : msg::indexed_service<telemetry_indices, owning<telemetry_msg>> {};
+struct command_service : msg::indexed_service<command_indices, owning<command_msg>> {};
+struct diagnostic_service : msg::service<const_view<diagnostic_msg>> {};
+----
+
+==== Common pitfalls
+
+**1. Don't forget field locations**
+
+[source,cpp]
+----
+// Bad: field without location can't be used
+using my_field = field<"data", std::uint32_t>;
+
+// Good: specify location before use
+using my_field = field<"data", std::uint32_t>::located<at{0_dw, 31_msb, 0_lsb}>;
+----
+
+**2. Watch out for field movement in pack**
+
+[source,cpp]
+----
+using f1 = field<"f1", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using msg1 = message<"m1", f1>;
+
+using f2 = field<"f2", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using msg2 = message<"m2", f2>;
+
+using packed = pack<"packed", std::uint8_t, msg1, msg2>;
+
+// f1 is at [7:0], but f2 has moved to [15:8]!
+// Use packed::field_t<"f2"> to get the updated field type
+----
+
+**3. Remember that operator== is deleted**
+
+[source,cpp]
+----
+owning<msg_defn> m1{}, m2{};
+
+// Bad: won't compile
+if (m1 == m2) { /* ... */ }
+
+// Good: use equivalent()
+if (equivalent(m1, m2)) { /* ... */ }
+----
+
+=== Troubleshooting
+
+This chapter provides diagnosis steps and solutions for common problems when using the message library.
+
+==== Callbacks never fire
+
+**Symptoms**: Message is handled by service, but callback is never invoked.
+
+**Diagnosis steps**:
+
+1. **Check if matcher matches the message**:
++
+[source,cpp]
+----
+auto cb = msg::callback<"test", msg_defn>(matcher, handler);
+
+// Test if callback would match
+if (!cb.is_match(msg)) {
+    // Callback won't be invoked
+}
+----
+
+2. **Use `log_mismatch` to see why**:
++
+[source,cpp]
+----
+cb.log_mismatch(msg);  // Prints detailed mismatch information
+----
++
+This logs which field conditions failed and the actual vs. expected values.
+
+3. **Use `describe_match` for compile-time description**:
++
+[source,cpp]
+----
+auto matcher = msg::equal_to_t<type_f, 0x42>{};
+auto description = matcher.describe_match(msg);
+// Returns: "T(type=0x42)" or "F(type=0x43, expected 0x42)"
+----
+
+4. **Verify service initialization**:
++
+[source,cpp]
+----
+cib::nexus<MyProject> nexus{};
+nexus.init();  // MUST call init() before using services!
+
+// Now services are available
+cib::service<my_service>->handle(msg);
+----
+
+5. **Confirm callback is registered**:
++
+[source,cpp]
+----
+struct MyProject {
+    constexpr static auto config = cib::config(
+        cib::exports<my_service>,
+        cib::extend<my_service>(my_callback)  // ← Must register here
+    );
+};
+----
+
+**Common fixes**:
+
+- **Wrong field values**: Check that field values in message match matcher expectations
+- **Typo in field name**: Use `"field_name"_field` syntax carefully
+- **Forgot to initialize**: Always call `nexus.init()` before using services
+- **Callback not registered**: Add callback to `cib::extend<Service>(...)`
+- **Wrong matcher logic**: Use `and`/`or`/`not` correctly; check operator precedence
+
+==== Index capacity errors
+
+**Symptoms**: Compile error about exceeding index capacity.
+
+**Error messages**:
+[source,text]
+----
+static assertion failed: Too many distinct values for index
+static assertion failed: Too many callbacks for index
+----
+
+**Diagnosis steps**:
+
+1. **Count distinct field values**:
++
+Count how many unique values your callbacks match on the indexed field.
+
+2. **Count total callbacks**:
++
+Count how many callbacks are registered with the indexed service.
+
+3. **Check default capacities**:
++
+Default `index_spec` uses:
+- `EntryCapacity = 512` (max distinct values)
+- `CallbackCapacity = 256` (max callbacks)
+
+**Solutions**:
+
+1. **Increase capacity**:
++
+[source,cpp]
+----
+// Custom index with larger capacities
+using large_index = msg::temp_index<my_field, 1024, 512>;
+using my_indices = mp11::mp_list<large_index>;
+
+struct my_service : msg::indexed_service<my_indices, owning<msg_defn>> {};
+----
+
+2. **Reduce indexed values**:
++
+If you have too many distinct values, consider:
+- Using a more selective field for indexing
+- Combining similar callbacks to reduce count
+- Using range matchers instead of many `equal_to` matchers
+
+**Index sizing guidelines**:
+
+[cols="1,2,2", options="header"]
+|===
+| Scenario | EntryCapacity | CallbackCapacity
+
+| Small protocol (\<50 message types)
+| 128
+| 64
+
+| Medium protocol (50-200 types)
+| 512 (default)
+| 256 (default)
+
+| Large protocol (>200 types)
+| 1024+
+| 512+
+|===
+
+==== Async send/receive pitfalls
+
+**Symptoms**: Messages not sent/received correctly in async workflows.
+
+**Common issues**:
+
+1. **Message lifetime problems**:
++
+[source,cpp]
+----
+// BAD: message destroyed before send completes
+auto send_msg() {
+    owning<msg_defn> msg{"field"_field = 42};
+    return msg::send([&msg](auto&) { return msg; });  // Dangling reference!
+}
+
+// GOOD: capture by value or use const_view
+auto send_msg() {
+    owning<msg_defn> msg{"field"_field = 42};
+    return msg::send([msg](auto&) { return msg; });  // Copy captured
+}
+----
+
+2. **Wrong message type in receiver**:
++
+[source,cpp]
+----
+// Ensure receiver expects correct message type
+auto receiver = msg::then_receive<"handler">(
+    [](msg::const_view<msg_defn> m) {  // ← Must match sent message type
+        // Process message
+    }
+);
+----
+
+3. **Trigger scheduler not configured**:
++
+Async send/receive requires proper trigger scheduler setup. See async library documentation.
+
+==== Compile errors
+
+**"field location exceeds type capacity"**
+
+The field's bit range is larger than its value type can hold:
+
+[source,cpp]
+----
+// Error: 9 bits don't fit in uint8_t (max 8 bits)
+using bad_field = field<"f", std::uint8_t>::located<at{8_msb, 0_lsb}>;
+
+// Fix: use larger type
+using good_field = field<"f", std::uint16_t>::located<at{8_msb, 0_lsb}>;
+----
+
+**"field not found in message"**
+
+Typo in field name or field not in message definition:
+
+[source,cpp]
+----
+using my_field = field<"data", std::uint32_t>::located</* ... */>;
+using my_msg = message<"msg", my_field>;
+
+owning<my_msg> msg{};
+
+// Error: typo in field name
+msg.get("datta"_field);  // Wrong!
+
+// Fix: use correct name
+msg.get("data"_field);   // Correct
+----
+
+**"message storage insufficient"**
+
+Message fields extend beyond allocated storage:
+
+[source,cpp]
+----
+// Field extends to bit 63, needs 2 dwords
+using large_field = field<"f", std::uint64_t>::located<at{63_msb, 0_lsb}>;
+using msg_defn = message<"msg", large_field>;
+
+// Error: only 1 dword provided
+auto msg = msg_defn::owner_t{std::array<std::uint32_t, 1>{}};
+
+// Fix: provide sufficient storage
+auto msg = msg_defn::owner_t{std::array<std::uint32_t, 2>{}};
+----
+
+**"no viable conversion from 'owning' to 'const_view'"**
+
+This typically occurs when passing the wrong message type to a service or callback:
+
+[source,cpp]
+----
+// Service expects const_view, but getting owning type confusion
+struct my_service : msg::service<const_view<my_msg_defn>> {};
+
+// Error might occur in callback if types don't align
+// Fix: Ensure callback parameter matches service message base type
+auto cb = msg::callback<"handler", my_msg_defn>(
+    matcher,
+    [](msg::const_view<my_msg_defn> m) {  // ← Must use const_view
+        // handle message
+    }
+);
+----
+
+==== Incorrect field values
+
+**Symptoms**: Fields read/write wrong values.
+
+**Diagnosis**:
+
+1. **Verify bit positions**:
++
+[source,cpp]
+----
+// Double-check MSB/LSB are correct
+using my_field = field<"data", std::uint8_t>
+    ::located<at{0_dw, 15_msb, 8_lsb}>;  // bits [15:8] of dword 0
+
+// Test extraction
+std::array<std::uint32_t, 1> data = {0x12345678};
+auto value = my_field::extract(data);  // Should be 0x56
+----
+
+2. **Check byte order**:
++
+Ensure your bit numbering matches the hardware/protocol byte order (little-endian vs. big-endian).
+
+3. **Verify field type size**:
++
+[source,cpp]
+----
+// Field type must hold all bits
+using field_9bit = field<"data", std::uint16_t>  // uint16_t can hold 9 bits ✓
+    ::located<at{8_msb, 0_lsb}>;
+
+using field_9bit_bad = field<"data", std::uint8_t>  // uint8_t cannot ✗
+    ::located<at{8_msb, 0_lsb}>;  // Compile error!
+----
+
+==== Performance issues
+
+**Slow message dispatch**
+
+**Symptoms**: High latency when handling messages.
+
+**Diagnosis**:
+
+1. Count number of callbacks being checked
+2. Measure time spent in `handle()` call
+3. Profile which matchers are most expensive
+
+**Solutions**:
+
+[source,cpp]
+----
+// If >10 callbacks with linear service, switch to indexed
+using indices = msg::index_spec<frequently_checked_field>;
+struct my_service : msg::indexed_service<indices, owning<msg_defn>> {};
+
+// Index the most selective field that appears in most matchers
+// Good: type field with many distinct values
+// Bad: boolean field with only 2 values
+----
+
+**Memory usage too high**
+
+**Symptoms**: Index tables consuming too much RAM.
+
+**Solutions**:
+
+1. **Reduce index capacities**:
++
+[source,cpp]
+----
+using small_index = msg::temp_index<my_field, 128, 64>;
+----
+
+2. **Index fewer fields**:
++
+Only index the most selective field, leave others for runtime matching.
+
+==== Debugging workflows
+
+See xref:_observability_debugging[Observability & Debugging] for detailed debugging techniques including:
+
+- Using `log_mismatch` for matcher diagnosis
+- Using `describe_match` for runtime inspection
+- GDB sessions for inspecting packed fields
+- Unit test scaffolding
+
+=== Observability & Debugging
+
+This section covers techniques for debugging message handling, inspecting messages at runtime, and testing message-based systems.
+
+==== Using `log_mismatch`
+
+The `log_mismatch` method on callbacks provides detailed diagnostics when a message doesn't match:
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using data_f = field<"data", std::uint16_t>::located<at{0_dw, 23_msb, 8_lsb}>;
+using msg_defn = message<"test", type_f, data_f>;
+
+auto matcher = msg::equal_to_t<type_f, 0x42>{}
+           and msg::greater_than_t<data_f, 100>{};
+
+auto cb = msg::callback<"test_cb", msg_defn>(
+    matcher,
+    [](auto) { /* handler */ }
+);
+
+// Test with message that doesn't match
+owning<msg_defn> msg{"type"_field = 0x42, "data"_field = 50};
+
+if (!cb.is_match(msg)) {
+    cb.log_mismatch(msg);
+    // Output: "Callback 'test_cb' mismatch:
+    //          type: 0x42 == 0x42 ✓
+    //          data: 50 > 100 ✗"
+}
+----
+
+**When to use `log_mismatch`:**
+- Callback not firing as expected
+- Debugging complex matcher logic
+- Verifying field values during development
+
+==== Using `describe_match` for automatic diagnostics
+
+When a message doesn't match any callback, the service automatically logs diagnostic information showing why each callback didn't match. This requires configuring the logging system (see xref:logging.adoc[Logging documentation]).
+
+**Setting up logging:**
+
+First, configure the logging system to see diagnostic output:
+
+[source,cpp]
+----
+#include <log/fmt/logger.hpp>
+#include <iostream>
+
+// Configure logging to use fmt logger
+template <>
+inline auto logging::config<> =
+    logging::fmt::config{std::ostream_iterator<char>(std::cout)};
+----
+
+And link against `cib_log_fmt`:
+[source,cmake]
+----
+target_link_libraries(your_target PRIVATE cib_log_fmt)
+----
+
+**How it works:**
+
+When `service->handle(msg)` is called and no callback matches, the service automatically:
+1. Logs an ERROR: "None of the registered callbacks (N) claimed this message:"
+2. For each callback, logs INFO with the matcher result showing field values
+3. Shows why each callback didn't match, making diagnosis easy
+
+**Example output when no callback matches:**
+
+[source,cpp]
+----
+using type_f = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+using priority_f = field<"priority", std::uint8_t>::located<at{0_dw, 15_msb, 8_lsb}>;
+using msg_defn = message<"test", type_f, priority_f>;
+
+struct my_service : msg::service<const_view<msg_defn>> {};
+
+auto cb1 = msg::callback<"cb1", msg_defn>(
+    msg::equal_to_t<type_f, 0x42>{},
+    [](auto) { /* handle */ }
+);
+
+auto cb2 = msg::callback<"cb2", msg_defn>(
+    msg::greater_than_t<priority_f, 5>{},
+    [](auto) { /* handle */ }
+);
+
+// ... configure project with callbacks ...
+
+// Send message that doesn't match any callback
+owning<msg_defn> msg{"type"_field = 0x80, "priority"_field = 3};
+cib::service<my_service>->handle(msg);
+----
+
+**Actual logged output:**
+[source,text]
+----
+ERROR [default]: None of the registered callbacks (2) claimed this message:
+INFO [default]:     cb1 - F:(type (0x80) == 0x42)
+INFO [default]:     cb2 - F:(priority (0x3) > 0x5)
+----
+
+The `F:` prefix indicates the matcher failed. Each line shows:
+- Callback name (`cb1`, `cb2`)
+- Field name and actual value: `type (0x80)` means type field has value 0x80
+- The comparison operator: `==`, `>`, etc.
+- The expected value: `0x42`, `0x5`
+
+**Complex matchers with AND/OR:**
+
+[source,cpp]
+----
+// AND matcher
+auto cb3 = msg::callback<"cb3", msg_defn>(
+    msg::equal_to_t<type_f, 0x80>{} and msg::greater_than_t<priority_f, 3>{},
+    [](auto) { /* handle */ }
+);
+
+// OR matcher
+auto cb4 = msg::callback<"cb4", msg_defn>(
+    msg::equal_to_t<type_f, 0x42>{} or msg::equal_to_t<type_f, 0x99>{},
+    [](auto) { /* handle */ }
+);
+
+// Complex: (A or B) and C
+auto cb5 = msg::callback<"cb5", msg_defn>(
+    (msg::equal_to_t<type_f, 0x80>{} or msg::equal_to_t<type_f, 0x90>{})
+        and msg::greater_than_or_equal_to_t<priority_f, 5>{},
+    [](auto) { /* handle */ }
+);
+----
+
+**Logged output for complex matchers:**
+[source,text]
+----
+ERROR [default]: None of the registered callbacks (5) claimed this message:
+INFO [default]:     cb1 - F:(type (0x11) == 0x42)
+INFO [default]:     cb2 - F:(priority (0x1) > 0x5)
+INFO [default]:     cb3 - F:((type (0x11) == 0x80) and (priority (0x1) > 0x3))
+INFO [default]:     cb4 - F:((type (0x11) == 0x42) or (type (0x11) == 0x99))
+INFO [default]:     cb5 - F:(((type (0x11) == 0x80) and (priority (0x1) >= 0x5)) or ((type (0x11) == 0x90) and (priority (0x1) >= 0x5)))
+----
+
+Note: Complex matchers are automatically converted to disjunctive normal form (sum of products). That's why cb5 shows two AND terms connected by OR - this is the normalized form of `(A or B) and C` which becomes `(A and C) or (B and C)`.
+
+**When a callback matches:**
+
+The service also logs successful matches at INFO level:
+[source,text]
+----
+INFO [default]: Incoming message matched [cb1], because [type == 0x42], executing callback
+----
+
+This shows:
+- Which callback matched
+- The condition that caused the match
+- Confirmation that the callback is being executed
+
+**Manual use of `describe_match` for testing:**
+
+While the service automatically uses `describe_match` for logging, you can also call it directly for unit testing:
+
+[source,cpp]
+----
+// Test matcher behavior in unit tests
+auto matcher = msg::equal_to_t<type_f, 0x42>{};
+owning<msg_defn> msg{"type"_field = 0x80};
+
+auto desc = matcher.describe_match(msg);
+// Returns a string you can use in assertions or debugging
+// Useful for verifying matcher logic in tests
+----
+
+==== Logging and tracing
+
+You can add logging to callbacks to trace message processing:
+
+[source,cpp]
+----
+auto cb = msg::callback<"my_handler", msg_defn>(
+    matcher,
+    [](msg::const_view<msg_defn> m) {
+        // Log field values when processing
+        auto type = m.get("type"_field);
+        auto data = m.get("data"_field);
+
+        // Use your preferred logging mechanism
+        printf("Processing message: type=%d, data=%d\n", type, data);
+
+        // Handle message
+    }
+);
+----
+
+==== GDB debugging sessions
+
+**Inspecting packed message fields:**
+
+[source,gdb]
+----
+# Break at message handling
+(gdb) break my_callback
+
+# Inspect raw message storage
+(gdb) print msg.data()
+$1 = {0x12345678, 0xABCDEF00}
+
+# Extract specific field using field helper
+(gdb) print type_f::extract(msg.data())
+$2 = 0x78
+
+# View entire message description
+(gdb) print msg.describe()
+$3 = "test_msg{type=0x78, data=0x1234}"
+
+# Check matcher result
+(gdb) print matcher(msg)
+$4 = true
+----
+
+**Debugging indexed service lookups:**
+
+[source,gdb]
+----
+# Break in indexed service handle
+(gdb) break indexed_service<...>::handle
+
+# Step through index lookup
+(gdb) step
+
+# Examine bitset result
+(gdb) print eligible_callbacks
+$1 = {bits = 0b00101001}  # callbacks 0, 3, 5 eligible
+
+# Check which callbacks will run
+(gdb) print callback_count
+$2 = 3
+----
+
+==== Unit test scaffolding
+
+**Testing message field access:**
+
+[source,cpp]
+----
+#include <catch2/catch_test_macros.hpp>
+
+TEST_CASE("Message field operations", "[msg]") {
+    using test_f = field<"value", std::uint16_t>::located<at{0_dw, 15_msb, 0_lsb}>;
+    using test_msg = message<"test", test_f>;
+
+    SECTION("Field extraction") {
+        std::array<std::uint32_t, 1> data = {0x1234};
+        const_view<test_msg> view{data};
+        REQUIRE(view.get("value"_field) == 0x1234);
+    }
+
+    SECTION("Field insertion") {
+        owning<test_msg> msg{};
+        msg.set("value"_field = 0xABCD);
+        REQUIRE(msg.get("value"_field) == 0xABCD);
+    }
+
+    SECTION("Multi-part field") {
+        using multi_f = field<"value", std::uint16_t>
+            ::located<at{0_dw, 31_msb, 24_lsb}, at{0_dw, 7_msb, 0_lsb}>;
+        using multi_msg = message<"multi", multi_f>;
+
+        owning<multi_msg> msg{"value"_field = 0xABCD};
+        std::array<std::uint32_t, 1> expected = {0xAB0000CD};
+        REQUIRE(msg.data()[0] == expected[0]);
+    }
+}
+----
+
+**Testing matchers:**
+
+[source,cpp]
+----
+TEST_CASE("Matcher logic", "[msg][matcher]") {
+    using value_f = field<"value", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+    using test_msg = message<"test", value_f>;
+
+    SECTION("Simple equality") {
+        auto matcher = msg::equal_to_t<value_f, 42>{};
+
+        owning<test_msg> matching{"value"_field = 42};
+        owning<test_msg> non_matching{"value"_field = 43};
+
+        REQUIRE(matcher(matching));
+        REQUIRE_FALSE(matcher(non_matching));
+    }
+
+    SECTION("Range checking") {
+        auto matcher = msg::greater_than_or_equal_to_t<value_f, 10>{}
+                   and msg::less_than_or_equal_to_t<value_f, 20>{};
+
+        REQUIRE(matcher(owning<test_msg>{"value"_field = 15}));
+        REQUIRE_FALSE(matcher(owning<test_msg>{"value"_field = 5}));
+        REQUIRE_FALSE(matcher(owning<test_msg>{"value"_field = 25}));
+    }
+
+    SECTION("Complex Boolean logic") {
+        auto matcher = (msg::equal_to_t<value_f, 1>{}
+                    or msg::equal_to_t<value_f, 2>{})
+                   and not msg::equal_to_t<value_f, 3>{};
+
+        REQUIRE(matcher(owning<test_msg>{"value"_field = 1}));
+        REQUIRE(matcher(owning<test_msg>{"value"_field = 2}));
+        REQUIRE_FALSE(matcher(owning<test_msg>{"value"_field = 3}));
+    }
+}
+----
+
+**Testing callbacks and services:**
+
+[source,cpp]
+----
+TEST_CASE("Callback invocation", "[msg][callback]") {
+    using type_f = field<"type", std::uint8_t>
+        ::located<at{0_dw, 7_msb, 0_lsb}>
+        ::with_required<0x80>;
+    using test_msg = message<"test", type_f>;
+
+    SECTION("Callback called on match") {
+        bool called = false;
+        auto cb = msg::callback<"test_cb", test_msg>(
+            test_msg::matcher_t{},
+            [&](auto) { called = true; }
+        );
+
+        owning<test_msg> msg{};
+        REQUIRE(cb.handle(msg));
+        REQUIRE(called);
+    }
+
+    SECTION("Callback not called on mismatch") {
+        bool called = false;
+        auto cb = msg::callback<"test_cb", test_msg>(
+            test_msg::matcher_t{},
+            [&](auto) { called = true; }
+        );
+
+        std::array<std::uint32_t, 1> wrong_data = {0x42};
+        const_view<test_msg> wrong_msg{wrong_data};
+
+        REQUIRE_FALSE(cb.handle(wrong_msg));
+        REQUIRE_FALSE(called);
+    }
+}
+
+TEST_CASE("Service integration", "[msg][service]") {
+    using test_f = field<"value", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+    using test_msg = message<"test", test_f>;
+
+    struct test_service : msg::service<const_view<test_msg>> {};
+
+    int callback_count = 0;
+
+    auto cb1 = msg::callback<"cb1", test_msg>(
+        msg::equal_to_t<test_f, 1>{},
+        [&](auto) { callback_count++; }
+    );
+
+    auto cb2 = msg::callback<"cb2", test_msg>(
+        msg::equal_to_t<test_f, 2>{},
+        [&](auto) { callback_count++; }
+    );
+
+    struct test_project {
+        constexpr static auto config = cib::config(
+            cib::exports<test_service>,
+            cib::extend<test_service>(cb1, cb2)
+        );
+    };
+
+    cib::nexus<test_project> nexus{};
+    nexus.init();
+
+    SECTION("Correct callback invoked") {
+        callback_count = 0;
+        cib::service<test_service>->handle(owning<test_msg>{"value"_field = 1});
+        REQUIRE(callback_count == 1);
+
+        callback_count = 0;
+        cib::service<test_service>->handle(owning<test_msg>{"value"_field = 2});
+        REQUIRE(callback_count == 1);
+    }
+
+    SECTION("No callback for unmatched value") {
+        callback_count = 0;
+        cib::service<test_service>->handle(owning<test_msg>{"value"_field = 3});
+        REQUIRE(callback_count == 0);
+    }
+}
+----
+
+**Creating test messages:**
+
+[source,cpp]
+----
+TEST_CASE("Message creation patterns", "[msg][test]") {
+    using type_f = field<"type", std::uint8_t>::located<at{0_dw, 7_msb, 0_lsb}>;
+    using data_f = field<"data", std::uint16_t>::located<at{0_dw, 23_msb, 8_lsb}>;
+    using test_msg = message<"test", type_f, data_f>;
+
+    // Direct creation with field values
+    auto msg1 = owning<test_msg>{"type"_field = 1, "data"_field = 100};
+    REQUIRE(msg1.get("type"_field) == 1);
+
+    // From raw data
+    std::array<std::uint32_t, 1> raw_data = {0x12345678};
+    auto msg2 = owning<test_msg>{raw_data};
+    REQUIRE(msg2.data()[0] == 0x12345678);
+
+    // Default construction (if all fields have defaults)
+    auto msg3 = owning<test_msg>{};
+}
+----
+
+=== API Quick Reference
+
+A summary of the most common components used in the `msg` library.
+
+==== Fields
+
+[source,cpp]
+----
+// Basic field definition
+using my_field = field<"name", type>::located<at{...}>;
+
+// Field with a required value
+using type_field = field<"type", ...>::with_required<0xAB>;
+----
+
+==== Messages
+
+[source,cpp]
+----
+// Basic message definition
+using my_msg = message<"name", field1, field2, ...>;
+
+// Owning message (has its own data)
+owning<my_msg> msg{"field1"_field = 10};
+
+// Const view (read-only, zero-copy)
+const_view<my_msg> view{some_buffer};
+
+// Mutable view (read-write, zero-copy)
+mutable_view<my_msg> mView{some_buffer};
+----
+
+==== Matchers
+
+[source,cpp]
+----
+// Equality
+auto m1 = msg::equal_to_t<my_field, 10>{};
+
+// Relational
+auto m2 = msg::greater_than_t<my_field, 5>{};
+
+// Set membership
+auto m3 = msg::in_t<my_field, 1, 2, 3>{};
+
+// Composition
+auto m4 = m1 and (m2 or m3);
+----
+
+==== Services & Callbacks
+
+[source,cpp]
+----
+// Simple service
+struct my_service : msg::service<const_view<my_msg>> {};
+
+// Indexed service (for performance)
+struct my_indexed_service : msg::indexed_service<
+    msg::index_spec<field_to_index_on>,
+    owning<my_msg>
+> {};
+
+// Callback
+constexpr auto my_handler = callback<"name", my_msg>(
+    matcher,
+    [](const_view<my_msg>) { /* ... */ }
+);
+
+// CIB configuration
+struct MyProject {
+    constexpr static auto config = cib::config(
+        cib::exports<my_service>,
+        cib::extend<my_service>(my_handler)
+    );
+};
+----
+
+
+[appendix]
+== Advanced Topics
+
+This appendix contains detailed technical information about the message library internals.
+
+[[indexing_internals]]
+=== Appendix A: Indexing Internals
+
+This section provides detailed technical information about how the indexing system works internally. For basic usage, see <<indexed_callbacks,Indexed Callbacks>>.
+
+NOTE: For a comprehensive presentation on the message library's indexing system, see the CppCon talk by the library developer: https://www.youtube.com/watch?v=DLgM570cujU["Compile-time Messaging with CIB"]
+
+==== Index Building Process
+
+The index building process transforms callback matchers into efficient lookup tables at compile time using the CIB `lookup` library. The process involves several key transformations:
+
+===== 1. Matcher Normalization
+
+All callback matchers are converted to Disjunctive Normal Form (DNF) - a sum of products:
+
+[source,cpp]
+----
+// Original matcher
+auto m = (type_f == 0x01 or type_f == 0x02) and priority_f > 5;
+
+// DNF transformation
+// Becomes: (type_f == 0x01 and priority_f > 5) or (type_f == 0x02 and priority_f > 5)
+----
+
+This normalization enables the index builder to extract field constraints for each callback.
+
+===== 2. Field Value Extraction
+
+For each indexed field, the builder extracts all possible values from matchers:
+
+[source,cpp]
+----
+// Given callbacks:
+callback_0: type_f == 0x42
+callback_1: type_f == 0x80
+callback_2: not type_f == 0x99
+callback_3: priority_f > 5  // no type_f constraint
+
+// Extracted for type_f index:
+// Positive values: {0x42 -> cb0, 0x80 -> cb1}
+// Negative values: {0x99 -> !cb2}
+// Unconstrained: {cb3}
+----
+
+===== 3. Bitset Population Algorithm
+
+The population algorithm builds a map from field values to callback bitsets:
+
+[source,text]
+----
+Step 1: Process positive constraints
+  - For each "field == value" constraint, add callback index to that value's bitset
+
+Step 2: Calculate defaults
+  - Any callback without positive constraints goes in the default bitset
+
+Step 3: Process negative constraints
+  - For each "not field == value" constraint:
+    * Add callback to all OTHER values' bitsets
+    * Remove callback from that specific value's bitset
+
+Step 4: Propagate defaults
+  - Add remaining default callbacks to all value bitsets
+----
+
+===== 4. Example: Complex Index Building
+
+Consider this scenario:
+
+[source,cpp]
+----
+// Callbacks with their matchers:
+cb0: type_f == 0x01
+cb1: type_f == 0x02
+cb2: type_f == 0x01 and priority_f > 5
+cb3: not type_f == 0xFF
+cb4: data_f > 100  // no type_f constraint
+
+// Building index for type_f:
+
+// After Step 1 (positive constraints):
+index_map = {
+  0x01 -> {0, 2},  // cb0 and cb2 match type 0x01
+  0x02 -> {1}       // cb1 matches type 0x02
+}
+default = {}
+
+// After Step 2 (find unconstrained):
+default = {3, 4}  // cb3 has negative constraint, cb4 has no constraint
+
+// After Step 3 (negative constraints):
+index_map = {
+  0x01 -> {0, 2, 3},  // cb3 added (not 0xFF)
+  0x02 -> {1, 3},     // cb3 added (not 0xFF)
+  0xFF -> {4}         // Only cb4 (cb3 excluded)
+}
+default = {3, 4}
+
+// After Step 4 (propagate remaining defaults):
+index_map = {
+  0x01 -> {0, 2, 3, 4},
+  0x02 -> {1, 3, 4},
+  0xFF -> {4}
+}
+default = {3, 4}  // For any other value
+----
+
+==== Lookup Strategy Selection
+
+The indexing system uses the CIB `lookup` library which automatically selects the best lookup strategy at compile time. The default configuration (from `lookup/lookup.hpp`) attempts strategies in this order:
+
+===== Linear Search (`linear_search_lookup`)
+**When used**: Small number of distinct values (≤4 by default)
+**Performance**: O(n) where n = number of values
+**Memory**: Minimal - just stores the entries
+
+The implementation uses a branchless select operation for constant-time behavior:
+
+[source,cpp]
+----
+// From linear_search_lookup.hpp
+for (auto [k, v] : this->entries) {
+    result = detail::select(key, k, v, result);
+}
+return result;
+----
+
+===== Pseudo-PEXT Lookup (`pseudo_pext_lookup`)
+**When used**: When linear search threshold is exceeded
+**Performance**: O(1) using bit manipulation
+**Memory**: Depends on value distribution
+
+This strategy uses a pseudo-PEXT (parallel bits extract) operation to efficiently map keys to values. It computes a mask and coefficient at compile time to extract and pack relevant bits from the key.
+
+[source,cpp]
+----
+// The lookup library automatically selects strategies:
+return strategies<linear_search_lookup<4>,
+                  pseudo_pext_lookup<true, 2>>::make(input);
+----
+
+The `strategies` template tries each strategy in order and uses the first one that doesn't fail (determined at compile time based on the input data characteristics).
+
+==== Runtime Message Handling
+
+When a message arrives, the indexed service:
+
+[source,cpp]
+----
+// 1. Extract indexed field values
+auto type_value = type_f::extract(msg);
+auto priority_value = priority_f::extract(msg);
+
+// 2. Lookup bitsets for each field
+auto type_callbacks = type_index.lookup(type_value);
+auto priority_callbacks = priority_index.lookup(priority_value);
+
+// 3. Intersect all bitsets
+auto eligible = type_callbacks & priority_callbacks;
+
+// 4. For each eligible callback
+for (auto cb_index : eligible) {
+    // 5. Run residual matcher (non-indexed constraints)
+    if (callbacks[cb_index].residual_matcher(msg)) {
+        callbacks[cb_index].handle(msg);
+    }
+}
+----
+
+==== Performance Characteristics
+
+**Index Building** (Compile-time):
+- Time: O(C × F × V) where C=callbacks, F=fields, V=distinct values
+- Space: O(F × V × (C/8)) bytes for bitsets
+
+**Message Dispatch** (Runtime):
+- Time: O(F) for lookups + O(E) for eligible callbacks
+- Where F=indexed fields, E=eligible callbacks after intersection
+- Typical case: 1-3 callbacks checked vs. all callbacks
+
+**Memory Layout**:
+The index tables are typically placed in read-only memory (.rodata section), making them cache-friendly and shareable across processes.
+
+[[async_integration]]
+=== Appendix B: Async Send/Receive Integration
+
+The message library integrates with CIB's async library to provide asynchronous message passing. This section details the integration architecture and advanced usage patterns.
+
+==== Architecture Overview
+
+The async integration uses a trigger-based scheduler system:
+
+[source,mermaid]
+----
+graph LR
+    A[msg::send] --> B[Create send_action]
+    B --> C[Pipe to scheduler]
+    C --> D[Trigger scheduler]
+    D --> E[Execute on trigger]
+    E --> F[msg::then_receive]
+    F --> G[Process message]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#9f9,stroke:#333,stroke-width:2px
+----
+
+==== Send Action Implementation
+
+The `send` action creates a message and schedules it for transmission:
+
+[source,cpp]
+----
+template <typename F, typename... Args>
+constexpr auto send(F &&f, Args &&...args) {
+    return async::sender{
+        [=](auto& scheduler, auto& continuation) {
+            // Create message using provided function
+            auto msg = f(args...);
+
+            // Schedule message for sending
+            scheduler.schedule([msg, &continuation]() {
+                // Trigger continuation with message
+                continuation.set_value(msg);
+            });
+        }
+    };
+}
+----
+
+==== Receive Action Implementation
+
+The `then_receive` creates a receiver that processes incoming messages:
+
+[source,cpp]
+----
+template <stdx::ct_string Name, typename F>
+constexpr auto then_receive(F &&f) {
+    return async::receiver{
+        [=](auto msg) {
+            // Type check: ensure msg matches expected type
+            using msg_t = std::decay_t<decltype(msg)>;
+            static_assert(is_message_v<msg_t>,
+                         "then_receive expects a message type");
+
+            // Process message with provided handler
+            return f(msg);
+        }
+    };
+}
+----
+
+==== Advanced Async Patterns
+
+===== Pipeline Processing
+
+Chain multiple message transformations:
+
+[source,cpp]
+----
+auto pipeline =
+    msg::send(create_request)
+    | msg::then_receive<"validate">([](auto msg) {
+        if (!validate(msg)) throw validation_error{};
+        return msg;
+    })
+    | msg::then_receive<"transform">([](auto msg) {
+        return transform_message(msg);
+    })
+    | msg::then_receive<"store">([](auto msg) {
+        database.store(msg);
+        return msg;
+    });
+
+async::execute(pipeline);
+----
+
+===== Fan-out Pattern
+
+Send message to multiple receivers:
+
+[source,cpp]
+----
+auto fanout = msg::send(create_broadcast)
+    | async::fork(
+        msg::then_receive<"logger">(log_message),
+        msg::then_receive<"metrics">(update_metrics),
+        msg::then_receive<"forward">(forward_to_peer)
+    );
+----
+
+===== Request-Response Pattern
+
+Implement async request-response:
+
+[source,cpp]
+----
+template <typename RequestMsg, typename ResponseMsg>
+struct async_client {
+    using request_t = RequestMsg;
+    using response_t = ResponseMsg;
+
+    auto request(request_t req) {
+        return msg::send([req](auto&) { return req; })
+             | msg::then_receive<"response">([](response_t resp) {
+                   return resp;
+               });
+    }
+};
+
+// Usage
+async_client<command_msg, status_msg> client;
+auto response_future = client.request(command_msg{"QUERY"});
+----
+
+==== Trigger Schedulers
+
+The async system uses trigger schedulers for different execution contexts:
+
+===== Immediate Scheduler
+Executes immediately in the current context:
+
+[source,cpp]
+----
+async::immediate_scheduler scheduler;
+msg::send(create_msg) | scheduler | msg::then_receive<"handle">(handler);
+----
+
+===== Thread Pool Scheduler
+Executes on a thread pool:
+
+[source,cpp]
+----
+async::thread_pool_scheduler<4> scheduler;  // 4 threads
+msg::send(create_msg) | scheduler | msg::then_receive<"handle">(handler);
+----
+
+===== Event Loop Scheduler
+Integrates with event loops (epoll, select, etc.):
+
+[source,cpp]
+----
+async::event_loop_scheduler scheduler{loop};
+msg::send(create_msg) | scheduler | msg::then_receive<"handle">(handler);
+----
+
+==== Error Handling in Async Flows
+
+Handle errors in async message processing:
+
+[source,cpp]
+----
+auto robust_flow =
+    msg::send(create_message)
+    | msg::then_receive<"process">([](auto msg) {
+        if (is_invalid(msg)) {
+            return async::make_error<invalid_message_error>();
+        }
+        return async::make_value(process(msg));
+    })
+    | async::handle_error([](auto error) {
+        log_error(error);
+        return create_default_message();
+    })
+    | msg::then_receive<"finalize">(finalize_message);
+----
+
+==== Performance Considerations
+
+**Async Overhead**:
+- Send: ~50-100ns for scheduling
+- Receive: ~20-50ns for type checking and dispatch
+- Context switch: Depends on scheduler (immediate: 0, thread pool: ~1-5μs)
+
+**Memory Management**:
+- Messages are typically moved, not copied
+- Use `const_view` in receivers to avoid copies
+- Large messages: Consider using shared_ptr or unique_ptr
+
+**Best Practices**:
+1. Use immediate scheduler for low-latency paths
+2. Use thread pool for CPU-intensive processing
+3. Batch small messages to amortize scheduling overhead
+4. Profile async vs. sync for your use case
+
+
