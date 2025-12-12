@@ -21,7 +21,9 @@ extern auto log_rt_auto_scoped_enum_arg() -> void;
 extern auto log_with_non_default_module() -> void;
 extern auto log_with_fixed_module() -> void;
 extern auto log_with_fixed_string_id() -> void;
+extern auto log_with_fixed_unsigned_string_id() -> void;
 extern auto log_with_fixed_module_id() -> void;
+extern auto log_with_fixed_unsigned_module_id() -> void;
 extern auto log_rt_float_arg() -> void;
 extern auto log_rt_double_arg() -> void;
 
@@ -141,10 +143,29 @@ TEST_CASE("log with fixed string id", "[catalog]") {
     CHECK(last_header == ((1337u << 4u) | 1u));
 }
 
+TEST_CASE("log with fixed unsigned string id", "[catalog]") {
+    test_critical_section::count = 0;
+    log_calls = 0;
+    log_with_fixed_unsigned_string_id();
+    CHECK(test_critical_section::count == 2);
+    CHECK(log_calls == 1);
+    // string ID 1338 is fixed by environment
+    CHECK(last_header == ((1338u << 4u) | 1u));
+}
+
 TEST_CASE("log with fixed module id", "[catalog]") {
     std::uint32_t expected_static = (1u << 24u) | (7u << 4u) | 3u;
 
     log_with_fixed_module_id();
+    CHECK((last_header & expected_static) == expected_static);
+    // module ID 6 is fixed by environment
+    CHECK((last_header & ~expected_static) == (6u << 16u));
+}
+
+TEST_CASE("log with fixed unsigned module id", "[catalog]") {
+    std::uint32_t expected_static = (1u << 24u) | (7u << 4u) | 3u;
+
+    log_with_fixed_unsigned_module_id();
     CHECK((last_header & expected_static) == expected_static);
     // module ID 7 is fixed by environment
     CHECK((last_header & ~expected_static) == (7u << 16u));

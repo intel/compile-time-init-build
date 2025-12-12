@@ -59,24 +59,26 @@ class Intervals:
 class Message:
     cpp_prefix: str = "sc::message<sc::undefined"
 
-    def __init__(self, text: str, args: list[str], id: int):
+    def __init__(self, text: str, args: list[str], id: int, id_suffix: str|None = None):
         self.text = text
         self.args = args
         self.id = id
+        self.id_suffix = id_suffix if id_suffix is not None else ""
         self.orig_id = id
         self.enum_lookup = None
 
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<sc::args<(.*)>, (.*), char, (.*)>\s*>"
+            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
         )
         m = string_re.match(s)
-        string_tuple = m.group(3).replace("(char)", "")
+        string_tuple = m.group(4).replace("(char)", "")
         return cls(
             "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))),
             split_args(m.group(1)),
             int(m.group(2)),
+            m.group(3),
         )
 
     @classmethod
@@ -101,13 +103,13 @@ class Message:
         return "flow" if self.text.startswith("flow.") else "msg"
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
 
     def key(self):
         return hash(self.text) ^ hash("".join(self.args))
 
     def __repr__(self):
-        return f"Message('{self.text}', {self.args}, {self.id})"
+        return f"Message('{self.text}', {self.args}, {self.id}, {self.id_suffix})"
 
     def __lt__(self, other):
         return self.text < other.text
@@ -116,19 +118,21 @@ class Message:
 class Module:
     cpp_prefix: str = "sc::module_string<sc::undefined"
 
-    def __init__(self, text: str, id: int):
+    def __init__(self, text: str, id: int, id_suffix: str|None = None):
         self.text = text
         self.id = id
+        self.id_suffix = id_suffix if id_suffix is not None else ""
         self.orig_id = id
 
     @classmethod
     def from_cpp_type(cls, s):
-        string_re = re.compile(rf"{cls.cpp_prefix}<(.*), (.*), char, (.*)>\s*>")
+        string_re = re.compile(rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), char, (.*)>\s*>")
         m = string_re.match(s)
-        string_tuple = m.group(3).replace("(char)", "")
+        string_tuple = m.group(4).replace("(char)", "")
         return cls(
             "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))),
             int(m.group(2)),
+            m.group(3),
         )
 
     @classmethod
@@ -145,13 +149,13 @@ class Module:
         )
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<void, {self.orig_id}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<void, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
 
     def key(self):
         return hash(self.text)
 
     def __repr__(self):
-        return f"Module('{self.text}', {self.id})"
+        return f"Module('{self.text}', {self.id}, {self.id_suffix})"
 
     def __lt__(self, other):
         return self.text < other.text
