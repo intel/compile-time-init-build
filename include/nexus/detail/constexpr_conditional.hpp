@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cib/detail/config_details.hpp>
-#include <cib/detail/config_item.hpp>
-#include <cib/detail/extend.hpp>
+#include <nexus/detail/config_details.hpp>
+#include <nexus/detail/config_item.hpp>
+#include <nexus/detail/extend.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/ct_format.hpp>

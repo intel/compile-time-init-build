@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cib/builder_meta.hpp>
-#include <cib/detail/config_item.hpp>
+#include <nexus/builder_meta.hpp>
+#include <nexus/detail/config_item.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>

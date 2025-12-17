@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cib/config.hpp>
-#include <cib/nexus.hpp>
 #include <flow/flow.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 namespace cib {
 /**

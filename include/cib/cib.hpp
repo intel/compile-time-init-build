@@ -34,12 +34,12 @@
  * https://github.com/intel/compile-time-init-build
  */
 
-#include <cib/builder_meta.hpp>
-#include <cib/built.hpp>
-#include <cib/callback.hpp>
-#include <cib/config.hpp>
-#include <cib/func_decl.hpp>
-#include <cib/nexus.hpp>
 #include <cib/top.hpp>
 #include <interrupt/manager.hpp>
 #include <log/log.hpp>
+#include <nexus/builder_meta.hpp>
+#include <nexus/built.hpp>
+#include <nexus/callback.hpp>
+#include <nexus/config.hpp>
+#include <nexus/func_decl.hpp>
+#include <nexus/nexus.hpp>

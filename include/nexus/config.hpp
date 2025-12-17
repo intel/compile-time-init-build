@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cib/detail/components.hpp>
-#include <cib/detail/config_details.hpp>
-#include <cib/detail/config_item.hpp>
-#include <cib/detail/constexpr_conditional.hpp>
-#include <cib/detail/exports.hpp>
-#include <cib/detail/extend.hpp>
-#include <cib/detail/runtime_conditional.hpp>
+#include <nexus/detail/components.hpp>
+#include <nexus/detail/config_details.hpp>
+#include <nexus/detail/config_item.hpp>
+#include <nexus/detail/constexpr_conditional.hpp>
+#include <nexus/detail/exports.hpp>
+#include <nexus/detail/extend.hpp>
+#include <nexus/detail/runtime_conditional.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/type_traits.hpp>

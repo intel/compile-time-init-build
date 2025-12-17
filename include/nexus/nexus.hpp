@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cib/built.hpp>
-#include <cib/detail/nexus_details.hpp>
+#include <nexus/built.hpp>
+#include <nexus/detail/nexus_details.hpp>
 
 #include <type_traits>
 

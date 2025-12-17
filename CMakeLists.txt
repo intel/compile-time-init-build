@@ -213,20 +213,20 @@ target_sources(
               BASE_DIRS
               include
               FILES
-              include/cib/builder_meta.hpp
-              include/cib/built.hpp
-              include/cib/callback.hpp
-              include/cib/config.hpp
-              include/cib/detail/components.hpp
-              include/cib/detail/constexpr_conditional.hpp
-              include/cib/detail/runtime_conditional.hpp
-              include/cib/detail/config_details.hpp
-              include/cib/detail/config_item.hpp
-              include/cib/detail/exports.hpp
-              include/cib/detail/extend.hpp
-              include/cib/detail/nexus_details.hpp
-              include/cib/func_decl.hpp
-              include/cib/nexus.hpp)
+              include/nexus/builder_meta.hpp
+              include/nexus/built.hpp
+              include/nexus/callback.hpp
+              include/nexus/config.hpp
+              include/nexus/detail/components.hpp
+              include/nexus/detail/constexpr_conditional.hpp
+              include/nexus/detail/runtime_conditional.hpp
+              include/nexus/detail/config_details.hpp
+              include/nexus/detail/config_item.hpp
+              include/nexus/detail/exports.hpp
+              include/nexus/detail/extend.hpp
+              include/nexus/detail/nexus_details.hpp
+              include/nexus/func_decl.hpp
+              include/nexus/nexus.hpp)
 
 add_library(cib_flow INTERFACE)
 target_compile_features(cib_flow INTERFACE cxx_std_20)
