@@ -1,6 +1,6 @@
 #include "catalog_concurrency.hpp"
 
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>

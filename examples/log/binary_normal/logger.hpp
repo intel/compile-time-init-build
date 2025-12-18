@@ -1,5 +1,5 @@
 // include the binary logger
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 
 #include <stdx/span.hpp>
 

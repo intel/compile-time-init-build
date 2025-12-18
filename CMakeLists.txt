@@ -167,13 +167,13 @@ target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
 target_sources(
     cib_log_fmt
     INTERFACE FILE_SET
-              log
+              log_fmt
               TYPE
               HEADERS
               BASE_DIRS
               include
               FILES
-              include/log/fmt/logger.hpp)
+              include/log_fmt/logger.hpp)
 
 add_library(cib_log_binary INTERFACE)
 target_compile_features(cib_log_binary INTERFACE cxx_std_20)
@@ -183,22 +183,22 @@ target_link_libraries_system(cib_log_binary INTERFACE cib_log cib_msg
 target_sources(
     cib_log_binary
     INTERFACE FILE_SET
-              log
+              log_binary
               TYPE
               HEADERS
               BASE_DIRS
               include
               FILES
-              include/log/module_id.hpp
-              include/log/string_id.hpp
-              include/log/unit.hpp
-              include/log/catalog/arguments.hpp
-              include/log/catalog/builder.hpp
-              include/log/catalog/catalog.hpp
-              include/log/catalog/encoder.hpp
-              include/log/catalog/mipi_builder.hpp
-              include/log/catalog/mipi_messages.hpp
-              include/log/catalog/writer.hpp)
+              include/log_binary/module_id.hpp
+              include/log_binary/string_id.hpp
+              include/log_binary/unit.hpp
+              include/log_binary/catalog/arguments.hpp
+              include/log_binary/catalog/builder.hpp
+              include/log_binary/catalog/catalog.hpp
+              include/log_binary/catalog/encoder.hpp
+              include/log_binary/catalog/mipi_builder.hpp
+              include/log_binary/catalog/mipi_messages.hpp
+              include/log_binary/catalog/writer.hpp)
 
 add_library(cib_nexus INTERFACE)
 target_compile_features(cib_nexus INTERFACE cxx_std_20)

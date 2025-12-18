@@ -269,8 +269,8 @@ template<> auto module<{m.to_cpp_type()}>() -> module_id {{
 def write_cpp(messages, modules, scoped_enums, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
-        f.write("\n#include <log/catalog/arguments.hpp>\n")
-        f.write("\n#include <log/catalog/catalog.hpp>\n\n")
+        f.write("\n#include <log_binary/catalog/arguments.hpp>\n")
+        f.write("\n#include <log_binary/catalog/catalog.hpp>\n\n")
         scoped_enum_decls = [
             make_cpp_scoped_enum_decl(e, ut) for e, ut in scoped_enums.items()
         ]

@@ -1,7 +1,7 @@
 #include "catalog_concurrency.hpp"
 #include "catalog_enums.hpp"
 
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 
 #include <stdx/ct_format.hpp>
 #include <stdx/span.hpp>

@@ -1,5 +1,5 @@
 // include the binary logger and message machinery
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 #include <msg/message.hpp>
 
 #include <stdx/span.hpp>

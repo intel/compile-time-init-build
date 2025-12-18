@@ -1,14 +1,14 @@
 #pragma once
 
-#include <log/catalog/arguments.hpp>
-#include <log/catalog/builder.hpp>
-#include <log/catalog/catalog.hpp>
-#include <log/catalog/writer.hpp>
 #include <log/log.hpp>
 #include <log/module.hpp>
-#include <log/module_id.hpp>
-#include <log/string_id.hpp>
-#include <log/unit.hpp>
+#include <log_binary/catalog/arguments.hpp>
+#include <log_binary/catalog/builder.hpp>
+#include <log_binary/catalog/catalog.hpp>
+#include <log_binary/catalog/writer.hpp>
+#include <log_binary/module_id.hpp>
+#include <log_binary/string_id.hpp>
+#include <log_binary/unit.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>

@@ -1,4 +1,4 @@
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>

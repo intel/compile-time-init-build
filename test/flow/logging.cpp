@@ -1,6 +1,6 @@
 #include <cib/cib.hpp>
 #include <flow/flow.hpp>
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 

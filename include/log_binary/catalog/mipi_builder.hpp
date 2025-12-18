@@ -1,8 +1,8 @@
 #pragma once
 
-#include <log/catalog/arguments.hpp>
-#include <log/catalog/catalog.hpp>
-#include <log/catalog/mipi_messages.hpp>
+#include <log_binary/catalog/arguments.hpp>
+#include <log_binary/catalog/catalog.hpp>
+#include <log_binary/catalog/mipi_messages.hpp>
 
 #include <stdx/bit.hpp>
 #include <stdx/compiler.hpp>
