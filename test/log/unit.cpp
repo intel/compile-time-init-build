@@ -1,6 +1,6 @@
-#include <log/catalog/encoder.hpp>
 #include <log/level.hpp>
-#include <log/unit.hpp>
+#include <log_binary/catalog/encoder.hpp>
+#include <log_binary/unit.hpp>
 
 #include <stdx/ct_conversions.hpp>
 #include <stdx/ct_format.hpp>

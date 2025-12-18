@@ -1,13 +1,13 @@
-#include <log/catalog/arguments.hpp>
-#include <log/catalog/builder.hpp>
-#include <log/catalog/catalog.hpp>
-#include <log/catalog/encoder.hpp>
-#include <log/catalog/mipi_builder.hpp>
-#include <log/catalog/mipi_messages.hpp>
-#include <log/catalog/writer.hpp>
-#include <log/module_id.hpp>
-#include <log/string_id.hpp>
-#include <log/unit.hpp>
+#include <log_binary/catalog/arguments.hpp>
+#include <log_binary/catalog/builder.hpp>
+#include <log_binary/catalog/catalog.hpp>
+#include <log_binary/catalog/encoder.hpp>
+#include <log_binary/catalog/mipi_builder.hpp>
+#include <log_binary/catalog/mipi_messages.hpp>
+#include <log_binary/catalog/writer.hpp>
+#include <log_binary/module_id.hpp>
+#include <log_binary/string_id.hpp>
+#include <log_binary/unit.hpp>
 
 #if __STDC_HOSTED__ == 0
 extern "C" auto main() -> int;

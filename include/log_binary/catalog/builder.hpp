@@ -1,6 +1,6 @@
 #pragma once
 
-#include <log/catalog/mipi_builder.hpp>
+#include <log_binary/catalog/mipi_builder.hpp>
 
 #include <stdx/compiler.hpp>
 

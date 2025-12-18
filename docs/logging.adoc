@@ -14,7 +14,7 @@ Logging in `cib` is in two parts:
 Three possible logger implementations are provided:
 
 - one using fmt in https://github.com/intel/compile-time-init-build/tree/main/include/log_fmt/logger.hpp[fmt/logger.hpp]
-- one using binary encoding in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/encoder.hpp[catalog/encoder.hpp], using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] by default
+- one using binary encoding in https://github.com/intel/compile-time-init-build/tree/main/include/log_binary/catalog/encoder.hpp[catalog/encoder.hpp], using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] by default
 - the default implementation: the null logger which accepts everything, but never produces output
 
 === Getting started
@@ -154,7 +154,7 @@ An application can select the binary logger by specializing the
 receive binary data:
 [source,cpp]
 ----
-#include <log/catalog/encoder.hpp>
+#include <log_binary/catalog/encoder.hpp>
 #include <stdx/span.hpp>
 
 struct log_destination {
@@ -183,7 +183,7 @@ sent at runtime and string data is not stored in the executable.
 
 - First, each string constant contains string character data in its type.
 - The binary logger calls the function template specialization
-  https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/catalog.hpp[`catalog`]
+  https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/catalog/catalog.hpp[`catalog`]
   to get the ID corresponding to each string constant.
 
 But: the `catalog` function template is just that -- only a template -- to
@@ -462,10 +462,10 @@ an environment:
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/level.hpp[severity]
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/flavor.hpp[flavor] (typically secure or otherwise)
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/module.hpp[module]
-- https://github.com/intel/compile-time-init-build/blob/main/include/log/unit.hpp[unit]
-- https://github.com/intel/compile-time-init-build/blob/main/include/log/string_id.hpp[string ID] or https://github.com/intel/compile-time-init-build/blob/main/include/log/module_id.hpp[module ID]
-- https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/builder.hpp[binary builder]
-- https://github.com/intel/compile-time-init-build/blob/main/include/log/catalog/writer.hpp[binary writer]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/unit.hpp[unit]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/string_id.hpp[string ID] or https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/module_id.hpp[module ID]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/catalog/builder.hpp[binary builder]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/catalog/writer.hpp[binary writer]
 
 The binary logger in particular can have both the builder and the writer
 (destination) customized in this way. The defaults provide binary logging
