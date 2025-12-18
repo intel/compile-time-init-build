@@ -4,8 +4,8 @@ add_library(catalog1_lib STATIC catalog1_lib.cpp)
 add_library(catalog2_lib OBJECT catalog2a_lib.cpp catalog2b_lib.cpp)
 target_include_directories(catalog1_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(catalog2_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(catalog1_lib PRIVATE warnings cib)
-target_link_libraries(catalog2_lib PRIVATE warnings cib)
+target_link_libraries(catalog1_lib PRIVATE warnings cib_log_binary)
+target_link_libraries(catalog2_lib PRIVATE warnings cib_log_binary)
 gen_str_catalog(
     OUTPUT_CPP
     ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp
@@ -36,7 +36,7 @@ gen_str_catalog(
     test_catalog_json)
 
 add_library(catalog_strings STATIC ${CMAKE_CURRENT_BINARY_DIR}/strings.cpp)
-target_link_libraries(catalog_strings PUBLIC cib)
+target_link_libraries(catalog_strings PUBLIC cib_log_binary)
 
 add_unit_test(
     log_catalog_test
