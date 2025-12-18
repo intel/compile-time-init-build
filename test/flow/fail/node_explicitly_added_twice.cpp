@@ -1,5 +1,6 @@
-#include <cib/cib.hpp>
 #include <flow/flow.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 // EXPECT: are explicitly added more than once
 

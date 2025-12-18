@@ -59,7 +59,9 @@ class Intervals:
 class Message:
     cpp_prefix: str = "sc::message<sc::undefined"
 
-    def __init__(self, text: str, args: list[str], id: int, id_suffix: str|None = None):
+    def __init__(
+        self, text: str, args: list[str], id: int, id_suffix: str | None = None
+    ):
         self.text = text
         self.args = args
         self.id = id
@@ -118,7 +120,7 @@ class Message:
 class Module:
     cpp_prefix: str = "sc::module_string<sc::undefined"
 
-    def __init__(self, text: str, id: int, id_suffix: str|None = None):
+    def __init__(self, text: str, id: int, id_suffix: str | None = None):
         self.text = text
         self.id = id
         self.id_suffix = id_suffix if id_suffix is not None else ""
@@ -126,7 +128,9 @@ class Module:
 
     @classmethod
     def from_cpp_type(cls, s):
-        string_re = re.compile(rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), char, (.*)>\s*>")
+        string_re = re.compile(
+            rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
+        )
         m = string_re.match(s)
         string_tuple = m.group(4).replace("(char)", "")
         return cls(

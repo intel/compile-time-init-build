@@ -1,9 +1,10 @@
-#include <cib/cib.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/message.hpp>
 #include <msg/send.hpp>
 #include <msg/service.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 #include <async/schedulers/trigger_manager.hpp>
 #include <async/sync_wait.hpp>

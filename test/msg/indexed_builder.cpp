@@ -1,10 +1,11 @@
-#include <cib/cib.hpp>
 #include <log_fmt/logger.hpp>
 #include <match/ops.hpp>
 #include <msg/callback.hpp>
 #include <msg/field.hpp>
 #include <msg/indexed_service.hpp>
 #include <msg/message.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
