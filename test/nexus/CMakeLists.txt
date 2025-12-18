@@ -1,0 +1,9 @@
+add_tests(
+    FILES
+    builder_meta
+    callback
+    callback_uninit
+    nexus
+    LIBRARIES
+    warnings
+    cib_nexus)

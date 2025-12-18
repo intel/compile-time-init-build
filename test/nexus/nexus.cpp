@@ -1,4 +1,6 @@
-#include <cib/cib.hpp>
+#include <nexus/callback.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
