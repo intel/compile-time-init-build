@@ -6,7 +6,8 @@ add_unit_test(
     "separate_actions.cpp"
     LIBRARIES
     warnings
-    cib)
+    cib_flow
+    cib_nexus)
 
 add_tests(
     FILES
@@ -18,13 +19,15 @@ add_tests(
     log_levels
     custom_log_levels
     LIBRARIES
-    cib)
+    cib_flow
+    cib_log_fmt
+    cib_nexus)
 
 add_subdirectory(fail)
 
 function(add_debug_flow_test)
     add_executable(debug_flow EXCLUDE_FROM_ALL debug_flow.cpp)
-    target_link_libraries(debug_flow PRIVATE cib)
+    target_link_libraries(debug_flow PRIVATE cib_flow cib_nexus)
     generate_flow_graph(
         TARGET
         debug_flow

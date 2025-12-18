@@ -1,6 +1,7 @@
-#include <cib/cib.hpp>
 #include <flow/debug_builder.hpp>
 #include <flow/flow.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 // EXPECT: _b --> _c
 
