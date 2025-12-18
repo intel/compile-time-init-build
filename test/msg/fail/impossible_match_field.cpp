@@ -1,8 +1,9 @@
-#include <cib/cib.hpp>
 #include <match/ops.hpp>
 #include <msg/field.hpp>
 #include <msg/indexed_service.hpp>
 #include <msg/message.hpp>
+#include <nexus/config.hpp>
+#include <nexus/nexus.hpp>
 
 // EXPECT: Indexed callback has matcher that is never matched
 namespace {

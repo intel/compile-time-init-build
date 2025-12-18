@@ -2,8 +2,10 @@ add_compile_fail_test(callback_bad_field_name.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(field_insert_space.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(field_location.cpp LIBRARIES warnings cib_msg)
 add_compile_fail_test(field_size.cpp LIBRARIES warnings cib_msg)
-add_compile_fail_test(impossible_match_callback.cpp LIBRARIES warnings cib_msg)
-add_compile_fail_test(impossible_match_field.cpp LIBRARIES warnings cib_msg)
+add_compile_fail_test(impossible_match_callback.cpp LIBRARIES warnings cib_msg
+                      cib_nexus)
+add_compile_fail_test(impossible_match_field.cpp LIBRARIES warnings cib_msg
+                      cib_nexus)
 add_compile_fail_test(owning_msg_incompatible_storage.cpp LIBRARIES warnings
                       cib_msg)
 add_compile_fail_test(owning_msg_incompatible_view.cpp LIBRARIES warnings

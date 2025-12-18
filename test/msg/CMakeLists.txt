@@ -15,6 +15,9 @@ add_tests(
     relaxed_message
     send
     LIBRARIES
-    cib)
+    warnings
+    cib_log_fmt
+    cib_msg
+    cib_nexus)
 
 add_subdirectory(fail)
