@@ -1,5 +1,4 @@
 #include <cib/cib.hpp>
-#include <cib/func_decl.hpp>
 #include <flow/flow.hpp>
 #include <flow/viz_builder.hpp>
 #include <log/fmt/logger.hpp>

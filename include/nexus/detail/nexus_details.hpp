@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/detail/exports.hpp>
+#include <nexus/detail/exports.hpp>
 
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>

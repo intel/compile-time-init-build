@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/detail/config_item.hpp>
+#include <nexus/detail/config_item.hpp>
 
 #include <stdx/tuple_algorithms.hpp>
 
