@@ -2,7 +2,7 @@
 #include <cib/func_decl.hpp>
 #include <flow/flow.hpp>
 #include <flow/viz_builder.hpp>
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 

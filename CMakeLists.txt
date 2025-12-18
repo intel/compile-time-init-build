@@ -167,13 +167,13 @@ target_link_libraries_system(cib_log_fmt INTERFACE cib_log fmt::fmt-header-only
 target_sources(
     cib_log_fmt
     INTERFACE FILE_SET
-              log
+              log_fmt
               TYPE
               HEADERS
               BASE_DIRS
               include
               FILES
-              include/log/fmt/logger.hpp)
+              include/log_fmt/logger.hpp)
 
 add_library(cib_log_binary INTERFACE)
 target_compile_features(cib_log_binary INTERFACE cxx_std_20)

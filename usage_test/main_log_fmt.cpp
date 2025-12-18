@@ -1,5 +1,5 @@
 #ifndef SIMULATE_FREESTANDING
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 #endif
 
 #if __STDC_HOSTED__ == 0

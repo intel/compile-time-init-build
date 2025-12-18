@@ -1,5 +1,5 @@
 // include the fmt logger
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 
 #include <iostream>
 #include <iterator>

@@ -7,7 +7,6 @@ add_tests(
     unit
     LIBRARIES
     cib_log)
-add_tests(FILES fmt_logger LIBRARIES cib_log_fmt)
 add_tests(FILES encoder mipi_logger LIBRARIES cib_log_binary)
 
 add_library(catalog1_lib STATIC catalog1_lib.cpp)

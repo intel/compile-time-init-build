@@ -1,5 +1,5 @@
 #include <log/catalog/encoder.hpp>
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 #include <log/level.hpp>
 
 #include <stdx/ct_conversions.hpp>

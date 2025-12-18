@@ -13,7 +13,7 @@ Logging in `cib` is in two parts:
 
 Three possible logger implementations are provided:
 
-- one using fmt in https://github.com/intel/compile-time-init-build/tree/main/include/log/fmt/logger.hpp[fmt/logger.hpp]
+- one using fmt in https://github.com/intel/compile-time-init-build/tree/main/include/log_fmt/logger.hpp[fmt/logger.hpp]
 - one using binary encoding in https://github.com/intel/compile-time-init-build/tree/main/include/log/catalog/encoder.hpp[catalog/encoder.hpp], using the https://www.mipi.org/specifications/sys-t[MIPI Sys-T spec] by default
 - the default implementation: the null logger which accepts everything, but never produces output
 
@@ -43,7 +43,7 @@ To select a logging implementation for an application, we need to include the
 appropriate implementation header and specialize a variable template:
 [source,cpp]
 ----
-#include <log/fmt/logger.hpp>
+#include <log_fmt/logger.hpp>
 #include <iostream>
 
 template <>
