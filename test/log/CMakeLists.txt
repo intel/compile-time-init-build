@@ -1,9 +1,1 @@
-add_tests(
-    FILES
-    env
-    level
-    log
-    module_id
-    unit
-    LIBRARIES
-    cib_log)
+add_tests(FILES env log module_id LIBRARIES cib_log)

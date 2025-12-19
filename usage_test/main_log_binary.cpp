@@ -7,7 +7,6 @@
 #include <log_binary/catalog/writer.hpp>
 #include <log_binary/module_id.hpp>
 #include <log_binary/string_id.hpp>
-#include <log_binary/unit.hpp>
 
 #if __STDC_HOSTED__ == 0
 extern "C" auto main() -> int;

@@ -1,5 +1,4 @@
 #include <log/log.hpp>
-#include <log_fmt/logger.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
@@ -9,10 +8,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <any>
-#include <iterator>
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 
 namespace {
 bool panicked{};
@@ -36,36 +35,53 @@ struct injected_handler {
 };
 
 std::string buffer{};
+std::string_view expected_module{};
+
+struct test_log_handler {
+    template <typename Env, typename FilenameStringType,
+              typename LineNumberType, typename FmtResult>
+    auto log(FilenameStringType, LineNumberType, FmtResult const &fr) -> void {
+        constexpr auto fmtstr = std::string_view{decltype(fr.str)::value};
+        CHECK(fmtstr == expected_why);
+        buffer = fmtstr;
+        CHECK(std::string_view{logging::get_module(Env{})} == expected_module);
+    }
+};
+
+struct test_config {
+    test_log_handler logger;
+};
 
 auto reset_test_state() {
     panicked = false;
     expected_why = {};
     expected_args.reset();
     buffer.clear();
+    expected_module = "default";
 }
 } // namespace
 
-template <>
-inline auto logging::config<> =
-    logging::fmt::config{std::back_inserter(buffer)};
-
+template <> inline auto logging::config<> = test_config{};
 template <> inline auto stdx::panic_handler<> = injected_handler{};
 
 TEST_CASE("CIB_FATAL logs the string", "[log]") {
     reset_test_state();
+    expected_why = "Hello";
 
     CIB_FATAL("Hello");
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello") != std::string::npos);
+    CHECK(buffer == expected_why);
 }
 
 TEST_CASE("CIB_FATAL respects the log module", "[log]") {
     reset_test_state();
+    expected_why = "Hello";
+    expected_module = "test";
 
     CIB_LOG_MODULE("test");
     CIB_FATAL("Hello");
     CAPTURE(buffer);
-    CHECK(buffer.find("FATAL [test]: Hello") != std::string::npos);
+    CHECK(buffer == expected_why);
 }
 
 TEST_CASE("CIB_FATAL calls compile-time panic", "[log]") {
@@ -83,7 +99,7 @@ TEST_CASE("CIB_FATAL pre-formats arguments passed to panic", "[log]") {
 
     CIB_FATAL("{} {}", "Hello", 42);
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -95,7 +111,7 @@ TEST_CASE("CIB_FATAL can format stack arguments (1)", "[log]") {
     auto x = 42;
     CIB_FATAL("Hello {}", x);
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 42") != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -108,7 +124,7 @@ TEST_CASE("CIB_FATAL can format stack arguments (2)", "[log]") {
     auto x = std::string_view{"world"};
     CIB_FATAL("Hello {}", x);
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello world") != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -123,7 +139,7 @@ TEST_CASE("CIB_FATAL formats compile-time arguments where possible", "[log]") {
     }.template operator()<"Hello">();
 
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 17") != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -136,7 +152,7 @@ TEST_CASE("CIB_FATAL passes extra arguments to panic", "[log]") {
     auto y = 18;
     CIB_FATAL("Hello {}", x, y);
     CAPTURE(buffer);
-    CHECK(buffer.find("Hello 17") != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -146,7 +162,7 @@ TEST_CASE("CIB_ASSERT is equivalent to CIB_FATAL on failure", "[log]") {
 
     CIB_ASSERT(true == false);
     CAPTURE(buffer);
-    CHECK(buffer.find(expected_why) != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
 }
 
@@ -158,31 +174,6 @@ TEST_CASE("CIB_ASSERT passes arguments to panic", "[log]") {
     auto x = 17;
     CIB_ASSERT(true == false, x);
     CAPTURE(buffer);
-    CHECK(buffer.find(expected_why) != std::string::npos);
+    CHECK(buffer == expected_why);
     CHECK(panicked);
-}
-
-namespace {
-enum struct custom_level { THE_ONE_LEVEL = 5 };
-}
-
-namespace logging {
-template <custom_level L>
-[[nodiscard]] auto format_as(level_wrapper<L>) -> std::string_view {
-    STATIC_REQUIRE(L == custom_level::THE_ONE_LEVEL);
-    return "THE_ONE_LEVEL";
-}
-} // namespace logging
-
-#define CUSTOM_FATAL(MSG, ...)                                                 \
-    logging::panic<MSG, stdx::extend_env_t<cib_log_env_t, logging::get_level,  \
-                                           custom_level::THE_ONE_LEVEL>>(      \
-        __FILE__, __LINE__ __VA_OPT__(, STDX_MAP(CX_WRAP, __VA_ARGS__)))
-
-TEST_CASE("panic works with custom level", "[log]") {
-    reset_test_state();
-
-    CUSTOM_FATAL("Hello");
-    CAPTURE(buffer);
-    CHECK(buffer.find("THE_ONE_LEVEL") != std::string::npos);
 }

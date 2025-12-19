@@ -462,7 +462,7 @@ an environment:
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/level.hpp[severity]
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/flavor.hpp[flavor] (typically secure or otherwise)
 - https://github.com/intel/compile-time-init-build/blob/main/include/log/module.hpp[module]
-- https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/unit.hpp[unit]
+- https://github.com/intel/compile-time-init-build/blob/main/include/log/unit.hpp[unit]
 - https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/string_id.hpp[string ID] or https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/module_id.hpp[module ID]
 - https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/catalog/builder.hpp[binary builder]
 - https://github.com/intel/compile-time-init-build/blob/main/include/log_binary/catalog/writer.hpp[binary writer]

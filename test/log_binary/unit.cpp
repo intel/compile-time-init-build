@@ -1,10 +1,8 @@
 #include <log/level.hpp>
+#include <log/unit.hpp>
 #include <log_binary/catalog/encoder.hpp>
-#include <log_binary/unit.hpp>
 
-#include <stdx/ct_conversions.hpp>
 #include <stdx/ct_format.hpp>
-#include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
 
 #include <catch2/catch_test_macros.hpp>

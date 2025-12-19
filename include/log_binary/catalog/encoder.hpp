@@ -2,13 +2,13 @@
 
 #include <log/log.hpp>
 #include <log/module.hpp>
+#include <log/unit.hpp>
 #include <log_binary/catalog/arguments.hpp>
 #include <log_binary/catalog/builder.hpp>
 #include <log_binary/catalog/catalog.hpp>
 #include <log_binary/catalog/writer.hpp>
 #include <log_binary/module_id.hpp>
 #include <log_binary/string_id.hpp>
-#include <log_binary/unit.hpp>
 
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
