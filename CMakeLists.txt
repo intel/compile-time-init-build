@@ -121,7 +121,8 @@ target_sources(
               include/log/flavor.hpp
               include/log/level.hpp
               include/log/log.hpp
-              include/log/module.hpp)
+              include/log/module.hpp
+              include/log/unit.hpp)
 
 add_library(cib_msg INTERFACE)
 target_compile_features(cib_msg INTERFACE cxx_std_20)
@@ -191,7 +192,6 @@ target_sources(
               FILES
               include/log_binary/module_id.hpp
               include/log_binary/string_id.hpp
-              include/log_binary/unit.hpp
               include/log_binary/catalog/arguments.hpp
               include/log_binary/catalog/builder.hpp
               include/log_binary/catalog/catalog.hpp
