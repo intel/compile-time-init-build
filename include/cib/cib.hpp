@@ -37,9 +37,8 @@
 #include <cib/top.hpp>
 #include <interrupt/manager.hpp>
 #include <log/log.hpp>
-#include <nexus/builder_meta.hpp>
-#include <nexus/built.hpp>
 #include <nexus/callback.hpp>
 #include <nexus/config.hpp>
 #include <nexus/func_decl.hpp>
 #include <nexus/nexus.hpp>
+#include <nexus/service.hpp>

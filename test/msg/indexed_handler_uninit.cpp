@@ -1,6 +1,6 @@
 #include <msg/indexed_service.hpp>
 #include <msg/message.hpp>
-#include <nexus/built.hpp>
+#include <nexus/service.hpp>
 
 #include <stdx/panic.hpp>
 

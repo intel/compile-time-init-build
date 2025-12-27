@@ -1,5 +1,3 @@
-#include <nexus/builder_meta.hpp>
-#include <nexus/built.hpp>
 #include <nexus/callback.hpp>
 #include <nexus/config.hpp>
 #include <nexus/detail/components.hpp>
@@ -12,6 +10,7 @@
 #include <nexus/detail/runtime_conditional.hpp>
 #include <nexus/func_decl.hpp>
 #include <nexus/nexus.hpp>
+#include <nexus/service.hpp>
 
 #if __STDC_HOSTED__ == 0
 extern "C" auto main() -> int;

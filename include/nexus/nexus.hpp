@@ -1,7 +1,7 @@
 #pragma once
 
-#include <nexus/built.hpp>
 #include <nexus/detail/nexus_details.hpp>
+#include <nexus/service.hpp>
 
 #include <type_traits>
 
