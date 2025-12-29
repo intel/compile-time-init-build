@@ -213,8 +213,6 @@ target_sources(
               BASE_DIRS
               include
               FILES
-              include/nexus/builder_meta.hpp
-              include/nexus/built.hpp
               include/nexus/callback.hpp
               include/nexus/config.hpp
               include/nexus/detail/components.hpp
@@ -226,7 +224,8 @@ target_sources(
               include/nexus/detail/extend.hpp
               include/nexus/detail/nexus_details.hpp
               include/nexus/func_decl.hpp
-              include/nexus/nexus.hpp)
+              include/nexus/nexus.hpp
+              include/nexus/service.hpp)
 
 add_library(cib_flow INTERFACE)
 target_compile_features(cib_flow INTERFACE cxx_std_20)

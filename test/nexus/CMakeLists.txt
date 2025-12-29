@@ -1,9 +1,9 @@
 add_tests(
     FILES
-    builder_meta
     callback
     callback_uninit
     nexus
+    service
     LIBRARIES
     warnings
     cib_nexus)
