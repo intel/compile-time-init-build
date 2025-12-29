@@ -18,20 +18,18 @@ namespace cib {
  */
 
 template <typename Config> struct nexus {
-// Workaround unfortunate bug in clang where it can't deduce "auto" sometimes
-#define CIB_BUILD_SERVICE                                                      \
-    initialized<Config, Tag>::value.template build<initialized<Config, Tag>>()
-
     template <typename Tag>
-    constexpr static decltype(CIB_BUILD_SERVICE) service = CIB_BUILD_SERVICE;
-#undef CIB_BUILD_SERVICE
+    constexpr static auto service = [] {
+        using init_t = initialized<Config, Tag>;
+        return init_t::value.template build<init_t>();
+    }();
 
     static void init() {
         auto const service = []<typename T> {
-            using from_t = std::remove_cvref_t<decltype(nexus::service<T>)>;
+            auto &service_impl = nexus::service<T>;
+            using from_t = std::remove_cvref_t<decltype(service_impl)>;
             using to_t = std::remove_cvref_t<decltype(cib::service<T>)>;
 
-            auto &service_impl = nexus::service<T>;
             if constexpr (std::is_convertible_v<from_t, to_t>) {
                 cib::service<T> = service_impl;
             } else {
