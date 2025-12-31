@@ -6,7 +6,9 @@
 #include <stdx/tuple_algorithms.hpp>
 
 namespace msg {
-template <typename Callbacks, typename MsgBase, typename... ExtraCallbackArgs>
+
+template <stdx::tuplelike Callbacks, typename MsgBase,
+          typename... ExtraCallbackArgs>
 struct handler_builder {
     Callbacks callbacks;
 

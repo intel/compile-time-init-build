@@ -7,9 +7,9 @@
 #include <stdx/tuple.hpp>
 
 namespace cib::detail {
-template <typename ServiceType, typename... Args>
+template <typename Service, typename... Args>
 struct extend : public config_item {
-    using service_type = ServiceType;
+    using service_type = Service;
     constexpr static auto builder = cib::builder_t<service_type>{};
     stdx::tuple<Args...> args_tuple;
 
