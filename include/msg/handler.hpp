@@ -3,12 +3,14 @@
 #include <log/log.hpp>
 #include <msg/handler_interface.hpp>
 
+#include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/utility.hpp>
 
 namespace msg {
 
-template <typename Callbacks, typename MsgBase, typename... ExtraCallbackArgs>
+template <stdx::tuplelike Callbacks, typename MsgBase,
+          typename... ExtraCallbackArgs>
 struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
     Callbacks callbacks{};
 

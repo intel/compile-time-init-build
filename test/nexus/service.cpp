@@ -7,8 +7,12 @@
 #include <type_traits>
 
 namespace {
-struct TestBuilder;
 struct TestInterface {};
+
+struct TestBuilder {
+    constexpr auto add(int) -> TestBuilder;
+    template <typename> constexpr static auto build() -> TestInterface;
+};
 
 struct test_builder_meta {
     using builder_t = TestBuilder;
