@@ -70,7 +70,7 @@ template <std::size_t NumFuncs = 0, typename... ArgTypes> struct builder {
      * @return
      *      Function pointer to the implemented callback service.
      */
-    template <typename BuilderValue>
+    template <typename BuilderValue, typename>
     [[nodiscard]] CONSTEVAL static auto build() {
         return run<BuilderValue>;
     }

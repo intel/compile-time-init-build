@@ -7,7 +7,7 @@
 #include <type_traits>
 
 template <typename BuilderValue> constexpr static auto build() {
-    return BuilderValue::value.template build<BuilderValue>();
+    return BuilderValue::value.template build<BuilderValue, void>();
 }
 
 template <typename BuilderMeta, typename BuiltCallback>

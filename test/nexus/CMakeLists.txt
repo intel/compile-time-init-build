@@ -2,6 +2,7 @@ add_tests(
     FILES
     callback
     callback_uninit
+    injected_nexus_service
     nexus
     service
     LIBRARIES
