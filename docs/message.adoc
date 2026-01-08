@@ -445,13 +445,6 @@ minimal effort at runtime.
 For each field in the `msg::index_spec`, we build a map from field values to
 bitsets, where the values in the bitsets represent callback indices.
 
-NOTE: The bitsets may be run-length encoded by using the `rle_indexed_service`
-inplace of the `indexed_service`. This may be useful if you have limited space
-and/or a large set of possible callbacks.
-See xref:implementation_details.adoc#run_length_encoded_message_indices[Run Length
-Encoding Implementation Details]
-
-
 Each `indexed_callback` has a matcher that may be an
 xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
 expression]. The `indexed_callback` construction process ensures that this
