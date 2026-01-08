@@ -34,7 +34,7 @@ class builder_for {
         });
     }
 
-    template <typename BuilderValue>
+    template <typename BuilderValue, typename /*Nexus*/>
     [[nodiscard]] constexpr static auto build() {
         return Renderer::template render<BuilderValue>();
     }

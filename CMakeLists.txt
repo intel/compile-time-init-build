@@ -317,6 +317,7 @@ if(PROJECT_IS_TOP_LEVEL)
     clang_tidy_interface(cib_seq)
 
     # Enable functional and performance test suites.
+    include(CTest)
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)

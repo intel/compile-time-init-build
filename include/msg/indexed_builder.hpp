@@ -50,7 +50,8 @@ struct indexed_builder
         } val;
         return val;
     }
-    template <typename BuilderValue> static CONSTEVAL auto build() {
+    template <typename BuilderValue, typename /*Nexus*/>
+    static CONSTEVAL auto build() {
         constexpr auto make_index_lookup =
             []<typename I, std::size_t... Es>(std::index_sequence<Es...>) {
                 return lookup::make(make_input<BuilderValue, I, Es...>());

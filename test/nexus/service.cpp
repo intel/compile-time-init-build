@@ -11,7 +11,8 @@ struct TestInterface {};
 
 struct TestBuilder {
     constexpr auto add(int) -> TestBuilder;
-    template <typename> constexpr static auto build() -> TestInterface;
+    template <typename, typename>
+    constexpr static auto build() -> TestInterface;
 };
 
 struct test_builder_meta {
@@ -21,12 +22,13 @@ struct test_builder_meta {
 };
 } // namespace
 
-TEST_CASE("builder_meta concept") {
+TEST_CASE("builder_meta concept", "[service]") {
     STATIC_REQUIRE(cib::builder_meta<test_builder_meta>);
 }
 
 TEST_CASE(
-    "builder_meta builder and interface type traits return correct values") {
+    "builder_meta builder and interface type traits return correct values",
+    "[service]") {
     STATIC_REQUIRE(
         std::is_same_v<TestBuilder, cib::builder_t<test_builder_meta>>);
     STATIC_REQUIRE(

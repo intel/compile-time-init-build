@@ -11,6 +11,7 @@ namespace archetypes {
 template <typename T> struct initialized_service {
     constexpr static auto value = T{};
 };
+struct nexus {};
 } // namespace archetypes
 
 template <typename Interface, typename T>
@@ -38,15 +39,19 @@ template <typename T> struct add_tester : T, add_base {};
 
 template <typename T>
 concept has_add_function = not requires(add_tester<T> &t) { t.add(); };
+
+template <typename Builder, typename Meta>
+concept injected_builder_for = requires(Builder &b) {
+    {
+        Builder::template build<archetypes::initialized_service<Builder>,
+                                archetypes::nexus>()
+    } -> interface_convertible<typename Meta::interface_t>;
+};
 } // namespace detail
 
 template <typename Builder, typename Meta>
-concept builder_for =
-    detail::has_add_function<Builder> and requires(Builder &b) {
-        {
-            Builder::template build<archetypes::initialized_service<Builder>>()
-        } -> interface_convertible<typename Meta::interface_t>;
-    };
+concept builder_for = detail::has_add_function<Builder> and
+                      detail::injected_builder_for<Builder, Meta>;
 
 template <typename T>
 concept builder_meta = builder_for<typename T::builder_t, T> and requires {

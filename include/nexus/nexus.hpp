@@ -21,7 +21,7 @@ template <typename Config> struct nexus {
     template <builder_meta T>
     constexpr static auto service = [] {
         using init_t = initialized<Config, T>;
-        return init_t::value.template build<init_t>();
+        return init_t::value.template build<init_t, nexus>();
     }();
 
     static void init() {
