@@ -65,7 +65,7 @@ struct debug_builder {
         constexpr static bool active = true;
     };
 
-    template <typename Initialized>
+    template <typename Initialized, typename /*Nexus*/>
     [[nodiscard]] constexpr static auto render() -> built_flow<Initialized> {
         return {};
     }

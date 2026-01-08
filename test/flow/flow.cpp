@@ -18,6 +18,10 @@ constexpr auto a = flow::action<"a">([] { actual += "a"; });
 constexpr auto b = flow::action<"b">([] { actual += "b"; });
 constexpr auto c = flow::action<"c">([] { actual += "c"; });
 constexpr auto d = flow::action<"d">([] { actual += "d"; });
+constexpr auto injected = flow::action<"injected">([]<typename Nexus>() {
+    [[maybe_unused]] Nexus n{};
+    actual += "i";
+});
 
 struct TestFlowAlpha : public flow::service<> {};
 struct TestFlowBeta : public flow::service<> {};
@@ -82,6 +86,12 @@ flowchart TD
 TEST_CASE("add single action through cib::nexus", "[flow]") {
     check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
                cib::extend<TestFlowAlpha>(*a)>("a");
+}
+
+TEST_CASE("add single action with injected nexus through cib::nexus",
+          "[flow]") {
+    check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
+               cib::extend<TestFlowAlpha>(*injected)>("i");
 }
 
 TEST_CASE("add runtime conditional action through cib::nexus", "[flow]") {

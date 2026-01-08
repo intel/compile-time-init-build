@@ -27,9 +27,11 @@ namespace flow {
 namespace detail {
 template <typename T> using is_duplicated = std::bool_constant<(T::size() > 1)>;
 
-template <typename CTNode, typename Output>
+template <typename CTNode, typename Nexus, typename Output>
 concept is_output_compatible = requires(CTNode n) {
-    { Output::create_node(n) } -> std::same_as<typename Output::node_t>;
+    {
+        Output::template create_node<Nexus>(n)
+    } -> std::same_as<typename Output::node_t>;
 };
 
 template <typename T>
@@ -45,13 +47,14 @@ template <stdx::ct_string Name, typename LogPolicy = log_policy_t<Name>,
               func_list>
 struct graph_builder {
     // NOLINTBEGIN(readability-function-cognitive-complexity)
-    template <typename Output, std::size_t N, std::size_t E>
+    template <typename Output, typename Nexus, std::size_t N, std::size_t E>
     [[nodiscard]] constexpr static auto make_graph(auto const &nodes,
                                                    auto const &edges) {
         using output_node_t = typename Output::node_t;
         using graph_t = stdx::cx_multimap<output_node_t, output_node_t, N, E>;
         graph_t g{};
-        for_each([&]<typename Node>(Node n) { g.put(Output::create_node(n)); },
+        for_each([&]<typename Node>(
+                     Node n) { g.put(Output::template create_node<Nexus>(n)); },
                  nodes);
 
         auto const named_nodes = stdx::apply_indices<name_for>(nodes);
@@ -84,7 +87,8 @@ struct graph_builder {
                     },
                     node_ps);
 
-                g.put(Output::create_node(lhs), Output::create_node(rhs));
+                g.put(Output::template create_node<Nexus>(lhs),
+                      Output::template create_node<Nexus>(rhs));
             },
             edges);
         return g;
@@ -180,7 +184,7 @@ struct graph_builder {
             Name, detail::error_steps<duplicate_nodes_t>);
     }
 
-    template <typename Graph>
+    template <typename Nexus = void, typename Graph>
     [[nodiscard]] constexpr static auto build(Graph const &input) {
         auto nodes = flow::dsl::get_nodes(input);
         auto mentioned_nodes = flow::dsl::get_all_mentioned_nodes(input);
@@ -197,23 +201,23 @@ struct graph_builder {
         static_assert(
             all_of(
                 []<typename N>(N const &) {
-                    return detail::is_output_compatible<N, output_t>;
+                    return detail::is_output_compatible<N, Nexus, output_t>;
                 },
                 node_set),
             "Output node type is not compatible with given input nodes");
 
-        auto g =
-            make_graph<output_t, node_capacity, edge_capacity>(node_set, edges);
+        auto g = make_graph<output_t, Nexus, node_capacity, edge_capacity>(
+            node_set, edges);
         return topo_sort<output_t>(g);
     }
 
     constexpr static auto name = Name;
     using interface_t = auto (*)() -> void;
 
-    template <typename Initialized> class built_flow {
+    template <typename Initialized, typename Nexus> class built_flow {
         constexpr static auto built() {
             constexpr auto v = Initialized::value;
-            constexpr auto built = build(v);
+            constexpr auto built = build<Nexus>(v);
             static_assert(built.has_value(),
                           "Topological sort failed: cycle in flow");
 
@@ -233,8 +237,9 @@ struct graph_builder {
         constexpr static bool active = decltype(built())::active;
     };
 
-    template <typename Initialized>
-    [[nodiscard]] constexpr static auto render() -> built_flow<Initialized> {
+    template <typename Initialized, typename Nexus = void>
+    [[nodiscard]] constexpr static auto render()
+        -> built_flow<Initialized, Nexus> {
         return {};
     }
 };

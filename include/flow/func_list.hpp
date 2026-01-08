@@ -12,10 +12,12 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
+#include <utility>
 
 namespace flow {
 namespace detail {
-template <stdx::ct_string FlowName, log_policy LogPolicy, typename CTNode>
+template <stdx::ct_string FlowName, log_policy LogPolicy, typename CTNode,
+          typename Nexus>
 constexpr static auto run_func = []() -> void {
     if (CTNode::condition) {
         LogPolicy::template log<
@@ -23,7 +25,12 @@ constexpr static auto run_func = []() -> void {
             __FILE__, __LINE__,
             stdx::ct_format<"flow.{}({})">(stdx::cts_t<CTNode::ct_type>{},
                                            stdx::cts_t<CTNode::ct_name>{}));
-        typename CTNode::func_t{}();
+        auto f = typename CTNode::func_t{};
+        if constexpr (requires { std::move(f).template operator()<Nexus>(); }) {
+            std::move(f).template operator()<Nexus>();
+        } else {
+            std::move(f)();
+        }
     }
 };
 
@@ -51,9 +58,9 @@ struct func_list {
     using node_t = auto (*)() -> void;
     std::array<node_t, NumSteps> nodes{};
 
-    template <typename CTNode>
+    template <typename Nexus, typename CTNode>
     constexpr static auto create_node(CTNode) -> node_t {
-        constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode>;
+        constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode, Nexus>;
         return fp;
     }
 

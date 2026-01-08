@@ -34,9 +34,9 @@ class builder_for {
         });
     }
 
-    template <typename BuilderValue, typename /*Nexus*/>
+    template <typename BuilderValue, typename Nexus>
     [[nodiscard]] constexpr static auto build() {
-        return Renderer::template render<BuilderValue>();
+        return Renderer::template render<BuilderValue, Nexus>();
     }
 
     stdx::tuple<Fragments...> fragments;
