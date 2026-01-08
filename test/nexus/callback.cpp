@@ -1,4 +1,5 @@
 #include <nexus/callback.hpp>
+#include <nexus/service.hpp>
 
 #include <stdx/tuple.hpp>
 
@@ -6,8 +7,9 @@
 
 #include <type_traits>
 
-template <typename BuilderValue> constexpr static auto build() {
-    return BuilderValue::value.template build<BuilderValue, void>();
+template <typename BuilderValue, typename T = void>
+constexpr static auto build() {
+    return BuilderValue::value.template build<BuilderValue, T>();
 }
 
 template <typename BuilderMeta, typename BuiltCallback>
@@ -55,6 +57,32 @@ TEST_CASE("callback with no args with single extension", "[callback]") {
     SECTION("built type is convertible to the interface type") {
         REQUIRE(built_is_convertible_to_interface<
                 CallbackNoArgsWithSingleExtension::service>(built_callback));
+    }
+}
+
+struct CallbackNoArgsWithInjectedType {
+    using service = callback::service<>;
+    constexpr static auto value = []() {
+        auto const builder = cib::builder_t<service>{};
+        return builder.add(
+            []<typename T>() { is_callback_invoked<T::value> = true; });
+    }();
+};
+
+TEST_CASE("callback with no args with injected type", "[callback]") {
+    constexpr auto built_callback =
+        build<CallbackNoArgsWithInjectedType, std::integral_constant<int, 0>>();
+
+    is_callback_invoked<0> = false;
+
+    SECTION("can be called and callback will be invoked") {
+        built_callback();
+        REQUIRE(is_callback_invoked<0>);
+    }
+
+    SECTION("built type is convertible to the interface type") {
+        REQUIRE(built_is_convertible_to_interface<
+                CallbackNoArgsWithInjectedType::service>(built_callback));
     }
 }
 
