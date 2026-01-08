@@ -25,7 +25,7 @@ struct impl {
 
     using node_t = rt_step;
 
-    template <typename CTNode>
+    template <typename /*Nexus*/, typename CTNode>
     constexpr static auto create_node(CTNode n) -> node_t {
         return n;
     }
