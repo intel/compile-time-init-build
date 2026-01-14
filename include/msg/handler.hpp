@@ -9,7 +9,7 @@
 
 namespace msg {
 
-template <stdx::tuplelike Callbacks, typename MsgBase,
+template <typename Nexus, stdx::tuplelike Callbacks, typename MsgBase,
           typename... ExtraCallbackArgs>
 struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
     Callbacks callbacks{};
@@ -26,7 +26,7 @@ struct handler : handler_interface<MsgBase, ExtraCallbackArgs...> {
         -> bool final {
         auto const found_valid_callback = stdx::apply(
             [&](auto &...cbs) -> bool {
-                return (0u | ... | cbs.handle(msg, args...));
+                return (0u | ... | cbs.template handle<Nexus>(msg, args...));
             },
             callbacks);
         if (!found_valid_callback) {

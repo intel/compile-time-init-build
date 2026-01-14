@@ -50,7 +50,7 @@ struct indexed_builder
         } val;
         return val;
     }
-    template <typename BuilderValue, typename /*Nexus*/>
+    template <typename BuilderValue, typename Nexus>
     static CONSTEVAL auto build() {
         constexpr auto make_index_lookup =
             []<typename I, std::size_t... Es>(std::index_sequence<Es...>) {
@@ -74,7 +74,7 @@ struct indexed_builder
 
         constexpr auto num_callbacks = BuilderValue::value.callbacks.size();
         constexpr auto callback_array =
-            base_t::template create_callback_array<BuilderValue>(
+            base_t::template create_callback_array<BuilderValue, Nexus>(
                 std::make_index_sequence<num_callbacks>{});
 
         return make_indexed_handler<MsgBase, ExtraCallbackArgs...>(

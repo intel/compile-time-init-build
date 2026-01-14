@@ -27,7 +27,8 @@ struct callback {
         return msg::call_with_message<Msg>(matcher, data);
     }
 
-    template <stdx::ct_string Extra = "", typename... Args>
+    template <typename Nexus = void, stdx::ct_string Extra = "",
+              typename... Args>
     // NOLINTNEXTLINE (readability-function-cognitive-complexity)
     [[nodiscard]] auto handle(auto const &data, Args &&...args) const -> bool {
         CIB_LOG_ENV(logging::get_level, logging::level::INFO);
@@ -37,8 +38,8 @@ struct callback {
                     "callback",
                     stdx::cts_t<Name>{}, matcher.describe(),
                     stdx::cts_t<Extra>{});
-            msg::call_with_message<Msg>(callable, data,
-                                        std::forward<Args>(args)...);
+            msg::call_with_message<Msg, Nexus>(callable, data,
+                                               std::forward<Args>(args)...);
             return true;
         }
         return false;
