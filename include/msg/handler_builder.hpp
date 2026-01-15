@@ -20,9 +20,9 @@ struct handler_builder {
             new_callbacks};
     }
 
-    template <typename BuilderValue, typename /*Nexus*/>
+    template <typename BuilderValue, typename Nexus>
     constexpr static auto build() {
-        return handler<Callbacks, MsgBase, ExtraCallbackArgs...>{
+        return handler<Nexus, Callbacks, MsgBase, ExtraCallbackArgs...>{
             BuilderValue::value.callbacks};
     }
 };

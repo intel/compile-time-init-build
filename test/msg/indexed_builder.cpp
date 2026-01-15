@@ -511,7 +511,7 @@ struct test_project_multi_cb {
 };
 } // namespace
 
-TEST_CASE("call multiple callbacks", "[handler_builder]") {
+TEST_CASE("call multiple callbacks", "[indexed_builder]") {
     cib::nexus<test_project_multi_cb> test_nexus{};
     test_nexus.init();
 
@@ -521,4 +521,27 @@ TEST_CASE("call multiple callbacks", "[handler_builder]") {
         test_msg_t{"test_id_field"_field = 0x80});
     CHECK(callback_success);
     CHECK(callback2_success);
+}
+
+namespace {
+constexpr auto test_callback_template =
+    msg::callback<"TestCallback2", msg_defn>(
+        msg::in<test_id_field, 0x80>,
+        []<typename>(auto) { callback_success = true; });
+
+struct test_project_template_cb {
+    constexpr static auto config =
+        cib::config(cib::exports<test_service>,
+                    cib::extend<test_service>(test_callback_template));
+};
+} // namespace
+
+TEST_CASE("call template callback", "[indexed_builder]") {
+    cib::nexus<test_project_template_cb> test_nexus{};
+    test_nexus.init();
+
+    callback_success = false;
+    cib::service<test_service>->handle(
+        test_msg_t{"test_id_field"_field = 0x80});
+    CHECK(callback_success);
 }

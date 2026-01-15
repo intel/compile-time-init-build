@@ -144,7 +144,7 @@ struct indexed_builder_base {
     using callback_func_t = auto (*)(MsgBase const &, ExtraCallbackArgs... args)
         -> bool;
 
-    template <typename BuilderValue, std::size_t I>
+    template <typename BuilderValue, typename Nexus, std::size_t I>
     constexpr static auto invoke_callback(MsgBase const &data,
                                           ExtraCallbackArgs... args) -> bool {
         constexpr auto cb = IndexSpec{}.apply([&]<typename... Indices>(
@@ -165,13 +165,13 @@ struct indexed_builder_base {
         constexpr auto matcher_str =
             stdx::ct_format<" (collapsed by index from [{}])">(
                 orig_cb.matcher.describe());
-        return cb.template handle<matcher_str>(data, args...);
+        return cb.template handle<Nexus, matcher_str>(data, args...);
     }
 
-    template <typename BuilderValue, std::size_t... Is>
+    template <typename BuilderValue, typename Nexus, std::size_t... Is>
     static CONSTEVAL auto create_callback_array(std::index_sequence<Is...>)
         -> std::array<callback_func_t, BuilderValue::value.callbacks.size()> {
-        return {invoke_callback<BuilderValue, Is>...};
+        return {invoke_callback<BuilderValue, Nexus, Is>...};
     }
 
     static CONSTEVAL auto walk_matcher(auto const &tag, auto const &callbacks,

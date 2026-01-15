@@ -684,7 +684,8 @@ constexpr auto equivalent(O1 const &lhs, O2 const &rhs) {
     return equiv(lhs, rhs.as_const_view());
 }
 
-template <typename Msg, typename F, typename S, typename... Args>
+template <typename Msg, typename... TArgs, typename F, typename S,
+          typename... Args>
 __attribute__((flatten, always_inline)) constexpr auto
 call_with_message(F &&f, S &&s, Args &&...args) -> decltype(auto) {
     if constexpr (requires {
@@ -707,8 +708,31 @@ call_with_message(F &&f, S &&s, Args &&...args) -> decltype(auto) {
                          }) {
         return std::forward<F>(f)(typename Msg::owner_t{std::forward<S>(s)},
                                   std::forward<Args>(args)...);
+    } else if constexpr (requires {
+                             std::forward<F>(f).template operator()<TArgs...>(
+                                 std::forward<S>(s),
+                                 std::forward<Args>(args)...);
+                         }) {
+        return std::forward<F>(f).template operator()<TArgs...>(
+            std::forward<S>(s), std::forward<Args>(args)...);
+    } else if constexpr (requires {
+                             std::forward<F>(f).template operator()<TArgs...>(
+                                 typename Msg::view_t{std::forward<S>(s)},
+                                 std::forward<Args>(args)...);
+                         }) {
+        return std::forward<F>(f).template operator()<TArgs...>(
+            typename Msg::view_t{std::forward<S>(s)},
+            std::forward<Args>(args)...);
+    } else if constexpr (requires {
+                             std::forward<F>(f).template operator()<TArgs...>(
+                                 typename Msg::owner_t{std::forward<S>(s)},
+                                 std::forward<Args>(args)...);
+                         }) {
+        return std::forward<F>(f).template operator()<TArgs...>(
+            typename Msg::owner_t{std::forward<S>(s)},
+            std::forward<Args>(args)...);
     } else {
-        static_assert(stdx::always_false_v<Msg, F, S>,
+        static_assert(stdx::always_false_v<Msg, TArgs..., F, S>,
                       "No call option for call_with_message");
     }
 }

@@ -40,7 +40,8 @@ TEST_CASE("is_match is true for a match", "[handler]") {
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
-    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    auto handler =
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
     CHECK(handler.is_match(msg));
 }
 
@@ -50,10 +51,26 @@ TEST_CASE("dispatch single callback (match, raw data)", "[handler]") {
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
-    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    auto handler =
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
     CHECK(handler.handle(msg));
     CHECK(dispatched);
+}
+
+TEST_CASE("dispatch single callback with template arg (match, raw data)",
+          "[handler]") {
+    int value{};
+    auto callback = msg::callback<"cb", msg_defn>(
+        id_match<0x80>,
+        [&]<typename I>(msg::const_view<msg_defn>) { value = I::value; });
+    auto const msg = std::array{0x8000ba11u, 0x0042d00du};
+
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<std::integral_constant<int, 17>,
+                                decltype(callbacks), decltype(msg)>{callbacks};
+    CHECK(handler.handle(msg));
+    CHECK(value == 17);
 }
 
 TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
@@ -62,10 +79,26 @@ TEST_CASE("dispatch single callback (match, typed data)", "[handler]") {
     auto const msg = msg::owning<msg_defn>{"id"_field = 0x80};
 
     auto callbacks = stdx::make_tuple(callback);
-    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    auto handler =
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
     CHECK(handler.handle(msg));
     CHECK(dispatched);
+}
+
+TEST_CASE("dispatch single callback with template arg (match, typed data)",
+          "[handler]") {
+    int value{};
+    auto callback = msg::callback<"cb", msg_defn>(
+        id_match<0x80>,
+        [&]<typename I>(msg::const_view<msg_defn>) { value = I::value; });
+    auto const msg = msg::owning<msg_defn>{"id"_field = 0x80};
+
+    auto callbacks = stdx::make_tuple(callback);
+    auto handler = msg::handler<std::integral_constant<int, 17>,
+                                decltype(callbacks), decltype(msg)>{callbacks};
+    CHECK(handler.handle(msg));
+    CHECK(value == 17);
 }
 
 TEST_CASE("dispatch single callback (no match)", "[handler]") {
@@ -74,7 +107,8 @@ TEST_CASE("dispatch single callback (no match)", "[handler]") {
     auto const msg = std::array{0x8100ba11u, 0x0042d00du};
 
     auto callbacks = stdx::make_tuple(callback);
-    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    auto handler =
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
     dispatched = false;
     CHECK(not handler.handle(msg));
     CHECK(not dispatched);
@@ -83,7 +117,8 @@ TEST_CASE("dispatch single callback (no match)", "[handler]") {
 TEST_CASE("log mismatch when no match", "[handler]") {
     auto const msg = std::array{0x8000ba11u, 0x0042d00du};
     auto callbacks = stdx::tuple{};
-    auto handler = msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+    auto handler =
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
     CHECK(not handler.handle(msg));
     CAPTURE(log_buffer);
     CHECK(log_buffer.find(
@@ -100,7 +135,7 @@ TEST_CASE("match and dispatch only one callback", "[handler]") {
 
     auto callbacks = stdx::make_tuple(callback1, callback2);
     static auto handler =
-        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
 
     dispatched = false;
     CHECK(handler.handle(msg));
@@ -120,7 +155,7 @@ TEST_CASE("dispatch all callbacks that match", "[handler]") {
 
     auto callbacks = stdx::make_tuple(callback1, callback2, callback3);
     static auto handler =
-        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
 
     CHECK(handler.handle(msg));
     CHECK(count == 2);
@@ -146,7 +181,7 @@ TEST_CASE("match and dispatch only one callback with uint8_t storage",
 
     auto callbacks = stdx::make_tuple(callback1, callback2);
     static auto handler =
-        msg::handler<decltype(callbacks), decltype(msg)>{callbacks};
+        msg::handler<void, decltype(callbacks), decltype(msg)>{callbacks};
 
     dispatched = false;
     handler.handle(msg);
@@ -163,7 +198,7 @@ TEST_CASE("dispatch with extra args", "[handler]") {
 
     auto callbacks = stdx::make_tuple(callback);
     static auto handler =
-        msg::handler<decltype(callbacks), decltype(msg), int>{callbacks};
+        msg::handler<void, decltype(callbacks), decltype(msg), int>{callbacks};
 
     dispatched = false;
     CHECK(handler.handle(msg, 0xcafe));
