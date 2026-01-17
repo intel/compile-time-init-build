@@ -38,39 +38,39 @@ jobs:
             cxx_flags: "-stdlib=libstdc++"
           - version: 21
             compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 21
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21
             toolchain_root: "/usr/lib/llvm-21"
           - version: 21
             compiler: clang
             stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 21 && sudo apt install -y libc++-21-dev libc++abi-21-dev
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21 && sudo apt install -y libc++-21-dev libc++abi-21-dev
             cxx_flags: "-stdlib=libc++"
           - version: 20
             compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20 all
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 20
             toolchain_root: "/usr/lib/llvm-20"
           - version: 20
             compiler: clang
             stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 20 && sudo apt install -y libc++-20-dev libc++abi-20-dev
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 20 && sudo apt install -y libc++-20-dev libc++abi-20-dev
             cxx_flags: "-stdlib=libc++"
           - version: 19
             compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19 all
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 19
             toolchain_root: "/usr/lib/llvm-19"
           - version: 19
             compiler: clang
             stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 19 && sudo apt install -y libc++-19-dev libc++abi-19-dev
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 19 && sudo apt install -y libc++-19-dev libc++abi-19-dev
             cxx_flags: "-stdlib=libc++"
           - version: 18
             compiler: clang
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 18
             toolchain_root: "/usr/lib/llvm-18"
           - version: 18
             compiler: clang
             stdlib: libc++
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 18 && sudo apt install -y libc++-18-dev libc++abi-18-dev
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 18 && sudo apt install -y libc++-18-dev libc++abi-18-dev
             cxx_flags: "-stdlib=libc++"
           - version: 17
             compiler: clang
@@ -295,7 +295,7 @@ jobs:
 
       - name: Install build tools
         run: |
-          wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
           sudo apt install -y pipx ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Install cmake-format
@@ -349,7 +349,7 @@ jobs:
           - compiler: clang
             cc: "clang"
             cxx: "clang++"
-            install: wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 21
+            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21
             toolchain_root: "/usr/lib/llvm-21"
           - compiler: gcc
             cc: "gcc-14"

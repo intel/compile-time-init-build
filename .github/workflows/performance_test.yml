@@ -11,7 +11,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   BUILD_TYPE: Release
-  LLVM_VERSION: 19
+  LLVM_VERSION: 21
 
 jobs:
   performance_test:
@@ -20,7 +20,9 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install compiler
-        run: sudo apt update && sudo apt install -y clang-${{env.LLVM_VERSION}}
+        run: |
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh ${{env.LLVM_VERSION}}
+          sudo apt update && sudo apt install -y clang-${{env.LLVM_VERSION}}
 
       - name: Install build tools
         run: |
@@ -39,7 +41,7 @@ jobs:
         run: |
           # interesting summary data on stderr
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark 2>&1 | tee ${{github.workspace}}/build/compilation_output.log
-          FRONT_END_TIME=$(grep "Clang front-end timer" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}')
+          FRONT_END_TIME=$(grep "Front end" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}')
 
           # generate summary with expandable section
           echo "<details>" >> $GITHUB_STEP_SUMMARY
