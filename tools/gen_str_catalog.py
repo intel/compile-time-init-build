@@ -320,9 +320,14 @@ def extract_enums(filename: str):
 def write_json(
     messages, modules, enums, extra_inputs: list[str], filename: str, stable_data
 ):
+    # temporary: filter out ct args
+    for m in messages:
+        m.args = [a for a in m.args if "encode_ct_arg" not in a]
+
     d = dict(
         messages=[m.to_json() for m in messages], modules=[m.to_json() for m in modules]
     )
+    
     for m in stable_data.get("messages"):
         j = m.to_json()
         if j not in d["messages"]:
@@ -398,7 +403,7 @@ def serialize_modules(client_node: et.Element, modules: list[Module]):
 
 
 def arg_type_encoding(arg):
-    string_re = re.compile(r"encode_(32|u32|64|u64|enum)<(.*)>")
+    string_re = re.compile(r"encode_(32|u32|64|u64|enum|ct_arg)<(.*)>")
     m = string_re.match(arg)
     if "enum" in m.group(1):
         args_re = re.compile(r"(.*), (.*)")
