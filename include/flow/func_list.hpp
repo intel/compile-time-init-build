@@ -17,7 +17,7 @@
 namespace flow {
 namespace detail {
 template <stdx::ct_string FlowName, log_policy LogPolicy, typename CTNode,
-          typename Nexus>
+          typename Nexus = void>
 constexpr static auto run_func = []() -> void {
     if (CTNode::condition) {
         LogPolicy::template log<
