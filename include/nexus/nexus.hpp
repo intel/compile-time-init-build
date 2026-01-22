@@ -18,11 +18,14 @@ namespace cib {
  */
 
 template <typename Config> struct nexus {
+// Workaround unfortunate bug in clang where it can't deduce "auto" sometimes
+#define CIB_BUILD_SERVICE                                                      \
+    initialized<Config, T>::value                                              \
+        .template build<initialized<Config, T>, nexus>()
+
     template <builder_meta T>
-    constexpr static auto service = [] {
-        using init_t = initialized<Config, T>;
-        return init_t::value.template build<init_t, nexus>();
-    }();
+    constexpr static decltype(CIB_BUILD_SERVICE) service = CIB_BUILD_SERVICE;
+#undef CIB_BUILD_SERVICE
 
     static void init() {
         auto const init_interface = []<builder_meta T> {
