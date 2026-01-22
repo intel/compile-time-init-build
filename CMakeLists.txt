@@ -62,7 +62,8 @@ target_sources(
 
 add_library(cib_interrupt INTERFACE)
 target_compile_features(cib_interrupt INTERFACE cxx_std_20)
-target_link_libraries_system(cib_interrupt INTERFACE concurrency stdx)
+target_link_libraries_system(cib_interrupt INTERFACE boost_mp11 concurrency
+                             stdx)
 
 target_sources(
     cib_interrupt
@@ -130,6 +131,7 @@ target_link_libraries_system(
     cib_msg
     INTERFACE
     async
+    boost_mp11
     cib_log
     cib_lookup
     cib_match
@@ -229,7 +231,8 @@ target_sources(
 
 add_library(cib_flow INTERFACE)
 target_compile_features(cib_flow INTERFACE cxx_std_20)
-target_link_libraries_system(cib_flow INTERFACE cib_log cib_nexus stdx)
+target_link_libraries_system(cib_flow INTERFACE boost_mp11 cib_log cib_nexus
+                             stdx)
 
 target_sources(
     cib_flow
