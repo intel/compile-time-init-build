@@ -180,8 +180,14 @@ target_sources(
 
 add_library(cib_log_binary INTERFACE)
 target_compile_features(cib_log_binary INTERFACE cxx_std_20)
-target_link_libraries_system(cib_log_binary INTERFACE cib_log cib_msg
-                             concurrency stdx)
+target_link_libraries_system(
+    cib_log_binary
+    INTERFACE
+    boost_mp11
+    cib_log
+    cib_msg
+    concurrency
+    stdx)
 
 target_sources(
     cib_log_binary
