@@ -335,7 +335,7 @@ TEST_CASE("injection", "[mipi]") {
 
 TEST_CASE("injection - log runtime arg", "[mipi]") {
     test_critical_section::count = 0;
-    expected_args = std::vector<std::uint32_t>{42, 17};
+    expected_args = std::vector<std::uint32_t>{test_string_id, 17};
     auto x = 17;
     CIB_TRACE("Hello {}", x);
     CHECK(test_critical_section::count == 2);

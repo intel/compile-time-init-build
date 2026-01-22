@@ -132,7 +132,8 @@ TEST_CASE("CIB_FATAL formats compile-time arguments where possible", "[log]") {
     using namespace stdx::literals;
     reset_test_state();
     expected_why = "Hello 17";
-    expected_args = std::make_tuple(stdx::make_tuple());
+    expected_args = std::make_tuple(stdx::make_tuple(
+        stdx::ct_format_arg<stdx::ct_string<6>>{}, stdx::ct_format_arg<int>{}));
 
     []<stdx::ct_string S>() {
         CIB_FATAL("{} {}", S, 17);
