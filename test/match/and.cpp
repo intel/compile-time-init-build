@@ -29,9 +29,8 @@ TEST_CASE("AND description flattens", "[match and]") {
 TEST_CASE("AND describes a match", "[match and]") {
     using namespace stdx::literals;
     constexpr auto e = test_m<0>{} and test_m<1>{};
-    STATIC_CHECK(e.describe_match(1) == stdx::ct_format<"({}) {} ({})">(
+    STATIC_CHECK(e.describe_match(1) == stdx::ct_format<"({}) and ({})">(
                                             test_m<0>{}.describe_match(1),
-                                            "and"_ctst,
                                             test_m<1>{}.describe_match(1)));
 }
 
@@ -39,9 +38,9 @@ TEST_CASE("AND match description flattens", "[match and]") {
     using namespace stdx::literals;
     constexpr auto e = test_m<0>{} and test_m<1>{} and test_m<2>{};
     STATIC_CHECK(e.describe_match(1) ==
-                 stdx::ct_format<"({}) {} ({}) {} ({})">(
-                     test_m<0>{}.describe_match(1), "and"_ctst,
-                     test_m<1>{}.describe_match(1), "and"_ctst,
+                 stdx::ct_format<"({}) and ({}) and ({})">(
+                     test_m<0>{}.describe_match(1),
+                     test_m<1>{}.describe_match(1),
                      test_m<2>{}.describe_match(1)));
 }
 

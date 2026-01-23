@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdx/ct_format.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <concepts>
@@ -12,7 +11,6 @@ template <typename> struct encode_64;
 template <typename> struct encode_u32;
 template <typename> struct encode_u64;
 template <typename...> struct encode_enum;
-template <typename...> struct encode_ct_arg;
 
 namespace logging {
 template <typename T>
@@ -31,11 +29,8 @@ template <typename T>
 concept enum_packable = std::is_enum_v<T> and sizeof(T) <= sizeof(std::int64_t);
 
 template <typename T>
-concept ct_packable = stdx::is_specialization_of_v<T, stdx::ct_format_arg>;
-
-template <typename T>
 concept packable = signed_packable<T> or unsigned_packable<T> or
-                   float_packable<T> or enum_packable<T> or ct_packable<T>;
+                   float_packable<T> or enum_packable<T>;
 
 template <typename T> struct encoding;
 
@@ -75,14 +70,6 @@ struct encoding<T> : encoding<stdx::underlying_type_t<T>> {
                             detail::signed_encode_t<T>,
                             detail::unsigned_encode_t<T>>>;
 };
-
-template <typename T> struct encoding<stdx::ct_format_arg<T>> {
-    using pack_t = void;
-    using encode_t = encode_ct_arg<T>;
-};
-
-template <typename T> constexpr inline std::size_t pack_size = sizeof(T);
-template <> constexpr inline std::size_t pack_size<void> = 0;
 
 struct default_arg_packer {
     template <packable T> using pack_as_t = typename encoding<T>::pack_t;
