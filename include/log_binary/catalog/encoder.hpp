@@ -17,8 +17,6 @@
 
 #include <conc/concurrency.hpp>
 
-#include <boost/mp11/algorithm.hpp>
-
 #include <cstddef>
 #include <string_view>
 #include <type_traits>
@@ -26,12 +24,8 @@
 
 namespace logging::binary {
 namespace detail {
-template <typename T>
-using is_rt_encoded_arg = std::bool_constant<
-    not stdx::is_specialization_of_v<std::remove_cvref_t<T>, encode_ct_arg>>;
-
 template <typename S, auto Id, typename... Args>
-constexpr static auto to_message(boost::mp11::mp_list<Args...>) {
+constexpr static auto to_message() {
     constexpr auto s = std::string_view{S::value};
     using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
@@ -49,9 +43,7 @@ template <stdx::ct_string S, auto Id> constexpr static auto to_module() {
 
 template <typename S, auto Id> struct to_message_t {
     template <typename... Args>
-    using fn = decltype(to_message<S, Id>(
-        boost::mp11::mp_copy_if<boost::mp11::mp_list<Args...>,
-                                is_rt_encoded_arg>{}));
+    using fn = decltype(to_message<S, Id, Args...>());
 };
 
 } // namespace detail

@@ -29,20 +29,18 @@ TEST_CASE("OR description flattens", "[match or]") {
 TEST_CASE("OR describes a match", "[match or]") {
     using namespace stdx::literals;
     constexpr auto e = test_m<0>{} or test_m<1>{};
-    STATIC_CHECK(e.describe_match(1) == stdx::ct_format<"({}) {} ({})">(
+    STATIC_CHECK(e.describe_match(1) == stdx::ct_format<"({}) or ({})">(
                                             test_m<0>{}.describe_match(1),
-                                            "or"_ctst,
                                             test_m<1>{}.describe_match(1)));
 }
 
 TEST_CASE("OR match description flattens", "[match or]") {
     using namespace stdx::literals;
     constexpr auto e = test_m<0>{} or test_m<1>{} or test_m<2>{};
-    STATIC_CHECK(e.describe_match(1) ==
-                 stdx::ct_format<"({}) {} ({}) {} ({})">(
-                     test_m<0>{}.describe_match(1), "or"_ctst,
-                     test_m<1>{}.describe_match(1), "or"_ctst,
-                     test_m<2>{}.describe_match(1)));
+    STATIC_CHECK(e.describe_match(1) == stdx::ct_format<"({}) or ({}) or ({})">(
+                                            test_m<0>{}.describe_match(1),
+                                            test_m<1>{}.describe_match(1),
+                                            test_m<2>{}.describe_match(1)));
 }
 
 TEST_CASE("OR matches correctly", "[match or]") {

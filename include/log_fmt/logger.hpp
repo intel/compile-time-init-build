@@ -44,11 +44,6 @@ template <logging::level L>
 }
 
 namespace fmt {
-template <typename T>
-using is_rt_arg =
-    std::bool_constant<not stdx::is_specialization_of_v<std::remove_cvref_t<T>,
-                                                        stdx::ct_format_arg>>;
-
 template <typename TDestinations> struct log_handler {
     constexpr explicit log_handler(TDestinations &&ds) : dests{std::move(ds)} {}
 
@@ -68,14 +63,11 @@ template <typename TDestinations> struct log_handler {
                 constexpr auto fmtstr =
                     std::string_view{decltype(fr.str)::value};
                 fr.args.apply([&]<typename... Args>(Args &&...args) {
-                    auto real_args = filter<is_rt_arg>(
-                        stdx::tuple<Args &&...>{std::forward<Args>(args)...});
-                    std::move(real_args).apply([&]<typename... As>(As &&...as) {
-                        ::fmt::format_to(out, fmtstr,
-                                         fmt_detail::decay_enum_value(as)...);
-                    });
-                    *out = '\n';
+                    ::fmt::format_to(out, fmtstr,
+                                     fmt_detail::decay_enum_value(
+                                         std::forward<Args>(args))...);
                 });
+                *out = '\n';
             },
             dests);
     }

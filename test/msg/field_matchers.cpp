@@ -17,11 +17,6 @@ enum struct E { A, B, C };
 
 using test_enum_field =
     field<"enum_field", E>::located<at{0_dw, 31_msb, 24_lsb}>;
-
-template <typename T>
-using is_rt_arg =
-    std::bool_constant<not stdx::is_specialization_of_v<std::remove_cvref_t<T>,
-                                                        stdx::ct_format_arg>>;
 } // namespace
 
 TEST_CASE("matcher description", "[field matchers]") {
@@ -38,7 +33,7 @@ TEST_CASE("matcher description of match", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_field, 5>{};
     constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
     STATIC_REQUIRE(desc.str == "test_field (0x{:x}) < 0x5"_ctst);
-    STATIC_REQUIRE(filter<is_rt_arg>(desc.args) == stdx::tuple{1});
+    STATIC_REQUIRE(desc.args == stdx::tuple{1});
 }
 
 TEST_CASE("matcher description (enum field)", "[field matchers]") {
@@ -55,7 +50,7 @@ TEST_CASE("matcher description of match (enum field)", "[field matchers]") {
     constexpr auto m = msg::less_than_t<test_enum_field, E::C>{};
     constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
     STATIC_REQUIRE(desc.str == "enum_field ({}) < C"_ctst);
-    STATIC_REQUIRE(filter<is_rt_arg>(desc.args) == stdx::tuple{E::B});
+    STATIC_REQUIRE(desc.args == stdx::tuple{E::B});
 }
 
 TEST_CASE("negate less_than", "[field matchers]") {
@@ -259,7 +254,7 @@ TEST_CASE("predicate matcher description of match", "[field matchers]") {
         msg::pred_matcher_t<test_field, [](std::uint32_t) { return true; }>{};
     constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
     STATIC_REQUIRE(desc.str == "<predicate>(test_field(0x{:x}))"_ctst);
-    STATIC_REQUIRE(filter<is_rt_arg>(desc.args) == stdx::tuple{1});
+    STATIC_REQUIRE(desc.args == stdx::tuple{1});
 }
 
 TEST_CASE("predicate matcher description of match (enum field)",
@@ -271,5 +266,5 @@ TEST_CASE("predicate matcher description of match (enum field)",
         msg::pred_matcher_t<test_enum_field, [](auto) { return true; }>{};
     constexpr auto desc = m.describe_match(msg_data{0x01ff'ffff});
     STATIC_REQUIRE(desc.str == "<predicate>(enum_field({}))"_ctst);
-    STATIC_REQUIRE(filter<is_rt_arg>(desc.args) == stdx::tuple{E::B});
+    STATIC_REQUIRE(desc.args == stdx::tuple{E::B});
 }

@@ -43,22 +43,18 @@ template <typename Storage, packer P> struct catalog_builder {
 
         auto const pack_arg = []<typename T>(V *p, T arg) -> V * {
             using pack_t = typename P::template pack_as_t<T>;
-            if constexpr (std::is_void_v<pack_t>) {
-                return p;
+            pack_t converted{};
+            if constexpr (sizeof(stdx::to_underlying(arg)) ==
+                          sizeof(converted)) {
+                converted = stdx::bit_cast<decltype(converted)>(
+                    stdx::to_underlying(arg));
             } else {
-                pack_t converted{};
-                if constexpr (sizeof(stdx::to_underlying(arg)) ==
-                              sizeof(converted)) {
-                    converted = stdx::bit_cast<decltype(converted)>(
-                        stdx::to_underlying(arg));
-                } else {
-                    converted = static_cast<decltype(converted)>(
-                        stdx::to_underlying(arg));
-                }
-                auto const packed = stdx::to_le(stdx::as_unsigned(converted));
-                std::memcpy(p, &packed, sizeof(packed));
-                return p + stdx::sized8{sizeof(packed)}.in<V>();
+                converted =
+                    static_cast<decltype(converted)>(stdx::to_underlying(arg));
             }
+            auto const packed = stdx::to_le(stdx::as_unsigned(converted));
+            std::memcpy(p, &packed, sizeof(packed));
+            return p + stdx::sized8{sizeof(packed)}.in<V>();
         };
 
         auto dest = &message.data()[header_size];
@@ -74,7 +70,7 @@ template <packer P> struct builder<defn::catalog_msg_t, P> {
     static auto build(string_id id, module_id m, unit_t u, Ts... args) {
         using namespace msg;
         constexpr auto payload_size =
-            (sizeof(id) + ... + pack_size<typename P::template pack_as_t<Ts>>);
+            (sizeof(id) + ... + sizeof(typename P::template pack_as_t<Ts>));
         constexpr auto header_size =
             defn::catalog_msg_t::size<std::uint32_t>::value;
         using storage_t =
@@ -122,8 +118,7 @@ template <packer P> struct builder<defn::normal_build_msg_t, P> {
 template <packer P = logging::default_arg_packer> struct default_builder {
     template <auto Level, packable... Ts>
     static auto build(string_id id, module_id m, unit_t unit, Ts... args) {
-        if constexpr ((0u + ... +
-                       pack_size<typename P::template pack_as_t<Ts>>) == 0u) {
+        if constexpr (sizeof...(Ts) == 0u) {
             return builder<defn::short32_msg_t, P>{}.template build<Level>(
                 id, m, unit);
         } else {
