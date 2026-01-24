@@ -1,15 +1,10 @@
 #include "catalog_concurrency.hpp"
-
-#include <conc/concurrency.hpp>
+#include "catalog_destination.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
 
-template <> inline auto conc::injected_policy<> = test_conc_policy{};
-
-extern int log_calls;
-extern std::uint32_t last_header;
 extern auto log_zero_args() -> void;
 extern auto log_one_ct_arg() -> void;
 extern auto log_one_32bit_rt_arg() -> void;

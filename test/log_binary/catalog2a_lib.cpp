@@ -1,5 +1,5 @@
 #include "catalog_concurrency.hpp"
-#include "catalog_enums.hpp"
+#include "catalog_destination.hpp"
 
 #include <log_binary/catalog/encoder.hpp>
 
@@ -10,18 +10,7 @@
 
 #include <cstdint>
 
-template <> inline auto conc::injected_policy<> = test_conc_policy{};
-
-extern int log_calls;
-
 namespace {
-struct test_log_destination {
-    template <std::size_t N>
-    auto operator()(stdx::span<std::uint32_t const, N>) const {
-        ++log_calls;
-    }
-};
-
 using log_env2a = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 

@@ -1,4 +1,5 @@
 #include "catalog_concurrency.hpp"
+#include "catalog_destination.hpp"
 
 #include <log_binary/catalog/encoder.hpp>
 
@@ -6,24 +7,9 @@
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
 
-#include <conc/concurrency.hpp>
-
 #include <cstdint>
 
-template <> inline auto conc::injected_policy<> = test_conc_policy{};
-
-int log_calls{};
-std::uint32_t last_header{};
-
 namespace {
-struct test_log_destination {
-    template <std::size_t N>
-    auto operator()(stdx::span<std::uint32_t const, N> pkt) const {
-        ++log_calls;
-        last_header = pkt[0];
-    }
-};
-
 using log_env1 = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
