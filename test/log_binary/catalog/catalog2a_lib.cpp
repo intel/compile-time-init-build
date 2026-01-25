@@ -19,6 +19,6 @@ auto log_two_rt_args() -> void;
 auto log_two_rt_args() -> void {
     auto cfg = logging::binary::config{test_log_destination{}};
     cfg.logger.log_msg<log_env2a>(
-        stdx::ct_format<"D string with {} and {} placeholder">(
+        stdx::ct_format<"Two runtime arguments: uint32_t {} and int64_t {}">(
             std::uint32_t{1}, std::int64_t{2}));
 }
