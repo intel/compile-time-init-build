@@ -139,6 +139,12 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build python3-venv python3-pip
 
+      - name: Activate python virtual env
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
+
       - name: Setup Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
@@ -178,18 +184,17 @@ jobs:
 
       - name: Install python requirements
         run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
           pip install -r ${{github.workspace}}/tools/requirements.txt
           pip install -r ${{github.workspace}}/requirements.txt
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
-      - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
+      - name: Build unit tests
+        run: |
+          cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
+        run: |
+          ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
 
   build_and_test_22:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
@@ -237,6 +242,12 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build python3-venv python3-pip
 
+      - name: Activate python virtual env
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
+
       - name: Restore CPM cache
         env:
           cache-name: cpm-cache-0
@@ -265,18 +276,17 @@ jobs:
 
       - name: Install python requirements
         run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
           pip install -r ${{github.workspace}}/tools/requirements.txt
           pip install -r ${{github.workspace}}/requirements.txt
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
-      - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
+      - name: Build unit tests
+        run: |
+          cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
+        run: |
+          ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
 
   quality_checks_pass:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
@@ -365,6 +375,12 @@ jobs:
           ${{ matrix.install }}
           sudo apt install -y ninja-build python3-venv python3-pip
 
+      - name: Activate python virtual env
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
+
       - name: Restore CPM cache
         env:
           cache-name: cpm-cache-0
@@ -401,14 +417,12 @@ jobs:
 
       - name: Install python requirements
         run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
           pip install -r ${{github.workspace}}/tools/requirements.txt
           pip install -r ${{github.workspace}}/requirements.txt
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
-      - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build -t unit_tests
+      - name: Build and run unit tests
+        run: |
+          cmake --build ${{github.workspace}}/build -t unit_tests
 
   valgrind:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
@@ -418,6 +432,12 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build python3-venv python3-pip valgrind
+
+      - name: Activate python virtual env
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
       - name: Restore CPM cache
         env:
@@ -447,14 +467,12 @@ jobs:
 
       - name: Install python requirements
         run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
           pip install -r ${{github.workspace}}/tools/requirements.txt
           pip install -r ${{github.workspace}}/requirements.txt
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
 
-      - name: Build Unit Tests
-        run: cmake --build ${{github.workspace}}/build -t build_unit_tests
+      - name: Build unit tests
+        run: |
+          cmake --build ${{github.workspace}}/build -t build_unit_tests
 
       - name: Test
         working-directory: ${{github.workspace}}/build

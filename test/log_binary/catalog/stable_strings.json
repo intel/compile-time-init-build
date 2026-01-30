@@ -8,7 +8,7 @@
             "id": 0
         },
         {
-            "msg": "A string with no placeholders",
+            "msg": "Zero arguments",
             "type": "msg",
             "arg_types": [],
             "arg_count": 0,

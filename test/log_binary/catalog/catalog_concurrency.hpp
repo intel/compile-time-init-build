@@ -1,5 +1,8 @@
 #pragma once
+
 #include <stdx/concepts.hpp>
+
+#include <conc/concurrency.hpp>
 
 #include <utility>
 
@@ -22,3 +25,5 @@ struct test_conc_policy {
         }
     }
 };
+
+template <> inline auto conc::injected_policy<> = test_conc_policy{};
