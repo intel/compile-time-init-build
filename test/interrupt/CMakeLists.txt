@@ -1,3 +1,5 @@
+add_versioned_package("gh:intel/generic-register-operation-optimizer#bfc5b64")
+
 add_tests(
     FILES
     dynamic_controller
@@ -9,4 +11,5 @@ add_tests(
     sub_irq_impl
     policies
     LIBRARIES
-    cib_interrupt)
+    cib_interrupt
+    groov)
