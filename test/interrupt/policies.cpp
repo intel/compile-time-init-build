@@ -5,15 +5,14 @@
 TEST_CASE("policies get", "[policies]") {
     using policies_t = interrupt::policies<interrupt::clear_status_first>;
     using default_policy_t = interrupt::clear_status_last;
-    STATIC_REQUIRE(
+    STATIC_CHECK(
         std::is_same_v<decltype(policies_t::get<interrupt::status_clear_policy,
                                                 default_policy_t>()),
                        interrupt::clear_status_first>);
-    STATIC_REQUIRE(
-        std::is_same_v<
-            decltype(policies_t::get<interrupt::required_resources_policy,
-                                     default_policy_t>()),
-            default_policy_t>);
+    STATIC_CHECK(std::is_same_v<
+                 decltype(policies_t::get<interrupt::required_resources_policy,
+                                          default_policy_t>()),
+                 default_policy_t>);
 }
 
 TEST_CASE("clear status first policy", "[policies]") {
@@ -41,7 +40,7 @@ TEST_CASE("policy with required resources", "[policies]") {
     using policies_t = interrupt::policies<interrupt::required_resources<int>>;
     using P =
         decltype(policies_t::get<interrupt::required_resources_policy, void>());
-    STATIC_REQUIRE(interrupt::policy<P>);
-    STATIC_REQUIRE(
+    STATIC_CHECK(interrupt::policy<P>);
+    STATIC_CHECK(
         std::is_same_v<typename P::resources, interrupt::resource_list<int>>);
 }
