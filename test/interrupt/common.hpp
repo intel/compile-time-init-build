@@ -2,10 +2,14 @@
 
 #include <interrupt/config.hpp>
 #include <interrupt/fwd.hpp>
-#include <interrupt/hal.hpp>
 #include <interrupt/policies.hpp>
 
+#include <groov/groov.hpp>
+
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
+
+#include <catch2/catch_test_macros.hpp>
 
 #include <cstddef>
 
@@ -16,7 +20,11 @@ template <typename interrupt::irq_num_t> bool enabled{};
 template <typename interrupt::irq_num_t> std::size_t priority{};
 bool inited{};
 
-struct test_hal {
+using namespace stdx::literals;
+template <stdx::ct_string S> using en_field_t = stdx::cts_t<"enable."_cts + S>;
+template <stdx::ct_string S> using st_field_t = stdx::cts_t<"status."_cts + S>;
+
+template <typename Group> struct test_hal {
     static auto init() -> void { inited = true; }
 
     template <bool Enable, interrupt::irq_num_t IrqNumber, std::size_t Priority>
@@ -30,9 +38,40 @@ struct test_hal {
         -> void {
         P::run([] {}, [&] { isr(); });
     }
+
+    template <typename Field>
+    CONSTEVAL static auto get_field() -> groov::pathlike auto {
+        return groov::make_path<Field::value>();
+    }
+    template <typename Field>
+    CONSTEVAL static auto get_register() -> groov::pathlike auto {
+        return groov::parent(get_field<Field>());
+    }
+
+    template <groov::pathlike Register>
+    using register_datatype_t =
+        typename decltype(groov::resolve(Group{}, Register{}))::type_t;
+
+    template <groov::pathlike Register, typename Field>
+    constexpr static register_datatype_t<Register> mask =
+        groov::resolve(Group{}, groov::make_path<Field::value>())
+            .template mask<register_datatype_t<Register>>;
+
+    template <groov::pathlike Register>
+    static auto write(auto raw_value) -> void {
+        groov::sync_write(Group{}(Register{} = raw_value));
+    }
+    template <groov::pathlike Field> static auto read() {
+        constexpr auto f = Field{};
+        auto const value = groov::sync_read(Group{}(f));
+        REQUIRE(value);
+        return (*value)[f];
+    }
+    template <groov::pathlike Field> static auto clear() -> void {
+        groov::sync_write(Group{}(Field{} = groov::clear));
+    }
 };
 } // namespace
-template <> inline auto interrupt::injected_hal<> = test_hal{};
 
 template <typename T> inline bool flow_run{};
 
@@ -44,22 +83,3 @@ template <typename T> struct flow_t {
 struct test_nexus {
     template <typename T> constexpr static auto service = flow_t<T>{};
 };
-
-template <auto> struct enable_field_t {
-    static inline bool value{};
-    friend constexpr auto operator==(enable_field_t, enable_field_t)
-        -> bool = default;
-};
-template <auto> struct status_field_t {
-    static inline bool value{};
-};
-
-template <typename Field> constexpr auto read(Field) {
-    return [] { return Field::value; };
-}
-template <typename Field> constexpr auto clear(Field) {
-    return [] { Field::value = false; };
-}
-template <typename... Ops> constexpr auto apply(Ops... ops) {
-    return (ops(), ...);
-}

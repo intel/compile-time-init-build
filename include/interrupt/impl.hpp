@@ -1,12 +1,37 @@
 #pragma once
 
 #include <interrupt/concepts.hpp>
-#include <interrupt/hal.hpp>
 
-#include <stdx/tuple.hpp>
-#include <stdx/tuple_algorithms.hpp>
+#include <stdx/compiler.hpp>
 
 namespace interrupt {
+
+namespace detail {
+template <typename Field> struct read_field {
+    template <typename Hal> static auto with_hal() -> bool {
+        using field_t = decltype(Hal::template get_field<Field>());
+        return Hal::template read<field_t>();
+    }
+};
+
+template <> struct read_field<no_field_t> {
+    template <typename Hal> CONSTEVAL static auto with_hal() -> bool {
+        return true;
+    }
+};
+
+template <typename Field> struct clear_field {
+    template <typename Hal> static auto with_hal() -> void {
+        using field_t = decltype(Hal::template get_field<Field>());
+        Hal::template clear<field_t>();
+    }
+};
+
+template <> struct clear_field<no_field_t> {
+    template <typename Hal> CONSTEVAL static auto with_hal() -> void {}
+};
+} // namespace detail
+
 template <typename Nexus, typename Config>
 concept nexus_for_cfg = Config::template has_flows_for<Nexus>;
 
@@ -14,19 +39,15 @@ template <typename Config, nexus_for_cfg<Config>... Nexi>
 struct irq_impl : Config {
     constexpr static bool active = Config::template active<Nexi...>;
 
-    static auto init_mcu_interrupts() -> void {
-        Config::template enable<active>();
+    template <typename Hal> static auto init() -> void {
+        Config::template enable<active, Hal>();
     }
 
-    [[nodiscard]] static auto get_interrupt_enables() -> stdx::tuple<> {
-        return {};
-    }
-
-    static auto run() -> void {
+    template <typename Hal> static auto run() -> void {
         if constexpr (active) {
             using status_policy_t = typename Config::status_policy_t;
-            hal::run<status_policy_t>(Config::irq_number,
-                                      [] { Config::template isr<Nexi...>(); });
+            Hal::template run<status_policy_t>(
+                Config::irq_number, [] { Config::template isr<Nexi...>(); });
         }
     }
 };
@@ -35,23 +56,19 @@ template <typename Config, nexus_for_cfg<Config>... Nexi>
 struct sub_irq_impl : Config {
     constexpr static bool active = Config::template active<Nexi...>;
 
-    using Config::enable_field;
-    using Config::status_field;
-
-    [[nodiscard]] static auto get_interrupt_enables() {
-        if constexpr (active) {
-            return stdx::make_tuple(enable_field);
-        } else {
-            return stdx::tuple{};
-        }
-    }
-
-    static auto run() -> void {
+    template <typename Hal> static auto run() -> void {
         if constexpr (active) {
             using status_policy_t = typename Config::status_policy_t;
-            if (apply(read(enable_field)) && apply(read(status_field))) {
-                status_policy_t::run([&] { apply(clear(status_field)); },
-                                     [&] { Config::template isr<Nexi...>(); });
+            using en_t = typename Config::enable_field_t;
+            using st_t = typename Config::status_field_t;
+
+            if (detail::read_field<en_t>::template with_hal<Hal>() and
+                detail::read_field<st_t>::template with_hal<Hal>()) {
+                status_policy_t::run(
+                    [&] {
+                        detail::clear_field<st_t>::template with_hal<Hal>();
+                    },
+                    [&] { Config::template isr<Nexi...>(); });
             }
         }
     }
@@ -60,33 +77,22 @@ struct sub_irq_impl : Config {
 template <typename Config> struct id_irq_impl : Config {
     constexpr static bool active = true;
 
-    using Config::enable_field;
-    using Config::status_field;
-
-    [[nodiscard]] static auto get_interrupt_enables() {
-        return stdx::make_tuple(enable_field);
-    }
-
-    static auto run() -> void {}
+    template <typename Hal> static auto run() -> void {}
 };
 
 template <typename Config, sub_irq_interface... Subs>
 struct shared_irq_impl : Config {
     constexpr static bool active = (Subs::active or ...);
 
-    static auto init_mcu_interrupts() -> void {
-        Config::template enable<active>();
+    template <typename Hal> static auto init() -> void {
+        Config::template enable<active, Hal>();
     }
 
-    [[nodiscard]] static auto get_interrupt_enables() {
-        return stdx::tuple_cat(Subs::get_interrupt_enables()...);
-    }
-
-    static auto run() -> void {
+    template <typename Hal> static auto run() -> void {
         if constexpr (active) {
             using status_policy_t = typename Config::status_policy_t;
-            hal::run<status_policy_t>(Config::irq_number,
-                                      [] { (Subs::run(), ...); });
+            Hal::template run<status_policy_t>(
+                Config::irq_number, [] { (Subs::template run<Hal>(), ...); });
         }
     }
 };
@@ -95,24 +101,19 @@ template <typename Config, sub_irq_interface... Subs>
 struct shared_sub_irq_impl : Config {
     constexpr static bool active = (Subs::active or ...);
 
-    using Config::enable_field;
-    using Config::status_field;
-
-    [[nodiscard]] static auto get_interrupt_enables() {
-        if constexpr (active) {
-            return stdx::tuple_cat(stdx::make_tuple(enable_field),
-                                   Subs::get_interrupt_enables()...);
-        } else {
-            return stdx::tuple{};
-        }
-    }
-
-    static auto run() -> void {
+    template <typename Hal> static auto run() -> void {
         if constexpr (active) {
             using status_policy_t = typename Config::status_policy_t;
-            if (apply(read(enable_field)) && apply(read(status_field))) {
-                status_policy_t::run([&] { apply(clear(status_field)); },
-                                     [&] { (Subs::run(), ...); });
+            using en_t = typename Config::enable_field_t;
+            using st_t = typename Config::status_field_t;
+
+            if (detail::read_field<en_t>::template with_hal<Hal>() and
+                detail::read_field<st_t>::template with_hal<Hal>()) {
+                status_policy_t::run(
+                    [&] {
+                        detail::clear_field<st_t>::template with_hal<Hal>();
+                    },
+                    [&] { (Subs::template run<Hal>(), ...); });
             }
         }
     }
