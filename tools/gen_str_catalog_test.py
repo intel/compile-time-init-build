@@ -13,7 +13,7 @@ def test_split_args_templates():
     ]
 
 
-test_msg = "sc::message<sc::undefined<sc::args<arg1, arg2>, 42, char, (char)97, (char)98, (char)99>>"
+test_msg = "sc::message<sc::undefined<sc::args<arg1, arg2>, 42, sc::string<(char)97, (char)98, (char)99>>>"
 
 
 def test_message_properties():
@@ -33,7 +33,7 @@ def test_message_cpp_type():
     m = gen.Message("abc", ["int"], 42)
     assert (
         m.to_cpp_type()
-        == "sc::message<sc::undefined<sc::args<int>, 42, char, static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>"
+        == "sc::message<sc::undefined<sc::args<int>, 42, sc::string<static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>>"
     )
 
 
@@ -41,7 +41,7 @@ def test_message_cpp_type_unsigned():
     m = gen.Message("abc", ["int"], 42, "u")
     assert (
         m.to_cpp_type()
-        == "sc::message<sc::undefined<sc::args<int>, 42u, char, static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>"
+        == "sc::message<sc::undefined<sc::args<int>, 42u, sc::string<static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>>"
     )
 
 
@@ -57,7 +57,7 @@ def test_message_json():
 
 
 test_module = (
-    "sc::module_string<sc::undefined<void, 42, char, (char)97, (char)98, (char)99>>"
+    "sc::module_string<sc::undefined<void, 42, sc::string<(char)97, (char)98, (char)99>>>"
 )
 
 
@@ -71,7 +71,7 @@ def test_module_cpp_type():
     m = gen.Module("abc", 42)
     assert (
         m.to_cpp_type()
-        == "sc::module_string<sc::undefined<void, 42, char, static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>"
+        == "sc::module_string<sc::undefined<void, 42, sc::string<static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>>"
     )
 
 
@@ -79,7 +79,7 @@ def test_module_cpp_type():
     m = gen.Module("abc", 42, "u")
     assert (
         m.to_cpp_type()
-        == "sc::module_string<sc::undefined<void, 42u, char, static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>"
+        == "sc::module_string<sc::undefined<void, 42u, sc::string<static_cast<char>(97), static_cast<char>(98), static_cast<char>(99)>>>"
     )
 
 

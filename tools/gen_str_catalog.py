@@ -72,7 +72,7 @@ class Message:
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
+            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), sc::string<(.*)>>\s*>"
         )
         m = string_re.match(s)
         string_tuple = m.group(4).replace("(char)", "")
@@ -105,7 +105,7 @@ class Message:
         return "flow" if self.text.startswith("flow.") else "msg"
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>>"
 
     def key(self):
         return hash(self.text) ^ hash("".join(self.args))
@@ -129,7 +129,7 @@ class Module:
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
+            rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), sc::string<(.*)>>\s*>"
         )
         m = string_re.match(s)
         string_tuple = m.group(4).replace("(char)", "")
@@ -153,7 +153,7 @@ class Module:
         )
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<void, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<void, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>>"
 
     def key(self):
         return hash(self.text)
