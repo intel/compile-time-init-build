@@ -1,231 +1,334 @@
 #pragma once
 
+#include <interrupt/concepts.hpp>
+
+#include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
+#include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
+#include <stdx/utility.hpp>
 
 #include <conc/concurrency.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
+#include <boost/mp11/utility.hpp>
 
-#include <cstdint>
-#include <limits>
 #include <type_traits>
+#include <utility>
 
 namespace interrupt {
-enum class resource_status : std::uint8_t { OFF, ON };
+namespace detail {
+template <typename Irq> using get_resources_t = typename Irq::resources_t;
+template <typename Irq> using get_flows_t = typename Irq::flows_t;
+template <typename Irq>
+using get_name_list_t = stdx::type_list<typename Irq::name_t>;
 
 template <typename Irq>
-concept has_enable_field = requires { Irq::enable_field; };
+using has_real_enable_field =
+    std::bool_constant<not is_no_field_v<typename Irq::enable_field_t>>;
 
 template <typename Irq>
-concept has_resource =
-    has_enable_field<Irq> and
-    not boost::mp11::mp_empty<typename Irq::resources_t>::value;
+using has_enable_field = boost::mp11::mp_eval_if_not<
+    std::bool_constant<requires { typename Irq::enable_field_t; }>,
+    std::false_type, has_real_enable_field, Irq>;
 
-template <typename Root> struct dynamic_controller {
-  private:
-    using all_resources_t =
-        boost::mp11::mp_unique<decltype(Root::descendants.apply(
-            []<typename... Irqs>(Irqs const &...) {
-                return boost::mp11::mp_append<typename Irqs::resources_t...>{};
-            }))>;
+template <typename Irq>
+using enable_fields_t =
+    boost::mp11::mp_remove_if<stdx::type_list<typename Irq::enable_field_t>,
+                              is_no_field>;
 
-    template <typename Register>
-    CONSTINIT static inline typename Register::DataType allowed_enables =
-        std::numeric_limits<typename Register::DataType>::max();
+template <typename Irq>
+using get_enable_field_t =
+    boost::mp11::mp_eval_if_not<has_enable_field<Irq>, stdx::type_list<>,
+                                enable_fields_t, Irq>;
 
-    template <typename Register>
-    CONSTINIT static inline typename Register::DataType dynamic_enables{};
+template <typename Root>
+using descendants_t = std::remove_cvref_t<decltype(Root::descendants)>;
 
-    template <typename Resource>
-    CONSTINIT static inline bool is_resource_on = true;
+template <typename Root, template <typename...> typename F,
+          template <typename...> typename Result = stdx::type_bitset,
+          template <typename> typename Desc = descendants_t>
+using collect_t = boost::mp11::mp_apply<
+    Result,
+    boost::mp11::mp_unique<boost::mp11::mp_apply<
+        boost::mp11::mp_append, boost::mp11::mp_transform<F, Desc<Root>>>>>;
 
-    template <typename Resource> struct doesnt_require_resource {
-        template <typename Irq>
-        using fn =
-            std::bool_constant<has_enable_field<Irq> and
-                               not boost::mp11::mp_contains<
-                                   typename Irq::resources_t, Resource>::value>;
-    };
+template <typename Name> struct has_name {
+    template <typename Irq> using fn = std::is_same<Name, typename Irq::name_t>;
+};
 
-    template <typename Register> struct in_register {
-        template <typename Field>
-        using fn = std::is_same<Register, typename Field::RegisterType>;
-    };
+template <typename Irq> using get_name_t = typename Irq::name_t;
 
-    /**
-     * For each ResourceType, keep track of what interrupts can still be enabled
-     * when that resource goes down.
-     *
-     * Each bit in this mask corresponds to an interrupt enable field in
-     * RegType. If the bit is '1', that means the corresponding interrupt can be
-     * enabled when the resource is not available. If the bit is '0', that means
-     * the corresponding interrupt must be disabled when the resource is not
-     * available.
-     *
-     * @tparam ResourceType
-     *      The resource we want to check.
-     *
-     * @tparam RegType
-     *      The specific register mask we want to check.
-     */
-    template <typename ResourceType, typename RegType>
-    constexpr static typename RegType::DataType irqs_allowed = []() {
-        // get all interrupt enable fields that don't require the given resource
-        auto const matching_irqs =
-            stdx::filter<doesnt_require_resource<ResourceType>::template fn>(
-                Root::descendants);
-        auto const interrupt_enables_tuple = stdx::transform(
-            [](auto irq) { return irq.enable_field; }, matching_irqs);
-
-        // filter fields that aren't in RegType
-        auto const fields_in_reg =
-            stdx::filter<in_register<RegType>::template fn>(
-                interrupt_enables_tuple);
-
-        // set the bits in the mask for interrupts that don't require the
-        // resource
-        using DataType = typename RegType::DataType;
-        return fields_in_reg.fold_left(
-            DataType{}, [](DataType value, auto field) -> DataType {
-                return value | field.get_mask();
-            });
-    }();
-
-    template <typename RegTypeTuple>
-    static inline void reprogram_interrupt_enables(RegTypeTuple regs) {
-        stdx::for_each(
-            []<typename R>(R reg) {
-                // make sure we don't enable any interrupts that are not allowed
-                // according to resource availability
-                auto const final_enables =
-                    allowed_enables<R> & dynamic_enables<R>;
-
-                // update the hardware registers
-                apply(write(reg.raw(final_enables)));
-            },
-            regs);
-    }
-
-    /**
-     * tuple of every interrupt register affected by a resource
-     */
+template <typename Resource> struct has_resource {
     template <typename Irq>
-    using has_resource_t = std::bool_constant<has_resource<Irq>>;
+    using fn = boost::mp11::mp_contains<get_resources_t<Irq>, Resource>;
+};
 
-    constexpr static auto all_resource_affected_regs =
-        stdx::to_unsorted_set(stdx::transform(
-            []<typename Irq>(Irq) { return Irq::enable_field.get_register(); },
-            stdx::filter<has_resource_t>(Root::descendants)));
+template <typename Irqs> struct with_resource {
+    template <typename Resource>
+    using fn = stdx::tt_pair<
+        Resource, boost::mp11::mp_transform<
+                      get_name_t,
+                      boost::mp11::mp_copy_if_q<Irqs, has_resource<Resource>>>>;
+};
 
-    /**
-     * Reprogram interrupt enables based on updated resource availability.
-     */
-    static inline auto recalculate_allowed_enables() {
-        // set allowed_enables mask for each resource affected register
-        stdx::for_each(
-            []<typename R>(R) {
-                using DataType = typename R::DataType;
-                allowed_enables<R> = std::numeric_limits<DataType>::max();
-            },
-            all_resource_affected_regs);
+template <typename Flow> struct has_flow {
+    template <typename Irq>
+    using fn = boost::mp11::mp_contains<get_flows_t<Irq>, Flow>;
+};
 
-        // for each resource, if it is not on, mask out unavailable interrupts
-        stdx::template_for_each<all_resources_t>([]<typename Rsrc>() {
-            if (not is_resource_on<Rsrc>) {
-                stdx::for_each(
-                    []<typename R>(R) {
-                        allowed_enables<R> &= irqs_allowed<Rsrc, R>;
-                    },
-                    all_resource_affected_regs);
-            }
-        });
+template <typename Irqs> struct with_flow {
+    template <typename Flow>
+    using fn = stdx::tt_pair<
+        Flow, boost::mp11::mp_transform<
+                  get_name_t, boost::mp11::mp_copy_if_q<Irqs, has_flow<Flow>>>>;
+};
 
-        return all_resource_affected_regs;
-    }
+template <typename Hal> struct get_register_q {
+    template <typename Field>
+    using from_field = decltype(Hal::template get_register<Field>());
 
-    /**
-     * Store the interrupt enable values that FW _wants_ at runtime,
-     * irrespective of any resource conflicts that would require specific
-     * interrupts to be disabled.
-     *
-     * @tparam RegType
-     *      The croo::Register this value corresponds to.
-     */
+    template <typename Irq>
+    using from_irq =
+        decltype(Hal::template get_register<typename Irq::enable_field_t>());
+};
 
-    template <typename... Flows> struct match_flow {
-        template <typename Irq>
-        using fn =
-            std::bool_constant<has_enable_field<Irq> and
-                               (... or Irq::template triggers_flow<Flows>)>;
+namespace dynamic_hal_concept {
+template <typename Cfg>
+using enable_fields_t = collect_t<Cfg, get_enable_field_t>;
+
+template <typename Cfg>
+using first_enable_field_t = boost::mp11::mp_first<enable_fields_t<Cfg>>;
+
+template <typename Hal, typename Cfg>
+using register_type_t =
+    decltype(Hal::template get_register<first_enable_field_t<Cfg>>());
+
+template <typename Hal, typename Cfg>
+using register_datatype_t =
+    typename Hal::template register_datatype_t<register_type_t<Hal, Cfg>>;
+} // namespace dynamic_hal_concept
+
+template <typename Hal, typename Cfg>
+concept dynamic_hal_for =
+    boost::mp11::mp_empty<dynamic_hal_concept::enable_fields_t<Cfg>>::value or
+    requires(dynamic_hal_concept::register_datatype_t<Hal, Cfg> value) {
+        typename dynamic_hal_concept::register_type_t<Hal, Cfg>;
+        {
+            Hal::template mask<dynamic_hal_concept::register_type_t<Hal, Cfg>,
+                               dynamic_hal_concept::first_enable_field_t<Cfg>>
+        } -> stdx::same_as_unqualified<
+            dynamic_hal_concept::register_datatype_t<Hal, Cfg>>;
+        Hal::template write<dynamic_hal_concept::register_type_t<Hal, Cfg>>(
+            value);
     };
+} // namespace detail
 
-    template <bool Enable, typename... Flows>
-    static inline void enable_by_name() {
-        // NOTE: critical section is not needed here because shared state is
-        // only updated by the final call to enable_by_field
+template <typename Root, detail::dynamic_hal_for<Root> Hal>
+struct dynamic_controller {
+  private:
+    // keep track of which resources/flows/irqs have been manually
+    // enabled/disabled
+    using resources_t = detail::collect_t<Root, detail::get_resources_t>;
+    CONSTINIT static inline resources_t resource_enables{};
 
-        // TODO: add support to enable/disable top-level IRQs by name.
-        //       this will require another way to manage them vs. mmio
-        //       registers. once that goes in, then enable_by_field should be
-        //       removed or made private.
-        auto const matching_irqs =
-            stdx::filter<match_flow<Flows...>::template fn>(Root::descendants);
+    using flows_t = detail::collect_t<Root, detail::get_flows_t>;
+    CONSTINIT static inline flows_t flow_enables{};
 
-        auto const interrupt_enables_tuple = stdx::transform(
-            [](auto irq) { return irq.enable_field; }, matching_irqs);
+    using irq_names_t = detail::collect_t<Root, detail::get_name_list_t>;
+    CONSTINIT static inline irq_names_t named_enables{};
 
-        interrupt_enables_tuple.apply([]<typename... Fields>(Fields...) {
-            enable_by_field<Enable, Fields...>();
-        });
+    // update bitsets as necessary
+    template <typename T> static auto enable_one() -> void {
+        if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
+            resource_enables.template set<T>();
+        } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
+            flow_enables.template set<T>();
+        } else {
+            named_enables.template set<T>();
+        }
     }
 
-    template <typename ResourceType>
-    static inline void update_resource(resource_status status) {
-        conc::call_in_critical_section<dynamic_controller>([&] {
-            is_resource_on<ResourceType> = (status == resource_status::ON);
-            recalculate_allowed_enables();
-            reprogram_interrupt_enables(all_resource_affected_regs);
-        });
+    template <typename T> static auto disable_one() -> void {
+        if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
+            resource_enables.template reset<T>();
+        } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
+            flow_enables.template reset<T>();
+        } else {
+            named_enables.template reset<T>();
+        }
+    }
+
+    // which resources/flows affect which irqs?
+    // compute maps: resource -> list<irq names>, flow -> list<irq names>
+    using irqs_t = detail::collect_t<Root, stdx::type_list>;
+    using resource_map_t =
+        boost::mp11::mp_apply<stdx::type_map,
+                              boost::mp11::mp_transform_q<
+                                  detail::with_resource<irqs_t>, resources_t>>;
+    using flow_map_t = boost::mp11::mp_apply<
+        stdx::type_map,
+        boost::mp11::mp_transform_q<detail::with_flow<irqs_t>, flows_t>>;
+
+    // cached values for each enable register
+    template <typename Register>
+    using register_t = typename Hal::template register_datatype_t<Register>;
+
+    template <typename Register>
+    CONSTINIT static inline register_t<Register> cached_enable{};
+
+    // which IRQs are potentially affected by a change?
+    template <typename... Ts> CONSTEVAL static auto compute_affected_irqs() {
+        using affected_irq_names_by_resource_t = boost::mp11::mp_append<
+            stdx::type_lookup_t<resource_map_t, Ts, stdx::type_list<>>...>;
+        using affected_irq_names_by_flow_t = boost::mp11::mp_append<
+            stdx::type_lookup_t<flow_map_t, Ts, stdx::type_list<>>...>;
+
+        using affected_irqs_t =
+            decltype(stdx::apply_sequence<
+                     boost::mp11::mp_unique<boost::mp11::mp_append<
+                         affected_irq_names_by_resource_t,
+                         affected_irq_names_by_flow_t>>>([]<typename... Ss>() {
+                return boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
+                    detail::descendants_t<Root>, detail::has_name<Ss>>...>{};
+            }));
+        return affected_irqs_t{};
+    }
+
+    // compute changing value/mask for register
+    template <typename Reg, typename Irq, typename T>
+    static auto compute_register(T &new_value, T &mask) -> void {
+        constexpr auto field_mask =
+            Hal::template mask<Reg, typename Irq::enable_field_t>;
+        mask |= field_mask;
+
+        auto const all_resources_on = [] {
+            constexpr auto resources_bs =
+                resources_t{typename Irq::resources_t{}};
+            return (resource_enables & resources_bs) == resources_bs;
+        }();
+        auto const any_flow_on = [] {
+            constexpr auto flows_bs = flows_t{typename Irq::flows_t{}};
+            if constexpr (flows_bs.none()) {
+                return true;
+            }
+            return (flow_enables & flows_bs) != flows_t{};
+        }();
+
+        if (all_resources_on and any_flow_on and
+            named_enables[stdx::type_identity_v<typename Irq::name_t>]) {
+            new_value |= field_mask;
+        }
+    }
+
+    // update cached values and write the changed registers
+    template <template <typename...> typename L, typename... Irqs>
+    static auto update(L<Irqs...>) -> void {
+        constexpr auto by_registers =
+            stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
+                stdx::tuple<Irqs...>{});
+
+        stdx::for_each(
+            []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
+                using reg_t = decltype(Hal::template get_register<
+                                       typename I::enable_field_t>());
+                auto mask = register_t<reg_t>{};
+                auto value = register_t<reg_t>{};
+                (compute_register<reg_t, I>(value, mask), ...,
+                 compute_register<reg_t, Is>(value, mask));
+
+                auto &cached_value = cached_enable<reg_t>;
+                auto new_value = (cached_value & ~mask) | value;
+                if (new_value != std::exchange(cached_value, new_value)) {
+                    Hal::template write<reg_t>(cached_value);
+                }
+            },
+            by_registers);
+    }
+
+    // reset: mark all resources, flows and named irqs enabled
+    // and clear all cached state
+    template <bool Enable, typename IrqList>
+    static auto reset_internal_state() -> void {
+        if constexpr (Enable) {
+            resource_enables = resources_t{stdx::all_bits};
+            flow_enables = flows_t{stdx::all_bits};
+            named_enables = irq_names_t{stdx::all_bits};
+        } else {
+            resource_enables.reset();
+            flow_enables.reset();
+            named_enables.reset();
+        }
+
+        constexpr auto by_registers =
+            stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
+                IrqList{});
+        stdx::for_each(
+            []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
+                using reg_t = decltype(Hal::template get_register<
+                                       typename I::enable_field_t>());
+                cached_enable<reg_t> = register_t<reg_t>{};
+                if constexpr (not Enable) {
+                    auto value = register_t<reg_t>{};
+                    auto &mask = cached_enable<reg_t>;
+                    (compute_register<reg_t, I>(value, mask), ...,
+                     compute_register<reg_t, Is>(value, mask));
+                }
+            },
+            by_registers);
     }
 
   public:
-    template <typename ResourceType> static inline void turn_on_resource() {
-        update_resource<ResourceType>(resource_status::ON);
-    }
+    using hal_t = Hal;
+    struct mutex_t;
 
-    template <typename ResourceType> static inline void turn_off_resource() {
-        update_resource<ResourceType>(resource_status::OFF);
-    }
-
-    template <bool Enable, typename... Fields>
-    static inline void enable_by_field() {
-        conc::call_in_critical_section<dynamic_controller>([] {
-            [[maybe_unused]] auto const enable = []<typename F>() -> void {
-                using R = typename F::RegisterType;
-                if constexpr (Enable) {
-                    dynamic_enables<R> |= F::get_mask();
-                } else {
-                    dynamic_enables<R> &= ~F::get_mask();
-                }
-            };
-            (enable.template operator()<Fields>(), ...);
-
-            auto const unique_regs = stdx::to_unsorted_set(
-                stdx::tuple<typename Fields::RegisterType...>{});
-            reprogram_interrupt_enables(unique_regs);
+    template <bool Enable = true> static auto init() -> void {
+        using enable_irqs_t =
+            boost::mp11::mp_copy_if<detail::descendants_t<Root>,
+                                    detail::has_enable_field>;
+        conc::call_in_critical_section<mutex_t>([] {
+            reset_internal_state<Enable, enable_irqs_t>();
+            update(enable_irqs_t{});
         });
     }
 
-    template <typename... Flows> static inline void enable() {
-        enable_by_name<true, Flows...>();
+    template <typename... Ts> static auto enable() -> void {
+        conc::call_in_critical_section<mutex_t>([] {
+            constexpr auto affected_irqs = compute_affected_irqs<Ts...>();
+            (enable_one<Ts>(), ...);
+            update(affected_irqs);
+        });
+    }
+    template <typename... Ts> static auto disable() -> void {
+        conc::call_in_critical_section<mutex_t>([] {
+            constexpr auto affected_irqs = compute_affected_irqs<Ts...>();
+            (disable_one<Ts>(), ...);
+            update(affected_irqs);
+        });
     }
 
-    template <typename... Flows> static inline void disable() {
-        enable_by_name<false, Flows...>();
+    template <stdx::ct_string... IrqNames> static auto enable() -> void {
+        using affected_irqs_t =
+            boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
+                detail::descendants_t<Root>,
+                detail::has_name<stdx::cts_t<IrqNames>>>...>;
+        conc::call_in_critical_section<mutex_t>([] {
+            (enable_one<stdx::cts_t<IrqNames>>(), ...);
+            update(affected_irqs_t{});
+        });
+    }
+    template <stdx::ct_string... IrqNames> static auto disable() -> void {
+        using affected_irqs_t =
+            boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
+                detail::descendants_t<Root>,
+                detail::has_name<stdx::cts_t<IrqNames>>>...>;
+        conc::call_in_critical_section<mutex_t>([] {
+            (disable_one<stdx::cts_t<IrqNames>>(), ...);
+            update(affected_irqs_t{});
+        });
     }
 };
 } // namespace interrupt

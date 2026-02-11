@@ -5,8 +5,6 @@
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
-#include <utility>
-
 namespace interrupt {
 template <typename T>
 concept policy = requires { typename T::policy_type; };

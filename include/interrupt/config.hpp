@@ -3,24 +3,25 @@
 #include <interrupt/concepts.hpp>
 #include <interrupt/dynamic_controller.hpp>
 #include <interrupt/fwd.hpp>
-#include <interrupt/hal.hpp>
 #include <interrupt/impl.hpp>
 #include <interrupt/policies.hpp>
 
 #include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/utility.hpp>
 
 namespace interrupt {
 namespace detail {
-template <typename Policies> struct policy_config {
+template <stdx::ct_string Name, typename Policies> struct base_config {
     using status_policy_t =
         typename Policies::template type<status_clear_policy,
                                          clear_status_first>;
     using resources_t =
         typename Policies::template type<required_resources_policy,
                                          required_resources<>>::resources;
+    using name_t = stdx::cts_t<Name>;
 };
 
 template <base_irq_config... Cfgs> struct parent_config {
@@ -35,25 +36,18 @@ template <base_irq_config... Cfgs> struct parent_config {
 };
 
 template <irq_num_t Number, priority_t Priority> struct super_config {
-    template <bool Enable> constexpr static auto enable() -> void {
-        hal::irq_init<Enable, Number, Priority>();
+    template <bool Enable, typename Hal>
+    constexpr static auto enable() -> void {
+        Hal::template irq_init<Enable, Number, Priority>();
     }
     constexpr static auto irq_number = Number;
 };
 
-namespace fields {
-template <bool V> struct field_t {};
-template <bool V> struct op_t {};
-
-template <bool V> constexpr auto read(field_t<V>) -> op_t<V> { return {}; }
-template <bool V> constexpr auto clear(field_t<V>) -> op_t<V> { return {}; }
-template <bool V> constexpr auto apply(op_t<V>) { return V; }
-} // namespace fields
-
 template <typename EnableField, typename StatusField> struct sub_config {
-    template <bool Enable> constexpr static auto enable() -> void {}
-    constexpr static auto enable_field = EnableField{};
-    constexpr static auto status_field = StatusField{};
+    template <bool Enable, typename Hal>
+    constexpr static auto enable() -> void {}
+    using enable_field_t = EnableField;
+    using status_field_t = StatusField;
 };
 
 template <typename... Flows> class flow_config {
@@ -68,6 +62,8 @@ template <typename... Flows> class flow_config {
     }
 
   public:
+    using flows_t = stdx::type_list<Flows...>;
+
     template <typename... Nexi>
     constexpr static bool active = (... or one_active<Flows, Nexi...>());
 
@@ -83,17 +79,15 @@ template <typename... Flows> class flow_config {
 };
 } // namespace detail
 
-template <bool V = true> using enable_t = detail::fields::field_t<V>;
-template <bool V = true> using status_t = detail::fields::field_t<V>;
-
 template <base_irq_config... Cfgs>
 struct root : detail::parent_config<Cfgs...> {
-    template <typename T> using dynamic_controller_t = dynamic_controller<T>;
+    template <typename... Ts>
+    using dynamic_controller_t = dynamic_controller<Ts...>;
 };
 
-template <irq_num_t Number, priority_t Priority, typename Policies,
-          typename... Flows>
-struct irq : detail::policy_config<Policies>,
+template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
+          typename Policies, typename... Flows>
+struct irq : detail::base_config<Name, Policies>,
              detail::parent_config<>,
              detail::super_config<Number, Priority>,
              detail::flow_config<Flows...> {
@@ -101,15 +95,16 @@ struct irq : detail::policy_config<Policies>,
 
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::irq<{}_irq, {}, {}>">(
-            stdx::ct<stdx::to_underlying(Number)>(), stdx::ct<Priority>(),
+        return +stdx::ct_format<"interrupt::irq<\"{}\", {}_irq, {}, {}>">(
+            stdx::ct<Name>(), stdx::ct<stdx::to_underlying(Number)>(),
+            stdx::ct<Priority>(),
             detail::config_string_for<Policies, Flows...>());
     }
 };
 
-template <typename EnableField, typename StatusField, typename Policies,
-          typename... Flows>
-struct sub_irq : detail::policy_config<Policies>,
+template <stdx::ct_string Name, typename EnableField, typename StatusField,
+          typename Policies, typename... Flows>
+struct sub_irq : detail::base_config<Name, Policies>,
                  detail::parent_config<>,
                  detail::sub_config<EnableField, StatusField>,
                  detail::flow_config<Flows...> {
@@ -117,31 +112,35 @@ struct sub_irq : detail::policy_config<Policies>,
 
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::sub_irq<{}>">(
+        return +stdx::ct_format<"interrupt::sub_irq<\"{}\", {}>">(
+            stdx::ct<Name>(),
             detail::config_string_for<EnableField, StatusField, Policies,
                                       Flows...>());
     }
 };
 
-template <typename EnableField, typename Policies>
-struct id_irq : detail::policy_config<Policies>,
+template <stdx::ct_string Name, typename EnableField, typename Policies>
+struct id_irq : detail::base_config<Name, Policies>,
                 detail::parent_config<>,
-                detail::sub_config<EnableField, status_t<>> {
+                detail::sub_config<EnableField, no_field_t>,
+                detail::flow_config<> {
     template <typename...> using built_t = id_irq_impl<id_irq>;
     template <typename> constexpr static bool triggers_flow = false;
 
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::id_irq<{}>">(
+        return +stdx::ct_format<"interrupt::id_irq<\"{}\", {}>">(
+            stdx::ct<Name>(),
             detail::config_string_for<EnableField, Policies>());
     }
 };
 
-template <irq_num_t Number, priority_t Priority, typename Policies,
-          sub_irq_config... Cfgs>
-struct shared_irq : detail::policy_config<Policies>,
+template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
+          typename Policies, sub_irq_config... Cfgs>
+struct shared_irq : detail::base_config<Name, Policies>,
                     detail::parent_config<Cfgs...>,
-                    detail::super_config<Number, Priority> {
+                    detail::super_config<Number, Priority>,
+                    detail::flow_config<> {
     template <typename... Subs>
     using sub_built_t = shared_irq_impl<shared_irq, Subs...>;
 
@@ -156,17 +155,20 @@ struct shared_irq : detail::policy_config<Policies>,
 
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::shared_irq<{}_irq, {}, {}>">(
-            stdx::ct<stdx::to_underlying(Number)>(), stdx::ct<Priority>(),
+        return +stdx::ct_format<
+            "interrupt::shared_irq<\"{}\", {}_irq, {}, {}>">(
+            stdx::ct<Name>(), stdx::ct<stdx::to_underlying(Number)>(),
+            stdx::ct<Priority>(),
             detail::config_string_for<Policies, Cfgs...>());
     }
 };
 
-template <typename EnableField, typename StatusField, typename Policies,
-          sub_irq_config... Cfgs>
-struct shared_sub_irq : detail::policy_config<Policies>,
+template <stdx::ct_string Name, typename EnableField, typename StatusField,
+          typename Policies, sub_irq_config... Cfgs>
+struct shared_sub_irq : detail::base_config<Name, Policies>,
                         detail::parent_config<Cfgs...>,
-                        detail::sub_config<EnableField, StatusField> {
+                        detail::sub_config<EnableField, StatusField>,
+                        detail::flow_config<> {
     template <typename... Subs>
     using sub_built_t = shared_sub_irq_impl<shared_sub_irq, Subs...>;
 
@@ -181,7 +183,8 @@ struct shared_sub_irq : detail::policy_config<Policies>,
 
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::shared_sub_irq<{}>">(
+        return +stdx::ct_format<"interrupt::shared_sub_irq<\"{}\", {}>">(
+            stdx::ct<Name>(),
             detail::config_string_for<EnableField, StatusField, Policies,
                                       Cfgs...>());
     }

@@ -26,7 +26,7 @@ include(cmake/string_catalog.cmake)
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
 fmt_recipe(11.1.3)
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#9332543")
-add_versioned_package("gh:intel/cpp-std-extensions#59bd98c")
+add_versioned_package("gh:intel/cpp-std-extensions#ca3f4a4")
 add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#b441b63")
 
 set(GEN_STR_CATALOG
@@ -78,7 +78,6 @@ target_sources(
               include/interrupt/config.hpp
               include/interrupt/dynamic_controller.hpp
               include/interrupt/fwd.hpp
-              include/interrupt/hal.hpp
               include/interrupt/impl.hpp
               include/interrupt/manager.hpp
               include/interrupt/policies.hpp)

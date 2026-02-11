@@ -2,7 +2,6 @@
 #include <interrupt/config.hpp>
 #include <interrupt/dynamic_controller.hpp>
 #include <interrupt/fwd.hpp>
-#include <interrupt/hal.hpp>
 #include <interrupt/impl.hpp>
 #include <interrupt/manager.hpp>
 #include <interrupt/policies.hpp>
