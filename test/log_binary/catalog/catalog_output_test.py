@@ -16,6 +16,8 @@ expected_lines = {
     "TRACE [default] One int64_t runtime argument: 17",
     "TRACE [default] One int32_t runtime argument formatted as {:08x}: 00000011",
     "TRACE [default] Two runtime arguments: uint32_t 1 and int64_t 2",
+    "One compile-time named argument: 17",
+    "TRACE [default] One runtime named argument: 17",
     "TRACE [default] Float argument: 3.140000104904175",
     "TRACE [default] Double argument: 3.14",
     "TRACE [default] Default module with runtime argument: 17",

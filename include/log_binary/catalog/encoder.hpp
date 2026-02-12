@@ -33,11 +33,18 @@ template <stdx::ct_string S> CONSTEVAL static auto to_string_type() {
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
 }
 
+template <typename NamedArg> constexpr static auto to_named_arg_type() {
+    using str = decltype(to_string_type<NamedArg::name>());
+    return sc::named_arg<str, NamedArg::begin, NamedArg::end>{};
+}
+
 template <typename S, typename NamedArgs, auto Id, typename... Args>
 constexpr static auto to_message() {
     using str = decltype(to_string_type<S::value>());
     return stdx::apply_sequence<NamedArgs>([]<typename... NAs>() {
-        return sc::message<sc::undefined<sc::args<Args...>, Id, str>>{};
+        return sc::message<sc::undefined<
+            sc::args<Args...>, Id, str,
+            sc::named_args<decltype(to_named_arg_type<NAs>())...>>>{};
     });
 }
 
