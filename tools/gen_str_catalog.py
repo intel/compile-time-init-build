@@ -56,15 +56,70 @@ class Intervals:
         return f'Intervals("{self}")'
 
 
+class NamedArg:
+    def __init__(self, name: str, begin: int, end: int):
+        self.name = name
+        self.begin = begin
+        self.end = end
+
+    @classmethod
+    def from_cpp_type(cls, s):
+        string_re = re.compile(r"sc::named_arg<sc::string<(.*)>, (-?\d+), (-?\d+)>")
+        m = string_re.match(s)
+        string_tuple = m.group(1).replace("(char)", "")
+        return cls(
+            "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))),
+            int(m.group(2)),
+            int(m.group(3)),
+        )
+
+    @classmethod
+    def from_json(cls, json: dict):
+        if "ref" in json.keys():
+            return cls(json["name"], json["ref"], json["ref"] - 1)
+        else:
+            loc_re = re.compile(r"\[(\d+):(\d+)\]")
+            loc = loc_re.match(json["loc"])
+            if not loc:
+                raise Exception(f"Couldn't extract NamedArg from json: {json}")
+            return cls(json["name"], int(loc.group(1)), int(loc.group(2)))
+
+    def to_json(self):
+        d = dict(name=self.name)
+        if self.end < self.begin:
+            return dict(ref=self.begin, **d)
+        else:
+            return dict(loc=f"[{self.begin}:{self.end}]", **d)
+
+    def to_cpp_type(self):
+        return rf"sc::named_arg<sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.name)}>, {self.begin}, {self.end}>"
+
+    def __repr__(self):
+        return f"NamedArg('{self.name}', {self.begin}, {self.end})"
+
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.begin == other.begin
+            and self.end == other.end
+        )
+
+
 class Message:
     cpp_prefix: str = "sc::message<sc::undefined"
 
     def __init__(
-        self, text: str, args: list[str], id: int, id_suffix: str | None = None
+        self,
+        text: str,
+        args: list[str],
+        id: int,
+        named_args: list[NamedArg],
+        id_suffix: str | None = None,
     ):
         self.text = text
         self.args = args
         self.id = id
+        self.named_args = named_args
         self.id_suffix = id_suffix if id_suffix is not None else ""
         self.orig_id = id
         self.enum_lookup = None
@@ -72,14 +127,16 @@ class Message:
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
+            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), sc::string<(.*)>, sc::named_args<(.*)>\s*>\s*>"
         )
+
         m = string_re.match(s)
         string_tuple = m.group(4).replace("(char)", "")
         return cls(
             "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))),
             split_args(m.group(1)),
             int(m.group(2)),
+            [NamedArg.from_cpp_type(s) for s in split_args(m.group(5))],
             m.group(3),
         )
 
@@ -89,6 +146,7 @@ class Message:
             json["msg"],
             json["arg_types"],
             json["id"],
+            [NamedArg.from_json(a) for a in json.get("args", [])],
         )
 
     def to_json(self):
@@ -98,6 +156,7 @@ class Message:
             arg_types=self.args,
             arg_count=len(self.args),
             id=self.id,
+            args=[na.to_json() for na in self.named_args],
         )
 
     @property
@@ -105,13 +164,22 @@ class Message:
         return "flow" if self.text.startswith("flow.") else "msg"
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>, sc::named_args<{', '.join(f'{na.to_cpp_type()}' for na in self.named_args)}>>>"
 
     def key(self):
         return hash(self.text) ^ hash("".join(self.args))
 
     def __repr__(self):
-        return f"Message('{self.text}', {self.args}, {self.id}, {self.id_suffix})"
+        return rf"Message('{self.text}', {self.args}, {self.id}, [{', '.join(f'{repr(na)}' for na in self.named_args)}], '{self.id_suffix}')"
+
+    def __eq__(self, other):
+        return (
+            self.text == other.text
+            and self.args == other.args
+            and self.id == other.id
+            and self.named_args == other.named_args
+            and self.id_suffix == other.id_suffix
+        )
 
     def __lt__(self, other):
         return self.text < other.text
@@ -129,7 +197,7 @@ class Module:
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), char, (.*)>\s*>"
+            rf"{cls.cpp_prefix}<(.*), (-?\d+)([a-zA-Z]*), sc::string<(.*)>\s*>\s*>"
         )
         m = string_re.match(s)
         string_tuple = m.group(4).replace("(char)", "")
@@ -153,13 +221,20 @@ class Module:
         )
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<void, {self.orig_id}{self.id_suffix}, char, {', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>"
+        return rf"{self.cpp_prefix}<void, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>>>"
 
     def key(self):
         return hash(self.text)
 
     def __repr__(self):
         return f"Module('{self.text}', {self.id}, {self.id_suffix})"
+
+    def __eq__(self, other):
+        return (
+            self.text == other.text
+            and self.id == other.id
+            and self.id_suffix == other.id_suffix
+        )
 
     def __lt__(self, other):
         return self.text < other.text
@@ -323,7 +398,7 @@ def write_json(
     d = dict(
         messages=[m.to_json() for m in messages], modules=[m.to_json() for m in modules]
     )
-    
+
     for m in stable_data.get("messages"):
         j = m.to_json()
         if j not in d["messages"]:

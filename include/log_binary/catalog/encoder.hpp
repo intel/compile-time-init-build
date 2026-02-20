@@ -10,9 +10,11 @@
 #include <log_binary/module_id.hpp>
 #include <log_binary/string_id.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
 #include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
 #include <conc/concurrency.hpp>
@@ -24,26 +26,36 @@
 
 namespace logging::binary {
 namespace detail {
-template <typename S, auto Id, typename... Args>
-constexpr static auto to_message() {
-    constexpr auto s = std::string_view{S::value};
-    using char_t = typename std::remove_cv_t<decltype(s)>::value_type;
+template <stdx::ct_string S> CONSTEVAL static auto to_string_type() {
+    constexpr auto s = std::string_view{S};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::message<
-            sc::undefined<sc::args<Args...>, Id, char_t, s[Is]...>>{};
+        return sc::string<s[Is]...>{};
     }(std::make_integer_sequence<std::size_t, std::size(s)>{});
+}
+
+template <typename NamedArg> constexpr static auto to_named_arg_type() {
+    using str = decltype(to_string_type<NamedArg::name>());
+    return sc::named_arg<str, NamedArg::begin, NamedArg::end>{};
+}
+
+template <typename S, typename NamedArgs, auto Id, typename... Args>
+constexpr static auto to_message() {
+    using str = decltype(to_string_type<S::value>());
+    return stdx::apply_sequence<NamedArgs>([]<typename... NAs>() {
+        return sc::message<sc::undefined<
+            sc::args<Args...>, Id, str,
+            sc::named_args<decltype(to_named_arg_type<NAs>())...>>>{};
+    });
 }
 
 template <stdx::ct_string S, auto Id> constexpr static auto to_module() {
-    constexpr auto s = std::string_view{S};
-    return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
-        return sc::module_string<sc::undefined<void, Id, char, s[Is]...>>{};
-    }(std::make_integer_sequence<std::size_t, std::size(s)>{});
+    using str = decltype(to_string_type<S>());
+    return sc::module_string<sc::undefined<void, Id, str>>{};
 }
 
-template <typename S, auto Id> struct to_message_t {
+template <typename S, typename NamedArgs, auto Id> struct to_message_t {
     template <typename... Args>
-    using fn = decltype(to_message<S, Id, Args...>());
+    using fn = decltype(to_message<S, NamedArgs, Id, Args...>());
 };
 
 } // namespace detail
@@ -75,8 +87,9 @@ template <writer_like Writer> struct log_handler {
         fr.args.apply([&]<typename... Args>(Args &&...args) {
             constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = typename decltype(builder)::template convert_args<
-                detail::to_message_t<decltype(fr.str), logging::get_string_id(
-                                                           Env{})>::template fn,
+                detail::to_message_t<
+                    decltype(fr.str), typename FmtResult::named_args_t,
+                    logging::get_string_id(Env{})>::template fn,
                 std::remove_cvref_t<Args>...>;
             using Module =
                 decltype(detail::to_module<get_module(Env{}),
