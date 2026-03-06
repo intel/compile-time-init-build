@@ -30,6 +30,7 @@ extern auto log_with_non_default_module() -> void;
 extern auto log_with_fixed_module() -> void;
 extern auto log_with_fixed_module_id() -> void;
 extern auto log_with_fixed_unsigned_module_id() -> void;
+extern auto log_with_tag() -> void;
 
 std::ofstream log_file{};
 
@@ -230,5 +231,13 @@ TEST_CASE_PERSISTENT_FIXTURE(fixture, "catalog tests") {
         CHECK((last_header & expected_static) == expected_static);
         // module ID 7 is fixed by environment
         CHECK((last_header & ~expected_static) == (7u << 16u));
+    }
+
+    SECTION("log with tag") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_with_tag();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
     }
 }

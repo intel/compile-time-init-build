@@ -21,6 +21,7 @@ expected_lines = {
     "TRACE [default] Float argument: 3.140000104904175",
     "TRACE [default] Double argument: 3.14",
     "TRACE [default] Default module with runtime argument: 17",
+    "With tag",
     'TRACE [not default] Overridden module ("not default") with runtime argument: 17',
     'TRACE [fixed] Fixed module ("fixed") with runtime argument: 17',
     'TRACE [fixed_id6] Fixed module_id (6) and module ("fixed_id6") with runtime argument: 17',
