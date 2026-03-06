@@ -9,6 +9,7 @@
 #include <log_binary/catalog/writer.hpp>
 #include <log_binary/module_id.hpp>
 #include <log_binary/string_id.hpp>
+#include <log_binary/tags.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
@@ -38,12 +39,21 @@ template <typename NamedArg> constexpr static auto to_named_arg_type() {
     return sc::named_arg<str, NamedArg::begin, NamedArg::end>{};
 }
 
-template <typename S, typename NamedArgs, auto Id, typename... Args>
+template <stdx::ct_string... Name, stdx::ct_string... Value>
+constexpr static auto to_tags(tag_t<Name, Value>...) {
+    return sc::tags<sc::tag<decltype(to_string_type<Name>()),
+                            decltype(to_string_type<Value>())>...>{};
+}
+
+constexpr static auto to_tags(no_tag_t) { return sc::tags<>{}; }
+
+template <typename S, typename NamedArgs, auto Id, auto Tag, typename... Args>
 constexpr static auto to_message() {
     using str = decltype(to_string_type<S::value>());
+    using tags = decltype(to_tags(Tag));
     return stdx::apply_sequence<NamedArgs>([]<typename... NAs>() {
         return sc::message<sc::undefined<
-            sc::args<Args...>, Id, str,
+            sc::args<Args...>, Id, str, tags,
             sc::named_args<decltype(to_named_arg_type<NAs>())...>>>{};
     });
 }
@@ -53,11 +63,11 @@ template <stdx::ct_string S, auto Id> constexpr static auto to_module() {
     return sc::module_string<sc::undefined<void, Id, str>>{};
 }
 
-template <typename S, typename NamedArgs, auto Id> struct to_message_t {
+template <typename S, typename NamedArgs, auto Id, auto Tag>
+struct to_message_t {
     template <typename... Args>
-    using fn = decltype(to_message<S, NamedArgs, Id, Args...>());
+    using fn = decltype(to_message<S, NamedArgs, Id, Tag, Args...>());
 };
-
 } // namespace detail
 
 template <typename Destinations> struct log_writer {
@@ -87,9 +97,10 @@ template <writer_like Writer> struct log_handler {
         fr.args.apply([&]<typename... Args>(Args &&...args) {
             constexpr auto L = stdx::to_underlying(get_level(Env{}));
             using Message = typename decltype(builder)::template convert_args<
-                detail::to_message_t<
-                    decltype(fr.str), typename FmtResult::named_args_t,
-                    logging::get_string_id(Env{})>::template fn,
+                detail::to_message_t<decltype(fr.str),
+                                     typename FmtResult::named_args_t,
+                                     logging::get_string_id(Env{}),
+                                     logging::get_tag(Env{})>::template fn,
                 std::remove_cvref_t<Args>...>;
             using Module =
                 decltype(detail::to_module<get_module(Env{}),

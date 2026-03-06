@@ -25,6 +25,7 @@ auto log_with_fixed_string_id() -> void;
 auto log_with_fixed_unsigned_string_id() -> void;
 auto log_with_fixed_module_id() -> void;
 auto log_with_fixed_unsigned_module_id() -> void;
+auto log_with_tag() -> void;
 
 auto log_zero_args() -> void {
     auto cfg = logging::binary::config{test_log_destination{}};
@@ -122,5 +123,14 @@ auto log_with_fixed_unsigned_module_id() -> void {
             stdx::ct_format<
                 "Fixed unsigned module_id (7) and module (\"fixed_id7\") "
                 "with runtime argument: {}">(17));
+    }
+}
+
+auto log_with_tag() -> void {
+    CIB_WITH_LOG_ENV(logging::get_level, logging::level::TRACE,
+                     logging::get_tag,
+                     logging::tag_t<"tag_name", "tag_value">{}) {
+        auto cfg = logging::binary::config{test_log_destination{}};
+        cfg.logger.log_msg<cib_log_env_t>(stdx::ct_format<"With tag">());
     }
 }

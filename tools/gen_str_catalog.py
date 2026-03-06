@@ -105,6 +105,39 @@ class NamedArg:
         )
 
 
+class Tag:
+    def __init__(self, name: str, value: str):
+        self.name = name
+        self.value = value
+
+    @classmethod
+    def from_cpp_type(cls, s):
+        string_re = re.compile(r"sc::tag<sc::string<(.*)>, sc::string<(.*)>\s*>")
+        m = string_re.match(s)
+        name_tuple = m.group(1).replace("(char)", "")
+        value_tuple = m.group(2).replace("(char)", "")
+        return cls(
+            "".join((chr(int(c)) for c in re.split(r"\s*,\s*", name_tuple))),
+            "".join((chr(int(c)) for c in re.split(r"\s*,\s*", value_tuple))),
+        )
+
+    @classmethod
+    def from_json(cls, json: dict):
+        return cls(json["name"], json["value"])
+
+    def to_json(self):
+        return dict(name=self.name, value=self.value)
+
+    def to_cpp_type(self):
+        return rf"sc::tag<sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.name)}>, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.value)}>>"
+
+    def __repr__(self):
+        return f"Tag('{self.name}', '{self.value}')"
+
+    def __eq__(self, other):
+        return self.name == other.name and self.value == other.value
+
+
 class Message:
     cpp_prefix: str = "sc::message<sc::undefined"
 
@@ -114,12 +147,14 @@ class Message:
         args: list[str],
         id: int,
         named_args: list[NamedArg],
+        tags: list[Tag],
         id_suffix: str | None = None,
     ):
         self.text = text
         self.args = args
         self.id = id
         self.named_args = named_args
+        self.tags = tags
         self.id_suffix = id_suffix if id_suffix is not None else ""
         self.orig_id = id
         self.enum_lookup = None
@@ -127,7 +162,7 @@ class Message:
     @classmethod
     def from_cpp_type(cls, s):
         string_re = re.compile(
-            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), sc::string<(.*)>, sc::named_args<(.*)>\s*>\s*>"
+            rf"{cls.cpp_prefix}<sc::args<(.*)>, (-?\d+)([a-zA-Z]*), sc::string<(.*)>, sc::tags<(.*)>, sc::named_args<(.*)>\s*>\s*>"
         )
 
         m = string_re.match(s)
@@ -136,7 +171,8 @@ class Message:
             "".join((chr(int(c)) for c in re.split(r"\s*,\s*", string_tuple))),
             split_args(m.group(1)),
             int(m.group(2)),
-            [NamedArg.from_cpp_type(s) for s in split_args(m.group(5))],
+            [NamedArg.from_cpp_type(s) for s in split_args(m.group(6))],
+            [Tag.from_cpp_type(s) for s in split_args(m.group(5))],
             m.group(3),
         )
 
@@ -147,6 +183,7 @@ class Message:
             json["arg_types"],
             json["id"],
             [NamedArg.from_json(a) for a in json.get("args", [])],
+            [Tag.from_json(a) for a in json.get("tags", [])],
         )
 
     def to_json(self):
@@ -156,6 +193,7 @@ class Message:
             arg_types=self.args,
             id=self.id,
             args=[na.to_json() for na in self.named_args],
+            tags=[t.to_json() for t in self.tags],
         )
 
     @property
@@ -163,13 +201,13 @@ class Message:
         return "flow" if self.text.startswith("flow.") else "msg"
 
     def to_cpp_type(self):
-        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>, sc::named_args<{', '.join(f'{na.to_cpp_type()}' for na in self.named_args)}>>>"
+        return rf"{self.cpp_prefix}<sc::args<{', '.join(self.args)}>, {self.orig_id}{self.id_suffix}, sc::string<{', '.join(f'static_cast<char>({ord(c)})' for c in self.text)}>, sc::tags<{', '.join(f'{t.to_cpp_type()}' for t in self.tags)}>, sc::named_args<{', '.join(f'{na.to_cpp_type()}' for na in self.named_args)}>>>"
 
     def key(self):
         return hash(self.text) ^ hash("".join(self.args))
 
     def __repr__(self):
-        return rf"Message('{self.text}', {self.args}, {self.id}, [{', '.join(f'{repr(na)}' for na in self.named_args)}], '{self.id_suffix}')"
+        return rf"Message('{self.text}', {self.args}, {self.id}, [{', '.join(f'{repr(na)}' for na in self.named_args)}], [{', '.join(f'{repr(t)}' for t in self.tags)}], '{self.id_suffix}')"
 
     def __eq__(self, other):
         return (
@@ -177,6 +215,7 @@ class Message:
             and self.args == other.args
             and self.id == other.id
             and self.named_args == other.named_args
+            and self.tags == other.tags
             and self.id_suffix == other.id_suffix
         )
 

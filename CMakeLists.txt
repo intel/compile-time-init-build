@@ -193,6 +193,7 @@ target_sources(
               FILES
               include/log_binary/module_id.hpp
               include/log_binary/string_id.hpp
+              include/log_binary/tags.hpp
               include/log_binary/catalog/arguments.hpp
               include/log_binary/catalog/builder.hpp
               include/log_binary/catalog/catalog.hpp

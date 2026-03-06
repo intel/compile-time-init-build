@@ -5,8 +5,13 @@
 namespace sc {
 template <typename...> struct args;
 template <char...> struct string {};
+
 template <typename, auto, auto> struct named_arg {};
 template <typename...> struct named_args;
+
+template <typename, typename> struct tag {};
+template <typename...> struct tags {};
+
 template <typename, auto, typename...> struct undefined;
 
 template <typename> struct message {};
