@@ -103,7 +103,6 @@ def test_message_to_json():
         "msg": "abc {}",
         "type": "msg",
         "arg_types": ["int"],
-        "arg_count": 1,
         "id": 42,
         "args": [],
     }

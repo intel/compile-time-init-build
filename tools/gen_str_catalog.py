@@ -154,7 +154,6 @@ class Message:
             msg=self.text,
             type="flow" if self.text.startswith("flow.") else "msg",
             arg_types=self.args,
-            arg_count=len(self.args),
             id=self.id,
             args=[na.to_json() for na in self.named_args],
         )
