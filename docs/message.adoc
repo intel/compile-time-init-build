@@ -356,9 +356,8 @@ messages; when a matcher successfully matches, the callback(s) registered will b
 // given the above field and message types, define a service
 struct my_service : msg::service<my_message> {};
 
-// define a callback with the matcher from the message definition
-constexpr auto my_callback = msg::callback<"my_callback">(
-    typename my_message_defn::matcher_t{},
+// define a callback for my_message
+constexpr auto my_callback = msg::callback<"my_callback", my_message_defn>(
     [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // define a project
@@ -422,9 +421,8 @@ using my_indices = msg::index_spec<my_field>;
 // the service is now an indexed_service
 struct my_indexed_service : msg::indexed_service<my_indices, my_message> {};
 
-// this time, the callback is an indexed_callback
-constexpr auto my_callback = msg::indexed_callback<"my_indexed_callback">(
-    typename my_message_defn::matcher_t{},
+// the callback is the same as before
+constexpr auto my_callback = msg::callback<"my_callback", my_message_defn>(
     [](msg::const_view<my_message_defn>) { /* do something */ });
 
 // everything else is the same
@@ -432,8 +430,8 @@ constexpr auto my_callback = msg::indexed_callback<"my_indexed_callback">(
 
 === How does indexing work?
 
-NOTE: This section documents the details of indexed callbacks. It's not required
-to understand this to _use_ indexed callbacks.
+NOTE: This section documents the details of the `indexed_service`. It's not required
+to understand this to _use_ an `indexed_service`.
 
 Indexing callbacks properly, interacting with arbitrary matchers, and calling
 the appropriate callbacks on reception of a message involves several pieces that
@@ -445,15 +443,15 @@ minimal effort at runtime.
 For each field in the `msg::index_spec`, we build a map from field values to
 bitsets, where the values in the bitsets represent callback indices.
 
-Each `indexed_callback` has a matcher that may be an
+Each `callback` has a matcher that may be an
 xref:match.adoc#_boolean_algebra_with_matchers[arbitrary Boolean matcher
-expression]. The `indexed_callback` construction process ensures that this
+expression]. The `callback` construction process ensures that this
 matcher is in xref:match.adoc#_disjunctive_normal_form[sum of products form].
 The process of handling messages works by set intersection on the bitsets, so
 each separate `or`​ed term at the top level within each matcher (as well as each
 matcher itself) must conceptually map to a separate callback.
 
-The initialization process when `indexed_callback`​s are added to the builder
+The initialization process when `callback`​s are added to the builder
 takes care of this top-level concern, so that at build time, each callback
 matcher is a suitable Boolean term (either a single term, a negation or a
 conjunction, but not a disjunction).
