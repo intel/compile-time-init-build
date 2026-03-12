@@ -1,5 +1,7 @@
 #pragma once
 
+#include <log_binary/catalog/encoder.hpp>
+
 #include <stdx/span.hpp>
 
 #include <cstddef>
@@ -21,3 +23,5 @@ struct test_log_destination {
         }
     }
 };
+
+inline auto cfg = logging::binary::config{test_log_destination{}};

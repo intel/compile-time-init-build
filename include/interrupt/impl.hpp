@@ -11,8 +11,7 @@ namespace interrupt {
 namespace detail {
 template <typename Field> struct read_field {
     template <typename Hal> static auto with_hal() -> bool {
-        using field_t = decltype(Hal::template get_field<Field>());
-        return Hal::template read<field_t>();
+        return Hal::read(Hal::template get_field<Field>());
     }
     template <typename Hal, typename Mutex> static auto with_hal() -> bool {
         return conc::call_in_critical_section<Mutex>(
@@ -28,8 +27,7 @@ template <> struct read_field<no_field_t> {
 
 template <typename Field> struct clear_field {
     template <typename Hal> static auto with_hal() -> void {
-        using field_t = decltype(Hal::template get_field<Field>());
-        Hal::template clear<field_t>();
+        Hal::clear(Hal::template get_field<Field>());
     }
     template <typename Hal, typename Mutex> static auto with_hal() -> void {
         conc::call_in_critical_section<Mutex>([] { with_hal<Hal>(); });

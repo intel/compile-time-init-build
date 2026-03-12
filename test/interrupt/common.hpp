@@ -5,6 +5,7 @@
 #include <interrupt/policies.hpp>
 
 #include <groov/groov.hpp>
+#include <groov/test.hpp>
 
 #include <stdx/concepts.hpp>
 #include <stdx/ct_string.hpp>
@@ -57,18 +58,18 @@ template <typename Group> struct test_hal {
         groov::resolve(Group{}, groov::make_path<Field::value>())
             .template mask<register_datatype_t<Register>>;
 
-    template <groov::pathlike Register>
-    static auto write(auto raw_value) -> void {
-        groov::sync_write(Group{}(Register{} = raw_value));
+    template <groov::pathlike P>
+    static auto write(P p, auto raw_value) -> void {
+        groov::sync_write(Group{}(p = raw_value));
     }
-    template <groov::pathlike Field> static auto read() {
-        constexpr auto f = Field{};
-        auto const value = groov::sync_read(Group{}(f));
+    template <groov::pathlike P> static auto read(P p) -> bool {
+        auto const value = groov::test::get_value<Group>(groov::parent(p));
         REQUIRE(value);
-        return (*value)[f];
+        using Field = decltype(groov::resolve(Group{}, P{}));
+        return Field::extract(*value);
     }
-    template <groov::pathlike Field> static auto clear() -> void {
-        groov::sync_write(Group{}(Field{} = groov::clear));
+    template <groov::pathlike P> static auto clear(P p) -> void {
+        groov::sync_write(Group{}(p = groov::clear));
     }
 };
 } // namespace

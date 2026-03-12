@@ -122,8 +122,9 @@ concept dynamic_hal_for =
                                dynamic_hal_concept::first_enable_field_t<Cfg>>
         } -> stdx::same_as_unqualified<
             dynamic_hal_concept::register_datatype_t<Hal, Cfg>>;
-        Hal::template write<dynamic_hal_concept::register_type_t<Hal, Cfg>>(
-            value);
+        Hal::write(Hal::template get_register<
+                       dynamic_hal_concept::first_enable_field_t<Cfg>>(),
+                   value);
     };
 } // namespace detail
 
@@ -233,8 +234,9 @@ struct dynamic_controller {
 
         stdx::for_each(
             []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
-                using reg_t = decltype(Hal::template get_register<
-                                       typename I::enable_field_t>());
+                auto r =
+                    Hal::template get_register<typename I::enable_field_t>();
+                using reg_t = decltype(r);
                 auto mask = register_t<reg_t>{};
                 auto value = register_t<reg_t>{};
                 (compute_register<reg_t, I>(value, mask), ...,
@@ -243,7 +245,7 @@ struct dynamic_controller {
                 auto &cached_value = cached_enable<reg_t>;
                 auto new_value = (cached_value & ~mask) | value;
                 if (new_value != std::exchange(cached_value, new_value)) {
-                    Hal::template write<reg_t>(cached_value);
+                    Hal::write(r, cached_value);
                 }
             },
             by_registers);

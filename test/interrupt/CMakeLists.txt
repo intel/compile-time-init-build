@@ -1,4 +1,4 @@
-add_versioned_package("gh:intel/generic-register-operation-optimizer#bfc5b64")
+add_versioned_package("gh:intel/generic-register-operation-optimizer#d365927")
 
 add_tests(
     FILES

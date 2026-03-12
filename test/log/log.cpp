@@ -28,8 +28,8 @@ struct injected_handler {
 
         if (expected_args.has_value()) {
             using expected_t = std::tuple<std::decay_t<Args>...>;
-            CHECK(std::any_cast<expected_t>(expected_args) ==
-                  std::make_tuple(args...));
+            CHECK((std::any_cast<expected_t>(expected_args) ==
+                   std::make_tuple(args...)));
         }
     }
 };
