@@ -1,11 +1,14 @@
-
 #pragma once
 
 #include <match/bin_op.hpp>
 #include <match/concepts.hpp>
 #include <match/constant.hpp>
+#include <match/implies.hpp>
 #include <match/simplify.hpp>
 #include <match/sum_of_products.hpp>
+
+#include <stdx/compiler.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -26,13 +29,13 @@ template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
         auto r = simplify(m.rhs);
 
         if constexpr (implies(l, r)) {
-            return [&] { return r; }();
+            return STDX_NRVO(r);
         } else if constexpr (implies(r, l)) {
-            return [&] { return l; }();
+            return STDX_NRVO(l);
         } else if constexpr (implies(negate(l), r) or implies(negate(r), l)) {
             return always;
         } else {
-            return detail::de_morgan<or_t, and_t>(l, r);
+            return detail::de_morgan<or_t, and_t>(std::move(l), std::move(r));
         }
     }
 

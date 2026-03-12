@@ -30,7 +30,7 @@ struct hal {
     template <typename Field> static auto get_register() -> Field;
     template <typename Register> using register_datatype_t = int;
     template <typename Register, typename Field> constexpr static auto mask = 0;
-    template <typename Register> static auto write(auto) -> void;
+    static auto write(auto, auto) -> void;
 };
 } // namespace archetypes
 

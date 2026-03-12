@@ -147,14 +147,12 @@ struct indexed_builder_base {
     template <typename BuilderValue, typename Nexus, std::size_t I>
     constexpr static auto invoke_callback(MsgBase const &data,
                                           ExtraCallbackArgs... args) -> bool {
+        constexpr auto orig_cb = BuilderValue::value.callbacks[stdx::index<I>];
         constexpr auto cb = IndexSpec{}.apply([&]<typename... Indices>(
                                                   Indices...) {
-            constexpr auto orig_cb =
-                BuilderValue::value.callbacks[stdx::index<I>];
             return remove_match_terms<typename Indices::field_type...>(orig_cb);
         });
 
-        auto const &orig_cb = BuilderValue::value.callbacks[stdx::index<I>];
         using CB = std::remove_cvref_t<decltype(cb)>;
         if constexpr (not validate_matcher<typename CB::matcher_t>()) {
             static_assert(

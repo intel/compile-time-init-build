@@ -29,12 +29,13 @@ struct test_destination {
         ++log_calls;
     }
 };
+
+auto cfg = logging::binary::config{test_destination{}};
 } // namespace
 
 TEST_CASE("mipi logger works with custom level", "[level]") {
     log_calls = 0;
     CIB_LOG_ENV(logging::get_level, custom_level::THE_ONE_LEVEL);
-    auto cfg = logging::binary::config{test_destination{}};
     cfg.logger.log_msg<cib_log_env_t>(stdx::ct_format<"Hello {} {}">(17, 42));
     CHECK(log_calls == 1);
 }

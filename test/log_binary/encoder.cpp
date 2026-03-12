@@ -198,7 +198,7 @@ TEST_CASE("argument encoding", "[mipi]") {
 TEST_CASE("log zero arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg =
+    static auto cfg =
         logging::binary::config{test_log_destination<logging::level::TRACE>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"Hello">());
     CHECK(test_critical_section::count == 2);
@@ -207,7 +207,7 @@ TEST_CASE("log zero arguments", "[mipi]") {
 TEST_CASE("log one integral 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_destination<logging::level::TRACE, 42u, 17u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(17u));
     CHECK(test_critical_section::count == 2);
@@ -216,7 +216,7 @@ TEST_CASE("log one integral 32-bit argument", "[mipi]") {
 TEST_CASE("log one floating-point 32-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_float_destination<logging::level::TRACE>{3.14f}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14f));
     CHECK(test_critical_section::count == 2);
@@ -226,7 +226,7 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     auto x = std::uint64_t{0x1234'5678'90ab'cdefull};
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_destination<logging::level::TRACE, 42u, 0x90ab'cdefu,
                              0x1234'5678u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(x));
@@ -236,7 +236,7 @@ TEST_CASE("log one 64-bit argument", "[mipi]") {
 TEST_CASE("log one floating-point 64-bit argument", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_double_destination<logging::level::TRACE>{3.14}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{}">(3.14));
     CHECK(test_critical_section::count == 2);
@@ -245,7 +245,7 @@ TEST_CASE("log one floating-point 64-bit argument", "[mipi]") {
 TEST_CASE("log two arguments", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
     cfg.logger.log_msg<log_env>(stdx::ct_format<"{} {}">(17u, 18u));
     CHECK(test_critical_section::count == 2);
@@ -255,7 +255,7 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{},
         test_log_destination<logging::level::TRACE, 42u, 17u, 18u>{}};
 
@@ -267,7 +267,7 @@ TEST_CASE("log to multiple destinations", "[mipi]") {
 TEST_CASE("log version information (compact32)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::binary::config{test_log_version_destination<
+    static auto cfg = logging::binary::config{test_log_version_destination<
         0b11'000000'1010'1011'1100'1101'0101'0000u>{}};
     //     3      0    a    b    c    d    5
     cfg.logger.log_version<log_env, 0x3abcd5u>();
@@ -278,7 +278,7 @@ TEST_CASE("log version information (compact32)", "[mipi]") {
 TEST_CASE("log version information (compact64)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_version_destination<0b11'000001'1010'1011'1100'1101'0101'0000u,
                                      // 3      1    a    b    c    d    5
                                      0b1'0010'0011'0100'0101'0110'00u>{}};
@@ -291,7 +291,7 @@ TEST_CASE("log version information (compact64)", "[mipi]") {
 TEST_CASE("log version information (long with string)", "[mipi]") {
     test_critical_section::count = 0;
     num_log_args_calls = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_log_version_destination<0b10'0000'0000'0000'0010'0000'0000u,
                                      0x4321'000du, 0x5678'8765u, 0x65'68'1234u,
                                      //                             e  h
@@ -396,7 +396,7 @@ TEST_CASE("log with overridden builder", "[mipi]") {
                          logging::binary::get_builder, custom_builder{}>;
 
     num_catalog_args_calls = 0;
-    auto cfg = logging::binary::config{
+    static auto cfg = logging::binary::config{
         test_catalog_args_destination<logging::level::TRACE>{}};
 
     cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());
@@ -419,7 +419,7 @@ TEST_CASE("log with overridden writer", "[mipi]") {
                          logging::binary::get_writer, custom_writer{}>;
 
     num_custom_writer_calls = 0;
-    auto cfg =
+    static auto cfg =
         logging::binary::config{test_log_destination<logging::level::TRACE>{}};
 
     cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());

@@ -28,6 +28,7 @@ struct test_destination {
     }
 };
 
+auto cfg = logging::binary::config{test_destination{}};
 } // namespace
 
 TEST_CASE("mipi logger works with init-time unit", "[unit]") {
@@ -35,7 +36,6 @@ TEST_CASE("mipi logger works with init-time unit", "[unit]") {
     test_unit = 5;
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE, logging::get_unit,
                 [] { return test_unit; });
-    auto cfg = logging::binary::config{test_destination{}};
     cfg.logger.log_msg<cib_log_env_t>(stdx::ct_format<"Hello {} {}">(42, 17));
     CHECK(log_calls == 1);
 }
@@ -44,7 +44,6 @@ TEST_CASE("default unit is 0", "[unit]") {
     log_calls = 0;
     test_unit = 0;
     CIB_LOG_ENV(logging::get_level, logging::level::TRACE);
-    auto cfg = logging::binary::config{test_destination{}};
     cfg.logger.log_msg<cib_log_env_t>(stdx::ct_format<"Hello {} {}">(42, 17));
     CHECK(log_calls == 1);
 }
