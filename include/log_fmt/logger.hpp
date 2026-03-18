@@ -27,6 +27,7 @@ constexpr std::array level_text{"MAX"sv,  "FATAL"sv, "ERROR"sv, "WARN"sv,
 
 template <typename T> auto decay_enum_value(T const &t) -> decltype(auto) {
     if constexpr (requires { format_as(t); } or not std::is_enum_v<T>) {
+        // NOLINTNEXTLINE(readability-redundant-parentheses)
         return (t);
     } else {
         return stdx::to_underlying(t);
@@ -36,6 +37,7 @@ template <typename T> auto decay_enum_value(T const &t) -> decltype(auto) {
 
 template <logging::level L>
 constexpr std::string_view level_text =
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-*)
     fmt_detail::level_text[stdx::to_underlying(L)];
 
 template <logging::level L>

@@ -24,16 +24,19 @@ See the [full documentation](https://intel.github.io/compile-time-init-build/).
 
 # Compiler/Standard support
 
-The main branch of *cib* currently uses C++20 and is tested with:
-- Clang 14 thru 21
-- GCC 12 thru 14
+C++ standard support is as follows:
 
-An older version of *cib* that uses C++17 is tagged at v1.7.0. It
-is tested with:
-- Clang 9 thru 15
-- GCC 9 thru 12
+- C++23: [main branch](https://github.com/intel/compile-time-init-build/tree/main) (active development)
+- C++20: [cpp20 branch](https://github.com/intel/compile-time-init-build/tree/cpp20) (supported)
+- C++17: [cpp17 branch](https://github.com/intel/compile-time-init-build/tree/cpp17) (end-of-life)
 
-For the older version see [this repo at that tag](https://github.com/intel/compile-time-init-build/tree/v1.7.0).
+Compiler support:
+
+| Branch | GCC versions | Clang versions |
+| --- | --- | --- |
+| [main](https://github.com/intel/compile-time-init-build/tree/main) | 12 thru 14 | 18 thru 21 |
+| [cpp20](https://github.com/intel/compile-time-init-build/tree/cpp20) | 12 thru 14 | 14 thru 21 |
+| [cpp17](https://github.com/intel/compile-time-init-build/tree/cpp17) | 9 thru 12 | 9 thru 15 |
 
 # Quick start
 

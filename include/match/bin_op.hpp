@@ -46,8 +46,8 @@ struct bin_op_t {
 };
 
 namespace detail {
-template <template <matcher, matcher> typename Term,
-          template <matcher, matcher> typename Dual, matcher L, matcher R>
+template <template <typename, typename> typename Term,
+          template <typename, typename> typename Dual, matcher L, matcher R>
 [[nodiscard]] constexpr auto de_morgan(L const &l, R const &r) {
     using T = Term<L, R>;
     using D = decltype(negate(Dual{negate(l), negate(r)}));

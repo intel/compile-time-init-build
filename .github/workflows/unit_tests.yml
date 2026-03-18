@@ -13,7 +13,7 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 21
+  DEFAULT_LLVM_VERSION: 22
   DEFAULT_GCC_VERSION: 14
 
 concurrency:
@@ -27,8 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [clang, gcc]
-        version: [12, 13, 14, 16, 17, 18, 19, 20, 21]
-        cxx_standard: [20]
+        version: [12, 13, 14, 18, 19, 20, 21, 22]
+        cxx_standard: [23]
         stdlib: [libstdc++, libc++]
         build_type: [Debug]
         include:
@@ -36,80 +36,60 @@ jobs:
             cc: "clang"
             cxx: "clang++"
             cxx_flags: "-stdlib=libstdc++"
+          - version: 22
+            compiler: clang
+            toolchain_root: "/usr/lib/llvm-22"
+          - version: 22
+            compiler: clang
+            stdlib: libc++
+            cxx_flags: "-stdlib=libc++"
           - version: 21
             compiler: clang
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21
             toolchain_root: "/usr/lib/llvm-21"
           - version: 21
             compiler: clang
             stdlib: libc++
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21 && sudo apt install -y libc++-21-dev libc++abi-21-dev
             cxx_flags: "-stdlib=libc++"
           - version: 20
             compiler: clang
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 20
             toolchain_root: "/usr/lib/llvm-20"
           - version: 20
             compiler: clang
             stdlib: libc++
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 20 && sudo apt install -y libc++-20-dev libc++abi-20-dev
             cxx_flags: "-stdlib=libc++"
           - version: 19
             compiler: clang
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 19
             toolchain_root: "/usr/lib/llvm-19"
           - version: 19
             compiler: clang
             stdlib: libc++
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 19 && sudo apt install -y libc++-19-dev libc++abi-19-dev
             cxx_flags: "-stdlib=libc++"
           - version: 18
             compiler: clang
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 18
             toolchain_root: "/usr/lib/llvm-18"
           - version: 18
             compiler: clang
             stdlib: libc++
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 18 && sudo apt install -y libc++-18-dev libc++abi-18-dev
-            cxx_flags: "-stdlib=libc++"
-          - version: 17
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-17
-            toolchain_root: "/usr/lib/llvm-17"
-          - version: 17
-            compiler: clang
-            stdlib: libc++
-            install: sudo apt update && sudo apt install -y clang-17 libc++-17-dev libc++abi-17-dev
-            cxx_flags: "-stdlib=libc++"
-          - version: 16
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-16
-            toolchain_root: "/usr/lib/llvm-16"
-          - version: 16
-            compiler: clang
-            stdlib: libc++
-            install: sudo apt update && sudo apt install -y clang-16 libc++-16-dev libc++abi-16-dev
             cxx_flags: "-stdlib=libc++"
           - compiler: gcc
             toolchain_root: "/usr"
             cxx_flags: ""
           - version: 14
             compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-14 g++-14
             cc: "gcc-14"
             cxx: "g++-14"
           - version: 13
             compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-13 g++-13
             cc: "gcc-13"
             cxx: "g++-13"
           - version: 12
             compiler: gcc
-            install: sudo apt update && sudo apt install -y gcc-12 g++-12
             cc: "gcc-12"
             cxx: "g++-12"
             cxx_flags: ""
         exclude:
+          - compiler: gcc
+            version: 22
           - compiler: gcc
             version: 21
           - compiler: gcc
@@ -118,10 +98,6 @@ jobs:
             version: 19
           - compiler: gcc
             version: 18
-          - compiler: gcc
-            version: 17
-          - compiler: gcc
-            version: 16
           - compiler: clang
             version: 14
           - compiler: clang
@@ -136,113 +112,16 @@ jobs:
 
       - name: Install build tools
         run: |
-          ${{ matrix.install }}
-          sudo apt install -y ninja-build python3-venv python3-pip
+          if [[ "${{matrix.compiler}}" == "clang" ]]; then
+            export DISTRO=$(lsb_release -cs)
+            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+            sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{matrix.version}} main
+            sudo apt update && sudo apt install -y ninja-build clang-${{matrix.version}} libc++-${{matrix.version}}-dev libc++abi-${{matrix.version}}-dev
+          else
+            sudo apt update && sudo apt install -y ninja-build gcc-${{matrix.version}} g++-${{matrix.version}}
+          fi
 
-      - name: Activate python virtual env
-        run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: 22
-
-      - name: Install Asciidoctor & Mermaid
-        run: |
-          npm install -g @mermaid-js/mermaid-cli@11.12.0
-          npx puppeteer browsers install chrome-headless-shell
-          sudo gem install asciidoctor asciidoctor-diagram rouge
-
-      - name: Restore CPM cache
-        env:
-          cache-name: cpm-cache-0
-        id: cpm-cache-restore
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        with:
-          path: ~/cpm-cache
-          key: ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{runner.os}}-${{env.cache-name}}-
-
-      - name: Configure CMake
-        env:
-          CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
-          CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_CXX_FLAGS_INIT=${{matrix.cxx_flags}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCPM_SOURCE_CACHE=~/cpm-cache
-
-      - name: Save CPM cache
-        env:
-          cache-name: cpm-cache-0
-        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        with:
-          path: ~/cpm-cache
-          key: ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-      - name: Install python requirements
-        run: |
-          pip install -r ${{github.workspace}}/tools/requirements.txt
-          pip install -r ${{github.workspace}}/requirements.txt
-
-      - name: Build unit tests
-        run: |
-          cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}} -v -t build_unit_tests
-
-      - name: Test
-        working-directory: ${{github.workspace}}/build
-        run: |
-          ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
-
-  build_and_test_22:
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [clang]
-        version: [14, 15]
-        cxx_standard: [20]
-        stdlib: [libstdc++, libc++]
-        build_type: [Debug]
-        include:
-          - compiler: clang
-            cc: "clang"
-            cxx: "clang++"
-            cxx_flags: "-stdlib=libstdc++"
-          - version: 15
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-15
-            toolchain_root: "/usr/lib/llvm-15"
-          - version: 15
-            compiler: clang
-            stdlib: libc++
-            install: sudo apt update && sudo apt install -y clang-15 libc++-15-dev libc++abi-15-dev
-            cxx_flags: "-stdlib=libc++"
-          - version: 14
-            compiler: clang
-            install: sudo apt update && sudo apt install -y clang-14
-            toolchain_root: "/usr/lib/llvm-14"
-          - version: 14
-            compiler: clang
-            stdlib: libc++
-            install: sudo apt update && sudo apt install -y clang-14 libc++-14-dev libc++abi-14-dev
-            cxx_flags: "-stdlib=libc++"
-        exclude:
-          - compiler: clang
-            version: 14
-            stdlib: libstdc++
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install build tools
-        run: |
-          ${{ matrix.install }}
-          sudo apt install -y ninja-build python3-venv python3-pip
-
-      - name: Activate python virtual env
+      - name: Setup python venv
         run: |
           python3 -m venv ${{github.workspace}}/test_venv
           source ${{github.workspace}}/test_venv/bin/activate
@@ -303,20 +182,26 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Setup python venv
+        run: |
+          python3 -m venv ${{github.workspace}}/test_venv
+          source ${{github.workspace}}/test_venv/bin/activate
+          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
+
       - name: Install build tools
         run: |
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
-          sudo apt install -y pipx ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
+          export DISTRO=$(lsb_release -cs)
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+          sudo apt update && sudo apt install -y ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Install cmake-format
         run: |
-          pipx install cmakelang
-          pipx inject cmakelang pyyaml
-          echo "/opt/pipx_bin" >> $GITHUB_PATH
+          pip install cmakelang pyyaml
 
       - name: Install python quality tools
         run: |
-          pipx install mypy
+          pip install mypy
 
       - name: Restore CPM cache
         env:
@@ -359,12 +244,10 @@ jobs:
           - compiler: clang
             cc: "clang"
             cxx: "clang++"
-            install: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh 21
-            toolchain_root: "/usr/lib/llvm-21"
+            toolchain_root: "/usr/lib/llvm-22"
           - compiler: gcc
             cc: "gcc-14"
             cxx: "g++-14"
-            install: sudo apt update && sudo apt install -y gcc-14 g++-14
             toolchain_root: "/usr"
 
     steps:
@@ -372,10 +255,16 @@ jobs:
 
       - name: Install build tools
         run: |
-          ${{ matrix.install }}
-          sudo apt install -y ninja-build python3-venv python3-pip
+          if [[ "${{matrix.compiler}}" == "clang" ]]; then
+            export DISTRO=$(lsb_release -cs)
+            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+            sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+            sudo apt update && sudo apt install -y ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
+          else
+            sudo apt update && sudo apt install -y ninja-build ${{matrix.cc}} ${{matrix.cxx}}
+          fi
 
-      - name: Activate python virtual env
+      - name: Setup python venv
         run: |
           python3 -m venv ${{github.workspace}}/test_venv
           source ${{github.workspace}}/test_venv/bin/activate
@@ -509,7 +398,7 @@ jobs:
 
   merge_ok:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
-    needs: [build_and_test_24, build_and_test_22, quality_checks_pass, sanitize, valgrind]
+    needs: [build_and_test_24,quality_checks_pass, sanitize, valgrind]
     if: ${{ !cancelled() }}
     steps:
       - name: Enable merge
