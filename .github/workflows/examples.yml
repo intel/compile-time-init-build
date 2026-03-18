@@ -12,8 +12,8 @@ on:
 env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
-  DEFAULT_CXX_STANDARD: 20
-  DEFAULT_LLVM_VERSION: 21
+  DEFAULT_CXX_STANDARD: 23
+  DEFAULT_LLVM_VERSION: 22
 
 jobs:
   examples:
@@ -24,8 +24,10 @@ jobs:
 
       - name: Install build tools
         run: |
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh ${{env.DEFAULT_LLVM_VERSION}}
-          sudo apt install -y ninja-build
+          export DISTRO=$(lsb_release -cs)
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+          sudo apt update && sudo apt install -y ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Restore CPM cache
         env:

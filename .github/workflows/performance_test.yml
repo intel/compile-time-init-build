@@ -11,7 +11,8 @@ env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
   BUILD_TYPE: Release
-  LLVM_VERSION: 21
+  DEFAULT_CXX_STANDARD: 23
+  DEFAULT_LLVM_VERSION: 22
 
 jobs:
   performance_test:
@@ -19,21 +20,18 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install compiler
-        run: |
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" llvm.sh ${{env.LLVM_VERSION}}
-          sudo apt update && sudo apt install -y clang-${{env.LLVM_VERSION}}
-
       - name: Install build tools
         run: |
-          sudo apt install -y ninja-build
+          export DISTRO=$(lsb_release -cs)
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+          sudo apt update && sudo apt install -y ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Configure CMake
         env:
-          CC: "/usr/lib/llvm-${{env.LLVM_VERSION}}/bin/clang"
-          CXX: "/usr/lib/llvm-${{env.LLVM_VERSION}}/bin/clang++"
-          CXX_STANDARD: 20
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          CC: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang"
+          CXX: "/usr/lib/llvm-${{env.DEFAULT_LLVM_VERSION}}/bin/clang++"
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
         id: build_step

@@ -24,10 +24,14 @@ include(cmake/debug_flow.cmake)
 include(cmake/string_catalog.cmake)
 
 add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
-fmt_recipe(11.1.3)
-add_versioned_package("gh:intel/cpp-baremetal-concurrency#63230eb")
-add_versioned_package("gh:intel/cpp-std-extensions#3c6b24c")
-add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#afdf674")
+fmt_recipe(12.1.0)
+add_versioned_package("gh:intel/cpp-baremetal-concurrency#536bdd7")
+add_versioned_package("gh:intel/cpp-std-extensions#c932eba")
+add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#f3fa596")
+
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 23)
+endif()
 
 set(GEN_STR_CATALOG
     ${CMAKE_CURRENT_LIST_DIR}/tools/gen_str_catalog.py
