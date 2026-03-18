@@ -34,7 +34,7 @@ Compiler support:
 
 | Branch | GCC versions | Clang versions |
 | --- | --- | --- |
-| [main](https://github.com/intel/compile-time-init-build/tree/main) | 12 thru 14 | 18 thru 21 |
+| [main](https://github.com/intel/compile-time-init-build/tree/main) | 12 thru 14 | 18 thru 22 |
 | [cpp20](https://github.com/intel/compile-time-init-build/tree/cpp20) | 12 thru 14 | 14 thru 21 |
 | [cpp17](https://github.com/intel/compile-time-init-build/tree/cpp17) | 9 thru 12 | 9 thru 15 |
 
