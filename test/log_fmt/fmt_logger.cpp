@@ -9,7 +9,6 @@
 
 #include <atomic>
 #include <cstddef>
-#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -27,18 +26,13 @@ template <>
 inline auto logging::config<> =
     logging::fmt::config{std::back_inserter(buffer)};
 
-#ifndef SANITIZER_NEW_DEL
+#if not __SANITIZE_ADDRESS__ and not __SANITIZE_THREAD__
 void *operator new(std::size_t count) {
     allocation_happened.store(true);
     return malloc(count);
 }
 
 void operator delete(void *ptr) noexcept { return free(ptr); }
-
-// Clang (libc++) requires a previous prototype declaration for sized delete
-#ifdef __clang__
-void operator delete(void *, std::size_t) noexcept;
-#endif
 void operator delete(void *ptr, std::size_t) noexcept { return free(ptr); }
 #endif
 
