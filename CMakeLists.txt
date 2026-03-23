@@ -220,6 +220,7 @@ target_sources(
               include
               FILES
               include/nexus/callback.hpp
+              include/nexus/conditionals.hpp
               include/nexus/config.hpp
               include/nexus/detail/components.hpp
               include/nexus/detail/constexpr_conditional.hpp
@@ -229,6 +230,7 @@ target_sources(
               include/nexus/detail/exports.hpp
               include/nexus/detail/extend.hpp
               include/nexus/detail/nexus_details.hpp
+              include/nexus/extend.hpp
               include/nexus/func_decl.hpp
               include/nexus/nexus.hpp
               include/nexus/service.hpp)

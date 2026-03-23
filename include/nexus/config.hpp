@@ -1,15 +1,12 @@
 #pragma once
 
+#include <nexus/conditionals.hpp>
 #include <nexus/detail/components.hpp>
 #include <nexus/detail/config_details.hpp>
-#include <nexus/detail/config_item.hpp>
-#include <nexus/detail/constexpr_conditional.hpp>
 #include <nexus/detail/exports.hpp>
-#include <nexus/detail/extend.hpp>
-#include <nexus/detail/runtime_conditional.hpp>
+#include <nexus/extend.hpp>
 
 #include <stdx/compiler.hpp>
-#include <stdx/type_traits.hpp>
 
 namespace cib {
 /**
@@ -46,36 +43,4 @@ constexpr static detail::components<Components...> components{};
  */
 template <typename... Services>
 constexpr static detail::exports<Services...> exports{};
-
-namespace detail {
-template <typename T>
-using maybe_funcptr_t =
-    stdx::conditional_t<stdx::is_function_v<T>, std::decay_t<T>, T>;
-}
-
-/**
- * Extend a service with new functionality.
- *
- * @tparam Service
- *      Type name of the service to extend.
- *
- * @param args
- *      Value arguments to be passed to the service's builder add function.
- */
-template <typename Service, typename... Args>
-[[nodiscard]] CONSTEVAL auto extend(Args const &...args) {
-    return detail::extend<Service, detail::maybe_funcptr_t<Args>...>{args...};
-}
-
-template <stdx::ct_string Name>
-constexpr auto constexpr_condition = []<typename P>(P) {
-    static_assert(std::is_default_constructible_v<P>);
-    return detail::constexpr_condition<Name, P>{};
-};
-
-template <stdx::ct_string Name>
-constexpr auto runtime_condition = []<typename P>(P) {
-    static_assert(std::is_default_constructible_v<P>);
-    return detail::runtime_condition<Name, P>{};
-};
 } // namespace cib

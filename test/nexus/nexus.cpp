@@ -211,3 +211,28 @@ TEST_CASE("configuration with constexpr conditional features") {
         REQUIRE(is_callback_invoked<2>);
     }
 }
+
+struct by_name_extender {
+    constexpr static auto config = cib::config(
+        cib::extend<"test_cb_0">([]() { is_callback_invoked<0> = true; }));
+};
+
+struct exporter {
+    constexpr static auto config = cib::config(cib::exports<TestCallback<0>>);
+};
+
+struct NameConfig {
+    constexpr static auto config =
+        cib::config(cib::components<by_name_extender, exporter>);
+};
+
+template <>
+constexpr inline auto cib::service_locator<"test_cb_0"> = TestCallback<0>{};
+
+TEST_CASE("configuration with extend referencing export by name") {
+    cib::nexus<NameConfig> nexus{};
+    is_callback_invoked<0> = false;
+
+    nexus.service<TestCallback<0>>();
+    CHECK(is_callback_invoked<0>);
+}

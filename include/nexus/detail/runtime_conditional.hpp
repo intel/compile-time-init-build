@@ -2,7 +2,7 @@
 
 #include <nexus/detail/config_details.hpp>
 #include <nexus/detail/config_item.hpp>
-#include <nexus/detail/extend.hpp>
+#include <nexus/extend.hpp>
 
 #include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
@@ -35,8 +35,7 @@ struct runtime_conditional : config_item {
 
                 return stdx::apply(
                     []<typename... Args>(Args...) {
-                        return extend<typename E::service_type, Args...>{
-                            Args{}...};
+                        return extend<typename E::service_type>(Args{}...);
                     },
                     args_tuple);
             },

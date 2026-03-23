@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
+#include <stdx/static_assert.hpp>
 
 #include <concepts>
 #include <memory>
@@ -63,4 +65,12 @@ template <builder_meta T> using interface_t = typename T::interface_t;
 
 template <builder_meta ServiceMeta>
 constinit auto service = ServiceMeta::uninitialized();
+
+template <stdx::ct_string Name> struct no_service {
+    constexpr static auto fail =
+        STATIC_ASSERT(false, "Undefined service: {}", Name);
+};
+
+template <stdx::ct_string S>
+constexpr inline auto service_locator = no_service<S>{};
 } // namespace cib
