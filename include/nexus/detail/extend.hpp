@@ -4,18 +4,31 @@
 #include <nexus/service.hpp>
 
 #include <stdx/compiler.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 
 namespace cib::detail {
-template <typename Service, typename... Args>
-struct extend : public config_item {
-    using service_type = Service;
-    constexpr static auto builder = cib::builder_t<service_type>{};
+template <stdx::ct_string Name, typename... Args>
+struct name_extend : config_item {
+    constexpr static auto name = Name;
     stdx::tuple<Args...> args_tuple;
 
-    CONSTEVAL explicit extend(Args const &...args) : args_tuple{args...} {}
+    CONSTEVAL explicit name_extend(Args const &...args) : args_tuple{args...} {}
 
-    [[nodiscard]] constexpr auto extends_tuple() const -> stdx::tuple<extend> {
+    [[nodiscard]] constexpr auto extends_tuple() const
+        -> stdx::tuple<name_extend> {
+        return {*this};
+    }
+};
+
+template <typename Service, typename... Args> struct type_extend : config_item {
+    using service_type = Service;
+    stdx::tuple<Args...> args_tuple;
+
+    CONSTEVAL explicit type_extend(Args const &...args) : args_tuple{args...} {}
+
+    [[nodiscard]] constexpr auto extends_tuple() const
+        -> stdx::tuple<type_extend> {
         return {*this};
     }
 };

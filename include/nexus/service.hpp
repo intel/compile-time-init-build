@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
+#include <stdx/static_assert.hpp>
 
 #include <concepts>
 #include <memory>

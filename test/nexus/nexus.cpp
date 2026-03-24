@@ -2,6 +2,8 @@
 #include <nexus/config.hpp>
 #include <nexus/nexus.hpp>
 
+#include <stdx/ct_format.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 struct EmptyConfig {
@@ -16,7 +18,9 @@ TEST_CASE("an empty configuration should compile and initialize") {
 template <int Id> static bool is_callback_invoked = false;
 
 template <int Id, typename... Args>
-struct TestCallback : public callback::service<Args...> {};
+struct TestCallback : public callback::service<Args...> {
+    constexpr static auto name = +stdx::ct_format<"test_cb_{}">(stdx::ct<Id>());
+};
 
 struct SimpleConfig {
     constexpr static auto config = cib::config(
@@ -210,4 +214,26 @@ TEST_CASE("configuration with constexpr conditional features") {
         nexus.service<TestCallback<2>>();
         REQUIRE(is_callback_invoked<2>);
     }
+}
+
+struct by_name_extender {
+    constexpr static auto config = cib::config(
+        cib::extend<"test_cb_0">([]() { is_callback_invoked<0> = true; }));
+};
+
+struct exporter {
+    constexpr static auto config = cib::config(cib::exports<TestCallback<0>>);
+};
+
+struct NameConfig {
+    constexpr static auto config =
+        cib::config(cib::components<by_name_extender, exporter>);
+};
+
+TEST_CASE("configuration with extend referencing export by name") {
+    cib::nexus<NameConfig> nexus{};
+    is_callback_invoked<0> = false;
+
+    nexus.service<TestCallback<0>>();
+    CHECK(is_callback_invoked<0>);
 }

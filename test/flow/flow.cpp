@@ -23,8 +23,8 @@ constexpr auto injected = flow::action<"injected">([]<typename Nexus>() {
     actual += "i";
 });
 
-struct TestFlowAlpha : public flow::service<> {};
-struct TestFlowBeta : public flow::service<> {};
+struct TestFlowAlpha : flow::service<"alpha"> {};
+struct TestFlowBeta : flow::service<"beta"> {};
 
 template <auto... Cs> struct wrapper {
     struct inner {
@@ -83,9 +83,14 @@ flowchart TD
     STATIC_REQUIRE(viz == expected);
 }
 
-TEST_CASE("add single action through cib::nexus", "[flow]") {
+TEST_CASE("add single action (by flow type) through cib::nexus", "[flow]") {
     check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
                cib::extend<TestFlowAlpha>(*a)>("a");
+}
+
+TEST_CASE("add single action (by flow name) through cib::nexus", "[flow]") {
+    check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
+               cib::extend<"alpha">(*a)>("a");
 }
 
 TEST_CASE("add single action with injected nexus through cib::nexus",
