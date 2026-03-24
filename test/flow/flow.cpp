@@ -213,3 +213,17 @@ TEST_CASE("add multi action through cib::nexus, run through cib::service",
     cib::service<TestFlowBeta>();
     CHECK(actual == "abcd");
 }
+
+TEST_CASE("add multi action by reference", "[flow]") {
+    using namespace flow::dsl::literals;
+    actual.clear();
+
+    wrapper<
+        cib::exports<TestFlowAlpha, TestFlowBeta>, cib::extend<"alpha">(*a, *b),
+        cib::extend<"alpha">("a"_ref >> "b"_ref), cib::extend<"beta">(*c, *d),
+        cib::extend<"beta">("c"_ref >> "d"_ref)>{};
+
+    cib::service<TestFlowAlpha>();
+    cib::service<TestFlowBeta>();
+    CHECK(actual == "abcd");
+}
