@@ -11,11 +11,12 @@ namespace flow {
 template <typename Builder> struct service_for {
     using builder_t = Builder;
     using interface_t = typename builder_t::interface_t;
+    constexpr static auto name = builder_t::name;
 
     CONSTEVAL static auto uninitialized() -> interface_t {
         return [] {
             using namespace stdx::literals;
-            stdx::panic<"Attempting to run flow ("_cts + builder_t::name +
+            stdx::panic<"Attempting to run flow ("_cts + name +
                         ") before it is initialized"_cts>();
         };
     }

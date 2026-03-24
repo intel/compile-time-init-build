@@ -2,6 +2,8 @@
 #include <nexus/config.hpp>
 #include <nexus/nexus.hpp>
 
+#include <stdx/ct_format.hpp>
+
 #include <catch2/catch_test_macros.hpp>
 
 struct EmptyConfig {
@@ -16,7 +18,9 @@ TEST_CASE("an empty configuration should compile and initialize") {
 template <int Id> static bool is_callback_invoked = false;
 
 template <int Id, typename... Args>
-struct TestCallback : public callback::service<Args...> {};
+struct TestCallback : public callback::service<Args...> {
+    constexpr static auto name = +stdx::ct_format<"test_cb_{}">(stdx::ct<Id>());
+};
 
 struct SimpleConfig {
     constexpr static auto config = cib::config(
@@ -225,9 +229,6 @@ struct NameConfig {
     constexpr static auto config =
         cib::config(cib::components<by_name_extender, exporter>);
 };
-
-template <>
-constexpr inline auto cib::service_locator<"test_cb_0"> = TestCallback<0>{};
 
 TEST_CASE("configuration with extend referencing export by name") {
     cib::nexus<NameConfig> nexus{};

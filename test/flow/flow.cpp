@@ -45,9 +45,6 @@ constexpr auto check_flow = [](std::string_view expected) -> void {
 };
 } // namespace
 
-template <>
-constexpr inline auto cib::service_locator<"alpha"> = TestFlowAlpha{};
-
 template <bool V>
 constexpr auto when = cib::runtime_condition<"when">([] { return V; });
 
