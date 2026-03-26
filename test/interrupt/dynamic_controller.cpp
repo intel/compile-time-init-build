@@ -33,6 +33,7 @@ TEST_CASE("detect enable_field", "[dynamic controller]") {
         not interrupt::detail::has_enable_field<with_no_enable_field>::value);
 }
 
+namespace {
 using EN0 = groov::field<"0", std::uint8_t, 0, 0>;
 using EN1 = groov::field<"1", std::uint8_t, 1, 1>;
 using EN2 = groov::field<"2", std::uint8_t, 2, 2>;
@@ -72,7 +73,6 @@ using config_t = interrupt::root<interrupt::shared_irq<
 
 using dynamic_t = interrupt::dynamic_controller<config_t, test_hal<G>>;
 
-namespace {
 auto reset_dynamic_state() -> void {
     dynamic_t::init<false>();
     groov::test::reset_store<G>();
@@ -211,4 +211,126 @@ TEST_CASE("disabling resource disables any IRQs that require it",
     REQUIRE(v);
     CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
                  EN2::mask<std::uint32_t>));
+}
+
+namespace {
+using shared_sub_config_t = interrupt::root<interrupt::shared_sub_irq<
+    "shared0", en_field_t<"0">, st_field_t<"0">,
+    interrupt::policies<interrupt::required_resources<>>,
+    interrupt::sub_irq<
+        "sub1", en_field_t<"1">, st_field_t<"1">,
+        interrupt::policies<interrupt::required_resources<test_resource_1>>,
+        test_flow_1_t>,
+    interrupt::sub_irq<
+        "sub2", en_field_t<"2">, st_field_t<"2">,
+        interrupt::policies<interrupt::required_resources<test_resource_2>>,
+        test_flow_2_t>>>;
+
+using shared_sub_dynamic_t =
+    interrupt::dynamic_controller<shared_sub_config_t, test_hal<G>>;
+} // namespace
+
+TEST_CASE("disabling one sub_irq by flow does not disable parent",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    shared_sub_dynamic_t::init();
+
+    shared_sub_dynamic_t::disable<test_flow_1_t>();
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+
+    shared_sub_dynamic_t::enable<test_flow_1_t>();
+    v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
+}
+
+TEST_CASE("disabling all sub_irqs by flow disables parent",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    shared_sub_dynamic_t::init();
+
+    shared_sub_dynamic_t::disable<test_flow_1_t>();
+    shared_sub_dynamic_t::disable<test_flow_2_t>();
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == 0);
+
+    shared_sub_dynamic_t::enable<test_flow_1_t>();
+    v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t>));
+}
+
+TEST_CASE("disabling one sub_irq by resource does not disable parent",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    shared_sub_dynamic_t::init();
+
+    shared_sub_dynamic_t::disable<test_resource_1>();
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+
+    shared_sub_dynamic_t::enable<test_resource_1>();
+    v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
+}
+
+TEST_CASE("disabling all sub_irqs by resource disables parent without its own "
+          "resources",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    shared_sub_dynamic_t::init();
+
+    shared_sub_dynamic_t::disable<test_resource_1>();
+    shared_sub_dynamic_t::disable<test_resource_2>();
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == 0);
+
+    shared_sub_dynamic_t::enable<test_resource_1>();
+    v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t>));
+}
+
+namespace {
+using shared_sub_config2_t = interrupt::root<interrupt::shared_sub_irq<
+    "shared0", en_field_t<"0">, st_field_t<"0">,
+    interrupt::policies<interrupt::required_resources<test_resource_0>>,
+    interrupt::sub_irq<
+        "sub1", en_field_t<"1">, st_field_t<"1">,
+        interrupt::policies<interrupt::required_resources<test_resource_1>>,
+        test_flow_1_t>,
+    interrupt::sub_irq<
+        "sub2", en_field_t<"2">, st_field_t<"2">,
+        interrupt::policies<interrupt::required_resources<test_resource_2>>,
+        test_flow_2_t>>>;
+
+using shared_sub_dynamic2_t =
+    interrupt::dynamic_controller<shared_sub_config2_t, test_hal<G>>;
+} // namespace
+
+TEST_CASE(
+    "disabling all sub_irqs by resource does not disable parent with its own "
+    "resources",
+    "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    shared_sub_dynamic2_t::init();
+
+    shared_sub_dynamic2_t::disable<test_resource_1>();
+    shared_sub_dynamic2_t::disable<test_resource_2>();
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == EN0::mask<std::uint32_t>);
 }

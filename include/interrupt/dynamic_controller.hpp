@@ -21,7 +21,7 @@
 
 namespace interrupt {
 namespace detail {
-template <typename Irq> using get_resources_t = typename Irq::resources_t;
+template <typename Irq> using get_resources_t = typename Irq::all_resources_t;
 template <typename Irq> using get_flows_t = typename Irq::flows_t;
 template <typename Irq>
 using get_name_list_t = stdx::type_list<typename Irq::name_t>;
@@ -126,6 +126,20 @@ concept dynamic_hal_for =
                        dynamic_hal_concept::first_enable_field_t<Cfg>>(),
                    value);
     };
+
+template <typename Cfg, typename Rsrcs>
+[[nodiscard]] auto on_by_resource(Rsrcs const &resource_enables) -> bool {
+    constexpr auto resources_bs = Rsrcs{typename Cfg::resources_t{}};
+    if constexpr (resources_bs.none() and
+                  Cfg::resource_children_t::size() > 0) {
+        return stdx::any_of(
+            [&]<typename Child>(Child) {
+                return on_by_resource<Child>(resource_enables);
+            },
+            typename Cfg::resource_children_t{});
+    }
+    return (resource_enables & resources_bs) == resources_bs;
+}
 } // namespace detail
 
 template <typename Root, detail::dynamic_hal_for<Root> Hal>
@@ -206,12 +220,7 @@ struct dynamic_controller {
             Hal::template mask<Reg, typename Irq::enable_field_t>;
         mask |= field_mask;
 
-        auto const all_resources_on = [] {
-            constexpr auto resources_bs =
-                resources_t{typename Irq::resources_t{}};
-            return (resource_enables & resources_bs) == resources_bs;
-        }();
-        auto const any_flow_on = [] {
+        auto const on_by_flows = [] {
             constexpr auto flows_bs = flows_t{typename Irq::flows_t{}};
             if constexpr (flows_bs.none()) {
                 return true;
@@ -219,7 +228,7 @@ struct dynamic_controller {
             return (flow_enables & flows_bs) != flows_t{};
         }();
 
-        if (all_resources_on and any_flow_on and
+        if (detail::on_by_resource<Irq>(resource_enables) and on_by_flows and
             named_enables[stdx::type_identity_v<typename Irq::name_t>]) {
             new_value |= field_mask;
         }
