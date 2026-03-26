@@ -12,15 +12,24 @@
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/utility.hpp>
 
+#include <boost/mp11/algorithm.hpp>
+
 namespace interrupt {
 namespace detail {
-template <stdx::ct_string Name, typename Policies> struct base_config {
+template <stdx::ct_string Name, typename Policies, typename... SubCfgs>
+struct base_config {
     using status_policy_t =
         typename Policies::template type<status_clear_policy,
                                          clear_status_first>;
     using resources_t =
         typename Policies::template type<required_resources_policy,
                                          required_resources<>>::resources;
+
+    using resource_children_t = stdx::tuple<SubCfgs...>;
+
+    using all_resources_t = boost::mp11::mp_unique<
+        boost::mp11::mp_append<resources_t, typename SubCfgs::resources_t...>>;
+
     using name_t = stdx::cts_t<Name>;
 };
 
@@ -69,9 +78,6 @@ template <typename... Flows> class flow_config {
 
     template <typename Nexus>
     constexpr static bool has_flows_for = (... and nexus_for<Nexus, Flows>);
-
-    template <typename Flow>
-    constexpr static bool triggers_flow = (... or std::same_as<Flow, Flows>);
 
     template <typename... Nexi> constexpr static auto isr() -> void {
         (one_isr<Flows, Nexi...>(), ...);
@@ -125,7 +131,6 @@ struct id_irq : detail::base_config<Name, Policies>,
                 detail::sub_config<EnableField, no_field_t>,
                 detail::flow_config<> {
     template <typename...> using built_t = id_irq_impl<id_irq>;
-    template <typename> constexpr static bool triggers_flow = false;
 
     constexpr static auto config() {
         using namespace stdx::literals;
@@ -149,10 +154,6 @@ struct shared_irq : detail::base_config<Name, Policies>,
         typename detail::parent_config<Cfgs...>::template build<sub_built_t,
                                                                 Nexi...>;
 
-    template <typename Flow>
-    constexpr static bool triggers_flow =
-        (... or Cfgs::template triggers_flow<Flow>);
-
     constexpr static auto config() {
         using namespace stdx::literals;
         return +stdx::ct_format<
@@ -165,10 +166,13 @@ struct shared_irq : detail::base_config<Name, Policies>,
 
 template <stdx::ct_string Name, typename EnableField, typename StatusField,
           typename Policies, sub_irq_config... Cfgs>
-struct shared_sub_irq : detail::base_config<Name, Policies>,
-                        detail::parent_config<Cfgs...>,
-                        detail::sub_config<EnableField, StatusField>,
-                        detail::flow_config<> {
+struct shared_sub_irq
+    : detail::base_config<Name, Policies, Cfgs...>,
+      detail::parent_config<Cfgs...>,
+      detail::sub_config<EnableField, StatusField>,
+      boost::mp11::mp_apply<detail::flow_config,
+                            boost::mp11::mp_unique<boost::mp11::mp_append<
+                                typename Cfgs::flows_t...>>> {
     template <typename... Subs>
     using sub_built_t = shared_sub_irq_impl<shared_sub_irq, Subs...>;
 
@@ -176,10 +180,6 @@ struct shared_sub_irq : detail::base_config<Name, Policies>,
     using built_t =
         typename detail::parent_config<Cfgs...>::template build<sub_built_t,
                                                                 Nexi...>;
-
-    template <typename Flow>
-    constexpr static bool triggers_flow =
-        (... or Cfgs::template triggers_flow<Flow>);
 
     constexpr static auto config() {
         using namespace stdx::literals;
