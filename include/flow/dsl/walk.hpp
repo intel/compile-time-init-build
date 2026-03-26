@@ -3,6 +3,7 @@
 #include <flow/dsl/subgraph_identity.hpp>
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
 
@@ -100,4 +101,17 @@ constexpr inline class get_edges_t {
         return tag_invoke(*this, std::forward<Ts>(ts)...);
     }
 } get_edges{};
+
+template <stdx::ct_string Name> struct node_reference {
+    using is_subgraph = void;
+    constexpr static auto identity = subgraph_identity::REFERENCE;
+    using name_t = stdx::cts_t<Name>;
+};
+
+namespace literals {
+template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_ref() {
+    return node_reference<S>{};
+}
+} // namespace literals
+
 } // namespace flow::dsl

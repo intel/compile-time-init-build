@@ -78,6 +78,12 @@ TEST_CASE("insert action between two actions", "[graph_builder]") {
     check_flow<(*a >> *c), (a >> *b >> c)>("abc");
 }
 
+TEST_CASE("insert action by name", "[graph_builder]") {
+    using namespace flow::dsl::literals;
+    check_flow<*a, ("a"_ref >> *b)>("ab");
+    check_flow<*a, (*b >> "a"_ref)>("ba");
+}
+
 TEST_CASE("add single parallel 2", "[graph_builder]") {
     actual.clear();
     run_flow<*a && *b>();

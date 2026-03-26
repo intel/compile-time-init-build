@@ -9,8 +9,8 @@ namespace flow::dsl {
 template <subgraph Lhs, subgraph Rhs,
           subgraph_identity Identity = subgraph_identity::REFERENCE>
 struct par {
-    Lhs lhs;
-    Rhs rhs;
+    [[no_unique_address]] Lhs lhs;
+    [[no_unique_address]] Rhs rhs;
 
     using is_subgraph = void;
 
