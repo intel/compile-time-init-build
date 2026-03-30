@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
   merge_group:
   push:
-    branches: [ main ]
+    branches: [ cpp20 ]
   pull_request:
-    branches: [ main ]
+    branches: [ cpp20 ]
 
 env:
   DEBIAN_FRONTEND: noninteractive
