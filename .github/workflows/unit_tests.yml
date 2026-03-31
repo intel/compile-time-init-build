@@ -48,7 +48,7 @@ jobs:
             cxx: "/usr/bin/g++-9"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install build tools
         run: |
@@ -124,7 +124,7 @@ jobs:
             version: 13
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install build tools
         run: |
@@ -148,7 +148,7 @@ jobs:
   quality_checks_pass:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install build tools
         run: |
@@ -174,7 +174,7 @@ jobs:
   sanitize:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install build tools
         run: |
@@ -209,7 +209,7 @@ jobs:
   build_single_header:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install build tools
         run: |
@@ -222,7 +222,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -t release_header
 
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: cib.hpp
           path: ${{github.workspace}}/build/include/cib/cib.hpp

@@ -12,7 +12,7 @@ jobs:
   performance_test:
     runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install compiler
         run: sudo apt update && sudo apt-get install -y clang-14
@@ -32,7 +32,7 @@ jobs:
           echo "compile_benchmark_time="`grep "Clang front-end timer" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}'` >> $GITHUB_OUTPUT
 
       - name: 'Upload Compilation Trace'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: compilation_trace.json
           path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
