@@ -1,6 +1,5 @@
-add_compile_fail_test(cyclic_flow.cpp LIBRARIES cib_flow cib_nexus)
-
 function(add_formatted_errors_tests)
+    add_compile_fail_test(cyclic_flow.cpp LIBRARIES cib_flow cib_nexus)
     add_compile_fail_test(debug_subgraph.cpp LIBRARIES cib_flow cib_nexus)
     add_compile_fail_test(only_reference_added.cpp LIBRARIES cib_flow cib_nexus)
     add_compile_fail_test(mismatched_flow_runtime_conditional.cpp LIBRARIES

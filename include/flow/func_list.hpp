@@ -55,13 +55,15 @@ struct inlined_func_list {
 
 template <stdx::ct_string Name, log_policy LogPolicy, std::size_t NumSteps>
 struct func_list {
-    using node_t = auto (*)() -> void;
+    using fp_t = auto (*)() -> void;
+    using node_t = std::pair<fp_t, std::string_view>;
     std::array<node_t, NumSteps> nodes{};
 
     template <typename Nexus, typename CTNode>
     constexpr static auto create_node(CTNode) -> node_t {
         constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode, Nexus>;
-        return fp;
+        constexpr auto name = std::string_view{CTNode::ct_name};
+        return {fp, name};
     }
 
     constexpr explicit(true)
@@ -69,7 +71,7 @@ struct func_list {
         std::copy(std::cbegin(steps), std::cend(steps), std::begin(nodes));
     }
 
-    template <node_t... Fs>
+    template <fp_t... Fs>
     using finalized_t = detail::inlined_func_list<Name, LogPolicy, Fs...>;
 };
 } // namespace flow
