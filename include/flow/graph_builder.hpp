@@ -4,6 +4,7 @@
 #include <flow/func_list.hpp>
 #include <flow/graph_common.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_set.hpp>
@@ -20,7 +21,6 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
-#include <optional>
 #include <utility>
 
 namespace flow {
@@ -34,12 +34,34 @@ concept is_output_compatible = requires(CTNode n) {
     } -> std::same_as<typename Output::node_t>;
 };
 
-template <typename T>
-constexpr static auto error_steps =
+template <typename T, auto Sep = stdx::cts_t<stdx::ct_string{", "}>{}>
+constexpr static auto error_join =
     T{}.join(stdx::cts_t<"">{}, [](auto x, auto y) {
         using namespace stdx::literals;
-        return x + ", "_ctst + y;
+        return x + Sep + y;
     });
+
+template <std::size_t Sz> CONSTEVAL auto to_ct_str(std::string_view s) {
+    return stdx::ct_string<Sz + 1>{s.data(), s.size()};
+}
+
+constexpr inline auto index(auto const &map, std::size_t idx) {
+    return std::next(std::begin(map), idx);
+}
+
+template <std::size_t I> CONSTEVAL auto src_node_name(auto const &map) {
+    return index(map, I)->key.second;
+}
+
+template <std::size_t I, std::size_t J>
+CONSTEVAL auto dest_node_name(auto const &map) {
+    return index(index(map, I)->value, J)->second;
+}
+
+constexpr inline auto make_edge = [](auto p) {
+    using namespace stdx::literals;
+    return p.first + " -> "_ctst + p.second;
+};
 } // namespace detail
 
 template <stdx::ct_string Name, typename LogPolicy = log_policy_t<Name>,
@@ -120,7 +142,7 @@ struct graph_builder {
 
     template <typename Output, typename Graph>
     [[nodiscard]] constexpr static auto topo_sort(Graph &g)
-        -> std::optional<Output> {
+        -> std::pair<Output, Graph> {
         stdx::cx_vector<typename Graph::key_type, Graph::capacity()>
             ordered_list{};
 
@@ -144,12 +166,19 @@ struct graph_builder {
             }
         }
 
-        if (not g.empty()) {
-            return {};
-        }
         using span_t =
             stdx::span<typename Graph::key_type const, Graph::capacity()>;
-        return std::optional<Output>{std::in_place, span_t{ordered_list}};
+        return {Output{span_t{ordered_list}}, g};
+    }
+
+    [[noreturn]] constexpr static auto diagnose_cycle(auto edges) {
+        using leftover_edges_t =
+            decltype(stdx::transform(detail::make_edge, edges));
+        using namespace stdx::literals;
+        STATIC_ASSERT(false,
+                      "Topological sort failed: cycle in flow.\n\nUnresolved "
+                      "edges involved in cycle:\n{}\n\n",
+                      (detail::error_join<leftover_edges_t, "\n"_ctst>));
     }
 
     // NOLINTNEXTLINE (readability-function-cognitive-complexity)
@@ -171,7 +200,7 @@ struct graph_builder {
             "One or more steps are referenced in the flow ({}) but not "
             "explicitly added with the * operator. The missing steps are: "
             "{}.",
-            Name, detail::error_steps<missing_nodes_t>);
+            Name, detail::error_join<missing_nodes_t>);
 
         constexpr auto duplicates = stdx::transform(
             [](auto e) { return stdx::get<0>(e); },
@@ -181,7 +210,7 @@ struct graph_builder {
             stdx::tuple_size_v<duplicate_nodes_t> == 0,
             "One or more steps in the flow ({}) are explicitly added more than "
             "once using the * operator. The duplicate steps are: {}.",
-            Name, detail::error_steps<duplicate_nodes_t>);
+            Name, detail::error_join<duplicate_nodes_t>);
     }
 
     template <typename Nexus = void, typename Graph>
@@ -218,13 +247,36 @@ struct graph_builder {
         constexpr static auto built() {
             constexpr auto v = Initialized::value;
             constexpr auto built = build<Nexus>(v);
-            static_assert(built.has_value(),
-                          "Topological sort failed: cycle in flow");
 
-            using impl_t = typename decltype(built)::value_type;
-            constexpr auto nodes = built->nodes;
+            if constexpr (not built.second.empty()) {
+                constexpr auto leftover_edges = [&]<std::size_t... Is>(
+                                                    std::index_sequence<
+                                                        Is...>) {
+                    auto const edges_for = [&]<std::size_t I,
+                                               std::size_t... Js>(
+                                               std::index_sequence<Js...>) {
+                        return stdx::tuple{std::pair{
+                            stdx::cts_t<detail::to_ct_str<std::size(
+                                detail::src_node_name<I>(built.second))>(
+                                detail::src_node_name<I>(built.second))>{},
+                            stdx::cts_t<detail::to_ct_str<std::size(
+                                detail::dest_node_name<I, Js>(built.second))>(
+                                detail::dest_node_name<I, Js>(
+                                    built.second))>{}}...};
+                    };
+
+                    return stdx::tuple_cat(edges_for.template operator()<Is>(
+                        std::make_index_sequence<std::size(
+                            detail::index(built.second, Is)->value)>{})...);
+                }(std::make_index_sequence<std::size(built.second)>{});
+                diagnose_cycle(leftover_edges);
+            }
+
+            using impl_t = typename decltype(built)::first_type;
+            constexpr auto nodes = built.first.nodes;
             return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return typename impl_t::template finalized_t<nodes[Is]...>{};
+                return
+                    typename impl_t::template finalized_t<nodes[Is].first...>{};
             }(std::make_index_sequence<std::size(nodes)>{});
         }
 
