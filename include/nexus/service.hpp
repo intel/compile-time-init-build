@@ -1,8 +1,9 @@
 #pragma once
 
-#include <stdx/concepts.hpp>
+#include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
-#include <stdx/static_assert.hpp>
+#include <stdx/panic.hpp>
+#include <stdx/utility.hpp>
 
 #include <concepts>
 #include <memory>
@@ -64,5 +65,21 @@ template <builder_meta T> using builder_t = typename T::builder_t;
 template <builder_meta T> using interface_t = typename T::interface_t;
 
 template <builder_meta ServiceMeta>
-constinit auto service = ServiceMeta::uninitialized();
+constinit inline auto service = ServiceMeta::uninitialized();
+
+template <typename R> using by_name_service_t = auto (*)() -> R;
+
+template <stdx::ct_string Name, typename R>
+constexpr inline by_name_service_t<R> undefined_by_name_service_v = []() -> R {
+    constexpr auto msg = STDX_CT_FORMAT("Invoking service ({} :: () -> {}) by "
+                                        "name before it is initialized",
+                                        Name, R);
+    stdx::panic<msg>();
+    stdx::unreachable();
+};
+
+template <stdx::ct_string Name, typename R = void>
+constinit inline by_name_service_t<R> invoke_service =
+    undefined_by_name_service_v<Name, R>;
+
 } // namespace cib
