@@ -10,7 +10,7 @@ struct EmptyConfig {
     constexpr static auto config = cib::config<>();
 };
 
-TEST_CASE("an empty configuration should compile and initialize") {
+TEST_CASE("an empty configuration should compile and initialize", "[nexus]") {
     cib::nexus<EmptyConfig> nexus{};
     nexus.init();
 }
@@ -28,7 +28,8 @@ struct SimpleConfig {
         cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; }));
 };
 
-TEST_CASE("simple configuration with a single extension point and feature") {
+TEST_CASE("simple configuration with a single extension point and feature",
+          "[nexus]") {
     cib::nexus<SimpleConfig> nexus{};
     is_callback_invoked<0> = false;
 
@@ -71,13 +72,14 @@ struct MediumConfig {
     constexpr static auto config = cib::config(cib::components<Foo, Bar, Gorp>);
 };
 
-TEST_CASE("configuration with multiple components, services, and features") {
+TEST_CASE("configuration with multiple components, services, and features",
+          "[nexus]") {
     cib::nexus<MediumConfig> nexus{};
     is_callback_invoked<0> = false;
     is_callback_invoked<1> = false;
     is_callback_invoked<2> = false;
 
-    SECTION("services can be invoked directly from nexus") {
+    SECTION("services can be invoked directly from nexus (by type)") {
         REQUIRE_FALSE(is_callback_invoked<0>);
         nexus.service<TestCallback<0>>();
         REQUIRE(is_callback_invoked<0>);
@@ -91,8 +93,21 @@ TEST_CASE("configuration with multiple components, services, and features") {
         REQUIRE(is_callback_invoked<2>);
     }
 
-    SECTION(
-        "nexus can be initialized services can be invoked from cib::service") {
+    SECTION("services can be invoked directly from nexus (by name)") {
+        REQUIRE_FALSE(is_callback_invoked<0>);
+        nexus.service<"test_cb_0">();
+        REQUIRE(is_callback_invoked<0>);
+
+        REQUIRE_FALSE(is_callback_invoked<1>);
+        nexus.service<"test_cb_1">();
+        REQUIRE(is_callback_invoked<1>);
+
+        REQUIRE_FALSE(is_callback_invoked<2>);
+        nexus.service<"test_cb_2">();
+        REQUIRE(is_callback_invoked<2>);
+    }
+
+    SECTION("services can be invoked from cib::service (by type)") {
         nexus.init();
 
         REQUIRE_FALSE(is_callback_invoked<0>);
@@ -105,6 +120,22 @@ TEST_CASE("configuration with multiple components, services, and features") {
 
         REQUIRE_FALSE(is_callback_invoked<2>);
         cib::service<TestCallback<2>>();
+        REQUIRE(is_callback_invoked<2>);
+    }
+
+    SECTION("services can be invoked from cib::service (by name)") {
+        nexus.init();
+
+        REQUIRE_FALSE(is_callback_invoked<0>);
+        cib::invoke_service<"test_cb_0">();
+        REQUIRE(is_callback_invoked<0>);
+
+        REQUIRE_FALSE(is_callback_invoked<1>);
+        cib::invoke_service<"test_cb_1">();
+        REQUIRE(is_callback_invoked<1>);
+
+        REQUIRE_FALSE(is_callback_invoked<2>);
+        cib::invoke_service<"test_cb_2">();
         REQUIRE(is_callback_invoked<2>);
     }
 }
@@ -123,7 +154,7 @@ template <int ConditionalValue> struct ConditionalTestProject {
         cib::components<SimpleConditionalComponent<ConditionalValue>>);
 };
 
-TEST_CASE("configuration with one constexpr conditional component") {
+TEST_CASE("configuration with one constexpr conditional component", "[nexus]") {
     is_callback_invoked<0> = false;
 
     SECTION("invoke with argument match") {
@@ -162,7 +193,7 @@ template <int EnabledId> struct ConditionalConfig {
                         ConditionalComponent<EnabledId, 2>>);
 };
 
-TEST_CASE("configuration with constexpr conditional features") {
+TEST_CASE("configuration with constexpr conditional features", "[nexus]") {
     is_callback_invoked<0> = false;
     is_callback_invoked<1> = false;
     is_callback_invoked<2> = false;
@@ -230,10 +261,42 @@ struct NameConfig {
         cib::config(cib::components<by_name_extender, exporter>);
 };
 
-TEST_CASE("configuration with extend referencing export by name") {
+TEST_CASE("configuration with extend referencing export by name", "[nexus]") {
     cib::nexus<NameConfig> nexus{};
-    is_callback_invoked<0> = false;
 
+    is_callback_invoked<0> = false;
     nexus.service<TestCallback<0>>();
     CHECK(is_callback_invoked<0>);
+}
+
+namespace {
+bool panicked{};
+std::string_view expected_why{};
+
+struct injected_handler {
+    template <stdx::ct_string Why, typename... Args>
+    static auto panic(Args &&...) -> void {
+        CHECK(sizeof...(Args) == 0);
+        constexpr auto s = std::string_view{Why};
+        CAPTURE(s);
+        CHECK(s.ends_with(expected_why));
+        panicked = true;
+        throw 42;
+    }
+};
+} // namespace
+template <> inline auto stdx::panic_handler<> = injected_handler{};
+
+TEST_CASE("invoking a service by name before initialization causes panic",
+          "[nexus]") {
+    panicked = false;
+    expected_why =
+        "Invoking service (foo :: () -> int) by name before it is initialized";
+
+    try {
+        cib::invoke_service<"foo", int>();
+    } catch (int x) {
+        CHECK(x == 42);
+    }
+    CHECK(panicked);
 }
