@@ -50,19 +50,6 @@ struct irq_impl : Config {
         Config::template enable<active, Hal>();
     }
 
-    template <typename Hal, typename = void> static auto run() -> void {
-        if constexpr (active) {
-            using status_policy_t = typename Config::status_policy_t;
-            Hal::template run<status_policy_t>(
-                Config::irq_number, [] { Config::template isr<Nexi...>(); });
-        }
-    }
-};
-
-template <typename Config, nexus_for_cfg<Config>... Nexi>
-struct sub_irq_impl : Config {
-    constexpr static bool active = Config::template active<Nexi...>;
-
     template <typename Hal, typename Mutex = void> static auto run() -> void {
         if constexpr (active) {
             using status_policy_t = typename Config::status_policy_t;
@@ -72,10 +59,8 @@ struct sub_irq_impl : Config {
             if (detail::read_field<en_t>::template with_hal<Hal, Mutex>() and
                 detail::read_field<st_t>::template with_hal<Hal>()) {
                 status_policy_t::run(
-                    [&] {
-                        detail::clear_field<st_t>::template with_hal<Hal>();
-                    },
-                    [&] { Config::template isr<Nexi...>(); });
+                    [] { detail::clear_field<st_t>::template with_hal<Hal>(); },
+                    [] { Config::template isr<Nexi...>(); });
             }
         }
     }
@@ -88,26 +73,12 @@ template <typename Config> struct id_irq_impl : Config {
 };
 
 template <typename Config, sub_irq_interface... Subs>
-struct shared_irq_impl : Config {
+struct container_irq_impl : Config {
     constexpr static bool active = (Subs::active or ...);
 
     template <typename Hal> static auto init() -> void {
         Config::template enable<active, Hal>();
     }
-
-    template <typename Hal, typename Mutex = void> static auto run() -> void {
-        if constexpr (active) {
-            using status_policy_t = typename Config::status_policy_t;
-            Hal::template run<status_policy_t>(Config::irq_number, [] {
-                (Subs::template run<Hal, Mutex>(), ...);
-            });
-        }
-    }
-};
-
-template <typename Config, sub_irq_interface... Subs>
-struct shared_sub_irq_impl : Config {
-    constexpr static bool active = (Subs::active or ...);
 
     template <typename Hal, typename Mutex = void> static auto run() -> void {
         if constexpr (active) {
@@ -118,10 +89,8 @@ struct shared_sub_irq_impl : Config {
             if (detail::read_field<en_t>::template with_hal<Hal, Mutex>() and
                 detail::read_field<st_t>::template with_hal<Hal>()) {
                 status_policy_t::run(
-                    [&] {
-                        detail::clear_field<st_t>::template with_hal<Hal>();
-                    },
-                    [&] { (Subs::template run<Hal, Mutex>(), ...); });
+                    [] { detail::clear_field<st_t>::template with_hal<Hal>(); },
+                    [] { (Subs::template run<Hal, Mutex>(), ...); });
             }
         }
     }

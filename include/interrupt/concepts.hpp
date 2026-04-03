@@ -24,9 +24,6 @@ struct hal {
     template <bool Enable, irq_num_t IrqNumber, std::size_t Priority>
     static auto irq_init() -> void;
 
-    template <status_policy P>
-    static auto run(irq_num_t, stdx::invocable auto const &isr) -> void;
-
     template <typename Field> static auto get_register() -> Field;
     template <typename Register> using register_datatype_t = int;
     template <typename Register, typename Field> constexpr static auto mask = 0;

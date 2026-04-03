@@ -42,15 +42,15 @@ TEST_CASE("config status policy can be supplied", "[sub_irq_impl]") {
 }
 
 TEST_CASE("impl models concept", "[sub_irq_impl]") {
-    using impl_t = interrupt::sub_irq_impl<no_flows_config_t, test_nexus>;
+    using impl_t = typename no_flows_config_t::built_t<test_nexus>;
     STATIC_CHECK(interrupt::sub_irq_interface<impl_t>);
 }
 
 TEST_CASE("impl can dump config (no flows)", "[sub_irq_impl]") {
     using namespace stdx::literals;
-    using config_t =
-        interrupt::sub_irq<"test", void, void, interrupt::policies<>>;
-    using impl_t = interrupt::sub_irq_impl<config_t, test_nexus>;
+    using impl_t =
+        typename interrupt::sub_irq<"test", void, void,
+                                    interrupt::policies<>>::built_t<test_nexus>;
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
         s ==
@@ -59,9 +59,9 @@ TEST_CASE("impl can dump config (no flows)", "[sub_irq_impl]") {
 
 TEST_CASE("impl can dump config (some flows)", "[sub_irq_impl]") {
     using namespace stdx::literals;
-    using config_t = interrupt::sub_irq<"test", void, void,
-                                        interrupt::policies<>, std::true_type>;
-    using impl_t = interrupt::sub_irq_impl<config_t, test_nexus>;
+    using impl_t =
+        typename interrupt::sub_irq<"test", void, void, interrupt::policies<>,
+                                    std::true_type>::built_t<test_nexus>;
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
         s ==
@@ -78,8 +78,7 @@ using flow_config_t =
 TEST_CASE("impl runs a flow when enabled and status", "[sub_irq_impl]") {
     using namespace groov::literals;
 
-    using impl_t =
-        interrupt::sub_irq_impl<flow_config_t<std::true_type>, test_nexus>;
+    using impl_t = typename flow_config_t<std::true_type>::built_t<test_nexus>;
     STATIC_CHECK(impl_t::active);
 
     groov::test::reset_store<G>();
@@ -94,8 +93,7 @@ TEST_CASE("impl runs a flow when enabled and status", "[sub_irq_impl]") {
 TEST_CASE("impl doesn't run a flow when not enabled", "[sub_irq_impl]") {
     using namespace groov::literals;
 
-    using impl_t =
-        interrupt::sub_irq_impl<flow_config_t<std::true_type>, test_nexus>;
+    using impl_t = typename flow_config_t<std::true_type>::built_t<test_nexus>;
     STATIC_CHECK(impl_t::active);
 
     groov::test::reset_store<G>();
@@ -110,8 +108,7 @@ TEST_CASE("impl doesn't run a flow when not enabled", "[sub_irq_impl]") {
 TEST_CASE("impl doesn't run a flow when not status", "[sub_irq_impl]") {
     using namespace groov::literals;
 
-    using impl_t =
-        interrupt::sub_irq_impl<flow_config_t<std::true_type>, test_nexus>;
+    using impl_t = typename flow_config_t<std::true_type>::built_t<test_nexus>;
     STATIC_CHECK(impl_t::active);
 
     groov::test::reset_store<G>();
@@ -124,12 +121,11 @@ TEST_CASE("impl doesn't run a flow when not status", "[sub_irq_impl]") {
 }
 
 TEST_CASE("impl is inactive when flow is not active", "[sub_irq_impl]") {
-    using impl_t =
-        interrupt::sub_irq_impl<flow_config_t<std::false_type>, test_nexus>;
+    using impl_t = typename flow_config_t<std::false_type>::built_t<test_nexus>;
     STATIC_CHECK(not impl_t::active);
 }
 
 TEST_CASE("impl is inactive when there are no flows", "[sub_irq_impl]") {
-    using impl_t = interrupt::sub_irq_impl<no_flows_config_t, test_nexus>;
+    using impl_t = typename no_flows_config_t::built_t<test_nexus>;
     STATIC_CHECK(not impl_t::active);
 }
