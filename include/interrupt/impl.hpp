@@ -66,12 +66,6 @@ struct irq_impl : Config {
     }
 };
 
-template <typename Config> struct id_irq_impl : Config {
-    constexpr static bool active = true;
-
-    template <typename...> static auto run() -> void {}
-};
-
 template <typename Config, sub_irq_interface... Subs>
 struct container_irq_impl : Config {
     constexpr static bool active = (Subs::active or ...);

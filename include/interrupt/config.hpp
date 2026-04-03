@@ -130,21 +130,6 @@ struct sub_irq : detail::base_config<Name, Policies>,
     }
 };
 
-template <stdx::ct_string Name, typename EnableField, typename Policies>
-struct id_irq : detail::base_config<Name, Policies>,
-                detail::parent_config<>,
-                detail::sub_config<EnableField, no_field_t>,
-                detail::flow_config<> {
-    template <typename...> using built_t = id_irq_impl<id_irq>;
-
-    constexpr static auto config() {
-        using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::id_irq<\"{}\", {}>">(
-            stdx::ct<Name>(),
-            detail::config_string_for<EnableField, Policies>());
-    }
-};
-
 template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
           typename Policies, sub_irq_config... Cfgs>
 struct shared_irq : detail::base_config<Name, Policies>,
