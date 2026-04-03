@@ -6,6 +6,7 @@
 #include <interrupt/impl.hpp>
 #include <interrupt/policies.hpp>
 
+#include <stdx/compiler.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
@@ -49,12 +50,16 @@ template <irq_num_t Number, priority_t Priority> struct super_config {
     constexpr static auto enable() -> void {
         Hal::template irq_init<Enable, Number, Priority>();
     }
+
     constexpr static auto irq_number = Number;
+    using enable_field_t = no_field_t;
+    using status_field_t = no_field_t;
 };
 
 template <typename EnableField, typename StatusField> struct sub_config {
     template <bool Enable, typename Hal>
-    constexpr static auto enable() -> void {}
+    CONSTEVAL static auto enable() -> void {}
+
     using enable_field_t = EnableField;
     using status_field_t = StatusField;
 };
@@ -114,7 +119,7 @@ struct sub_irq : detail::base_config<Name, Policies>,
                  detail::parent_config<>,
                  detail::sub_config<EnableField, StatusField>,
                  detail::flow_config<Flows...> {
-    template <typename... Nexi> using built_t = sub_irq_impl<sub_irq, Nexi...>;
+    template <typename... Nexi> using built_t = irq_impl<sub_irq, Nexi...>;
 
     constexpr static auto config() {
         using namespace stdx::literals;
@@ -147,7 +152,7 @@ struct shared_irq : detail::base_config<Name, Policies>,
                     detail::super_config<Number, Priority>,
                     detail::flow_config<> {
     template <typename... Subs>
-    using sub_built_t = shared_irq_impl<shared_irq, Subs...>;
+    using sub_built_t = container_irq_impl<shared_irq, Subs...>;
 
     template <typename... Nexi>
     using built_t =
@@ -174,7 +179,7 @@ struct shared_sub_irq
                             boost::mp11::mp_unique<boost::mp11::mp_append<
                                 typename Cfgs::flows_t...>>> {
     template <typename... Subs>
-    using sub_built_t = shared_sub_irq_impl<shared_sub_irq, Subs...>;
+    using sub_built_t = container_irq_impl<shared_sub_irq, Subs...>;
 
     template <typename... Nexi>
     using built_t =

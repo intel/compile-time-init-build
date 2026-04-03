@@ -34,12 +34,6 @@ template <typename Group> struct test_hal {
         priority<IrqNumber> = Priority;
     }
 
-    template <interrupt::status_policy P>
-    static auto run(interrupt::irq_num_t, stdx::invocable auto const &isr)
-        -> void {
-        P::run([] {}, [&] { isr(); });
-    }
-
     template <typename Field>
     CONSTEVAL static auto get_field() -> groov::pathlike auto {
         return groov::make_path<Field::value>();

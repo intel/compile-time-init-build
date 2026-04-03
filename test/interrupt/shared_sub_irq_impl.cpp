@@ -43,13 +43,13 @@ TEST_CASE("config status policy can be supplied", "[shared_sub_irq_impl]") {
 }
 
 TEST_CASE("impl models concept", "[shared_sub_irq_impl]") {
-    using impl_t = interrupt::shared_sub_irq_impl<no_flows_config_t>;
+    using impl_t = typename no_flows_config_t::built_t<test_nexus>;
     STATIC_CHECK(interrupt::sub_irq_interface<impl_t>);
 }
 
 TEST_CASE("impl can dump config (no flows)", "[shared_sub_irq_impl]") {
     using namespace stdx::literals;
-    using impl_t = interrupt::shared_sub_irq_impl<no_flows_config_t>;
+    using impl_t = typename no_flows_config_t::built_t<test_nexus>;
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
         s ==
@@ -58,10 +58,10 @@ TEST_CASE("impl can dump config (no flows)", "[shared_sub_irq_impl]") {
 
 TEST_CASE("impl can dump config (some flows)", "[shared_sub_irq_impl]") {
     using namespace stdx::literals;
-    using impl_t = interrupt::shared_sub_irq_impl<interrupt::shared_sub_irq<
+    using impl_t = typename interrupt::shared_sub_irq<
         "test_shared", void, void, interrupt::policies<>,
         interrupt::sub_irq<"test_sub", void, void, interrupt::policies<>,
-                           std::true_type>>>;
+                           std::true_type>>::built_t<test_nexus>;
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
         s ==
@@ -73,20 +73,15 @@ template <typename T, stdx::ct_string S>
 using sub_config_t =
     interrupt::sub_irq<"test_sub", en_field_t<S>, st_field_t<S>,
                        interrupt::policies<>, T>;
-
-template <typename T>
-using flow_config_t =
-    interrupt::shared_sub_irq<"test_shared", en_field_t<"0">, st_field_t<"0">,
-                              interrupt::policies<>, sub_config_t<T, "1">>;
 } // namespace
 
 TEST_CASE("impl runs a flow", "[shared_sub_irq_impl]") {
     using namespace groov::literals;
 
-    using sub_impl_t =
-        interrupt::sub_irq_impl<sub_config_t<std::true_type, "1">, test_nexus>;
-    using impl_t = interrupt::shared_sub_irq_impl<flow_config_t<std::true_type>,
-                                                  sub_impl_t>;
+    using sub_t = sub_config_t<std::true_type, "1">;
+    using impl_t = typename interrupt::shared_sub_irq<
+        "test_shared", en_field_t<"0">, st_field_t<"0">, interrupt::policies<>,
+        sub_t>::built_t<test_nexus>;
     STATIC_CHECK(impl_t::active);
 
     groov::test::reset_store<G>();
@@ -102,27 +97,25 @@ TEST_CASE("impl runs a flow", "[shared_sub_irq_impl]") {
 
 TEST_CASE("impl is inactive when all subs are inactive",
           "[shared_sub_irq_impl]") {
-    using sub_impl_t =
-        interrupt::sub_irq_impl<sub_config_t<std::false_type, "1">, test_nexus>;
-    using impl_t = interrupt::shared_sub_irq_impl<flow_config_t<std::true_type>,
-                                                  sub_impl_t>;
+    using inactive_sub_t = sub_config_t<std::false_type, "42">;
+    using impl_t = typename interrupt::shared_sub_irq<
+        "test_shared", en_field_t<"0">, st_field_t<"0">, interrupt::policies<>,
+        inactive_sub_t>::built_t<test_nexus>;
     STATIC_CHECK(not impl_t::active);
 }
 
 TEST_CASE("impl is active when any sub is active", "[shared_sub_irq_impl]") {
-    using active_sub_impl_t =
-        interrupt::sub_irq_impl<sub_config_t<std::true_type, "17">, test_nexus>;
-    using inactive_sub_impl_t =
-        interrupt::sub_irq_impl<sub_config_t<std::false_type, "42">,
-                                test_nexus>;
-    using impl_t =
-        interrupt::shared_sub_irq_impl<flow_config_t<std::true_type>,
-                                       active_sub_impl_t, inactive_sub_impl_t>;
+    using active_sub_t = sub_config_t<std::true_type, "17">;
+    using inactive_sub_t = sub_config_t<std::false_type, "42">;
+    using impl_t = typename interrupt::shared_sub_irq<
+        "test_shared", en_field_t<"0">, st_field_t<"0">, interrupt::policies<>,
+        active_sub_t, inactive_sub_t>::built_t<test_nexus>;
     STATIC_CHECK(impl_t::active);
 }
 
 TEST_CASE("impl is inactive when there are no subs", "[shared_sub_irq_impl]") {
-    using impl_t =
-        interrupt::shared_sub_irq_impl<flow_config_t<std::true_type>>;
+    using impl_t = typename interrupt::shared_sub_irq<
+        "test_shared", en_field_t<"0">, st_field_t<"0">,
+        interrupt::policies<>>::built_t<test_nexus>;
     STATIC_CHECK(not impl_t::active);
 }
