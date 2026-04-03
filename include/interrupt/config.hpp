@@ -92,7 +92,8 @@ template <base_irq_config... Cfgs> struct parent_config {
     using build = C<typename Cfgs::template built_t<Ts...>...>;
 };
 
-template <typename... Flows> class flow_config {
+template <typename... Flows> struct flow_config {
+  private:
     template <typename Flow, typename... Nexi>
     constexpr static auto one_active() {
         return (... or Nexi::template service<Flow>.active);
@@ -105,6 +106,7 @@ template <typename... Flows> class flow_config {
 
   public:
     using flows_t = stdx::type_list<Flows...>;
+    using all_flows_t = flows_t;
 
     template <typename... Nexi>
     constexpr static bool active = (... or one_active<Flows, Nexi...>());
@@ -115,6 +117,11 @@ template <typename... Flows> class flow_config {
     template <typename... Nexi> constexpr static auto isr() -> void {
         (one_isr<Flows, Nexi...>(), ...);
     }
+};
+
+template <typename... Flows>
+struct container_flow_config : flow_config<Flows...> {
+    using flows_t = stdx::type_list<>;
 };
 } // namespace detail
 
@@ -162,9 +169,9 @@ struct container_irq
     : policy_config<Policies, Cfgs...>,
       detail::parent_config<Cfgs...>,
       ControlCfg,
-      boost::mp11::mp_apply<detail::flow_config,
+      boost::mp11::mp_apply<detail::container_flow_config,
                             boost::mp11::mp_unique<boost::mp11::mp_append<
-                                typename Cfgs::flows_t...>>> {
+                                typename Cfgs::all_flows_t...>>> {
     using name_t = stdx::cts_t<Name>;
 
     template <typename... Subs>

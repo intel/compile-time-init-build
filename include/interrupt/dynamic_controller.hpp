@@ -21,8 +21,13 @@
 
 namespace interrupt {
 namespace detail {
-template <typename Irq> using get_resources_t = typename Irq::all_resources_t;
+template <typename Irq> using get_resources_t = typename Irq::resources_t;
+template <typename Irq>
+using get_all_resources_t = typename Irq::all_resources_t;
+
 template <typename Irq> using get_flows_t = typename Irq::flows_t;
+template <typename Irq> using get_all_flows_t = typename Irq::all_flows_t;
+
 template <typename Irq>
 using get_name_list_t = stdx::type_list<typename Irq::name_t>;
 
@@ -62,29 +67,43 @@ template <typename Name> struct has_name {
 
 template <typename Irq> using get_name_t = typename Irq::name_t;
 
-template <typename Resource> struct has_resource {
-    template <typename Irq>
-    using fn = boost::mp11::mp_contains<get_resources_t<Irq>, Resource>;
+template <typename Item, template <typename> typename F> struct has_item_by {
+    template <typename Irq> using fn = boost::mp11::mp_contains<F<Irq>, Item>;
 };
 
 template <typename Irqs> struct with_resource {
     template <typename Resource>
     using fn = stdx::tt_pair<
-        Resource, boost::mp11::mp_transform<
-                      get_name_t,
-                      boost::mp11::mp_copy_if_q<Irqs, has_resource<Resource>>>>;
+        Resource,
+        boost::mp11::mp_transform<
+            get_name_t, boost::mp11::mp_copy_if_q<
+                            Irqs, has_item_by<Resource, get_resources_t>>>>;
 };
 
-template <typename Flow> struct has_flow {
-    template <typename Irq>
-    using fn = boost::mp11::mp_contains<get_flows_t<Irq>, Flow>;
+template <typename Irqs> struct with_resource_propagated {
+    template <typename Resource>
+    using fn = stdx::tt_pair<
+        Resource,
+        boost::mp11::mp_transform<
+            get_name_t, boost::mp11::mp_copy_if_q<
+                            Irqs, has_item_by<Resource, get_all_resources_t>>>>;
 };
 
 template <typename Irqs> struct with_flow {
     template <typename Flow>
     using fn = stdx::tt_pair<
+        Flow,
+        boost::mp11::mp_transform<
+            get_name_t,
+            boost::mp11::mp_copy_if_q<Irqs, has_item_by<Flow, get_flows_t>>>>;
+};
+
+template <typename Irqs> struct with_flow_propagated {
+    template <typename Flow>
+    using fn = stdx::tt_pair<
         Flow, boost::mp11::mp_transform<
-                  get_name_t, boost::mp11::mp_copy_if_q<Irqs, has_flow<Flow>>>>;
+                  get_name_t, boost::mp11::mp_copy_if_q<
+                                  Irqs, has_item_by<Flow, get_all_flows_t>>>>;
 };
 
 template <typename Field> struct register_for {
@@ -153,7 +172,44 @@ template <typename Cfg, typename Rsrcs>
     }
     return (resource_enables & resources_bs) == resources_bs;
 }
+
+struct propagate_t {
+    template <typename Irqs, typename Resources>
+    using resource_map_t = boost::mp11::mp_apply<
+        stdx::type_map, boost::mp11::mp_transform_q<
+                            detail::with_resource_propagated<Irqs>, Resources>>;
+
+    template <typename Irqs, typename Flows>
+    using flow_map_t = boost::mp11::mp_apply<
+        stdx::type_map,
+        boost::mp11::mp_transform_q<detail::with_flow_propagated<Irqs>, Flows>>;
+
+    template <typename Irq> using resources_t = get_all_resources_t<Irq>;
+    template <typename Irq> using flows_t = get_all_flows_t<Irq>;
+};
+
+struct no_propagate_t {
+    template <typename Irqs, typename Resources>
+    using resource_map_t = boost::mp11::mp_apply<
+        stdx::type_map,
+        boost::mp11::mp_transform_q<detail::with_resource<Irqs>, Resources>>;
+
+    template <typename Irqs, typename Flows>
+    using flow_map_t = boost::mp11::mp_apply<
+        stdx::type_map,
+        boost::mp11::mp_transform_q<detail::with_flow<Irqs>, Flows>>;
+
+    template <typename Irq> using resources_t = get_resources_t<Irq>;
+    template <typename Irq> using flows_t = get_flows_t<Irq>;
+};
 } // namespace detail
+
+// Whether to propagate resource/flow enables & disables
+// Note: it only makes sense to propagate up: children will not be run anyway if
+// their parents are not run, so disabling a parent automatically disables
+// children
+constexpr inline auto propagate = detail::propagate_t{};
+constexpr inline auto no_propagate = detail::no_propagate_t{};
 
 template <typename Root, detail::dynamic_hal_for<Root> Hal>
 struct dynamic_controller {
@@ -190,16 +246,7 @@ struct dynamic_controller {
         }
     }
 
-    // which resources/flows affect which irqs?
-    // compute maps: resource -> list<irq names>, flow -> list<irq names>
     using irqs_t = detail::collect_t<Root, stdx::type_list>;
-    using resource_map_t =
-        boost::mp11::mp_apply<stdx::type_map,
-                              boost::mp11::mp_transform_q<
-                                  detail::with_resource<irqs_t>, resources_t>>;
-    using flow_map_t = boost::mp11::mp_apply<
-        stdx::type_map,
-        boost::mp11::mp_transform_q<detail::with_flow<irqs_t>, flows_t>>;
 
     // cached values for each enable register
     template <typename Register>
@@ -209,7 +256,14 @@ struct dynamic_controller {
     CONSTINIT static inline register_t<Register> cached_enable{};
 
     // which IRQs are potentially affected by a change?
-    template <typename... Ts> CONSTEVAL static auto compute_affected_irqs() {
+    template <typename PropagatePolicy, typename... Ts>
+    CONSTEVAL static auto compute_affected_irqs() {
+        // resource and flow influences are according to propagation policy
+        using resource_map_t =
+            PropagatePolicy::template resource_map_t<irqs_t, resources_t>;
+        using flow_map_t =
+            PropagatePolicy::template flow_map_t<irqs_t, flows_t>;
+
         using affected_irq_names_by_resource_t = boost::mp11::mp_append<
             stdx::type_lookup_t<resource_map_t, Ts, stdx::type_list<>>...>;
         using affected_irq_names_by_flow_t = boost::mp11::mp_append<
@@ -234,7 +288,7 @@ struct dynamic_controller {
         mask |= field_mask;
 
         auto const on_by_flows = [] {
-            constexpr auto flows_bs = flows_t{typename Irq::flows_t{}};
+            constexpr auto flows_bs = flows_t{typename Irq::all_flows_t{}};
             if constexpr (flows_bs.none()) {
                 return true;
             }
@@ -325,16 +379,20 @@ struct dynamic_controller {
         });
     }
 
-    template <typename... Ts> static auto enable() -> void {
+    template <typename... Ts, typename PropagatePolicy = detail::propagate_t>
+    static auto enable(PropagatePolicy = {}) -> void {
         conc::call_in_critical_section<mutex_t>([] {
-            constexpr auto affected_irqs = compute_affected_irqs<Ts...>();
+            constexpr auto affected_irqs =
+                compute_affected_irqs<PropagatePolicy, Ts...>();
             (enable_one<Ts>(), ...);
             update(affected_irqs);
         });
     }
-    template <typename... Ts> static auto disable() -> void {
+    template <typename... Ts, typename PropagatePolicy = detail::propagate_t>
+    static auto disable(PropagatePolicy = {}) -> void {
         conc::call_in_critical_section<mutex_t>([] {
-            constexpr auto affected_irqs = compute_affected_irqs<Ts...>();
+            constexpr auto affected_irqs =
+                compute_affected_irqs<PropagatePolicy, Ts...>();
             (disable_one<Ts>(), ...);
             update(affected_irqs);
         });
