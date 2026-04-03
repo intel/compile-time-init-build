@@ -87,13 +87,25 @@ template <typename Irqs> struct with_flow {
                   get_name_t, boost::mp11::mp_copy_if_q<Irqs, has_flow<Flow>>>>;
 };
 
+template <typename Field> struct register_for {
+    template <typename Hal> constexpr static auto fn() {
+        return Hal::template get_register<Field>();
+    }
+};
+template <> struct register_for<no_field_t> {
+    template <typename Hal> constexpr static auto fn() {
+        return no_register_t{};
+    }
+};
+
 template <typename Hal> struct get_register_q {
     template <typename Field>
-    using from_field = decltype(Hal::template get_register<Field>());
+    using from_field = decltype(register_for<Field>::template fn<Hal>());
 
     template <typename Irq>
     using from_irq =
-        decltype(Hal::template get_register<typename Irq::enable_field_t>());
+        decltype(register_for<typename Irq::enable_field_t>::template fn<
+                 Hal>());
 };
 
 namespace dynamic_hal_concept {
@@ -105,7 +117,7 @@ using first_enable_field_t = boost::mp11::mp_first<enable_fields_t<Cfg>>;
 
 template <typename Hal, typename Cfg>
 using register_type_t =
-    decltype(Hal::template get_register<first_enable_field_t<Cfg>>());
+    decltype(register_for<first_enable_field_t<Cfg>>::template fn<Hal>());
 
 template <typename Hal, typename Cfg>
 using register_datatype_t =
@@ -122,9 +134,10 @@ concept dynamic_hal_for =
                                dynamic_hal_concept::first_enable_field_t<Cfg>>
         } -> stdx::same_as_unqualified<
             dynamic_hal_concept::register_datatype_t<Hal, Cfg>>;
-        Hal::write(Hal::template get_register<
-                       dynamic_hal_concept::first_enable_field_t<Cfg>>(),
-                   value);
+        Hal::write(
+            register_for<dynamic_hal_concept::first_enable_field_t<Cfg>>::
+                template fn<Hal>(),
+            value);
     };
 
 template <typename Cfg, typename Rsrcs>
@@ -243,18 +256,21 @@ struct dynamic_controller {
 
         stdx::for_each(
             []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
-                auto r =
-                    Hal::template get_register<typename I::enable_field_t>();
-                using reg_t = decltype(r);
-                auto mask = register_t<reg_t>{};
-                auto value = register_t<reg_t>{};
-                (compute_register<reg_t, I>(value, mask), ...,
-                 compute_register<reg_t, Is>(value, mask));
+                auto r = detail::register_for<
+                    typename I::enable_field_t>::template fn<Hal>();
+                if constexpr (not is_no_register_v<decltype(r)>) {
 
-                auto &cached_value = cached_enable<reg_t>;
-                auto new_value = (cached_value & ~mask) | value;
-                if (new_value != std::exchange(cached_value, new_value)) {
-                    Hal::write(r, cached_value);
+                    using reg_t = decltype(r);
+                    auto mask = register_t<reg_t>{};
+                    auto value = register_t<reg_t>{};
+                    (compute_register<reg_t, I>(value, mask), ...,
+                     compute_register<reg_t, Is>(value, mask));
+
+                    auto &cached_value = cached_enable<reg_t>;
+                    auto new_value = (cached_value & ~mask) | value;
+                    if (new_value != std::exchange(cached_value, new_value)) {
+                        Hal::write(r, cached_value);
+                    }
                 }
             },
             by_registers);
@@ -279,14 +295,17 @@ struct dynamic_controller {
                 IrqList{});
         stdx::for_each(
             []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
-                using reg_t = decltype(Hal::template get_register<
-                                       typename I::enable_field_t>());
-                cached_enable<reg_t> = register_t<reg_t>{};
-                if constexpr (not Enable) {
-                    auto value = register_t<reg_t>{};
-                    auto &mask = cached_enable<reg_t>;
-                    (compute_register<reg_t, I>(value, mask), ...,
-                     compute_register<reg_t, Is>(value, mask));
+                using reg_t =
+                    decltype(detail::register_for<
+                             typename I::enable_field_t>::template fn<Hal>());
+                if constexpr (not is_no_register_v<reg_t>) {
+                    cached_enable<reg_t> = register_t<reg_t>{};
+                    if constexpr (not Enable) {
+                        auto value = register_t<reg_t>{};
+                        auto &mask = cached_enable<reg_t>;
+                        (compute_register<reg_t, I>(value, mask), ...,
+                         compute_register<reg_t, Is>(value, mask));
+                    }
                 }
             },
             by_registers);
