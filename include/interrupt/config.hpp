@@ -24,7 +24,8 @@ concept control_config = requires {
     { T::template enable<true, archetypes::hal>() } -> std::same_as<void>;
 };
 
-template <stdx::ct_string Type, irq_num_t Number, priority_t Priority>
+template <stdx::ct_string Type, irq_num_t Number, priority_t Priority,
+          typename EnableField>
 struct mcu_control_config {
     template <bool Enable, typename Hal>
     constexpr static auto enable() -> void {
@@ -32,16 +33,16 @@ struct mcu_control_config {
     }
 
     constexpr static auto irq_number = Number;
-    using enable_field_t = no_field_t;
+    using enable_field_t = EnableField;
     using status_field_t = no_field_t;
 
     template <stdx::ct_string Name, typename Policies, typename... Flows>
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::{}<\"{}\", {}_irq, {}, {}>">(
+        return +stdx::ct_format<R"(interrupt::{}<"{}", {}_irq, {}, {}>)">(
             stdx::ct<Type>(), stdx::ct<Name>(),
             stdx::ct<stdx::to_underlying(Number)>(), stdx::ct<Priority>(),
-            detail::config_string_for<Policies, Flows...>());
+            detail::config_string_for<EnableField, Policies, Flows...>());
     }
 };
 
@@ -56,15 +57,15 @@ struct field_control_config {
     template <stdx::ct_string Name, typename Policies, typename... Flows>
     constexpr static auto config() {
         using namespace stdx::literals;
-        return +stdx::ct_format<"interrupt::{}<\"{}\", {}>">(
+        return +stdx::ct_format<R"(interrupt::{}<"{}", {}>)">(
             stdx::ct<Type>(), stdx::ct<Name>(),
             detail::config_string_for<EnableField, StatusField, Policies,
                                       Flows...>());
     }
 };
 
-static_assert(
-    control_config<mcu_control_config<"", irq_num_t{}, priority_t{}>>);
+static_assert(control_config<
+              mcu_control_config<"", irq_num_t{}, priority_t{}, no_field_t>>);
 static_assert(control_config<field_control_config<"", no_field_t, no_field_t>>);
 
 template <typename Policies, typename... SubCfgs> struct policy_config {
@@ -150,11 +151,10 @@ struct element_irq : policy_config<Policies>,
 } // namespace detail
 
 template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
-          typename Policies, typename... Flows>
-using irq =
-    detail::element_irq<Name,
-                        detail::mcu_control_config<"irq", Number, Priority>,
-                        Policies, Flows...>;
+          typename EnableField, typename Policies, typename... Flows>
+using irq = detail::element_irq<
+    Name, detail::mcu_control_config<"irq", Number, Priority, EnableField>,
+    Policies, Flows...>;
 
 template <stdx::ct_string Name, typename EnableField, typename StatusField,
           typename Policies, typename... Flows>
@@ -189,10 +189,11 @@ struct container_irq
 } // namespace detail
 
 template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
-          typename Policies, sub_irq_config... Cfgs>
+          typename EnableField, typename Policies, sub_irq_config... Cfgs>
 using shared_irq = detail::container_irq<
-    Name, detail::mcu_control_config<"shared_irq", Number, Priority>, Policies,
-    Cfgs...>;
+    Name,
+    detail::mcu_control_config<"shared_irq", Number, Priority, EnableField>,
+    Policies, Cfgs...>;
 
 template <stdx::ct_string Name, typename EnableField, typename StatusField,
           typename Policies, sub_irq_config... Cfgs>

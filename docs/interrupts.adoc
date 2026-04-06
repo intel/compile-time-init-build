@@ -20,7 +20,7 @@ struct my_flow : flow::service<"my flow"> {};
 using interrupt::operator""_irq;
 
 using config = interrupt::root<
-    interrupt::irq<17_irq, 4, interrupt::policies<>, my_flow>>;
+    interrupt::irq<17_irq, 4, enable_field_t, interrupt::policies<>, my_flow>>;
 
 struct my_project {
   constexpr static auto config = cib::config(cib::exports<my_flow>);
@@ -31,7 +31,7 @@ auto mgr = interrupt::manager<config, nexus_t>{};
 ----
 
 Given this setup, the idea is that when interrupt 17 is triggered, `my_flow`
-will run.
+will run -- assuming the enable field is set.
 
 === Interrupt configuration
 
@@ -39,13 +39,14 @@ Interrupt configuration comes in 4 flavors.
 
 ==== `interrupt::irq`
 
-A basic interrupt configuration is specified with `interrupt::irq`.
+A basic top-level interrupt configuration is specified with `interrupt::irq`.
 
 [source,cpp]
 ----
 using irq_t = interrupt::irq<
     17_irq,                    // the IRQ number
     4,                         // priority
+    top_enable_field_t,        // control field in some register
     interrupt::policies<>,     // policies
     my_flow>;                  // flow(s) to run when triggered
 ----
@@ -53,8 +54,8 @@ using irq_t = interrupt::irq<
 ==== `interrupt::sub_irq`
 
 A `sub_irq` is designed to be a child of another interrupt configuration; as
-such, instead of specifiying an IRQ number and priority, instead it has enable
-and status fields.
+such, instead of specifying an IRQ number and priority, instead it has a status
+field.
 
 [source,cpp]
 ----
@@ -68,14 +69,19 @@ using irq_t = interrupt::sub_irq<
 The idea here is that when the parent interrupt fires, `my_flow` will run if the
 enable/status field states allow it.
 
+NOTE: A top-level irq (`interrupt::irq`) has an enable field but no status
+field. At the top level, status is usually hardware-controlled rather than
+programmable. The firing of a top-level interrupt indicates the status!
+
 ==== `interrupt::shared_irq`
 
 Of course a `sub_irq` has to have a parent, and that is often a `shared_irq`.
+`shared_irq` is also a top-level interrupt type.
 
 [source,cpp]
 ----
 using irq_t = interrupt::shared_irq<
-    17_irq, 4, interrupt::policies<>, // as for irq
+    17_irq, 4, top_enable_field_t, interrupt::policies<>, // as for irq
     interrupt::sub_irq<
         enable_field_t,
         status_field_t,
@@ -93,8 +99,8 @@ like `shared_irq`, `shared_sub_irq` can have any number of children.
 
 [source,cpp]
 ----
-using irq_t = nterrupt::shared_irq<
-    17_irq, 4, interrupt::policies<>,
+using irq_t = interrupt::shared_irq<
+    17_irq, 4, top_enable_field_t, interrupt::policies<>,
     interrupt::sub_irq<enable_field_t, status_field_t,
                        interrupt::policies<>, my_flow>,
     interrupt::shared_sub_irq<
@@ -136,7 +142,7 @@ So an interrupt configuration that depends on a resource might look like this:
 struct my_hw_resource; // just a tag type representing a resource
 
 using config = interrupt::root<interrupt::irq<
-    17_irq, 4,
+    17_irq, 4, top_enable_field_t,
     interrupt::policies<interrupt::required_resources<my_hw_resource>>,
     my_flow>>;
 ----

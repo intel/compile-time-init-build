@@ -14,7 +14,8 @@ namespace {
 using G = groov::group<"test", groov::test::bus<"test">>;
 
 using no_flows_config_t =
-    interrupt::irq<"test", 42_irq, 17, interrupt::policies<>>;
+    interrupt::irq<"test", 42_irq, 17, interrupt::no_field_t,
+                   interrupt::policies<>>;
 } // namespace
 
 TEST_CASE("config models concept", "[irq_impl]") {
@@ -42,7 +43,7 @@ TEST_CASE("config default status policy is clear first", "[irq_impl]") {
 
 TEST_CASE("config status policy can be supplied", "[irq_impl]") {
     using config_t =
-        interrupt::irq<"test", 42_irq, 17,
+        interrupt::irq<"test", 42_irq, 17, interrupt::no_field_t,
                        interrupt::policies<interrupt::clear_status_last>>;
     STATIC_CHECK(std::is_same_v<config_t::status_policy_t,
                                 interrupt::clear_status_last>);
@@ -58,13 +59,14 @@ TEST_CASE("impl can dump config (no flows)", "[irq_impl]") {
     using impl_t = typename no_flows_config_t::built_t<test_nexus>;
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
-        s == "interrupt::irq<\"test\", 42_irq, 17, interrupt::policies<>>"_cts);
+        s ==
+        R"(interrupt::irq<"test", 42_irq, 17, interrupt::no_field_t, interrupt::policies<>>)"_cts);
 }
 
 namespace {
 template <typename T>
-using flow_config_t =
-    interrupt::irq<"test", 17_irq, 42, interrupt::policies<>, T>;
+using flow_config_t = interrupt::irq<"test", 17_irq, 42, interrupt::no_field_t,
+                                     interrupt::policies<>, T>;
 } // namespace
 
 TEST_CASE("impl can dump config (some flows)", "[irq_impl]") {
@@ -73,7 +75,7 @@ TEST_CASE("impl can dump config (some flows)", "[irq_impl]") {
     constexpr auto s = impl_t::config();
     STATIC_CHECK(
         s ==
-        "interrupt::irq<\"test\", 17_irq, 42, interrupt::policies<>, std::integral_constant<bool, true>>"_cts);
+        R"(interrupt::irq<"test", 17_irq, 42, interrupt::no_field_t, interrupt::policies<>, std::integral_constant<bool, true>>)"_cts);
 }
 
 TEST_CASE("impl runs a flow", "[irq_impl]") {
