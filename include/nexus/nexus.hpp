@@ -10,8 +10,6 @@
 
 #include <type_traits>
 
-template <typename...> struct undef;
-
 namespace cib {
 /**
  * Combines all components in a single location so their features can
