@@ -137,4 +137,4 @@ Hello, world!
 
 ### User guide
 
-For more details on how to use *cib*, see the [User Guide](../../USER_GUIDE.md).
+For more details on how to use *cib*, see the [User Guide](/USER_GUIDE.md).
