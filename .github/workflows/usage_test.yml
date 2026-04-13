@@ -12,7 +12,7 @@ on:
 env:
   DEBIAN_FRONTEND: noninteractive
   CMAKE_GENERATOR: Ninja
-  USER_CMAKE_VERSION: 3.25
+  USER_CMAKE_VERSION: 3.27
 
 jobs:
   usage_test:

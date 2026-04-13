@@ -7,8 +7,10 @@ message(STATUS "Actual cmake version: ${CMAKE_VERSION}")
 project(cib_usage)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/get_cpm.cmake)
-cpmaddpackage(NAME compile-time-init-build SOURCE_DIR
-              "${CMAKE_CURRENT_LIST_DIR}/.." GIT_TAG HEAD)
+cpmaddpackage("gh:intel/cicd-repo-infrastructure#dev")
+
+add_versioned_package(NAME compile-time-init-build SOURCE_DIR
+                      "${CMAKE_CURRENT_LIST_DIR}/.." GIT_TAG HEAD)
 
 function(add_app NAME FILE LIB)
     add_executable(${NAME} ${FILE})

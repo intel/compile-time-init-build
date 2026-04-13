@@ -23,7 +23,7 @@ find_package(
 include(cmake/debug_flow.cmake)
 include(cmake/string_catalog.cmake)
 
-add_versioned_package("gh:boostorg/mp11#boost-1.83.0")
+add_versioned_package(URI "gh:boostorg/mp11#boost-1.83.0" TARGET boost_mp11)
 fmt_recipe(12.1.0)
 add_versioned_package("gh:intel/cpp-baremetal-concurrency#536bdd7")
 add_versioned_package("gh:intel/cpp-std-extensions#c932eba")
