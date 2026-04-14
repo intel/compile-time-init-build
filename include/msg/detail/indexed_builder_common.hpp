@@ -12,7 +12,6 @@
 #include <msg/field_matchers.hpp>
 
 #include <stdx/bitset.hpp>
-#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
@@ -32,14 +31,14 @@
 namespace msg {
 struct null_matcher_validator {
     template <match::matcher M>
-    CONSTEVAL static auto validate() noexcept -> bool {
+    consteval static auto validate() noexcept -> bool {
         return true;
     }
 };
 
 struct never_matcher_validator {
     template <match::matcher M>
-    CONSTEVAL static auto validate() noexcept -> bool {
+    consteval static auto validate() noexcept -> bool {
         return not std::is_same_v<M, match::never_t>;
     }
 };
@@ -47,7 +46,7 @@ struct never_matcher_validator {
 template <typename...> inline auto matcher_validator = null_matcher_validator{};
 
 template <match::matcher M, typename... DummyArgs>
-CONSTEVAL auto validate_matcher() -> bool {
+consteval auto validate_matcher() -> bool {
     return matcher_validator<DummyArgs...>.template validate<M>();
 }
 
@@ -167,12 +166,12 @@ struct indexed_builder_base {
     }
 
     template <typename BuilderValue, typename Nexus, std::size_t... Is>
-    static CONSTEVAL auto create_callback_array(std::index_sequence<Is...>)
+    static consteval auto create_callback_array(std::index_sequence<Is...>)
         -> std::array<callback_func_t, BuilderValue::value.callbacks.size()> {
         return {invoke_callback<BuilderValue, Nexus, Is>...};
     }
 
-    static CONSTEVAL auto walk_matcher(auto const &tag, auto const &callbacks,
+    static consteval auto walk_matcher(auto const &tag, auto const &callbacks,
                                        auto const &f) {
         auto idx = std::size_t{};
         stdx::for_each([&](auto callback) { tag(callback.matcher, f, idx++); },
@@ -180,7 +179,7 @@ struct indexed_builder_base {
     }
 
     template <typename BuilderValue>
-    static CONSTEVAL auto create_temp_indices() {
+    static consteval auto create_temp_indices() {
         IndexSpec indices{};
         walk_matcher(index_terms, BuilderValue::value.callbacks,
                      [&]<typename Field>(std::size_t idx, auto expected_value) {

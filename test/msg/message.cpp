@@ -759,13 +759,13 @@ namespace {
 [[maybe_unused]] constexpr inline struct custom_t {
     template <typename T>
         requires true // more constrained
-    CONSTEVAL auto operator()(T &&t) const
+    consteval auto operator()(T &&t) const
         noexcept(noexcept(std::forward<T>(t).query(std::declval<custom_t>())))
             -> decltype(std::forward<T>(t).query(*this)) {
         return std::forward<T>(t).query(*this);
     }
 
-    CONSTEVAL auto operator()(auto &&) const { return 42; }
+    consteval auto operator()(auto &&) const { return 42; }
 } custom;
 } // namespace
 

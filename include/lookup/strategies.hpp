@@ -3,7 +3,6 @@
 #include <lookup/input.hpp>
 #include <lookup/strategy_failed.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/type_traits.hpp>
 
 #include <algorithm>
@@ -12,14 +11,14 @@
 
 namespace lookup {
 struct fail_strategy_t {
-    [[nodiscard]] CONSTEVAL static auto make(compile_time auto)
+    [[nodiscard]] consteval static auto make(compile_time auto)
         -> strategy_failed_t {
         return {};
     }
 };
 
 template <typename... Ts> struct strategies {
-    [[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
+    [[nodiscard]] consteval static auto make(compile_time auto input) {
         constexpr auto idx = [&] {
             constexpr auto results =
                 std::array{not strategy_failed(Ts::make(input))...};

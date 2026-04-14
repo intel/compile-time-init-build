@@ -1,7 +1,6 @@
 #pragma once
 #include <lookup/entry.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/type_traits.hpp>
 

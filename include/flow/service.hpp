@@ -3,7 +3,6 @@
 #include <flow/builder.hpp>
 #include <flow/log.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
 
@@ -13,7 +12,7 @@ template <typename Builder> struct service_for {
     using interface_t = typename builder_t::interface_t;
     constexpr static auto name = builder_t::name;
 
-    CONSTEVAL static auto uninitialized() -> interface_t {
+    consteval static auto uninitialized() -> interface_t {
         return [] {
             using namespace stdx::literals;
             stdx::panic<"Attempting to run flow ("_cts + name +

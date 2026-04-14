@@ -56,7 +56,7 @@ TEST_CASE("logging behavior can be properly overridden", "[fmt_logger]") {
 namespace detail {
 enum struct E1 { A, B, C };
 enum struct E2 { A, B, C };
-[[maybe_unused]] static auto format_as(E2) { return 42; }
+[[maybe_unused]] constexpr auto format_as(E2) { return 42; }
 } // namespace detail
 
 TEST_CASE("fmt logger can deal with runtime enum values", "[fmt_logger]") {

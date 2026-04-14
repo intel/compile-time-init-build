@@ -3,7 +3,6 @@
 #include <msg/handler_interface.hpp>
 #include <msg/indexed_builder.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>
 
 namespace msg {
@@ -16,7 +15,7 @@ struct indexed_service {
 
     constexpr static auto uninitialized_v =
         uninitialized_handler_t<MsgBase, ExtraCallbackArgs...>{};
-    CONSTEVAL static auto uninitialized() -> interface_t {
+    consteval static auto uninitialized() -> interface_t {
         return &uninitialized_v;
     }
 };

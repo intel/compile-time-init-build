@@ -2,7 +2,6 @@
 
 #include <log_binary/catalog/mipi_builder.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/span.hpp>
 
 #include <cstdint>
@@ -15,7 +14,7 @@ concept writer_like =
 
 [[maybe_unused]] constexpr inline struct get_writer_t {
     template <typename T>
-    CONSTEVAL auto operator()(T &&t) const noexcept(
+    consteval auto operator()(T &&t) const noexcept(
         noexcept(std::forward<T>(t).query(std::declval<get_writer_t>())))
         -> decltype(std::forward<T>(t).query(*this)) {
         return std::forward<T>(t).query(*this);

@@ -5,10 +5,8 @@
 #include <lookup/pseudo_pext_lookup.hpp>
 #include <lookup/strategies.hpp>
 
-#include <stdx/compiler.hpp>
-
 namespace lookup {
-[[nodiscard]] CONSTEVAL static auto make(compile_time auto input) {
+[[nodiscard]] consteval static auto make(compile_time auto input) {
     return strategies<linear_search_lookup<4>,
                       pseudo_pext_lookup<true, 2>>::make(input);
 }

@@ -11,7 +11,6 @@
 #include <log_binary/string_id.hpp>
 #include <log_binary/tags.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/span.hpp>
 #include <stdx/tuple.hpp>
@@ -27,7 +26,7 @@
 
 namespace logging::binary {
 namespace detail {
-template <stdx::ct_string S> CONSTEVAL static auto to_string_type() {
+template <stdx::ct_string S> consteval static auto to_string_type() {
     constexpr auto s = std::string_view{S};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-*)

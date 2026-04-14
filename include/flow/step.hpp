@@ -5,7 +5,6 @@
 #include <nexus/detail/runtime_conditional.hpp>
 #include <nexus/func_decl.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/type_traits.hpp>
 

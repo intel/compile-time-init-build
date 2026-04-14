@@ -4,7 +4,6 @@
 #include <msg/handler_interface.hpp>
 #include <msg/message.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ranges.hpp>
 #include <stdx/utility.hpp>
 
@@ -18,7 +17,7 @@ namespace msg {
 template <typename Field, typename Lookup> struct index {
     Lookup field_lookup;
 
-    CONSTEVAL index(Field, Lookup field_lookup_arg)
+    consteval index(Field, Lookup field_lookup_arg)
         : field_lookup{field_lookup_arg} {}
 
     template <typename Msg> constexpr auto operator()(Msg const &msg) const {

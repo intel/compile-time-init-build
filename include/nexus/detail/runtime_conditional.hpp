@@ -4,7 +4,6 @@
 #include <nexus/detail/config_item.hpp>
 #include <nexus/extend.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
@@ -20,7 +19,7 @@ template <typename Cond, typename... Configs>
 struct runtime_conditional : config_item {
     detail::config<Configs...> body;
 
-    CONSTEVAL explicit runtime_conditional(Configs const &...configs)
+    consteval explicit runtime_conditional(Configs const &...configs)
         : body{configs...} {}
 
     [[nodiscard]] constexpr auto extends_tuple() const {
@@ -58,7 +57,7 @@ struct runtime_condition {
     constexpr static auto ct_name = Name;
 
     template <typename... Configs>
-    [[nodiscard]] CONSTEVAL auto operator()(Configs const &...configs) const {
+    [[nodiscard]] consteval auto operator()(Configs const &...configs) const {
         return detail::runtime_conditional<runtime_condition<Name, Ps...>,
                                            Configs...>{configs...};
     }

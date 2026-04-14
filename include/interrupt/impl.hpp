@@ -2,8 +2,6 @@
 
 #include <interrupt/concepts.hpp>
 
-#include <stdx/compiler.hpp>
-
 #include <conc/concurrency.hpp>
 
 namespace interrupt {
@@ -20,7 +18,7 @@ template <typename Field> struct read_field {
 };
 
 template <> struct read_field<no_field_t> {
-    template <typename...> CONSTEVAL static auto with_hal() -> bool {
+    template <typename...> consteval static auto with_hal() -> bool {
         return true;
     }
 };
@@ -35,7 +33,7 @@ template <typename Field> struct clear_field {
 };
 
 template <> struct clear_field<no_field_t> {
-    template <typename...> CONSTEVAL static auto with_hal() -> void {}
+    template <typename...> consteval static auto with_hal() -> void {}
 };
 } // namespace detail
 

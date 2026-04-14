@@ -35,11 +35,11 @@ template <typename Group> struct test_hal {
     }
 
     template <typename Field>
-    CONSTEVAL static auto get_field() -> groov::pathlike auto {
+    consteval static auto get_field() -> groov::pathlike auto {
         return groov::make_path<Field::value>();
     }
     template <typename Field>
-    CONSTEVAL static auto get_register() -> groov::pathlike auto {
+    consteval static auto get_register() -> groov::pathlike auto {
         return groov::parent(get_field<Field>());
     }
 

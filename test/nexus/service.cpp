@@ -1,7 +1,5 @@
 #include <nexus/service.hpp>
 
-#include <stdx/compiler.hpp>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <type_traits>
@@ -18,7 +16,7 @@ struct TestBuilder {
 struct test_builder_meta {
     using builder_t = TestBuilder;
     using interface_t = TestInterface;
-    CONSTEVAL static auto uninitialized() -> interface_t;
+    consteval static auto uninitialized() -> interface_t;
 };
 } // namespace
 

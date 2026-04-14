@@ -19,7 +19,7 @@ inline auto logging::config<> =
 // tell libfmt how to print our custom level
 namespace logging {
 template <custom::level L>
-[[nodiscard]] auto format_as(level_wrapper<L>) -> std::string_view {
+[[nodiscard]] constexpr auto format_as(level_wrapper<L>) -> std::string_view {
     switch (L) {
     case custom::level::DEBUG:
         return "custom_DEBUG";
