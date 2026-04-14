@@ -231,7 +231,7 @@ struct unspecified_unknowns {};
 } // namespace detail
 
 template <typename...>
-constexpr auto injected_unknown_policy = detail::unspecified_unknowns{};
+constexpr inline auto injected_unknown_policy = detail::unspecified_unknowns{};
 
 namespace detail {
 template <typename T, typename DefaultPolicy, typename... DummyArgs>
