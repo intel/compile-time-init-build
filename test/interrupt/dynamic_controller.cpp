@@ -393,3 +393,14 @@ TEST_CASE("disabling all sub_irqs by resource does not disable parent with its "
     REQUIRE(v);
     CHECK(*v == EN0::mask<std::uint32_t>);
 }
+
+template <>
+constexpr auto interrupt::injected_unknown_policy<> =
+    interrupt::ignore_unknowns{};
+
+TEST_CASE("enabling/disabling unknown flows can be ignored",
+          "[dynamic controller]") {
+    using ignoring_dynamic_t =
+        interrupt::dynamic_controller<config_t, test_hal<G>>;
+    ignoring_dynamic_t::disable<void>();
+}

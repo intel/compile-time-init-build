@@ -5,6 +5,7 @@
 #include <stdx/bitset.hpp>
 #include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
+#include <stdx/static_assert.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
@@ -211,7 +212,52 @@ struct no_propagate_t {
 constexpr inline auto propagate = detail::propagate_t{};
 constexpr inline auto no_propagate = detail::no_propagate_t{};
 
-template <typename Root, detail::dynamic_hal_for<Root> Hal>
+struct error_unknowns {
+    template <typename T> [[noreturn]] constexpr static auto enable() {
+        STATIC_ASSERT(false, "Can't enable flow ({}) not in config!", T);
+        stdx::unreachable();
+    }
+    template <typename T> [[noreturn]] constexpr static auto disable() {
+        STATIC_ASSERT(false, "Can't disable flow ({}) not in config!", T);
+        stdx::unreachable();
+    }
+};
+struct ignore_unknowns {
+    template <typename> constexpr static auto enable() {}
+    template <typename> constexpr static auto disable() {}
+};
+
+namespace detail {
+struct unspecified_unknowns {};
+} // namespace detail
+
+template <typename...>
+constexpr auto injected_unknown_policy = detail::unspecified_unknowns{};
+
+namespace detail {
+template <typename T, typename DefaultPolicy, typename... DummyArgs>
+constexpr auto handle_unknown_enable() -> void {
+    auto &policy = injected_unknown_policy<DummyArgs...>;
+    if constexpr (requires { policy.template enable<T>(); }) {
+        policy.template enable<T>();
+    } else {
+        DefaultPolicy::template enable<T>;
+    }
+}
+
+template <typename T, typename DefaultPolicy, typename... DummyArgs>
+constexpr auto handle_unknown_disable() -> void {
+    auto &policy = injected_unknown_policy<DummyArgs...>;
+    if constexpr (requires { policy.template disable<T>(); }) {
+        policy.template disable<T>();
+    } else {
+        DefaultPolicy::template disable<T>;
+    }
+}
+} // namespace detail
+
+template <typename Root, detail::dynamic_hal_for<Root> Hal,
+          typename UnknownPolicy = error_unknowns>
 struct dynamic_controller {
   private:
     // keep track of which resources/flows/irqs have been manually
@@ -231,8 +277,10 @@ struct dynamic_controller {
             resource_enables.template set<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
             flow_enables.template set<T>();
-        } else {
+        } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
             named_enables.template set<T>();
+        } else {
+            detail::handle_unknown_enable<T, UnknownPolicy>();
         }
     }
 
@@ -241,8 +289,10 @@ struct dynamic_controller {
             resource_enables.template reset<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
             flow_enables.template reset<T>();
-        } else {
+        } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
             named_enables.template reset<T>();
+        } else {
+            detail::handle_unknown_disable<T, UnknownPolicy>();
         }
     }
 
