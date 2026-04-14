@@ -10,5 +10,8 @@ add_tests(
     sub_irq_impl
     policies
     LIBRARIES
+    warnings
     cib_interrupt
     groov)
+
+add_subdirectory(fail)
