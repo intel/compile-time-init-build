@@ -395,7 +395,7 @@ TEST_CASE("disabling all sub_irqs by resource does not disable parent with its "
 }
 
 template <>
-constexpr auto interrupt::injected_unknown_policy<> =
+constexpr inline auto interrupt::injected_unknown_policy<> =
     interrupt::ignore_unknowns{};
 
 TEST_CASE("enabling/disabling unknown flows can be ignored",
