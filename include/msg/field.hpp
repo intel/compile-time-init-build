@@ -213,7 +213,7 @@ struct bits_locator_t {
     }
 };
 
-template <typename T> CONSTEVAL auto select_integral_type() {
+template <typename T> consteval auto select_integral_type() {
     if constexpr (sizeof(T) <= sizeof(std::uint8_t)) {
         return std::uint8_t{};
     } else if constexpr (sizeof(T) <= sizeof(std::uint16_t)) {
@@ -278,13 +278,13 @@ using lsb_t = stdx::lsb_t;
 
 inline namespace literals {
 // NOLINTNEXTLINE(google-runtime-int)
-CONSTEVAL_UDL auto operator""_bi(unsigned long long int v) -> byte_index_t {
+consteval auto operator""_bi(unsigned long long int v) -> byte_index_t {
     return static_cast<byte_index_t>(v);
 }
-CONSTEVAL_UDL auto operator""_dwi(unsigned long long int v) -> dword_index_t {
+consteval auto operator""_dwi(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
-CONSTEVAL_UDL auto operator""_dw(unsigned long long int v) -> dword_index_t {
+consteval auto operator""_dw(unsigned long long int v) -> dword_index_t {
     return static_cast<dword_index_t>(v);
 }
 using stdx::literals::operator""_msb;

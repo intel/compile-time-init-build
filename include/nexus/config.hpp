@@ -6,8 +6,6 @@
 #include <nexus/detail/exports.hpp>
 #include <nexus/extend.hpp>
 
-#include <stdx/compiler.hpp>
-
 namespace cib {
 /**
  * Container for project and component configuration declarations.
@@ -23,7 +21,7 @@ namespace cib {
  * @see cib::runtime_condition
  */
 template <typename... Configs>
-[[nodiscard]] CONSTEVAL auto config(Configs const &...configs) {
+[[nodiscard]] consteval auto config(Configs const &...configs) {
     return detail::config{configs...};
 }
 

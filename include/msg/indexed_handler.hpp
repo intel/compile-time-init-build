@@ -3,13 +3,12 @@
 #include <msg/detail/indexed_handler_common.hpp>
 
 #include <stdx/bitset.hpp>
-#include <stdx/compiler.hpp>
 
 #include <cstdint>
 
 namespace msg {
 template <typename... Indices> struct indices : Indices... {
-    CONSTEVAL explicit indices(Indices... index_args)
+    consteval explicit indices(Indices... index_args)
         : Indices{index_args}... {}
 
     constexpr auto operator()(auto const &data) const {
@@ -18,7 +17,7 @@ template <typename... Indices> struct indices : Indices... {
 };
 
 template <> struct indices<> {
-    CONSTEVAL explicit indices() = default;
+    consteval explicit indices() = default;
 
     constexpr auto operator()(auto const &) const
         -> stdx::bitset<0, std::uint32_t> {

@@ -5,7 +5,6 @@
 #include <msg/indexed_handler.hpp>
 
 #include <stdx/bitset.hpp>
-#include <stdx/compiler.hpp>
 #include <stdx/cx_map.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -26,16 +25,16 @@ struct indexed_builder
                                         MsgBase, ExtraCallbackArgs...>;
 
     template <typename I, auto E>
-    static CONSTEVAL auto get_entry(auto const &indices) {
+    static consteval auto get_entry(auto const &indices) {
         return lookup::entry{
             std::next(get<I>(indices).entries.begin(), E)->key,
             std::next(get<I>(indices).entries.begin(), E)->value};
     }
 
     template <typename BuilderValue, typename I, auto... Es>
-    static CONSTEVAL auto make_input() {
+    static consteval auto make_input() {
         struct {
-            CONSTEVAL auto operator()() const noexcept {
+            consteval auto operator()() const noexcept {
                 constexpr IndexSpec indices =
                     base_t::template create_temp_indices<BuilderValue>();
                 using key_type =
@@ -51,7 +50,7 @@ struct indexed_builder
         return val;
     }
     template <typename BuilderValue, typename Nexus>
-    static CONSTEVAL auto build() {
+    static consteval auto build() {
         constexpr auto make_index_lookup =
             []<typename I, std::size_t... Es>(std::index_sequence<Es...>) {
                 return lookup::make(make_input<BuilderValue, I, Es...>());

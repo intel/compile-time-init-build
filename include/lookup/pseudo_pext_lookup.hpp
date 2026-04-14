@@ -6,7 +6,6 @@
 
 #include <stdx/bit.hpp>
 #include <stdx/bitset.hpp>
-#include <stdx/compiler.hpp>
 #include <stdx/utility.hpp>
 
 #include <algorithm>

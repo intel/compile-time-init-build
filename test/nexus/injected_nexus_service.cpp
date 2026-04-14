@@ -2,7 +2,6 @@
 #include <nexus/nexus.hpp>
 #include <nexus/service.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_conversions.hpp>
 
 #include <catch2/catch_test_macros.hpp>
@@ -18,7 +17,7 @@ bool nexus_injected{};
 template <typename B> struct test_service {
     using builder_t = B;
     using interface_t = typename B::interface_t;
-    CONSTEVAL static auto uninitialized() -> interface_t { return {}; }
+    consteval static auto uninitialized() -> interface_t { return {}; }
 };
 
 template <typename... Fs> struct test_builder {
@@ -40,7 +39,7 @@ template <typename... Fs> struct test_builder {
     }
 
     template <typename BuilderValue, typename Nexus>
-    [[nodiscard]] CONSTEVAL static auto build() -> interface_t {
+    [[nodiscard]] consteval static auto build() -> interface_t {
         return run<BuilderValue, Nexus>;
     }
 };

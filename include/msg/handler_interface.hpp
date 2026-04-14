@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_conversions.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/panic.hpp>
@@ -20,7 +19,7 @@ template <typename M>
 concept named_msg_base =
     stdx::is_specialization_of<decltype(M::name), stdx::ct_string>().value;
 
-template <typename M> CONSTEVAL auto name_for_msg() {
+template <typename M> consteval auto name_for_msg() {
     if constexpr (detail::named_msg_base<M>) {
         return M::name;
     } else {

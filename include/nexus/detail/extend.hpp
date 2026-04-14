@@ -3,7 +3,6 @@
 #include <nexus/detail/config_item.hpp>
 #include <nexus/service.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 
@@ -13,7 +12,7 @@ struct name_extend : config_item {
     constexpr static auto name = Name;
     stdx::tuple<Args...> args_tuple;
 
-    CONSTEVAL explicit name_extend(Args const &...args) : args_tuple{args...} {}
+    consteval explicit name_extend(Args const &...args) : args_tuple{args...} {}
 
     [[nodiscard]] constexpr auto extends_tuple() const
         -> stdx::tuple<name_extend> {
@@ -25,7 +24,7 @@ template <typename Service, typename... Args> struct type_extend : config_item {
     using service_type = Service;
     stdx::tuple<Args...> args_tuple;
 
-    CONSTEVAL explicit type_extend(Args const &...args) : args_tuple{args...} {}
+    consteval explicit type_extend(Args const &...args) : args_tuple{args...} {}
 
     [[nodiscard]] constexpr auto extends_tuple() const
         -> stdx::tuple<type_extend> {

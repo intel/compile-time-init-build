@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdx/compiler.hpp>
-
 #include <cstdint>
 #include <utility>
 
@@ -20,7 +18,7 @@ enum struct level : std::uint8_t {
 
 [[maybe_unused]] constexpr inline struct get_level_t {
     template <typename T>
-    CONSTEVAL auto operator()(T &&t) const noexcept(
+    consteval auto operator()(T &&t) const noexcept(
         noexcept(std::forward<T>(t).query(std::declval<get_level_t>())))
         -> decltype(std::forward<T>(t).query(*this)) {
         return std::forward<T>(t).query(*this);

@@ -3,7 +3,6 @@
 #include <interrupt/concepts.hpp>
 
 #include <stdx/bitset.hpp>
-#include <stdx/compiler.hpp>
 #include <stdx/concepts.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -217,13 +216,13 @@ struct dynamic_controller {
     // keep track of which resources/flows/irqs have been manually
     // enabled/disabled
     using resources_t = detail::collect_t<Root, detail::get_resources_t>;
-    CONSTINIT static inline resources_t resource_enables{};
+    constinit static inline resources_t resource_enables{};
 
     using flows_t = detail::collect_t<Root, detail::get_flows_t>;
-    CONSTINIT static inline flows_t flow_enables{};
+    constinit static inline flows_t flow_enables{};
 
     using irq_names_t = detail::collect_t<Root, detail::get_name_list_t>;
-    CONSTINIT static inline irq_names_t named_enables{};
+    constinit static inline irq_names_t named_enables{};
 
     // update bitsets as necessary
     template <typename T> static auto enable_one() -> void {
@@ -253,11 +252,11 @@ struct dynamic_controller {
     using register_t = typename Hal::template register_datatype_t<Register>;
 
     template <typename Register>
-    CONSTINIT static inline register_t<Register> cached_enable{};
+    constinit static inline register_t<Register> cached_enable{};
 
     // which IRQs are potentially affected by a change?
     template <typename PropagatePolicy, typename... Ts>
-    CONSTEVAL static auto compute_affected_irqs() {
+    consteval static auto compute_affected_irqs() {
         // resource and flow influences are according to propagation policy
         using resource_map_t =
             PropagatePolicy::template resource_map_t<irqs_t, resources_t>;

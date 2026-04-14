@@ -4,7 +4,6 @@
 #include <flow/graph_common.hpp>
 #include <flow/step.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -17,24 +16,24 @@
 
 namespace flow {
 struct graphviz {
-    template <stdx::ct_string Name> CONSTEVAL static auto prologue() {
+    template <stdx::ct_string Name> consteval static auto prologue() {
         return +stdx::ct_format<"digraph {} {">(stdx::cts_t<Name>{});
     }
-    template <stdx::ct_string Name> CONSTEVAL static auto epilogue() {
+    template <stdx::ct_string Name> consteval static auto epilogue() {
         using namespace stdx::literals;
         return "}"_cts;
     }
-    template <typename Node> CONSTEVAL static auto render_node(Node) {
+    template <typename Node> consteval static auto render_node(Node) {
         return +stdx::ct_format<"  {}">(typename Node::name_t{});
     }
-    template <typename Edge> CONSTEVAL static auto render_edge(Edge) {
+    template <typename Edge> consteval static auto render_edge(Edge) {
         return +stdx::ct_format<"  {} -> {}">(typename Edge::source_t::name_t{},
                                               typename Edge::dest_t::name_t{});
     }
 };
 
 class mermaid {
-    template <stdx::ct_string Name> CONSTEVAL static auto to_id() {
+    template <stdx::ct_string Name> consteval static auto to_id() {
         using namespace stdx::literals;
         return "_"_ctst + stdx::cts_t<[] {
                    auto n = Name;
@@ -43,7 +42,7 @@ class mermaid {
                }()>{};
     }
 
-    template <typename Node> CONSTEVAL static auto to_box() {
+    template <typename Node> consteval static auto to_box() {
         using namespace stdx::literals;
         if constexpr (detail::is_milestone<Node>) {
             return stdx::ct_format<"[{}]">(typename Node::name_t{});
@@ -53,17 +52,17 @@ class mermaid {
     }
 
   public:
-    template <stdx::ct_string Name> CONSTEVAL static auto prologue() {
+    template <stdx::ct_string Name> consteval static auto prologue() {
         return +stdx::ct_format<"---\ntitle: {}\n---\nflowchart TD">(
             stdx::cts_t<Name>{});
     }
 
-    template <stdx::ct_string Name> CONSTEVAL static auto epilogue() {
+    template <stdx::ct_string Name> consteval static auto epilogue() {
         using namespace stdx::literals;
         return ""_cts;
     }
 
-    template <typename Node> CONSTEVAL static auto render_node(Node) {
+    template <typename Node> consteval static auto render_node(Node) {
         return +stdx::ct_format<"  {}{}">(to_id<Node::name_t::value>(),
                                           to_box<Node>());
     }
@@ -71,12 +70,12 @@ class mermaid {
     template <typename Node>
         requires(Node::name_t::value == stdx::ct_string{"start"} or
                  Node::name_t::value == stdx::ct_string{"end"})
-    CONSTEVAL static auto render_node(Node) {
+    consteval static auto render_node(Node) {
         return +stdx::ct_format<"  {}(({}))">(to_id<Node::name_t::value>(),
                                               typename Node::name_t{});
     }
 
-    template <typename Edge> CONSTEVAL static auto render_edge(Edge) {
+    template <typename Edge> consteval static auto render_edge(Edge) {
         using namespace stdx::literals;
 
         if constexpr (Edge::cond_t::ct_name == "always"_cts) {

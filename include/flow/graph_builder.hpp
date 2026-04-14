@@ -4,7 +4,6 @@
 #include <flow/func_list.hpp>
 #include <flow/graph_common.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/cx_multimap.hpp>
 #include <stdx/cx_set.hpp>
@@ -41,7 +40,7 @@ constexpr static auto error_join =
         return x + Sep + y;
     });
 
-template <std::size_t Sz> CONSTEVAL auto to_ct_str(std::string_view s) {
+template <std::size_t Sz> consteval auto to_ct_str(std::string_view s) {
     return stdx::ct_string<Sz + 1>{s.data(), s.size()};
 }
 
@@ -49,12 +48,12 @@ constexpr inline auto index(auto const &map, std::size_t idx) {
     return std::next(std::begin(map), idx);
 }
 
-template <std::size_t I> CONSTEVAL auto src_node_name(auto const &map) {
+template <std::size_t I> consteval auto src_node_name(auto const &map) {
     return index(map, I)->key.second;
 }
 
 template <std::size_t I, std::size_t J>
-CONSTEVAL auto dest_node_name(auto const &map) {
+consteval auto dest_node_name(auto const &map) {
     return index(index(map, I)->value, J)->second;
 }
 

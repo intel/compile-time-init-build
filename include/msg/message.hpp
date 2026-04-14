@@ -138,32 +138,32 @@ template <stdx::ct_string Name> struct field_name {
 
   private:
     template <auto V>
-    friend CONSTEVAL auto operator==(field_name, constant_t<V>)
+    friend consteval auto operator==(field_name, constant_t<V>)
         -> matcher_maker<Name, std::equal_to<>, V> {
         return {};
     }
     template <auto V>
-    friend CONSTEVAL auto operator!=(field_name, constant_t<V>)
+    friend consteval auto operator!=(field_name, constant_t<V>)
         -> matcher_maker<Name, std::not_equal_to<>, V> {
         return {};
     }
     template <auto V>
-    friend CONSTEVAL auto operator<(field_name, constant_t<V>)
+    friend consteval auto operator<(field_name, constant_t<V>)
         -> matcher_maker<Name, std::less<>, V> {
         return {};
     }
     template <auto V>
-    friend CONSTEVAL auto operator<=(field_name, constant_t<V>)
+    friend consteval auto operator<=(field_name, constant_t<V>)
         -> matcher_maker<Name, std::less_equal<>, V> {
         return {};
     }
     template <auto V>
-    friend CONSTEVAL auto operator>(field_name, constant_t<V>)
+    friend consteval auto operator>(field_name, constant_t<V>)
         -> matcher_maker<Name, std::greater<>, V> {
         return {};
     }
     template <auto V>
-    friend CONSTEVAL auto operator>=(field_name, constant_t<V>)
+    friend consteval auto operator>=(field_name, constant_t<V>)
         -> matcher_maker<Name, std::greater_equal<>, V> {
         return {};
     }

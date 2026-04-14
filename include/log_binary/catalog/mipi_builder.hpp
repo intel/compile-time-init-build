@@ -5,7 +5,6 @@
 #include <log_binary/catalog/mipi_messages.hpp>
 
 #include <stdx/bit.hpp>
-#include <stdx/compiler.hpp>
 #include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 

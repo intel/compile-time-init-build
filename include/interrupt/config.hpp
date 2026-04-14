@@ -6,7 +6,6 @@
 #include <interrupt/impl.hpp>
 #include <interrupt/policies.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
@@ -49,7 +48,7 @@ struct mcu_control_config {
 template <stdx::ct_string Type, typename EnableField, typename StatusField>
 struct field_control_config {
     template <bool Enable, typename Hal>
-    CONSTEVAL static auto enable() -> void {}
+    consteval static auto enable() -> void {}
 
     using enable_field_t = EnableField;
     using status_field_t = StatusField;

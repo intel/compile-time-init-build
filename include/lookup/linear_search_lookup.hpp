@@ -3,8 +3,6 @@
 #include <lookup/input.hpp>
 #include <lookup/strategy_failed.hpp>
 
-#include <stdx/compiler.hpp>
-
 #include <cstddef>
 #include <type_traits>
 
@@ -26,7 +24,7 @@ template <std::size_t MaxSize> struct linear_search_lookup {
     };
 
   public:
-    [[nodiscard]] CONSTEVAL static auto make(compile_time auto i) {
+    [[nodiscard]] consteval static auto make(compile_time auto i) {
         if constexpr (constexpr auto input = i(); input.size <= MaxSize) {
             return impl<std::remove_cv_t<decltype(input)>>{input};
         } else {

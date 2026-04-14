@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdx/compiler.hpp>
 #include <stdx/panic.hpp>
 #include <stdx/tuple.hpp>
 
@@ -27,7 +26,7 @@ template <typename Funcs = stdx::tuple<>, typename... ArgTypes> struct builder {
     }
 
     template <typename BuilderValue, typename... Ts>
-    [[nodiscard]] CONSTEVAL static auto build() {
+    [[nodiscard]] consteval static auto build() {
         return run<BuilderValue, Ts...>;
     }
 
@@ -59,7 +58,7 @@ template <typename... ArgTypes> struct service {
     using builder_t = builder<stdx::tuple<>, ArgTypes...>;
     using interface_t = void (*)(ArgTypes...);
 
-    CONSTEVAL static auto uninitialized() -> interface_t {
+    consteval static auto uninitialized() -> interface_t {
         return [](ArgTypes...) {
             stdx::panic<
                 "Attempting to run callback before it is initialized">();

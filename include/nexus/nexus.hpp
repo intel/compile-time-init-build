@@ -3,7 +3,6 @@
 #include <nexus/detail/nexus_details.hpp>
 #include <nexus/service.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_string.hpp>
 
 #include <boost/mp11/algorithm.hpp>

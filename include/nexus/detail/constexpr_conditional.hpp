@@ -4,7 +4,6 @@
 #include <nexus/detail/config_item.hpp>
 #include <nexus/detail/extend.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -14,7 +13,7 @@ template <typename Cond, typename... Configs>
 struct constexpr_conditional : config_item {
     detail::config<Configs...> body;
 
-    CONSTEVAL explicit constexpr_conditional(Configs const &...configs)
+    consteval explicit constexpr_conditional(Configs const &...configs)
         : body{configs...} {}
 
     [[nodiscard]] constexpr auto extends_tuple() const {
@@ -40,7 +39,7 @@ template <stdx::ct_string Name, typename... Ps> struct constexpr_condition {
     constexpr static auto ct_name = Name;
 
     template <typename... Configs>
-    [[nodiscard]] CONSTEVAL auto operator()(Configs const &...configs) const {
+    [[nodiscard]] consteval auto operator()(Configs const &...configs) const {
         return detail::constexpr_conditional<constexpr_condition<Name, Ps...>,
                                              Configs...>{configs...};
     }

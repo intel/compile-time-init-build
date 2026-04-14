@@ -2,7 +2,6 @@
 
 #include <nexus/detail/config_item.hpp>
 
-#include <stdx/compiler.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
@@ -16,7 +15,7 @@ constexpr static auto as_constant_v =
 template <typename... ConfigTs> struct config : public detail::config_item {
     stdx::tuple<ConfigTs...> configs_tuple;
 
-    CONSTEVAL explicit config(ConfigTs const &...configs)
+    consteval explicit config(ConfigTs const &...configs)
         : configs_tuple{configs...} {}
 
     [[nodiscard]] constexpr auto extends_tuple() const {
