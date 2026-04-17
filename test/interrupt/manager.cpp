@@ -82,7 +82,12 @@ namespace {
 template <typename Flow> struct alt_flow : Flow {};
 
 struct alt_nexus {
-    template <typename T> constexpr static auto service = flow_t<alt_flow<T>>{};
+    template <typename T>
+    constexpr static auto service_v = flow_t<alt_flow<T>>{};
+
+    template <typename T> constexpr static auto service() {
+        return service_v<T>();
+    }
 };
 } // namespace
 

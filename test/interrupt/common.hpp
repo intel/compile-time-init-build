@@ -76,5 +76,9 @@ template <typename T> struct flow_t {
 };
 
 struct test_nexus {
-    template <typename T> constexpr static auto service = flow_t<T>{};
+    template <typename T> constexpr static auto service_v = flow_t<T>{};
+
+    template <typename T> constexpr static auto service() {
+        return service_v<T>();
+    }
 };
