@@ -96,7 +96,7 @@ template <typename... Flows> struct flow_config {
   private:
     template <typename Flow, typename... Nexi>
     constexpr static auto one_active() {
-        return (... or Nexi::template service<Flow>.active);
+        return (... or Nexi::template service_v<Flow>.active);
     }
 
     template <typename Flow, typename... Nexi>
