@@ -428,7 +428,7 @@ struct dynamic_controller {
         });
     }
 
-    template <typename... Ts, typename PropagatePolicy = detail::propagate_t>
+    template <typename... Ts, typename PropagatePolicy = detail::no_propagate_t>
     static auto enable(PropagatePolicy = {}) -> void {
         conc::call_in_critical_section<mutex_t>([] {
             constexpr auto affected_irqs =
@@ -437,7 +437,7 @@ struct dynamic_controller {
             update(affected_irqs);
         });
     }
-    template <typename... Ts, typename PropagatePolicy = detail::propagate_t>
+    template <typename... Ts, typename PropagatePolicy = detail::no_propagate_t>
     static auto disable(PropagatePolicy = {}) -> void {
         conc::call_in_critical_section<mutex_t>([] {
             constexpr auto affected_irqs =
