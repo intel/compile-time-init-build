@@ -202,7 +202,6 @@ TEST_CASE("IRQ is enabled only when all its contingencies are enabled",
     using namespace groov::literals;
     reset_dynamic_state();
 
-    dynamic_t::enable<"shared">();
     dynamic_t::enable<"sub0">();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(not v);
@@ -214,7 +213,7 @@ TEST_CASE("IRQ is enabled only when all its contingencies are enabled",
     dynamic_t::enable<test_flow_0_t>();
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t>));
+    CHECK(*v == EN0::mask<std::uint32_t>);
 }
 
 TEST_CASE("disabling resource disables any IRQs that require it",
@@ -270,33 +269,33 @@ TEST_CASE("disabling one sub_irq by flow does not disable parent",
                  EN2::mask<std::uint32_t>));
 }
 
-TEST_CASE("disabling all sub_irqs by flow disables parent (default policy)",
+TEST_CASE("disabling all sub_irqs by flow disables parent (propagate)",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_dynamic_state();
     shared_sub_dynamic_t::init();
 
     shared_sub_dynamic_t::disable<test_flow_1_t>();
-    shared_sub_dynamic_t::disable<test_flow_2_t>();
+    shared_sub_dynamic_t::disable<test_flow_2_t>(interrupt::propagate);
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == 0);
 
-    shared_sub_dynamic_t::enable<test_flow_1_t>();
+    shared_sub_dynamic_t::enable<test_flow_1_t>(interrupt::propagate);
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t>));
 }
 
 TEST_CASE(
-    "disabling all sub_irqs by flow does not disable parent (no propagate)",
+    "disabling all sub_irqs by flow does not disable parent (default policy)",
     "[dynamic controller]") {
     using namespace groov::literals;
     reset_dynamic_state();
     shared_sub_dynamic_t::init();
 
     shared_sub_dynamic_t::disable<test_flow_1_t>();
-    shared_sub_dynamic_t::disable<test_flow_2_t>(interrupt::no_propagate);
+    shared_sub_dynamic_t::disable<test_flow_2_t>();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == EN0::mask<std::uint32_t>);
@@ -313,7 +312,7 @@ TEST_CASE("disabling one sub_irq by resource does not disable parent",
     reset_dynamic_state();
     shared_sub_dynamic_t::init();
 
-    shared_sub_dynamic_t::disable<test_resource_1>();
+    shared_sub_dynamic_t::disable<test_resource_1>(interrupt::propagate);
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == (EN0::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
@@ -326,26 +325,26 @@ TEST_CASE("disabling one sub_irq by resource does not disable parent",
 }
 
 TEST_CASE("disabling all sub_irqs by resource disables parent without its own "
-          "resources (default policy)",
+          "resources (propagate)",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_dynamic_state();
     shared_sub_dynamic_t::init();
 
     shared_sub_dynamic_t::disable<test_resource_1>();
-    shared_sub_dynamic_t::disable<test_resource_2>();
+    shared_sub_dynamic_t::disable<test_resource_2>(interrupt::propagate);
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == 0);
 
-    shared_sub_dynamic_t::enable<test_resource_1>();
+    shared_sub_dynamic_t::enable<test_resource_1>(interrupt::propagate);
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
     CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t>));
 }
 
 TEST_CASE("disabling all sub_irqs by resource does not disable parent without "
-          "its own resources (no propagate)",
+          "its own resources (default policy)",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_dynamic_state();
