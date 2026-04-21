@@ -118,18 +118,47 @@ using config_shared = interrupt::root<
                    interrupt::policies<>, flow_38>>;
 } // namespace
 
-TEST_CASE("init enables mcu interrupts", "[manager]") {
+TEST_CASE("init does top-level hal init first", "[manager]") {
+    calls.clear();
+
     auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
-    inited = false;
+    m.init();
+
+    REQUIRE(not calls.empty());
+    CHECK(calls[0] == call::init);
+}
+
+TEST_CASE("init enables mcu interrupts second", "[manager]") {
+    calls.clear();
+
+    auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
+    m.init();
+
+    REQUIRE(calls.size() >= 3);
+    CHECK(calls[1] == call::irq_init);
+    CHECK(calls[2] == call::irq_init);
+}
+
+TEST_CASE("init enables dynamic interrupts third", "[manager]") {
+    calls.clear();
+
+    auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
+    m.init();
+
+    REQUIRE(calls.size() >= 4);
+    CHECK(calls[3] == call::write);
+}
+
+TEST_CASE("init enables mcu interrupts", "[manager]") {
     enabled<33_irq> = false;
     priority<33_irq> = 0;
     enabled<38_irq> = false;
     priority<38_irq> = 0;
 
+    auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
     m.init();
-    CHECK(38_irq == m.max_irq());
 
-    CHECK(inited);
+    CHECK(38_irq == m.max_irq());
     CHECK(enabled<33_irq>);
     CHECK(priority<33_irq> == 34);
     CHECK(enabled<38_irq>);

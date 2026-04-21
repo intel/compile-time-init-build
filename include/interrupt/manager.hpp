@@ -19,9 +19,11 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
 
     void init() const {
         hal_t::init();
-        (Impls::template init<hal_t>(), ...);
+        init_mcu_interrupts();
         dynamic_t::init();
     }
+
+    void init_mcu_interrupts() const { (Impls::template init<hal_t>(), ...); }
 
     constexpr static auto config() {
         return +stdx::ct_format<"interrupt::root<{}>">(

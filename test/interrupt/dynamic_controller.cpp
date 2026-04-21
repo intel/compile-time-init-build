@@ -93,6 +93,14 @@ TEST_CASE("dynamic init enables all fields", "[dynamic controller]") {
                  EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
 }
 
+TEST_CASE("dynamic init minimizes writes", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    calls.clear();
+    dynamic_t::init();
+    CHECK(std::count(calls.cbegin(), calls.cend(), call::write) == 1);
+}
+
 TEST_CASE("control IRQ by name", "[dynamic controller]") {
     using namespace groov::literals;
     reset_dynamic_state();
@@ -170,6 +178,20 @@ TEST_CASE("control IRQ by resource", "[dynamic controller]") {
     REQUIRE(v);
     CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
                  EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+}
+
+TEST_CASE("dynamic enable/disable minimizes writes", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    dynamic_t::init();
+    calls.clear();
+
+    dynamic_t::disable<test_resource_0, test_resource_1, test_resource_2>();
+    CHECK(std::count(calls.cbegin(), calls.cend(), call::write) == 1);
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
 }
 
 TEST_CASE("type control is thread-safe", "[dynamic controller]") {
