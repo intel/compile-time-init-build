@@ -418,12 +418,17 @@ struct dynamic_controller {
     using hal_t = Hal;
     struct mutex_t;
 
-    template <bool Enable = true> static auto init() -> void {
-        using enable_irqs_t =
+    template <bool Enable = true, typename... AlreadyEnabled>
+    static auto init() -> void {
+        using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
                                     detail::has_enable_field>;
+        using enable_irqs_t = boost::mp11::mp_set_difference<
+            potential_enable_irqs_t,
+            stdx::tuple<typename AlreadyEnabled::config_t...>>;
+
         conc::call_in_critical_section<mutex_t>([] {
-            reset_internal_state<Enable, enable_irqs_t>();
+            reset_internal_state<Enable, potential_enable_irqs_t>();
             update(enable_irqs_t{});
         });
     }

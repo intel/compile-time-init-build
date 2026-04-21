@@ -41,7 +41,12 @@ using R_ENABLE = groov::reg<"enable", std::uint32_t, 1234, groov::w::replace,
 using R_STATUS = groov::reg<"status", std::uint32_t, 5678, groov::w::replace,
                             ST_33_0, ST_33_1, ST_33_2, ST_33_2_1, ST_33_2_2>;
 
-using G = groov::group<"test", groov::test::bus<"test">, R_ENABLE, R_STATUS>;
+using EN_38 = groov::field<"38", std::uint8_t, 0, 0>;
+using R_ENABLE_38 =
+    groov::reg<"enable38", std::uint32_t, 5678, groov::w::replace, EN_38>;
+
+using G = groov::group<"test", groov::test::bus<"test">, R_ENABLE, R_STATUS,
+                       R_ENABLE_38>;
 } // namespace
 
 TEST_CASE("manager can dump config", "[manager]") {
@@ -114,7 +119,7 @@ using config_shared = interrupt::root<
                            interrupt::policies<>, flow_33_1>,
         interrupt::sub_irq<"sub_33_2", en_field_t<"33_2">, st_field_t<"33_2">,
                            interrupt::policies<>, flow_33_2>>,
-    interrupt::irq<"irq_38", 38_irq, 39, interrupt::no_field_t,
+    interrupt::irq<"irq_38", 38_irq, 39, stdx::cts_t<"enable38.38"_cts>,
                    interrupt::policies<>, flow_38>>;
 } // namespace
 
@@ -147,6 +152,27 @@ TEST_CASE("init enables dynamic interrupts third", "[manager]") {
 
     REQUIRE(calls.size() >= 4);
     CHECK(calls[3] == call::write);
+}
+
+TEST_CASE("init does not re-enable top-level interrupts by default",
+          "[manager]") {
+    calls.clear();
+
+    auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
+    m.init();
+    REQUIRE(calls.size() == 4);
+    // only the 33 register was written
+}
+
+TEST_CASE("init can re-enable top-level dynamic interrupts", "[manager]") {
+    calls.clear();
+
+    auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
+    m.init<true>();
+    REQUIRE(calls.size() == 5);
+    CHECK(calls[3] == call::write);
+    CHECK(calls[4] == call::write);
+    // 33 and 38 registers were written
 }
 
 TEST_CASE("init enables mcu interrupts", "[manager]") {

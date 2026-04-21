@@ -42,6 +42,7 @@ concept nexus_for_cfg = Config::template has_flows_for<Nexus>;
 
 template <typename Config, nexus_for_cfg<Config>... Nexi>
 struct element_irq_impl : Config {
+    using config_t = Config;
     constexpr static bool active = Config::template active<Nexi...>;
 
     template <typename Hal> static auto init() -> void {
@@ -66,6 +67,7 @@ struct element_irq_impl : Config {
 
 template <typename Config, sub_irq_interface... Subs>
 struct container_irq_impl : Config {
+    using config_t = Config;
     constexpr static bool active = (Subs::active or ...);
 
     template <typename Hal> static auto init() -> void {
