@@ -34,6 +34,8 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
         if constexpr (DynamicEnableTopLevel) {
             dynamic_t::template init<true>();
         } else {
+            // if init_top_level also enabled the top level interrupts, we don't
+            // want to rewrite the enables
             dynamic_t::template init<true, Impls...>();
         }
     }

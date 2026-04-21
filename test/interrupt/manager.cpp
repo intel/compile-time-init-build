@@ -160,8 +160,7 @@ TEST_CASE("init does not re-enable top-level interrupts by default",
 
     auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
     m.init();
-    REQUIRE(calls.size() == 4);
-    // only the 33 register was written
+    REQUIRE(calls.size() == 4); // only the 33 register was written
 }
 
 TEST_CASE("init can re-enable top-level dynamic interrupts", "[manager]") {
@@ -171,8 +170,7 @@ TEST_CASE("init can re-enable top-level dynamic interrupts", "[manager]") {
     m.init<true>();
     REQUIRE(calls.size() == 5);
     CHECK(calls[3] == call::write);
-    CHECK(calls[4] == call::write);
-    // 33 and 38 registers were written
+    CHECK(calls[4] == call::write); // 33 and 38 registers were written
 }
 
 TEST_CASE("init enables mcu interrupts", "[manager]") {
