@@ -34,7 +34,6 @@ TEST_CASE("detect enable_field", "[dynamic controller]") {
 }
 
 namespace {
-using EN_TOP = groov::field<"top", std::uint8_t, 7, 7>;
 using EN0 = groov::field<"0", std::uint8_t, 0, 0>;
 using EN1 = groov::field<"1", std::uint8_t, 1, 1>;
 using EN2 = groov::field<"2", std::uint8_t, 2, 2>;
@@ -42,12 +41,17 @@ using EN2 = groov::field<"2", std::uint8_t, 2, 2>;
 using ST1 = groov::field<"1", std::uint8_t, 1, 1>;
 using ST2 = groov::field<"2", std::uint8_t, 2, 2>;
 
-using R_ENABLE = groov::reg<"enable", std::uint32_t, 1234, groov::w::replace,
-                            EN0, EN1, EN2, EN_TOP>;
+using R_ENABLE =
+    groov::reg<"enable", std::uint32_t, 1234, groov::w::replace, EN0, EN1, EN2>;
 using R_STATUS =
     groov::reg<"status", std::uint32_t, 5678, groov::w::replace, ST1, ST2>;
 
-using G = groov::group<"test", groov::test::bus<"test">, R_ENABLE, R_STATUS>;
+using EN_TOP = groov::field<"top", std::uint8_t, 7, 7>;
+using R_TOP_ENABLE =
+    groov::reg<"enable_top", std::uint32_t, 5678, groov::w::replace, EN_TOP>;
+
+using G = groov::group<"test", groov::test::bus<"test">, R_ENABLE, R_STATUS,
+                       R_TOP_ENABLE>;
 
 using interrupt::operator""_irq;
 
@@ -60,7 +64,8 @@ struct test_resource_1;
 struct test_resource_2;
 
 using config_t = interrupt::root<interrupt::shared_irq<
-    "shared", 0_irq, 0, en_field_t<"top">, interrupt::policies<>,
+    "shared", 0_irq, 0, stdx::cts_t<"enable_top.top"_cts>,
+    interrupt::policies<>,
     interrupt::sub_irq<
         "sub0", en_field_t<"0">, st_field_t<"0">,
         interrupt::policies<interrupt::required_resources<test_resource_0>>,
@@ -89,8 +94,57 @@ TEST_CASE("dynamic init enables all fields", "[dynamic controller]") {
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
+
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
+TEST_CASE("dynamic init refresh all enables", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    dynamic_t::init();
+
+    groov::test::set_value<G>("enable"_r, 0);
+    groov::test::set_value<G>("enable_top"_r, 0);
+    dynamic_t::refresh_all_enables();
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
+
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
+TEST_CASE("dynamic init refresh top level", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    dynamic_t::init();
+
+    groov::test::set_value<G>("enable"_r, 0);
+    groov::test::set_value<G>("enable_top"_r, 0);
+    dynamic_t::refresh_top_level_enables();
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == 0);
+
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
+TEST_CASE("dynamic init minimizes writes", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    calls.clear();
+    dynamic_t::init();
+    CHECK(std::count(calls.cbegin(), calls.cend(), call::write) == 2);
 }
 
 TEST_CASE("control IRQ by name", "[dynamic controller]") {
@@ -101,14 +155,13 @@ TEST_CASE("control IRQ by name", "[dynamic controller]") {
     dynamic_t::disable<"sub1">();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
 
     dynamic_t::enable<"sub1">();
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
 }
 
 TEST_CASE("name control is thread-safe", "[dynamic controller]") {
@@ -123,7 +176,7 @@ TEST_CASE("name control is thread-safe", "[dynamic controller]") {
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == EN2::mask<std::uint32_t>);
 
     auto t3 = std::thread([&] { dynamic_t::enable<"sub0">(); });
     auto t4 = std::thread([&] { dynamic_t::enable<"sub1">(); });
@@ -132,8 +185,8 @@ TEST_CASE("name control is thread-safe", "[dynamic controller]") {
 
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
 }
 
 TEST_CASE("control IRQ by flow", "[dynamic controller]") {
@@ -144,14 +197,13 @@ TEST_CASE("control IRQ by flow", "[dynamic controller]") {
     dynamic_t::disable<test_flow_1_t>();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
 
     dynamic_t::enable<test_flow_1_t>();
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
 }
 
 TEST_CASE("control IRQ by resource", "[dynamic controller]") {
@@ -162,14 +214,27 @@ TEST_CASE("control IRQ by resource", "[dynamic controller]") {
     dynamic_t::disable<test_resource_0>();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
-                 EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
 
     dynamic_t::enable<test_resource_0>();
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
+}
+
+TEST_CASE("dynamic enable/disable minimizes writes", "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+    dynamic_t::init();
+    calls.clear();
+
+    dynamic_t::disable<test_resource_0, test_resource_1, test_resource_2>();
+    CHECK(std::count(calls.cbegin(), calls.cend(), call::write) == 1);
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == 0);
 }
 
 TEST_CASE("type control is thread-safe", "[dynamic controller]") {
@@ -184,7 +249,7 @@ TEST_CASE("type control is thread-safe", "[dynamic controller]") {
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN1::mask<std::uint32_t>));
+    CHECK(*v == EN1::mask<std::uint32_t>);
 
     auto t3 = std::thread([&] { dynamic_t::enable<test_resource_0>(); });
     auto t4 = std::thread([&] { dynamic_t::enable<test_resource_2>(); });
@@ -193,8 +258,8 @@ TEST_CASE("type control is thread-safe", "[dynamic controller]") {
 
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
 }
 
 TEST_CASE("IRQ is enabled only when all its contingencies are enabled",
@@ -225,13 +290,13 @@ TEST_CASE("disabling resource disables any IRQs that require it",
     dynamic_t::disable<test_resource_1>();
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t>));
+    CHECK(*v == EN0::mask<std::uint32_t>);
 
     dynamic_t::enable<test_resource_1>();
     v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
-    CHECK(*v == (EN_TOP::mask<std::uint32_t> | EN0::mask<std::uint32_t> |
-                 EN1::mask<std::uint32_t> | EN2::mask<std::uint32_t>));
+    CHECK(*v == (EN0::mask<std::uint32_t> | EN1::mask<std::uint32_t> |
+                 EN2::mask<std::uint32_t>));
 }
 
 namespace {

@@ -51,6 +51,9 @@ using get_enable_field_t =
                                 enable_fields_t, Irq>;
 
 template <typename Root>
+using children_t = std::remove_cvref_t<decltype(Root::children)>;
+
+template <typename Root>
 using descendants_t = std::remove_cvref_t<decltype(Root::descendants)>;
 
 template <typename Root, template <typename...> typename F,
@@ -350,8 +353,22 @@ struct dynamic_controller {
         }
     }
 
+    constexpr static auto force_write = [](auto reg, auto &cached_value,
+                                           auto new_value) {
+        cached_value = new_value;
+        Hal::write(reg, cached_value);
+    };
+
+    constexpr static auto write_if_changed = [](auto reg, auto &cached_value,
+                                                auto new_value) {
+        if (new_value != std::exchange(cached_value, new_value)) {
+            Hal::write(reg, cached_value);
+        }
+    };
+
     // update cached values and write the changed registers
-    template <template <typename...> typename L, typename... Irqs>
+    template <auto WriteFn = write_if_changed,
+              template <typename...> typename L, typename... Irqs>
     static auto update(L<Irqs...>) -> void {
         constexpr auto by_registers =
             stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
@@ -371,12 +388,18 @@ struct dynamic_controller {
 
                     auto &cached_value = cached_enable<reg_t>;
                     auto new_value = (cached_value & ~mask) | value;
-                    if (new_value != std::exchange(cached_value, new_value)) {
-                        Hal::write(r, cached_value);
-                    }
+                    WriteFn(r, cached_value, new_value);
                 }
             },
             by_registers);
+    }
+
+    template <template <typename> typename F>
+    static auto refresh_enables() -> void {
+        using update_irqs_t =
+            boost::mp11::mp_copy_if<F<Root>, detail::has_enable_field>;
+        conc::call_in_critical_section<mutex_t>(
+            [] { update<force_write>(update_irqs_t{}); });
     }
 
     // reset: mark all resources, flows and named irqs enabled
@@ -418,15 +441,25 @@ struct dynamic_controller {
     using hal_t = Hal;
     struct mutex_t;
 
-    template <bool Enable = true> static auto init() -> void {
-        using enable_irqs_t =
+    template <bool Enable = true, typename... AlreadyEnabled>
+    static auto init() -> void {
+        using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
                                     detail::has_enable_field>;
+        using enable_irqs_t = boost::mp11::mp_set_difference<
+            potential_enable_irqs_t,
+            stdx::tuple<typename AlreadyEnabled::config_t...>>;
+
         conc::call_in_critical_section<mutex_t>([] {
-            reset_internal_state<Enable, enable_irqs_t>();
+            reset_internal_state<Enable, potential_enable_irqs_t>();
             update(enable_irqs_t{});
         });
     }
+
+    constexpr static auto refresh_top_level_enables =
+        refresh_enables<detail::children_t>;
+    constexpr static auto refresh_all_enables =
+        refresh_enables<detail::descendants_t>;
 
     template <typename... Ts, typename PropagatePolicy = detail::no_propagate_t>
     static auto enable(PropagatePolicy = {}) -> void {

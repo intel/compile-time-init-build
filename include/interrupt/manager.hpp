@@ -17,10 +17,27 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
     using hal_t = typename Dynamic::hal_t;
     using dynamic_t = Dynamic;
 
-    void init() const {
-        hal_t::init();
+    template <bool DynamicEnableTopLevel = false> static auto init() -> void {
+        init_mcu();
+        init_top_level();
+        init_dynamic<DynamicEnableTopLevel>();
+    }
+
+    static auto init_mcu() -> void { hal_t::init(); }
+
+    static auto init_top_level() -> void {
         (Impls::template init<hal_t>(), ...);
-        dynamic_t::init();
+    }
+
+    template <bool DynamicEnableTopLevel = false>
+    static auto init_dynamic() -> void {
+        if constexpr (DynamicEnableTopLevel) {
+            dynamic_t::template init<true>();
+        } else {
+            // if init_top_level also enabled the top level interrupts, we don't
+            // want to rewrite the enables
+            dynamic_t::template init<true, Impls...>();
+        }
     }
 
     constexpr static auto config() {
@@ -28,7 +45,7 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
             detail::config_string_for<Impls...>());
     }
 
-    template <irq_num_t Number> inline void run() const {
+    template <irq_num_t Number> static auto run() -> void {
         using M = stdx::type_map<stdx::vt_pair<Impls::irq_number, Impls>...>;
         using irq_t = stdx::value_lookup_t<M, Number>;
 
@@ -37,7 +54,7 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
         }
     }
 
-    [[nodiscard]] constexpr auto max_irq() const -> irq_num_t {
+    [[nodiscard]] constexpr static auto max_irq() -> irq_num_t {
         return static_cast<irq_num_t>(
             std::max({stdx::to_underlying(Impls::irq_number)...}));
     }
