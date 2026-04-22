@@ -17,8 +17,11 @@ namespace cib {
 template <typename T> using extract_service_tag = typename T::Service;
 
 namespace detail {
+template <typename T, stdx::ct_string Name>
+concept name_matches = T::name == Name;
+
 template <stdx::ct_string Name> struct matching_name {
-    template <typename T> using fn = std::bool_constant<T::name == Name>;
+    template <typename T> using fn = std::bool_constant<name_matches<T, Name>>;
 };
 
 template <typename Exports, typename T>
