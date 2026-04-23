@@ -13,6 +13,7 @@
 #include <conc/concurrency.hpp>
 
 #include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/function.hpp>
 #include <boost/mp11/list.hpp>
 #include <boost/mp11/utility.hpp>
 
@@ -175,7 +176,12 @@ template <typename Cfg, typename Rsrcs>
     }
     return (resource_enables & resources_bs) == resources_bs;
 }
+} // namespace detail
 
+// Whether to propagate resource/flow enables & disables
+// Note: it only makes sense to propagate up: children will not be run anyway if
+// their parents are not run, so disabling a parent automatically disables
+// children
 struct propagate_t {
     template <typename Irqs, typename Resources>
     using resource_map_t = boost::mp11::mp_apply<
@@ -186,9 +192,6 @@ struct propagate_t {
     using flow_map_t = boost::mp11::mp_apply<
         stdx::type_map,
         boost::mp11::mp_transform_q<detail::with_flow_propagated<Irqs>, Flows>>;
-
-    template <typename Irq> using resources_t = get_all_resources_t<Irq>;
-    template <typename Irq> using flows_t = get_all_flows_t<Irq>;
 };
 
 struct no_propagate_t {
@@ -201,65 +204,64 @@ struct no_propagate_t {
     using flow_map_t = boost::mp11::mp_apply<
         stdx::type_map,
         boost::mp11::mp_transform_q<detail::with_flow<Irqs>, Flows>>;
-
-    template <typename Irq> using resources_t = get_resources_t<Irq>;
-    template <typename Irq> using flows_t = get_flows_t<Irq>;
 };
-} // namespace detail
 
-// Whether to propagate resource/flow enables & disables
-// Note: it only makes sense to propagate up: children will not be run anyway if
-// their parents are not run, so disabling a parent automatically disables
-// children
-constexpr inline auto propagate = detail::propagate_t{};
-constexpr inline auto no_propagate = detail::no_propagate_t{};
+constexpr inline auto propagate = propagate_t{};
+constexpr inline auto no_propagate = no_propagate_t{};
 
-struct error_unknowns {
-    template <typename T> [[noreturn]] constexpr static auto enable() {
+// Whether to error on unknown flow/resource enable/disable
+struct error_unknowns_t {
+    template <typename T> [[noreturn]] constexpr static auto enable() -> void {
         STATIC_ASSERT(false, "Can't enable flow ({}) not in config!", T);
         stdx::unreachable();
     }
-    template <typename T> [[noreturn]] constexpr static auto disable() {
+    template <typename T> [[noreturn]] constexpr static auto disable() -> void {
         STATIC_ASSERT(false, "Can't disable flow ({}) not in config!", T);
         stdx::unreachable();
     }
 };
-struct ignore_unknowns {
-    template <typename> constexpr static auto enable() {}
-    template <typename> constexpr static auto disable() {}
+struct ignore_unknowns_t {
+    template <typename> constexpr static auto enable() -> void {}
+    template <typename> constexpr static auto disable() -> void {}
 };
 
-namespace detail {
-struct unspecified_unknowns {};
-} // namespace detail
-
-template <typename...>
-constexpr inline auto injected_unknown_policy = detail::unspecified_unknowns{};
+constexpr inline auto error_unknowns = error_unknowns_t{};
+constexpr inline auto ignore_unknowns = ignore_unknowns_t{};
 
 namespace detail {
-template <typename T, typename DefaultPolicy, typename... DummyArgs>
-constexpr auto handle_unknown_enable() -> void {
-    auto &policy = injected_unknown_policy<DummyArgs...>;
-    if constexpr (requires { policy.template enable<T>(); }) {
-        policy.template enable<T>();
-    } else {
-        DefaultPolicy::template enable<T>;
-    }
-}
+template <typename Default, template <typename> typename Pred, typename... Ps>
+using select_policy_t = boost::mp11::mp_eval_if_not<
+    boost::mp11::mp_any<Pred<Ps>...>, Default, boost::mp11::mp_first,
+    boost::mp11::mp_copy_if<boost::mp11::mp_list<Ps...>, Pred>>;
 
-template <typename T, typename DefaultPolicy, typename... DummyArgs>
-constexpr auto handle_unknown_disable() -> void {
-    auto &policy = injected_unknown_policy<DummyArgs...>;
-    if constexpr (requires { policy.template disable<T>(); }) {
-        policy.template disable<T>();
-    } else {
-        DefaultPolicy::template disable<T>;
-    }
-}
+template <typename T>
+concept unknown_policylike = requires {
+    T::template enable<stdx::cts_t<"">>();
+    T::template disable<stdx::cts_t<"">>();
+};
+
+template <typename T>
+using is_unknown_policy = std::bool_constant<unknown_policylike<T>>;
+
+template <typename Default, typename... Ps>
+using select_unknown_policy_t =
+    select_policy_t<Default, is_unknown_policy, Ps...>;
+
+template <typename T>
+concept propagate_policylike = requires {
+    typename T::template resource_map_t<stdx::type_list<>, stdx::type_bitset<>>;
+    typename T::template flow_map_t<stdx::type_list<>, stdx::type_bitset<>>;
+};
+
+template <typename T>
+using is_propagate_policy = std::bool_constant<propagate_policylike<T>>;
+
+template <typename Default, typename... Ps>
+using select_propagate_policy_t =
+    select_policy_t<Default, is_propagate_policy, Ps...>;
 } // namespace detail
 
-template <typename Root, detail::dynamic_hal_for<Root> Hal,
-          typename UnknownPolicy = error_unknowns>
+template <typename Root, detail::dynamic_hal_for<Root> Hal>
 struct dynamic_controller {
   private:
     // keep track of which resources/flows/irqs have been manually
@@ -274,7 +276,8 @@ struct dynamic_controller {
     constinit static inline irq_names_t named_enables{};
 
     // update bitsets as necessary
-    template <typename T> static auto enable_one() -> void {
+    template <typename T, detail::unknown_policylike UP>
+    static auto enable_one() -> void {
         if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
             resource_enables.template set<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
@@ -282,11 +285,12 @@ struct dynamic_controller {
         } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
             named_enables.template set<T>();
         } else {
-            detail::handle_unknown_enable<T, UnknownPolicy>();
+            UP::template enable<T>();
         }
     }
 
-    template <typename T> static auto disable_one() -> void {
+    template <typename T, detail::unknown_policylike UP>
+    static auto disable_one() -> void {
         if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
             resource_enables.template reset<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
@@ -294,7 +298,7 @@ struct dynamic_controller {
         } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
             named_enables.template reset<T>();
         } else {
-            detail::handle_unknown_disable<T, UnknownPolicy>();
+            UP::template disable<T>();
         }
     }
 
@@ -461,42 +465,56 @@ struct dynamic_controller {
     constexpr static auto refresh_all_enables =
         refresh_enables<detail::descendants_t>;
 
-    template <typename... Ts, typename PropagatePolicy = detail::no_propagate_t>
-    static auto enable(PropagatePolicy = {}) -> void {
+    template <typename... Ts, typename... Policies>
+    static auto enable(Policies...) -> void {
         conc::call_in_critical_section<mutex_t>([] {
-            constexpr auto affected_irqs =
-                compute_affected_irqs<PropagatePolicy, Ts...>();
-            (enable_one<Ts>(), ...);
+            constexpr auto affected_irqs = compute_affected_irqs<
+                detail::select_propagate_policy_t<no_propagate_t, Policies...>,
+                Ts...>();
+            (enable_one<Ts, detail::select_unknown_policy_t<error_unknowns_t,
+                                                            Policies...>>(),
+             ...);
             update(affected_irqs);
         });
     }
-    template <typename... Ts, typename PropagatePolicy = detail::no_propagate_t>
-    static auto disable(PropagatePolicy = {}) -> void {
+    template <typename... Ts, typename... Policies>
+    static auto disable(Policies...) -> void {
         conc::call_in_critical_section<mutex_t>([] {
-            constexpr auto affected_irqs =
-                compute_affected_irqs<PropagatePolicy, Ts...>();
-            (disable_one<Ts>(), ...);
+            constexpr auto affected_irqs = compute_affected_irqs<
+                detail::select_propagate_policy_t<no_propagate_t, Policies...>,
+                Ts...>();
+            (disable_one<Ts, detail::select_unknown_policy_t<error_unknowns_t,
+                                                             Policies...>>(),
+             ...);
             update(affected_irqs);
         });
     }
 
-    template <stdx::ct_string... IrqNames> static auto enable() -> void {
+    template <stdx::ct_string... IrqNames, typename... Policies>
+    static auto enable(Policies...) -> void {
         using affected_irqs_t =
             boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
                 detail::descendants_t<Root>,
                 detail::has_name<stdx::cts_t<IrqNames>>>...>;
         conc::call_in_critical_section<mutex_t>([] {
-            (enable_one<stdx::cts_t<IrqNames>>(), ...);
+            (enable_one<stdx::cts_t<IrqNames>,
+                        detail::select_unknown_policy_t<error_unknowns_t,
+                                                        Policies...>>(),
+             ...);
             update(affected_irqs_t{});
         });
     }
-    template <stdx::ct_string... IrqNames> static auto disable() -> void {
+    template <stdx::ct_string... IrqNames, typename... Policies>
+    static auto disable(Policies...) -> void {
         using affected_irqs_t =
             boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
                 detail::descendants_t<Root>,
                 detail::has_name<stdx::cts_t<IrqNames>>>...>;
         conc::call_in_critical_section<mutex_t>([] {
-            (disable_one<stdx::cts_t<IrqNames>>(), ...);
+            (disable_one<stdx::cts_t<IrqNames>,
+                         detail::select_unknown_policy_t<error_unknowns_t,
+                                                         Policies...>>(),
+             ...);
             update(affected_irqs_t{});
         });
     }
