@@ -4,6 +4,8 @@
 
 #include <conc/concurrency.hpp>
 
+#include <boost/mp11/algorithm.hpp>
+
 namespace interrupt {
 
 namespace detail {
@@ -35,6 +37,11 @@ template <typename Field> struct clear_field {
 template <> struct clear_field<no_field_t> {
     template <typename...> consteval static auto with_hal() -> void {}
 };
+
+template <typename... Nexi> struct flow_is_active {
+    template <typename T>
+    using fn = std::bool_constant<(... or Nexi::template service_v<T>.active)>;
+};
 } // namespace detail
 
 template <typename Nexus, typename Config>
@@ -44,6 +51,10 @@ template <typename Config, nexus_for_cfg<Config>... Nexi>
 struct element_irq_impl : Config {
     using config_t = Config;
     constexpr static bool active = Config::template active<Nexi...>;
+
+    using active_flows_t =
+        boost::mp11::mp_copy_if_q<typename Config::all_flows_t,
+                                  detail::flow_is_active<Nexi...>>;
 
     template <typename Hal> static auto init() -> void {
         Config::template enable<active, Hal>();
@@ -69,6 +80,9 @@ template <typename Config, sub_irq_interface... Subs>
 struct container_irq_impl : Config {
     using config_t = Config;
     constexpr static bool active = (Subs::active or ...);
+
+    using active_flows_t = boost::mp11::mp_unique<
+        boost::mp11::mp_append<typename Subs::active_flows_t...>>;
 
     template <typename Hal> static auto init() -> void {
         Config::template enable<active, Hal>();
