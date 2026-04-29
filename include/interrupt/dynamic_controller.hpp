@@ -345,9 +345,6 @@ struct dynamic_controller {
 
         auto const on_by_flows = [] {
             constexpr auto flows_bs = flows_t{typename Irq::all_flows_t{}};
-            if constexpr (flows_bs.none()) {
-                return true;
-            }
             return (flow_enables & flows_bs) != flows_t{};
         }();
 
@@ -408,11 +405,15 @@ struct dynamic_controller {
 
     // reset: mark all resources, flows and named irqs enabled
     // and clear all cached state
-    template <bool Enable, typename IrqList>
+    template <bool Enable, typename ActiveFlows, typename IrqList>
     static auto reset_internal_state() -> void {
         if constexpr (Enable) {
             resource_enables = resources_t{stdx::all_bits};
-            flow_enables = flows_t{stdx::all_bits};
+            if constexpr (std::is_void_v<ActiveFlows>) {
+                flow_enables = flows_t{stdx::all_bits};
+            } else {
+                flow_enables = flows_t{ActiveFlows{}};
+            }
             named_enables = irq_names_t{stdx::all_bits};
         } else {
             resource_enables.reset();
@@ -429,7 +430,12 @@ struct dynamic_controller {
                     decltype(detail::register_for<
                              typename I::enable_field_t>::template fn<Hal>());
                 if constexpr (not is_no_register_v<reg_t>) {
+                    // if we are enabling, the cached (register) value should
+                    // be all OFF, ready for updating
                     cached_enable<reg_t> = register_t<reg_t>{};
+
+                    // if we are NOT enabling, the cached (register) value
+                    // should be all ON, ready for updating
                     if constexpr (not Enable) {
                         auto value = register_t<reg_t>{};
                         auto &mask = cached_enable<reg_t>;
@@ -445,7 +451,8 @@ struct dynamic_controller {
     using hal_t = Hal;
     struct mutex_t;
 
-    template <bool Enable = true, typename... AlreadyEnabled>
+    template <bool Enable = true, typename ActiveFlows = void,
+              typename... AlreadyEnabled>
     static auto init() -> void {
         using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
@@ -455,7 +462,8 @@ struct dynamic_controller {
             stdx::tuple<typename AlreadyEnabled::config_t...>>;
 
         conc::call_in_critical_section<mutex_t>([] {
-            reset_internal_state<Enable, potential_enable_irqs_t>();
+            reset_internal_state<Enable, ActiveFlows,
+                                 potential_enable_irqs_t>();
             update(enable_irqs_t{});
         });
     }
