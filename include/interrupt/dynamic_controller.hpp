@@ -163,18 +163,29 @@ concept dynamic_hal_for =
             value);
     };
 
-template <typename Cfg, typename Rsrcs>
-[[nodiscard]] auto on_by_resource(Rsrcs const &resource_enables) -> bool {
-    constexpr auto resources_bs = Rsrcs{typename Cfg::resources_t{}};
-    if constexpr (resources_bs.none() and
-                  Cfg::resource_children_t::size() > 0) {
-        return stdx::any_of(
-            [&]<typename Child>(Child) {
-                return on_by_resource<Child>(resource_enables);
-            },
-            typename Cfg::resource_children_t{});
-    }
-    return (resource_enables & resources_bs) == resources_bs;
+template <typename Cfg, typename Rsrcs, typename Flows>
+[[nodiscard]] auto recursively_on(Rsrcs const &resource_enables,
+                                  Flows const &flow_enables) -> bool {
+    // An IRQ is on if:
+    // ANY of its flows are on and ALL of its resources are on
+    auto const on_per_se = [&] {
+        constexpr auto resources_bs = Rsrcs{typename Cfg::resources_t{}};
+        constexpr auto flows_bs = Flows{typename Cfg::flows_t{}};
+
+        auto const on_by_flows = (flow_enables & flows_bs).any();
+        auto const on_by_resources =
+            (resource_enables & resources_bs) == resources_bs;
+        return (on_by_flows and on_by_resources);
+    }();
+
+    // or ANY of its children are on (by the same reasoning)
+    auto const on_by_children = stdx::any_of(
+        [&]<typename Child>(Child) {
+            return recursively_on<Child>(resource_enables, flow_enables);
+        },
+        Cfg::children);
+
+    return on_per_se or on_by_children;
 }
 } // namespace detail
 
@@ -343,13 +354,8 @@ struct dynamic_controller {
             Hal::template mask<Reg, typename Irq::enable_field_t>;
         mask |= field_mask;
 
-        auto const on_by_flows = [] {
-            constexpr auto flows_bs = flows_t{typename Irq::all_flows_t{}};
-            return (flow_enables & flows_bs) != flows_t{};
-        }();
-
-        if (detail::on_by_resource<Irq>(resource_enables) and on_by_flows and
-            named_enables[stdx::type_identity_v<typename Irq::name_t>]) {
+        if (named_enables[stdx::type_identity_v<typename Irq::name_t>] and
+            detail::recursively_on<Irq>(resource_enables, flow_enables)) {
             new_value |= field_mask;
         }
     }
@@ -403,12 +409,17 @@ struct dynamic_controller {
             [] { update<force_write>(update_irqs_t{}); });
     }
 
-    // reset: mark all resources, flows and named irqs enabled
+    // reset: mark resources, flows and all named irqs enabled
     // and clear all cached state
-    template <bool Enable, typename ActiveFlows, typename IrqList>
+    template <bool Enable, typename ActiveFlows, typename ActiveResources,
+              typename IrqList>
     static auto reset_internal_state() -> void {
         if constexpr (Enable) {
-            resource_enables = resources_t{stdx::all_bits};
+            if constexpr (std::is_void_v<ActiveResources>) {
+                resource_enables = resources_t{stdx::all_bits};
+            } else {
+                resource_enables = resources_t{ActiveResources{}};
+            }
             if constexpr (std::is_void_v<ActiveFlows>) {
                 flow_enables = flows_t{stdx::all_bits};
             } else {
@@ -452,7 +463,7 @@ struct dynamic_controller {
     struct mutex_t;
 
     template <bool Enable = true, typename ActiveFlows = void,
-              typename... AlreadyEnabled>
+              typename ActiveResources = void, typename... AlreadyEnabled>
     static auto init() -> void {
         using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
@@ -462,7 +473,7 @@ struct dynamic_controller {
             stdx::tuple<typename AlreadyEnabled::config_t...>>;
 
         conc::call_in_critical_section<mutex_t>([] {
-            reset_internal_state<Enable, ActiveFlows,
+            reset_internal_state<Enable, ActiveFlows, ActiveResources,
                                  potential_enable_irqs_t>();
             update(enable_irqs_t{});
         });
