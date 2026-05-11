@@ -6,6 +6,7 @@
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/type_traits.hpp>
+#include <stdx/udls.hpp>
 #include <stdx/utility.hpp>
 
 #include <algorithm>
@@ -31,15 +32,18 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
 
     template <bool DynamicEnableTopLevel = false>
     static auto init_dynamic() -> void {
+        using namespace stdx::literals;
         using active_flows_t =
             boost::mp11::mp_append<typename Impls::active_flows_t...>;
 
         if constexpr (DynamicEnableTopLevel) {
-            dynamic_t::template init<true, active_flows_t>();
+            dynamic_t::template init<"enable"_true, active_flows_t,
+                                     stdx::type_list<>>();
         } else {
             // if init_top_level also enabled the top level interrupts, we don't
             // want to rewrite the enables
-            dynamic_t::template init<true, active_flows_t, Impls...>();
+            dynamic_t::template init<"enable"_true, active_flows_t,
+                                     stdx::type_list<>, Impls...>();
         }
     }
 

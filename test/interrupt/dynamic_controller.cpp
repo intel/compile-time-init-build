@@ -135,35 +135,33 @@ TEST_CASE("dynamic init does not enable with no flows",
 }
 
 namespace {
-struct inactive_test_flow_1_t : std::false_type {};
-
-using inactiveflow_config_t = interrupt::root<interrupt::shared_irq<
+using inactive_config_t = interrupt::root<interrupt::shared_irq<
     "shared", 0_irq, 0, stdx::cts_t<"enable_top.top"_cts>,
     interrupt::policies<>,
     interrupt::sub_irq<
         "sub0", en_field_t<"0">, st_field_t<"0">,
         interrupt::policies<interrupt::required_resources<test_resource_0>>,
         test_flow_0_t>,
-    interrupt::sub_irq<
-        "sub1", en_field_t<"1">, st_field_t<"1">,
-        interrupt::policies<interrupt::required_resources<test_resource_1>>,
-        inactive_test_flow_1_t>>>;
+    interrupt::sub_irq<"sub1", en_field_t<"1">, st_field_t<"1">,
+                       interrupt::policies<interrupt::required_resources<
+                           test_resource_0, test_resource_1>>,
+                       test_flow_1_t, test_flow_2_t>>>;
 
-using inactiveflow_dynamic_t =
-    interrupt::dynamic_controller<inactiveflow_config_t, test_hal<G>>;
+using inactive_dynamic_t =
+    interrupt::dynamic_controller<inactive_config_t, test_hal<G>>;
 
-auto reset_inactiveflow_dynamic_state() -> void {
-    inactiveflow_dynamic_t::init<false>();
+auto reset_inactive_dynamic_state() -> void {
+    inactive_dynamic_t::init<false>();
     groov::test::reset_store<G>();
 }
 } // namespace
 
-TEST_CASE("dynamic init does not enable with inactive flow",
+TEST_CASE("dynamic init does not enable with all flows inactive",
           "[dynamic controller]") {
     using namespace groov::literals;
-    reset_inactiveflow_dynamic_state();
+    reset_inactive_dynamic_state();
     using active_flows_t = boost::mp11::mp_list<test_flow_0_t>;
-    inactiveflow_dynamic_t::init<true, active_flows_t>();
+    inactive_dynamic_t::init<true, active_flows_t>();
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
@@ -172,6 +170,38 @@ TEST_CASE("dynamic init does not enable with inactive flow",
     v = groov::test::get_value<G>("enable_top"_r);
     REQUIRE(v);
     CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
+TEST_CASE("dynamic init does not enable with any resource inactive",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_inactive_dynamic_state();
+    using active_flows_t = boost::mp11::mp_list<test_flow_0_t, test_flow_1_t>;
+    inactive_dynamic_t::init<true, active_flows_t,
+                             stdx::type_list<test_resource_0>>();
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    REQUIRE(v);
+    CHECK(*v == EN0::mask<std::uint32_t>);
+
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
+TEST_CASE("dynamic init does not enable with all children inactive",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_inactive_dynamic_state();
+    using active_flows_t = boost::mp11::mp_list<test_flow_0_t>;
+    inactive_dynamic_t::init<true, active_flows_t,
+                             stdx::type_list<test_resource_1>>();
+
+    auto v = groov::test::get_value<G>("enable"_r);
+    CHECK(not v);
+
+    v = groov::test::get_value<G>("enable_top"_r);
+    CHECK(not v);
 }
 
 TEST_CASE("dynamic init refresh all enables", "[dynamic controller]") {
