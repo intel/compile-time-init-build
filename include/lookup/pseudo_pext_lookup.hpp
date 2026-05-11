@@ -6,6 +6,7 @@
 
 #include <stdx/bit.hpp>
 #include <stdx/bitset.hpp>
+#include <stdx/iterator.hpp>
 #include <stdx/utility.hpp>
 
 #include <algorithm>
@@ -417,7 +418,9 @@ struct pseudo_pext_lookup {
                 return s;
             }();
 
-            using lookup_idx_t = detail::uint_for_<storage.size()>;
+            constexpr auto storage_size =
+                stdx::ct_capacity_v<decltype(storage)>;
+            using lookup_idx_t = detail::uint_for_<storage_size>;
             constexpr auto lookup_table =
                 [&]() -> std::array<lookup_idx_t, lookup_table_size> {
                 std::array<lookup_idx_t, lookup_table_size> t{};
