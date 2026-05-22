@@ -50,8 +50,8 @@ using namespace msg;
 using my_field_spec = field<"my field", std::uint32_t>;
 
 // these two declarations specify the same locations
-using my_field1 = my_field_spec::located_at<{1_dw, 23_msb, 20_lsb}>;
-using my_field2 = my_field_spec::located_at<{55_msb, 52_lsb}>;
+using my_field1 = my_field_spec::located<at{1_dw, 23_msb, 20_lsb}>;
+using my_field2 = my_field_spec::located<at{55_msb, 52_lsb}>;
 ----
 The 32-bit word offset in storage may be omitted in favour of using "raw" bit
 positions, according to convention.
