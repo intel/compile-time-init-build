@@ -61,15 +61,13 @@ def main():
     args = parse_cmdline()
 
     with open(args.output, "w") as f:
-        f.write(
-            """#pragma once
+        f.write("""#pragma once
 
 #include <array>
 #include <cstdint>
 #include <utility>
 
-"""
-        )
+""")
         gen_table(
             args.size,
             args.type,

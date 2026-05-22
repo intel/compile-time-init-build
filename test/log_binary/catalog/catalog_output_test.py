@@ -1,7 +1,9 @@
+import importlib.util
 import json
-import log_decode as decode
+import sys
 from pathlib import Path
 
+import log_decode as decode
 
 catalog_output = Path("./catalog_test.bin")
 json_filename = Path("./strings.json")
@@ -35,13 +37,15 @@ def test_files_exist():
     assert json_filename.is_file()
 
 
-def test_binary_logs():
-    try:
-        import clang.cindex
+def module_available(name):
+    return (name in sys.modules) or (importlib.util.find_spec(name) is not None)
 
+
+def test_binary_logs():
+    if module_available("clang"):
         expected_lines.add("TRACE [default] Scoped enum argument: VAL_E1")
         expected_lines.add("TRACE [default] Unscoped enum argument: VAL_E2")
-    except ModuleNotFoundError:
+    else:
         expected_lines.add(
             "TRACE [default] Scoped enum argument: static_cast<ns::E1>(19)"
         )

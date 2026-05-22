@@ -1,8 +1,7 @@
-from ctypes import LittleEndianStructure, c_uint32, c_uint64, sizeof
-from functools import partial
 import itertools
 import struct
-
+from ctypes import LittleEndianStructure, c_uint32, c_uint64, sizeof
+from functools import partial
 
 encoding_reader = {
     "encode_u32": lambda reader: bytes(itertools.islice(reader, 4)),
@@ -67,7 +66,7 @@ def read_struct(struct, reader):
 
 
 class Short32:
-    def __init__(self, reader, messages, modules, db):
+    def __init__(self, reader, messages, *_):
         self.struct = read_struct(Short32Struct, reader)
         assert (
             self.struct.id in messages
@@ -79,7 +78,7 @@ class Short32:
 
 
 class Short64:
-    def __init__(self, reader, messages, modules, db):
+    def __init__(self, reader, messages, *_):
         self.struct = read_struct(Short64Struct, reader)
         assert (
             self.struct.id in messages
@@ -148,5 +147,5 @@ class Catalog:
 
     def __str__(self):
         return (
-            f'{self.severity} [{self.module}] {self.msg_spec["msg"].format(*self.args)}'
+            f"{self.severity} [{self.module}] {self.msg_spec['msg'].format(*self.args)}"
         )
