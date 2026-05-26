@@ -1,6 +1,7 @@
 #pragma once
 
 #include <interrupt/concepts.hpp>
+#include <interrupt/policies.hpp>
 
 #include <stdx/bitset.hpp>
 #include <stdx/concepts.hpp>
@@ -162,31 +163,6 @@ concept dynamic_hal_for =
                 template fn<Hal>(),
             value);
     };
-
-template <typename Cfg, typename Rsrcs, typename Flows>
-[[nodiscard]] auto recursively_on(Rsrcs const &resource_enables,
-                                  Flows const &flow_enables) -> bool {
-    // An IRQ is on if:
-    // ANY of its flows are on and ALL of its resources are on
-    auto const on_per_se = [&] {
-        constexpr auto resources_bs = Rsrcs{typename Cfg::resources_t{}};
-        constexpr auto flows_bs = Flows{typename Cfg::flows_t{}};
-
-        auto const on_by_flows = (flow_enables & flows_bs).any();
-        auto const on_by_resources =
-            (resource_enables & resources_bs) == resources_bs;
-        return (on_by_flows and on_by_resources);
-    }();
-
-    // or ANY of its children are on (by the same reasoning)
-    auto const on_by_children = stdx::any_of(
-        [&]<typename Child>(Child) {
-            return recursively_on<Child>(resource_enables, flow_enables);
-        },
-        Cfg::children);
-
-    return on_per_se or on_by_children;
-}
 } // namespace detail
 
 // Whether to propagate resource/flow enables & disables
@@ -272,7 +248,8 @@ using select_propagate_policy_t =
     select_policy_t<Default, is_propagate_policy, Ps...>;
 } // namespace detail
 
-template <typename Root, detail::dynamic_hal_for<Root> Hal>
+template <typename Root, detail::dynamic_hal_for<Root> Hal,
+          typename EnablePolicy = dynamic_enable_policy>
 struct dynamic_controller {
   private:
     // keep track of which resources/flows/irqs have been manually
@@ -347,16 +324,18 @@ struct dynamic_controller {
         return affected_irqs_t{};
     }
 
-    // compute changing value/mask for register
-    template <typename Reg, typename Irq, typename T>
-    static auto compute_register(T &new_value, T &mask) -> void {
-        constexpr auto field_mask =
-            Hal::template mask<Reg, typename Irq::enable_field_t>;
-        mask |= field_mask;
+    // register mask for irq
+    template <typename Reg, typename Irq>
+    consteval static auto mask_for() -> register_t<Reg> {
+        return Hal::template mask<Reg, typename Irq::enable_field_t>;
+    }
 
-        if (named_enables[stdx::type_identity_v<typename Irq::name_t>] and
-            detail::recursively_on<Irq>(resource_enables, flow_enables)) {
-            new_value |= field_mask;
+    // compute value for register
+    template <typename Reg, typename Irq, typename T>
+    static auto compute_register(T &new_value) -> void {
+        if (EnablePolicy::template is_on<Irq>(named_enables, resource_enables,
+                                              flow_enables)) {
+            new_value |= mask_for<Reg, Irq>();
         }
     }
 
@@ -388,10 +367,12 @@ struct dynamic_controller {
                 if constexpr (not is_no_register_v<decltype(r)>) {
 
                     using reg_t = decltype(r);
-                    auto mask = register_t<reg_t>{};
+                    constexpr auto mask =
+                        (mask_for<reg_t, I>() | ... | mask_for<reg_t, Is>());
+
                     auto value = register_t<reg_t>{};
-                    (compute_register<reg_t, I>(value, mask), ...,
-                     compute_register<reg_t, Is>(value, mask));
+                    (compute_register<reg_t, I>(value), ...,
+                     compute_register<reg_t, Is>(value));
 
                     auto &cached_value = cached_enable<reg_t>;
                     auto new_value = (cached_value & ~mask) | value;
@@ -448,10 +429,12 @@ struct dynamic_controller {
                     // if we are NOT enabling, the cached (register) value
                     // should be all ON, ready for updating
                     if constexpr (not Enable) {
+                        cached_enable<reg_t> = (mask_for<reg_t, I>() | ... |
+                                                mask_for<reg_t, Is>());
+
                         auto value = register_t<reg_t>{};
-                        auto &mask = cached_enable<reg_t>;
-                        (compute_register<reg_t, I>(value, mask), ...,
-                         compute_register<reg_t, Is>(value, mask));
+                        (compute_register<reg_t, I>(value), ...,
+                         compute_register<reg_t, Is>(value));
                     }
                 }
             },
