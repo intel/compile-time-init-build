@@ -6,7 +6,6 @@ from pathlib import Path
 import sys
 import os
 
-
 version = os.popen("git describe --tags").read().strip()
 visited_includes = set()
 root = Path(sys.argv[1]).parent.parent

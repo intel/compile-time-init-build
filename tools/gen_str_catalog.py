@@ -332,9 +332,8 @@ def assign_ids(messages, modules, stable_data, reserved_ids):
 
 
 def read_input(filenames: list[str], stable_data, reserved_ids):
-    line_re = re.compile(r"^.*unsigned (?:int|long) (catalog|module)<(.+?)>\(\)$")
-
     def read_file(filename):
+        line_re = re.compile(r"^.*unsigned (?:int|long) (catalog|module)<(.+?)>\(\)$")
         with open(filename, "r") as f:
             matching_lines = filter(
                 lambda p: p[1] is not None,
@@ -562,7 +561,7 @@ def serialize_messages(
             m = re.search(r"{:([^}]+)}", fmt_string)
             if m:
                 fmt_string = (
-                    f"{fmt_string[:m.start()]}%{m.group(1)}{fmt_string[m.end():]}"
+                    f"{fmt_string[: m.start()]}%{m.group(1)}{fmt_string[m.end() :]}"
                 )
             else:
                 fmt_string = re.sub(r"{}", arg_printf_spec(arg), fmt_string, count=1)
@@ -728,7 +727,7 @@ def main():
     scoped_enums = {}
     if args.cpp_output is not None:
         for m in messages:
-            for i, arg_type in enumerate(m.args):
+            for arg_type in m.args:
                 enc, enum, ut = arg_type_encoding(arg_type)
                 if "enum" in enc:
                     scoped_enums.update({enum: ut})
