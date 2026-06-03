@@ -163,11 +163,17 @@ TEST_CASE("init does not re-enable top-level interrupts by default",
     REQUIRE(calls.size() == 4); // only the 33 register was written
 }
 
+namespace {
+struct dyn_reinit_policy : interrupt::dynamic_init::default_policy {
+    constexpr static auto dynamic_enable_top_level = true;
+};
+} // namespace
+
 TEST_CASE("init can re-enable top-level dynamic interrupts", "[manager]") {
     calls.clear();
 
     auto m = interrupt::manager<config_shared, test_hal<G>, test_nexus>{};
-    m.init<true>();
+    m.init<dyn_reinit_policy>();
     REQUIRE(calls.size() == 5);
     CHECK(calls[3] == call::write);
     CHECK(calls[4] == call::write); // 33 and 38 registers were written

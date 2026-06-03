@@ -12,7 +12,7 @@ env:
 jobs:
   configure:
     name: Configure Github Pages Publishing
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
+    runs-on: &runner ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
     outputs:
       enable_publish: ${{ steps.check.outputs.isfork == 'NO' }}
     steps:
@@ -30,7 +30,7 @@ jobs:
   build:
     needs: configure
     name: Build Documentation
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
+    runs-on: *runner
     steps:
       - name: Checkout source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -71,7 +71,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          test $(cmake --build build -v -t docs | grep -c ERROR) == 0
+          test "$(cmake --build build -v -t docs | grep -c ERROR)" == 0
           touch ./build/docs/.nojekyll
           ls -la ./build/docs
 
@@ -95,7 +95,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ${{ github.repository_owner == 'intel' && 'intel-' || '' }}ubuntu-24.04
+    runs-on: *runner
     steps:
       - name: Deploy to github pages
         id: deployment

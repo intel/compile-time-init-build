@@ -392,26 +392,11 @@ struct dynamic_controller {
 
     // reset: mark resources, flows and all named irqs enabled
     // and clear all cached state
-    template <bool Enable, typename ActiveFlows, typename ActiveResources,
-              typename IrqList>
+    template <typename ActiveResources, typename ActiveFlows, typename IrqList>
     static auto reset_internal_state() -> void {
-        if constexpr (Enable) {
-            if constexpr (std::is_void_v<ActiveResources>) {
-                resource_enables = resources_t{stdx::all_bits};
-            } else {
-                resource_enables = resources_t{ActiveResources{}};
-            }
-            if constexpr (std::is_void_v<ActiveFlows>) {
-                flow_enables = flows_t{stdx::all_bits};
-            } else {
-                flow_enables = flows_t{ActiveFlows{}};
-            }
-            named_enables = irq_names_t{stdx::all_bits};
-        } else {
-            resource_enables.reset();
-            flow_enables.reset();
-            named_enables.reset();
-        }
+        resource_enables = resources_t{ActiveResources{}};
+        flow_enables = flows_t{ActiveFlows{}};
+        named_enables = irq_names_t{stdx::all_bits};
 
         constexpr auto by_registers =
             stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
@@ -422,20 +407,7 @@ struct dynamic_controller {
                     decltype(detail::register_for<
                              typename I::enable_field_t>::template fn<Hal>());
                 if constexpr (not is_no_register_v<reg_t>) {
-                    // if we are enabling, the cached (register) value should
-                    // be all OFF, ready for updating
-                    cached_enable<reg_t> = register_t<reg_t>{};
-
-                    // if we are NOT enabling, the cached (register) value
-                    // should be all ON, ready for updating
-                    if constexpr (not Enable) {
-                        cached_enable<reg_t> = (mask_for<reg_t, I>() | ... |
-                                                mask_for<reg_t, Is>());
-
-                        auto value = register_t<reg_t>{};
-                        (compute_register<reg_t, I>(value), ...,
-                         compute_register<reg_t, Is>(value));
-                    }
+                    cached_enable<reg_t> = {};
                 }
             },
             by_registers);
@@ -445,8 +417,19 @@ struct dynamic_controller {
     using hal_t = Hal;
     struct mutex_t;
 
-    template <bool Enable = true, typename ActiveFlows = void,
-              typename ActiveResources = void, typename... AlreadyEnabled>
+    static auto reset() -> void {
+        resource_enables.reset();
+        flow_enables.reset();
+        named_enables.reset();
+
+        using enable_irqs_t =
+            boost::mp11::mp_copy_if<detail::descendants_t<Root>,
+                                    detail::has_enable_field>;
+        update<force_write>(enable_irqs_t{});
+    }
+
+    template <typename Policy = dynamic_init::default_policy,
+              typename... AlreadyEnabled>
     static auto init() -> void {
         using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
@@ -455,8 +438,12 @@ struct dynamic_controller {
             potential_enable_irqs_t,
             stdx::tuple<typename AlreadyEnabled::config_t...>>;
 
+        using active_resources_t =
+            Policy::template active_resources_t<resources_t>;
+        using active_flows_t = Policy::template active_flows_t<flows_t>;
+
         conc::call_in_critical_section<mutex_t>([] {
-            reset_internal_state<Enable, ActiveFlows, ActiveResources,
+            reset_internal_state<active_resources_t, active_flows_t,
                                  potential_enable_irqs_t>();
             update(enable_irqs_t{});
         });

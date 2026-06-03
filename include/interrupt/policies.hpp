@@ -116,4 +116,39 @@ struct dynamic_enable_policy {
         return on_by_flows or on_by_children;
     }
 };
+
+namespace dynamic_init {
+struct all_resources_policy {
+    template <typename Resources>
+    using active_resources_t =
+        boost::mp11::mp_apply<stdx::type_list, Resources>;
+};
+struct all_flows_policy {
+    template <typename Flows>
+    using active_flows_t = boost::mp11::mp_apply<stdx::type_list, Flows>;
+};
+struct all_irqs_policy {
+    template <typename Irqs>
+    using active_irqs_t = boost::mp11::mp_apply<stdx::type_list, Irqs>;
+};
+
+template <typename... Resources> struct resources_policy {
+    template <typename>
+    using active_resources_t = stdx::type_list<Resources...>;
+};
+template <typename... Flows> struct flows_policy {
+    template <typename> using active_flows_t = stdx::type_list<Flows...>;
+};
+template <typename... Irqs> struct irqs_policy {
+    template <typename> using active_irqs_t = stdx::type_list<Irqs...>;
+};
+
+using no_resources_policy = resources_policy<>;
+using no_flows_policy = flows_policy<>;
+using no_irqs_policy = irqs_policy<>;
+
+struct default_policy : all_resources_policy,
+                        all_flows_policy,
+                        all_irqs_policy {};
+} // namespace dynamic_init
 } // namespace interrupt
