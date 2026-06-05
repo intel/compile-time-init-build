@@ -41,20 +41,38 @@ jobs:
         run: |
           # interesting summary data on stderr
           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark 2>&1 | tee ${{github.workspace}}/build/compilation_output.log
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_flow_benchmark 2>&1 | tee ${{github.workspace}}/build/compilation_flow_output.log
           FRONT_END_TIME=$(grep "Front end" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}')
+          FLOW_FRONT_END_TIME=$(grep "Front end" ${{github.workspace}}/build/compilation_flow_output.log | awk '{print $1}')
 
-          # generate summary with expandable section
+          # generate summary with expandable sections, one per benchmark
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "  <summary>Clang front-end: ${FRONT_END_TIME} seconds</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "  <summary>cib (big_nexus) Clang front-end: ${FRONT_END_TIME} seconds</summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
           cat ${{github.workspace}}/build/compilation_output.log >> $GITHUB_STEP_SUMMARY
           echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
 
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "  <summary>flow DSL Clang front-end: ${FLOW_FRONT_END_TIME} seconds</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat ${{github.workspace}}/build/compilation_flow_output.log >> $GITHUB_STEP_SUMMARY
+          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+      - name: 'Combine Compilation Traces'
+        shell: bash
+        run: |
+          python3 ${{github.workspace}}/tools/merge_compilation_traces.py \
+            -o ${{github.workspace}}/build/compilation_trace.json \
+            cib/big_nexus.cpp=${{github.workspace}}/build/benchmark/cib/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json \
+            flow/compilation.cpp=${{github.workspace}}/build/benchmark/flow/CMakeFiles/compilation_flow_benchmark.dir/compilation.cpp.json
+
       - name: 'Upload Compilation Trace'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: compilation_trace.json
-          path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
+          path: ${{github.workspace}}/build/compilation_trace.json
 
