@@ -81,7 +81,7 @@ using config_t = interrupt::root<interrupt::shared_irq<
 using dynamic_t = interrupt::dynamic_controller<config_t, test_hal<G>>;
 
 auto reset_dynamic_state() -> void {
-    dynamic_t::init<false>();
+    dynamic_t::reset();
     groov::test::reset_store<G>();
 }
 } // namespace
@@ -116,7 +116,7 @@ using noflows_dynamic_t =
     interrupt::dynamic_controller<noflows_config_t, test_hal<G>>;
 
 auto reset_noflows_dynamic_state() -> void {
-    noflows_dynamic_t::init<false>();
+    noflows_dynamic_t::reset();
     groov::test::reset_store<G>();
 }
 } // namespace
@@ -151,17 +151,31 @@ using inactive_dynamic_t =
     interrupt::dynamic_controller<inactive_config_t, test_hal<G>>;
 
 auto reset_inactive_dynamic_state() -> void {
-    inactive_dynamic_t::init<false>();
+    inactive_dynamic_t::reset();
     groov::test::reset_store<G>();
 }
+
+struct only_flow0_policy_t
+    : interrupt::dynamic_init::all_resources_policy,
+      interrupt::dynamic_init::flows_policy<test_flow_0_t>,
+      interrupt::dynamic_init::all_irqs_policy {};
+
+struct only_resource0_policy_t
+    : interrupt::dynamic_init::resources_policy<test_resource_0>,
+      interrupt::dynamic_init::all_flows_policy,
+      interrupt::dynamic_init::all_irqs_policy {};
+
+struct flow0_resource1_policy_t
+    : interrupt::dynamic_init::resources_policy<test_resource_1>,
+      interrupt::dynamic_init::flows_policy<test_flow_0_t>,
+      interrupt::dynamic_init::all_irqs_policy {};
 } // namespace
 
 TEST_CASE("dynamic init does not enable with all flows inactive",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_inactive_dynamic_state();
-    using active_flows_t = boost::mp11::mp_list<test_flow_0_t>;
-    inactive_dynamic_t::init<true, active_flows_t>();
+    inactive_dynamic_t::init<only_flow0_policy_t>();
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
@@ -176,9 +190,7 @@ TEST_CASE("dynamic init does not enable with any resource inactive",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_inactive_dynamic_state();
-    using active_flows_t = boost::mp11::mp_list<test_flow_0_t, test_flow_1_t>;
-    inactive_dynamic_t::init<true, active_flows_t,
-                             stdx::type_list<test_resource_0>>();
+    inactive_dynamic_t::init<only_resource0_policy_t>();
 
     auto v = groov::test::get_value<G>("enable"_r);
     REQUIRE(v);
@@ -193,9 +205,7 @@ TEST_CASE("dynamic init does not enable with all children inactive",
           "[dynamic controller]") {
     using namespace groov::literals;
     reset_inactive_dynamic_state();
-    using active_flows_t = boost::mp11::mp_list<test_flow_0_t>;
-    inactive_dynamic_t::init<true, active_flows_t,
-                             stdx::type_list<test_resource_1>>();
+    inactive_dynamic_t::init<flow0_resource1_policy_t>();
 
     auto v = groov::test::get_value<G>("enable"_r);
     CHECK(not v);
@@ -371,11 +381,11 @@ TEST_CASE("IRQ is enabled only when all its contingencies are enabled",
 
     dynamic_t::enable<"sub0">();
     auto v = groov::test::get_value<G>("enable"_r);
-    REQUIRE(not v);
+    CHECK(not v);
 
     dynamic_t::enable<test_resource_0>();
     v = groov::test::get_value<G>("enable"_r);
-    REQUIRE(not v);
+    CHECK(not v);
 
     dynamic_t::enable<test_flow_0_t>();
     v = groov::test::get_value<G>("enable"_r);
@@ -418,7 +428,7 @@ using shared_sub_dynamic_t =
     interrupt::dynamic_controller<shared_sub_config_t, test_hal<G>>;
 
 auto reset_shared_dynamic_state() -> void {
-    shared_sub_dynamic_t::init<false>();
+    shared_sub_dynamic_t::reset();
     groov::test::reset_store<G>();
 }
 } // namespace
@@ -551,7 +561,7 @@ using shared_sub_dynamic2_t =
     interrupt::dynamic_controller<shared_sub_config2_t, test_hal<G>>;
 
 auto reset_shared_dynamic2_state() -> void {
-    shared_sub_dynamic2_t::init<false>();
+    shared_sub_dynamic2_t::reset();
     groov::test::reset_store<G>();
 }
 } // namespace
