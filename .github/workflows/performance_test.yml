@@ -34,25 +34,31 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
-        id: build_step
         shell: bash
         run: |
-          # interesting summary data on stderr
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t compilation_benchmark 2>&1 | tee ${{github.workspace}}/build/compilation_output.log
-          FRONT_END_TIME=$(grep "Front end" ${{github.workspace}}/build/compilation_output.log | awk '{print $1}')
+          # compile-time benchmarks: <cmake target>|<summary label>
+          benchmarks=(
+            "compilation_nexus_benchmark|cib nexus"
+            "compilation_flow_benchmark|flow dsl"
+          )
 
-          # generate summary with expandable section
-          echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "  <summary>Clang front-end: ${FRONT_END_TIME} seconds</summary>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat ${{github.workspace}}/build/compilation_output.log >> $GITHUB_STEP_SUMMARY
-          echo "  \`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          for entry in "${benchmarks[@]}"; do
+            IFS='|' read -r target label <<< "$entry"
+            log="${{github.workspace}}/build/${target}.log"
 
-      - name: 'Upload Compilation Trace'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: compilation_trace.json
-          path: ${{github.workspace}}/build/benchmark/CMakeFiles/compilation_benchmark.dir/big_nexus.cpp.json
+            # interesting summary data on stderr
+            cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -t "$target" 2>&1 | tee "$log"
+            front_end_time=$(awk '/Front end/ {print $1}' "$log")
+
+            # generate summary with an expandable section per benchmark
+            {
+              echo "<details>"
+              echo "  <summary>${label} clang front-end: ${front_end_time} seconds</summary>"
+              echo ""
+              echo "  \`\`\`"
+              cat "$log"
+              echo "  \`\`\`"
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
 
