@@ -113,9 +113,9 @@ jobs:
       - name: Install build tools
         run: |
           if [[ "${{matrix.compiler}}" == "clang" ]]; then
-            export DISTRO=$(lsb_release -cs)
+            DISTRO=$(lsb_release -cs)
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-            sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{matrix.version}} main
+            sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{matrix.version}}" main
             sudo apt update && sudo apt install -y ninja-build clang-${{matrix.version}} libc++-${{matrix.version}}-dev libc++abi-${{matrix.version}}-dev
           else
             sudo apt update && sudo apt install -y ninja-build gcc-${{matrix.version}} g++-${{matrix.version}}
@@ -126,7 +126,7 @@ jobs:
         run: |
           python3 -m venv ${{github.workspace}}/test_venv
           source ${{github.workspace}}/test_venv/bin/activate
-          echo "${{github.workspace}}/test_venv/bin" >> $GITHUB_PATH
+          echo "${{github.workspace}}/test_venv/bin" >> "$GITHUB_PATH"
 
       - &restore_cpm_cache
         name: Restore CPM cache
@@ -169,7 +169,7 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
-          ctest --output-on-failure -j $(nproc) -C ${{matrix.build_type}}
+          ctest --output-on-failure -j -C ${{matrix.build_type}}
 
   quality_checks_pass:
     runs-on: *runner
@@ -180,7 +180,7 @@ jobs:
           ref: ${{github.base_ref}}
 
       - name: Extract target branch SHA
-        run: echo "branch=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        run: echo "branch=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
         id: target_branch
 
       - name: Checkout PR branch
@@ -190,9 +190,9 @@ jobs:
 
       - name: Install build tools
         run: |
-          export DISTRO=$(lsb_release -cs)
+          DISTRO=$(lsb_release -cs)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+          sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}}" main
           sudo apt update && sudo apt install -y ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
       - name: Install cmake-format
@@ -240,9 +240,9 @@ jobs:
       - name: Install build tools
         run: |
           if [[ "${{matrix.compiler}}" == "clang" ]]; then
-            export DISTRO=$(lsb_release -cs)
+            DISTRO=$(lsb_release -cs)
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-            sudo add-apt-repository -y deb https://apt.llvm.org/$DISTRO/ llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}} main
+            sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}}" main
             sudo apt update && sudo apt install -y ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
           else
             sudo apt update && sudo apt install -y ninja-build ${{matrix.cc}} ${{matrix.cxx}}
@@ -304,35 +304,35 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: |
-          ctest --output-on-failure -j $(nproc) -E "EXPECT_FAIL|PYTHON" -T memcheck
+          ctest --output-on-failure -j -E "EXPECT_FAIL|PYTHON" -T memcheck
 
           LOGFILE=$(ls ./Testing/Temporary/LastDynamicAnalysis_*.log)
           FAILSIZE=$(du -c ./Testing/Temporary/MemoryChecker.* | tail -1 | cut -f1)
-          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          { echo "<details>";
+          echo "<summary>"; } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "<summary>" >> $GITHUB_STEP_SUMMARY
-          if [ $FAILSIZE != "0" ]; then
-            echo "Failing tests:" | tee -a $GITHUB_STEP_SUMMARY
+          if [ "$FAILSIZE" != "0" ]; then
+            echo "Failing tests:" | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "No failing tests" >> $GITHUB_STEP_SUMMARY
+            echo "No failing tests" >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "</summary>" >> "$GITHUB_STEP_SUMMARY"
 
           for f in ./Testing/Temporary/MemoryChecker.*
           do
-            if [ -s $f ]; then
-              FILENAME=$(cd $(dirname $f) && pwd)/$(basename $f)
-              TEST_COMMAND=$(grep $FILENAME $LOGFILE)
-              echo "" | tee -a $GITHUB_STEP_SUMMARY
+            if [ -s "$f" ]; then
+              FILENAME=$(realpath "$f")
+              TEST_COMMAND=$(grep "$FILENAME" "$LOGFILE")
+              echo "" | tee -a "$GITHUB_STEP_SUMMARY"
               echo "========================================"
-              echo $TEST_COMMAND | tee -a $GITHUB_STEP_SUMMARY
+              echo "$TEST_COMMAND" | tee -a "$GITHUB_STEP_SUMMARY"
               echo "--------------------"
-              cat $f
+              cat "$f"
             fi
           done
 
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
-          test $FAILSIZE = "0"
+          echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+          test "$FAILSIZE" = "0"
 
   merge_ok:
     runs-on: *runner
