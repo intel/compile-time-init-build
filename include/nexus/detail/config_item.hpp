@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 
 namespace cib::detail {
 struct config_item {
@@ -8,7 +9,7 @@ struct config_item {
         return {};
     }
 
-    [[nodiscard]] constexpr static auto exports_tuple() -> stdx::tuple<> {
+    [[nodiscard]] constexpr static auto get_exports() -> stdx::type_list<> {
         return {};
     }
 };

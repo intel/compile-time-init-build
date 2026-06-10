@@ -7,6 +7,7 @@
 #include <stdx/ct_format.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
 
 namespace cib::detail {
 template <typename Cond, typename... Configs>
@@ -24,12 +25,11 @@ struct constexpr_conditional : config_item {
         }
     }
 
-    [[nodiscard]] constexpr auto exports_tuple() const {
-        if constexpr (Cond{}) {
-            return body.exports_tuple();
-        } else {
-            return stdx::tuple<>{};
-        }
+    [[nodiscard]] constexpr static auto get_exports() -> stdx::conditional_t<
+        static_cast<bool>(Cond{}),
+        decltype(detail::config<Configs...>::get_exports()),
+        stdx::type_list<>> {
+        return {};
     }
 };
 

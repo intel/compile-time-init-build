@@ -5,6 +5,8 @@
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
+#include <boost/mp11/algorithm.hpp>
+
 #include <type_traits>
 
 namespace cib::detail {
@@ -24,10 +26,9 @@ template <typename... ConfigTs> struct config : public detail::config_item {
         });
     }
 
-    [[nodiscard]] constexpr auto exports_tuple() const {
-        return configs_tuple.apply([&](auto const &...configs_pack) {
-            return stdx::tuple_cat(configs_pack.exports_tuple()...);
-        });
+    [[nodiscard]] constexpr static auto get_exports()
+        -> boost::mp11::mp_append<decltype(ConfigTs::get_exports())...> {
+        return {};
     }
 };
 
