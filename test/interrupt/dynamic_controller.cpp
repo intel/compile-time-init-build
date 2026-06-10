@@ -101,6 +101,31 @@ TEST_CASE("dynamic init enables all fields", "[dynamic controller]") {
     CHECK(*v == EN_TOP::mask<std::uint32_t>);
 }
 
+TEST_CASE("dynamic init correctly handles top-level fields after manager init",
+          "[dynamic controller]") {
+    using namespace groov::literals;
+    reset_dynamic_state();
+
+    // manager init statically enables top level IRQs
+    using M = interrupt::manager<config_t, test_hal<G>, test_nexus>;
+    groov::test::set_value<G>("enable_top"_r, EN_TOP::mask<std::uint32_t>);
+    M::init<interrupt::dynamic_init::default_policy>();
+
+    auto v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+
+    M::dynamic_t::disable<"shared">();
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == 0);
+
+    M::dynamic_t::enable<"shared">();
+    v = groov::test::get_value<G>("enable_top"_r);
+    REQUIRE(v);
+    CHECK(*v == EN_TOP::mask<std::uint32_t>);
+}
+
 namespace {
 using noflows_config_t = interrupt::root<interrupt::shared_irq<
     "shared", 0_irq, 0, stdx::cts_t<"enable_top.top"_cts>,

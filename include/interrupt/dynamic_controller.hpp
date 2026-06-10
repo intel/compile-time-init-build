@@ -413,6 +413,25 @@ struct dynamic_controller {
             by_registers);
     }
 
+    // set: mark cached state for irqs which are already enabled
+    template <typename EnabledIrqs> static auto set_internal_state() -> void {
+        constexpr auto by_registers =
+            stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
+                EnabledIrqs{});
+        stdx::for_each(
+            []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
+                using reg_t =
+                    decltype(detail::register_for<
+                             typename I::enable_field_t>::template fn<Hal>());
+                if constexpr (not is_no_register_v<reg_t>) {
+                    auto &value = cached_enable<reg_t>;
+                    ((value |= mask_for<reg_t, I>()), ...,
+                     (value |= mask_for<reg_t, Is>()));
+                }
+            },
+            by_registers);
+    }
+
   public:
     using hal_t = Hal;
     struct mutex_t;
@@ -434,9 +453,10 @@ struct dynamic_controller {
         using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
                                     detail::has_enable_field>;
-        using enable_irqs_t = boost::mp11::mp_set_difference<
-            potential_enable_irqs_t,
-            stdx::tuple<typename AlreadyEnabled::config_t...>>;
+        using active_irqs_t = stdx::tuple<typename AlreadyEnabled::config_t...>;
+        using enable_irqs_t =
+            boost::mp11::mp_set_difference<potential_enable_irqs_t,
+                                           active_irqs_t>;
 
         using active_resources_t =
             Policy::template active_resources_t<resources_t>;
@@ -445,6 +465,7 @@ struct dynamic_controller {
         conc::call_in_critical_section<mutex_t>([] {
             reset_internal_state<active_resources_t, active_flows_t,
                                  potential_enable_irqs_t>();
+            set_internal_state<active_irqs_t>();
             update(enable_irqs_t{});
         });
     }
