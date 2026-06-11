@@ -32,10 +32,10 @@ template <typename Config> struct nexus {
     }
 
     template <stdx::ct_string Name> constexpr static auto service() {
-        using Exports = decltype(Config::config.exports_tuple());
+        using Exports = decltype(Config::config.get_exports());
         using Idx =
             boost::mp11::mp_find_if_q<Exports, detail::matching_name<Name>>;
-        if constexpr (Idx::value == stdx::tuple_size_v<Exports>) {
+        if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
             STATIC_ASSERT(
                 false, "Trying to invoke a service ({}) that is not exported",
                 Name);

@@ -27,7 +27,7 @@ template <stdx::ct_string Name> struct matching_name {
 template <typename Exports, typename T>
 constexpr auto locate_service_by_type() {
     using Idx = boost::mp11::mp_find<Exports, typename T::service_type>;
-    if constexpr (Idx::value == stdx::tuple_size_v<Exports>) {
+    if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
         if constexpr (requires { T::name; }) {
             STATIC_ASSERT(
                 false, "Trying to extend a service ({}) that is not exported",
@@ -45,7 +45,7 @@ constexpr auto locate_service_by_type() {
 template <typename Exports, typename T>
 constexpr auto locate_service_by_name() {
     using Idx = boost::mp11::mp_find_if_q<Exports, matching_name<T::name>>;
-    if constexpr (Idx::value == stdx::tuple_size_v<Exports>) {
+    if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
         STATIC_ASSERT(false,
                       "Trying to extend a service ({}) that is not exported",
                       T::name);
@@ -78,9 +78,9 @@ template <typename Exports> struct get_service {
 template <typename Config>
 constexpr static auto initialized_builders = transform<extract_service_tag>(
     []<typename Ext>(Ext extensions) {
-        using exports_tuple = decltype(Config::config.exports_tuple());
+        using exports_t = decltype(Config::config.get_exports());
         using svc = stdx::tuple_element_t<0, Ext>;
-        using service = detail::locate_service_t<exports_tuple, svc>;
+        using service = detail::locate_service_t<exports_t, svc>;
 
         constexpr auto initial_builder = builder_t<service>{};
 
@@ -94,7 +94,7 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
             built_service};
     },
     stdx::gather_by<detail::get_service<
-        decltype(Config::config.exports_tuple())>::template fn>(
+        decltype(Config::config.get_exports())>::template fn>(
         Config::config.extends_tuple()));
 
 template <typename Config, typename Tag> struct initialized {

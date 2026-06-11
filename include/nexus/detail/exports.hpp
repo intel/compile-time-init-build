@@ -4,6 +4,7 @@
 #include <nexus/detail/extend.hpp>
 
 #include <stdx/tuple.hpp>
+#include <stdx/type_traits.hpp>
 
 namespace cib::detail {
 template <typename ServiceT, typename BuilderT> struct service_entry {
@@ -17,8 +18,8 @@ template <typename... Services> struct exports : public detail::config_item {
         return {type_extend<Services>{}...};
     }
 
-    [[nodiscard]] constexpr auto exports_tuple() const
-        -> stdx::tuple<Services...> {
+    [[nodiscard]] constexpr static auto get_exports()
+        -> stdx::type_list<Services...> {
         return {};
     }
 };

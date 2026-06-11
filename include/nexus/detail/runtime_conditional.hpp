@@ -41,8 +41,9 @@ struct runtime_conditional : config_item {
             body.extends_tuple());
     }
 
-    [[nodiscard]] constexpr auto exports_tuple() const {
-        return body.exports_tuple();
+    [[nodiscard]] constexpr static auto get_exports()
+        -> decltype(detail::config<Configs...>::get_exports()) {
+        return {};
     }
 };
 
