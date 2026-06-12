@@ -55,5 +55,5 @@ add_unit_test(
     "catalog_output_test.py"
     EXTRA_DEPS
     ${CMAKE_CURRENT_BINARY_DIR}/log_catalog_test.passed
-    ${CMAKE_SOURCE_DIR}/tools/log_decode.py
-    ${CMAKE_SOURCE_DIR}/tools/mipi_messages.py)
+    ${CMAKE_SOURCE_DIR}/python/cib/log_decode.py
+    ${CMAKE_SOURCE_DIR}/python/cib/mipi_messages.py)

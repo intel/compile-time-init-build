@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-import log_decode as decode
+from cib import log_decode as decode
 
 catalog_output = Path("./catalog_test.bin")
 json_filename = Path("./strings.json")

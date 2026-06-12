@@ -1,4 +1,4 @@
-import gen_str_catalog as gen
+from cib import gen_str_catalog as gen
 
 
 def test_split_args():

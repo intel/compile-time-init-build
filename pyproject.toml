@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intel-compile-time-init-build"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+  "intel-cicd-repo-infrastructure",
+  "libclang"
+]
+license = "BSL-1.0"
+description = "Supporting tools for CIB"
+
+[project.urls]
+Repository = "https://github.com/intel/compile-time-init-build/"
+Documentation = "https://intel.github.io/compile-time-init-build/"
+
+[project.scripts]
+cib_gen_str_catalog = "cib.gen_str_catalog:main"
+cib_log_decode = "cib.log_decode:main"
+
+[tool.setuptools]
+packages = ["cib"]
+package-dir = {"" = "python"}
+
+[tool.uv.sources]
+intel-cicd-repo-infrastructure = { git = "https://github.com/intel/cicd-repo-infrastructure", branch = "dev" }
+
+[tool.pytest]
+minversion = "9.0"
+addopts = ["-ra", "-q"]
+testpaths = [
+  "python/test"
+]
