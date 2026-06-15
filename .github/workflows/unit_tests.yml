@@ -15,6 +15,8 @@ env:
   DEFAULT_CXX_STANDARD: 23
   DEFAULT_LLVM_VERSION: 22
   DEFAULT_GCC_VERSION: 14
+  UV_CACHE_DIR: /tmp/.uv-cache
+  PIPX_BIN_DIR: /tmp/.pipx_bin
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -116,28 +118,48 @@ jobs:
             DISTRO=$(lsb_release -cs)
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{matrix.version}}" main
-            sudo apt update && sudo apt install -y ninja-build clang-${{matrix.version}} libc++-${{matrix.version}}-dev libc++abi-${{matrix.version}}-dev
+            sudo apt update && sudo apt install -y pipx ninja-build clang-${{matrix.version}} libc++-${{matrix.version}}-dev libc++abi-${{matrix.version}}-dev
           else
-            sudo apt update && sudo apt install -y ninja-build gcc-${{matrix.version}} g++-${{matrix.version}}
+            sudo apt update && sudo apt install -y pipx ninja-build gcc-${{matrix.version}} g++-${{matrix.version}}
           fi
+
+      - &install_uv
+        name: Install uv
+        run: |
+          pipx install uv
+          echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"
+
+      - &restore_uv_cache
+        name: Restore uv cache
+        env:
+          cache-name: uv-cache-0
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{env.UV_CACHE_DIR}}
+          key: ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('uv.lock') }}
+            ${{runner.os}}-${{env.cache-name}}-
 
       - &setup_python
         name: Setup python venv
+        working-directory: ${{github.workspace}}
         run: |
-          python3 -m venv ${{github.workspace}}/test_venv
-          source ${{github.workspace}}/test_venv/bin/activate
-          echo "${{github.workspace}}/test_venv/bin" >> "$GITHUB_PATH"
+          uv venv -c
+          source .venv/bin/activate
+          uv sync
+          echo "$(pwd)/.venv/bin" >> "$GITHUB_PATH"
 
       - &restore_cpm_cache
         name: Restore CPM cache
         env:
           cache-name: cpm-cache-0
-        id: cpm-cache-restore
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/cpm-cache
           key: ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
           restore-keys: |
+            ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
             ${{runner.os}}-${{env.cache-name}}-
 
       - name: Configure CMake
@@ -145,22 +167,6 @@ jobs:
           CC: ${{matrix.toolchain_root}}/bin/${{matrix.cc}}
           CXX: ${{matrix.toolchain_root}}/bin/${{matrix.cxx}}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_CXX_FLAGS_INIT=${{matrix.cxx_flags}} -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCPM_SOURCE_CACHE=~/cpm-cache
-
-      - &save_cpm_cache
-        name: Save CPM cache
-        env:
-          cache-name: cpm-cache-0
-        if: steps.cpm-cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/cpm-cache
-          key: ${{runner.os}}-${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-      - &install_python_reqs
-        name: Install python requirements
-        run: |
-          pip install -r ${{github.workspace}}/tools/requirements.txt
-          pip install -r ${{github.workspace}}/requirements.txt
 
       - name: Build unit tests
         run: |
@@ -170,6 +176,11 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: |
           ctest --output-on-failure -j -C ${{matrix.build_type}}
+
+      - &minimize_uv_cache
+        name: Minimize uv cache
+        run: uv cache prune --ci
+
 
   quality_checks_pass:
     runs-on: *runner
@@ -186,23 +197,16 @@ jobs:
       - name: Checkout PR branch
         uses: *checkout
 
-      - *setup_python
-
       - name: Install build tools
         run: |
           DISTRO=$(lsb_release -cs)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
           sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}}" main
-          sudo apt update && sudo apt install -y ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
+          sudo apt update && sudo apt install -y pipx ninja-build clang-tidy-${{env.DEFAULT_LLVM_VERSION}} clang-format-${{env.DEFAULT_LLVM_VERSION}}
 
-      - name: Install cmake-format
-        run: |
-          pip install cmakelang pyyaml
-
-      - name: Install python quality tools
-        run: |
-          pip install mypy
-
+      - *install_uv
+      - *restore_uv_cache
+      - *setup_python
       - *restore_cpm_cache
 
       - name: Configure CMake
@@ -212,10 +216,10 @@ jobs:
           PR_TARGET_BRANCH: ${{ steps.target_branch.outputs.branch }}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
 
-      - *save_cpm_cache
-
       - name: Run quality checks
         run: cmake --build ${{github.workspace}}/build -t ci-quality
+
+      - *minimize_uv_cache
 
   sanitize:
     runs-on: *runner
@@ -243,13 +247,14 @@ jobs:
             DISTRO=$(lsb_release -cs)
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo add-apt-repository -y deb "https://apt.llvm.org/$DISTRO/" "llvm-toolchain-$DISTRO-${{env.DEFAULT_LLVM_VERSION}}" main
-            sudo apt update && sudo apt install -y ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
+            sudo apt update && sudo apt install -y pipx ninja-build clang-${{env.DEFAULT_LLVM_VERSION}}
           else
-            sudo apt update && sudo apt install -y ninja-build ${{matrix.cc}} ${{matrix.cxx}}
+            sudo apt update && sudo apt install -y pipx ninja-build ${{matrix.cc}} ${{matrix.cxx}}
           fi
 
+      - *install_uv
+      - *restore_uv_cache
       - *setup_python
-
       - *restore_cpm_cache
 
       - name: Configure CMake
@@ -259,8 +264,6 @@ jobs:
           SANITIZERS: ${{matrix.sanitizer}}
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
 
-      - *save_cpm_cache
-
       # https://github.com/actions/runner-images/issues/9524
       - name: Fix kernel mmap rnd bits
         # Asan in llvm 14 provided in ubuntu 22.04 is incompatible with
@@ -268,11 +271,11 @@ jobs:
         # using leading to random crashes: https://reviews.llvm.org/D148280
         run: sudo sysctl vm.mmap_rnd_bits=28
 
-      - *install_python_reqs
-
       - name: Build and run unit tests
         run: |
           cmake --build ${{github.workspace}}/build -t unit_tests
+
+      - *minimize_uv_cache
 
   valgrind:
     runs-on: *runner
@@ -281,10 +284,11 @@ jobs:
 
       - name: Install build tools
         run: |
-          sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} ninja-build python3-venv python3-pip valgrind
+          sudo apt update && sudo apt install -y gcc-${{env.DEFAULT_GCC_VERSION}} g++-${{env.DEFAULT_GCC_VERSION}} pipx ninja-build valgrind
 
+      - *install_uv
+      - *restore_uv_cache
       - *setup_python
-
       - *restore_cpm_cache
 
       - name: Configure CMake
@@ -292,10 +296,6 @@ jobs:
           CC: "/usr/bin/gcc-${{env.DEFAULT_GCC_VERSION}}"
           CXX: "/usr/bin/g++-${{env.DEFAULT_GCC_VERSION}}"
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{env.DEFAULT_CXX_STANDARD}} -DCPM_SOURCE_CACHE=~/cpm-cache
-
-      - *save_cpm_cache
-
-      - *install_python_reqs
 
       - name: Build unit tests
         run: |
@@ -333,6 +333,9 @@ jobs:
 
           echo "</details>" >> "$GITHUB_STEP_SUMMARY"
           test "$FAILSIZE" = "0"
+
+      - *minimize_uv_cache
+
 
   merge_ok:
     runs-on: *runner

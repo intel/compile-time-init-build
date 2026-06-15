@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import ctypes
 import itertools
 import json
-import mipi_messages as mipi
+
+from cib import mipi_messages as mipi
 
 
 def file_reader(path, chunk_size=4096):

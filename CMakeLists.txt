@@ -34,7 +34,7 @@ if(NOT DEFINED CMAKE_CXX_STANDARD)
 endif()
 
 set(GEN_STR_CATALOG
-    ${CMAKE_CURRENT_LIST_DIR}/tools/gen_str_catalog.py
+    ${CMAKE_CURRENT_LIST_DIR}/python/cib/gen_str_catalog.py
     CACHE FILEPATH "Location of script to generate a string catalog")
 
 add_library(cib_match INTERFACE)
@@ -330,7 +330,7 @@ if(PROJECT_IS_TOP_LEVEL)
     add_subdirectory(test)
     add_subdirectory(benchmark)
     add_subdirectory(examples)
-    add_subdirectory(tools)
+    add_subdirectory(python)
 
     # Build single-header release.
     include(cmake/single_header.cmake)
