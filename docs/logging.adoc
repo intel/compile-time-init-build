@@ -214,7 +214,7 @@ binary logger along with the ID.
 
 The process of generating log strings from the type information revealed by
 missing symbols is automated by a
-https://github.com/intel/compile-time-init-build/blob/main/tools/gen_str_catalog.py[python
+https://github.com/intel/compile-time-init-build/blob/main/python/cib/gen_str_catalog.py[python
 script] provided and by a
 https://github.com/intel/compile-time-init-build/blob/main/cmake/string_catalog.cmake[CMake
 wrapper function (`gen_str_catalog`)] that drives the process. See
