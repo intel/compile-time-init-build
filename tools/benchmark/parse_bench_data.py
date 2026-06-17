@@ -39,9 +39,9 @@ def parse_file(file_path):
                         }
 
                     if "chained" in key_gen_type:
-                        data[current_dataset][current_algorithm][
-                            "ns_op_chained"
-                        ] = ns_op
+                        data[current_dataset][current_algorithm]["ns_op_chained"] = (
+                            ns_op
+                        )
                     elif "independent" in key_gen_type:
                         data[current_dataset][current_algorithm][
                             "ns_op_independent"

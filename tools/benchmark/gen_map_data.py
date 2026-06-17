@@ -20,9 +20,7 @@ def gen_table(size, t, fn, f):
         f"constexpr auto exp_{t}_{size} = std::array<std::pair<std::{t}_t, std::{t}_t>, {size}>{{{{\n{indent}"
     )
     f.write(
-        f",\n{indent}".join(
-            f"{{0x{k:08x}u, 0x{v:08x}u}}" for k, v, in zip(keys, values)
-        )
+        f",\n{indent}".join(f"{{0x{k:08x}u, 0x{v:08x}u}}" for k, v in zip(keys, values))
     )
     f.write("\n}};\n")
 

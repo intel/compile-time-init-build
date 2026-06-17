@@ -68,9 +68,9 @@ def read_struct(struct, reader):
 class Short32:
     def __init__(self, reader, messages, *_):
         self.struct = read_struct(Short32Struct, reader)
-        assert (
-            self.struct.id in messages
-        ), f"Message ID {self.struct.id} not found in JSON"
+        assert self.struct.id in messages, (
+            f"Message ID {self.struct.id} not found in JSON"
+        )
         self.msg_spec = messages[self.struct.id]
 
     def __str__(self):
@@ -80,9 +80,9 @@ class Short32:
 class Short64:
     def __init__(self, reader, messages, *_):
         self.struct = read_struct(Short64Struct, reader)
-        assert (
-            self.struct.id in messages
-        ), f"Message ID {self.struct.id} not found in JSON"
+        assert self.struct.id in messages, (
+            f"Message ID {self.struct.id} not found in JSON"
+        )
         self.msg_spec = messages[self.struct.id]
 
     def __str__(self):
@@ -126,13 +126,13 @@ class Catalog:
 
     def __init__(self, reader, messages, modules, db):
         self.header = read_struct(HeaderStruct, reader)
-        assert (
-            self.header.subtype == 1
-        ), f"Catalog message subtype {self.header.subtype} not supported"
+        assert self.header.subtype == 1, (
+            f"Catalog message subtype {self.header.subtype} not supported"
+        )
 
-        assert (
-            self.header.module in modules
-        ), f"Module ID {self.header.module} not found in JSON"
+        assert self.header.module in modules, (
+            f"Module ID {self.header.module} not found in JSON"
+        )
         self.module = modules[self.header.module]
 
         self.severity = severity[self.header.severity]
