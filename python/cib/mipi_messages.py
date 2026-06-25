@@ -1,4 +1,5 @@
 import itertools
+import re
 import struct
 from ctypes import LittleEndianStructure, c_uint32, c_uint64, sizeof
 from functools import partial
@@ -20,13 +21,29 @@ encoding_converter = {
 }
 
 
-def enum_converter(db, enum_type, underlying_type, seq):
-    convert = encoding_converter[underlying_type]
-    value = str(convert(seq))
+def enum_lookup(db, enum_type, value):
     if enum_type in db["enums"] and value in db["enums"][enum_type]:
         return db["enums"][enum_type][value]
     else:
         return f"static_cast<{enum_type}>({value})"
+
+
+def enum_converter(db, enum_type, underlying_type, seq):
+    convert = encoding_converter[underlying_type]
+    value = str(convert(seq))
+    return enum_lookup(db, enum_type, value)
+
+
+def convert_ct_enums(msg, db):
+    enum_re = re.compile(r"\(([a-zA-Z0-9_]+)\)([0-9]+)\b")
+    m = re.search(enum_re, msg)
+    while m:
+        enum_type = m.group(1)
+        value = m.group(2)
+        s = enum_lookup(db, enum_type, value)
+        msg = re.sub(enum_re, s, msg)
+        m = re.search(enum_re, msg)
+    return msg
 
 
 class HeaderStruct(LittleEndianStructure):
@@ -66,24 +83,26 @@ def read_struct(struct, reader):
 
 
 class Short32:
-    def __init__(self, reader, messages, *_):
+    def __init__(self, reader, messages, _, db):
         self.struct = read_struct(Short32Struct, reader)
         assert self.struct.id in messages, (
             f"Message ID {self.struct.id} not found in JSON"
         )
         self.msg_spec = messages[self.struct.id]
+        self.msg_spec["msg"] = convert_ct_enums(self.msg_spec["msg"], db)
 
     def __str__(self):
         return self.msg_spec["msg"]
 
 
 class Short64:
-    def __init__(self, reader, messages, *_):
+    def __init__(self, reader, messages, _, db):
         self.struct = read_struct(Short64Struct, reader)
         assert self.struct.id in messages, (
             f"Message ID {self.struct.id} not found in JSON"
         )
         self.msg_spec = messages[self.struct.id]
+        self.msg_spec["msg"] = convert_ct_enums(self.msg_spec["msg"], db)
 
     def __str__(self):
         return self.msg_spec["msg"]
@@ -140,6 +159,7 @@ class Catalog:
         self.id = Catalog.read_id(reader)
         assert self.id in messages, f"Message ID {self.id} not found in JSON"
         self.msg_spec = messages[self.id]
+        self.msg_spec["msg"] = convert_ct_enums(self.msg_spec["msg"], db)
 
         self.args = [
             Catalog.extract_arg(db, reader, arg) for arg in self.msg_spec["arg_types"]

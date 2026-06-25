@@ -29,6 +29,8 @@ expected_lines = {
     'TRACE [fixed_id6] Fixed module_id (6) and module ("fixed_id6") with runtime argument: 17',
     'TRACE [fixed_id7] Fixed unsigned module_id (7) and module ("fixed_id7") with runtime argument: 17',
     "TRACE [default] Auto-declared scoped enum argument: static_cast<some_ns::E>(17)",
+    "TRACE [default] Runtime unnamed enum argument: value",
+    "Compile-time unnamed enum argument: value",
 }
 
 
