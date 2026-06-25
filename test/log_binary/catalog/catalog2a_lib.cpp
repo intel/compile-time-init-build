@@ -14,10 +14,6 @@ namespace {
 using log_env2a = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
-auto log_two_rt_args() -> void;
-auto log_ct_named_arg() -> void;
-auto log_rt_named_arg() -> void;
-
 auto log_two_rt_args() -> void {
     cfg.logger.log_msg<log_env2a>(
         stdx::ct_format<"Two runtime arguments: uint32_t {} and int64_t {}">(

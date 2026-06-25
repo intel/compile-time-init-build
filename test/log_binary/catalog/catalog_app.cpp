@@ -18,9 +18,11 @@ extern auto log_two_rt_args() -> void;
 extern auto log_ct_named_arg() -> void;
 extern auto log_rt_named_arg() -> void;
 
-auto log_rt_scoped_enum_arg() -> void;
-auto log_rt_unscoped_enum_arg() -> void;
+extern auto log_rt_scoped_enum_arg() -> void;
+extern auto log_rt_unscoped_enum_arg() -> void;
 extern auto log_rt_auto_scoped_enum_arg() -> void;
+extern auto log_rt_unnamed_enum_value_arg() -> void;
+extern auto log_ct_unnamed_enum_value_arg() -> void;
 
 extern auto log_rt_float_arg() -> void;
 extern auto log_rt_double_arg() -> void;
@@ -161,6 +163,22 @@ TEST_CASE_PERSISTENT_FIXTURE(fixture, "catalog tests") {
         log_calls = 0;
         test_critical_section::count = 0;
         log_rt_unscoped_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime unnamed enum argument", "[catalog]") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_unnamed_enum_value_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log compile-time unnamed enum argument", "[catalog]") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_ct_unnamed_enum_value_arg();
         CHECK(test_critical_section::count == 2);
         CHECK(log_calls == 1);
     }

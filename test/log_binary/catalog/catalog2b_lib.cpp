@@ -11,12 +11,6 @@ namespace {
 using log_env2b = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
-auto log_rt_scoped_enum_arg() -> void;
-auto log_rt_unscoped_enum_arg() -> void;
-auto log_rt_auto_scoped_enum_arg() -> void;
-auto log_rt_float_arg() -> void;
-auto log_rt_double_arg() -> void;
-
 auto log_rt_scoped_enum_arg() -> void {
     using namespace ns;
     cfg.logger.log_msg<log_env2b>(
@@ -27,6 +21,21 @@ auto log_rt_unscoped_enum_arg() -> void {
     using namespace ns;
     cfg.logger.log_msg<log_env2b>(
         stdx::ct_format<"Unscoped enum argument: {}">(VAL_E2));
+}
+
+enum struct extra_enum {};
+
+auto log_rt_unnamed_enum_value_arg() -> void {
+    using namespace ns;
+    cfg.logger.log_msg<log_env2b>(
+        stdx::ct_format<"Runtime unnamed enum argument: {}">(extra_enum{1}));
+}
+
+auto log_ct_unnamed_enum_value_arg() -> void {
+    using namespace ns;
+    cfg.logger.log_msg<log_env2b>(
+        stdx::ct_format<"Compile-time unnamed enum argument: {}">(
+            stdx::ct<extra_enum{1}>()));
 }
 
 namespace some_ns {

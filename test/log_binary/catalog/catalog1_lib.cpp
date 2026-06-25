@@ -13,20 +13,6 @@ namespace {
 using log_env1 = stdx::make_env_t<logging::get_level, logging::level::TRACE>;
 } // namespace
 
-auto log_zero_args() -> void;
-auto log_one_ct_arg() -> void;
-auto log_one_32bit_rt_arg() -> void;
-auto log_one_64bit_rt_arg() -> void;
-auto log_one_formatted_rt_arg() -> void;
-auto log_with_default_module() -> void;
-auto log_with_non_default_module() -> void;
-auto log_with_fixed_module() -> void;
-auto log_with_fixed_string_id() -> void;
-auto log_with_fixed_unsigned_string_id() -> void;
-auto log_with_fixed_module_id() -> void;
-auto log_with_fixed_unsigned_module_id() -> void;
-auto log_with_tag() -> void;
-
 auto log_zero_args() -> void {
     cfg.logger.log_msg<log_env1>(stdx::ct_format<"Zero arguments">());
 }
