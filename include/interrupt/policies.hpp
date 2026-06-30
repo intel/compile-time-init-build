@@ -149,6 +149,8 @@ using no_irqs_policy = irqs_policy<>;
 
 struct default_policy : all_resources_policy,
                         all_flows_policy,
-                        all_irqs_policy {};
+                        all_irqs_policy {
+    constexpr static auto dynamic_enable_top_level = false;
+};
 } // namespace dynamic_init
 } // namespace interrupt

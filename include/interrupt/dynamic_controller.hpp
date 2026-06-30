@@ -292,12 +292,12 @@ struct dynamic_controller {
 
     using irqs_t = detail::collect_t<Root, stdx::type_list>;
 
-    // cached values for each enable register
+    // shadow values for each enable register
     template <typename Register>
     using register_t = typename Hal::template register_datatype_t<Register>;
 
     template <typename Register>
-    constinit static inline register_t<Register> cached_enable{};
+    constinit static inline register_t<Register> shadow_enable{};
 
     // which IRQs are potentially affected by a change?
     template <typename PropagatePolicy, typename... Ts>
@@ -339,20 +339,20 @@ struct dynamic_controller {
         }
     }
 
-    constexpr static auto force_write = [](auto reg, auto &cached_value,
+    constexpr static auto force_write = [](auto reg, auto &shadow_value,
                                            auto new_value) {
-        cached_value = new_value;
-        Hal::write(reg, cached_value);
+        shadow_value = new_value;
+        Hal::write(reg, shadow_value);
     };
 
-    constexpr static auto write_if_changed = [](auto reg, auto &cached_value,
+    constexpr static auto write_if_changed = [](auto reg, auto &shadow_value,
                                                 auto new_value) {
-        if (new_value != std::exchange(cached_value, new_value)) {
-            Hal::write(reg, cached_value);
+        if (new_value != std::exchange(shadow_value, new_value)) {
+            Hal::write(reg, shadow_value);
         }
     };
 
-    // update cached values and write the changed registers
+    // update shadow values and write the changed registers
     template <auto WriteFn = write_if_changed,
               template <typename...> typename L, typename... Irqs>
     static auto update(L<Irqs...>) -> void {
@@ -374,9 +374,9 @@ struct dynamic_controller {
                     (compute_register<reg_t, I>(value), ...,
                      compute_register<reg_t, Is>(value));
 
-                    auto &cached_value = cached_enable<reg_t>;
-                    auto new_value = (cached_value & ~mask) | value;
-                    WriteFn(r, cached_value, new_value);
+                    auto &shadow_value = shadow_enable<reg_t>;
+                    auto new_value = (shadow_value & ~mask) | value;
+                    WriteFn(r, shadow_value, new_value);
                 }
             },
             by_registers);
@@ -391,7 +391,7 @@ struct dynamic_controller {
     }
 
     // reset: mark resources, flows and all named irqs enabled
-    // and clear all cached state
+    // and clear all shadow state
     template <typename ActiveResources, typename ActiveFlows, typename IrqList>
     static auto reset_internal_state() -> void {
         resource_enables = resources_t{ActiveResources{}};
@@ -407,7 +407,26 @@ struct dynamic_controller {
                     decltype(detail::register_for<
                              typename I::enable_field_t>::template fn<Hal>());
                 if constexpr (not is_no_register_v<reg_t>) {
-                    cached_enable<reg_t> = {};
+                    shadow_enable<reg_t> = {};
+                }
+            },
+            by_registers);
+    }
+
+    // set: mark shadow state for irqs which are already enabled
+    template <typename EnabledIrqs> static auto set_internal_state() -> void {
+        constexpr auto by_registers =
+            stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
+                EnabledIrqs{});
+        stdx::for_each(
+            []<typename I, typename... Is>(stdx::tuple<I, Is...>) -> void {
+                using reg_t =
+                    decltype(detail::register_for<
+                             typename I::enable_field_t>::template fn<Hal>());
+                if constexpr (not is_no_register_v<reg_t>) {
+                    auto &value = shadow_enable<reg_t>;
+                    ((value |= mask_for<reg_t, I>()), ...,
+                     (value |= mask_for<reg_t, Is>()));
                 }
             },
             by_registers);
@@ -434,9 +453,10 @@ struct dynamic_controller {
         using potential_enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
                                     detail::has_enable_field>;
-        using enable_irqs_t = boost::mp11::mp_set_difference<
-            potential_enable_irqs_t,
-            stdx::tuple<typename AlreadyEnabled::config_t...>>;
+        using active_irqs_t = stdx::tuple<typename AlreadyEnabled::config_t...>;
+        using enable_irqs_t =
+            boost::mp11::mp_set_difference<potential_enable_irqs_t,
+                                           active_irqs_t>;
 
         using active_resources_t =
             Policy::template active_resources_t<resources_t>;
@@ -445,6 +465,7 @@ struct dynamic_controller {
         conc::call_in_critical_section<mutex_t>([] {
             reset_internal_state<active_resources_t, active_flows_t,
                                  potential_enable_irqs_t>();
+            set_internal_state<active_irqs_t>();
             update(enable_irqs_t{});
         });
     }
