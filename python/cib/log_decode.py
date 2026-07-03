@@ -4,7 +4,10 @@ import argparse
 import itertools
 import json
 
-from cib import mipi_messages as mipi
+try:
+    from . import mipi_messages as mipi
+except (ImportError, ModuleNotFoundError):
+    import mipi_messages as mipi  # type: ignore
 
 
 def file_reader(path, chunk_size=4096):
