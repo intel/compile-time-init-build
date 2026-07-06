@@ -34,3 +34,8 @@ addopts = ["-ra", "-q"]
 testpaths = [
   "python/test"
 ]
+
+[tool.mypy]
+mypy_path = "python"
+explicit_package_bases = true
+ignore_missing_imports = true

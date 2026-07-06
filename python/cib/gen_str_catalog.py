@@ -7,6 +7,11 @@ import re
 import xml.etree.ElementTree as et
 from functools import partial
 
+try:
+    from . import gen_utils as gen
+except (ImportError, ModuleNotFoundError):
+    import gen_utils as gen  # type: ignore
+
 
 def find_arg_split_pos(s: str, start: int) -> int:
     angle_count: int = 0
@@ -384,6 +389,8 @@ template<> auto module<{m.to_cpp_type()}>() -> module_id {{
 
 def write_cpp(messages, modules, scoped_enums, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
+        f.write(f"{gen.disclaimer()}")
+        f.write("\n")
         f.write("\n".join(f'#include "{h}"' for h in extra_headers))
         f.write("\n#include <log_binary/catalog/arguments.hpp>\n")
         f.write("\n#include <log_binary/catalog/catalog.hpp>\n\n")
