@@ -419,7 +419,6 @@ struct message {
         using span_t = Span;
 
         template <detail::storage_like S>
-        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr explicit(false) view_t(S const &s) : storage{s} {}
 
         template <detail::storage_like S, some_field_value... Vs>
@@ -428,7 +427,6 @@ struct message {
         }
 
         template <typename S>
-        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr explicit(false) view_t(owner_t<S> const &s LIFETIMEBOUND)
             : storage{s.data()} {}
 
@@ -443,7 +441,6 @@ struct message {
                      std::same_as<std::add_const_t<typename S::element_type>,
                                   typename span_t::element_type> and
                      span_t::extent <= S::extent)
-        // NOLINTNEXTLINE(google-explicit-constructor)
         constexpr explicit(false) view_t(view_t<S> const &s)
             : storage{s.data()} {}
 
