@@ -6,6 +6,7 @@ import json
 import re
 import xml.etree.ElementTree as et
 from functools import partial
+from textwrap import dedent
 
 try:
     from . import gen_utils as gen
@@ -369,41 +370,53 @@ def make_cpp_scoped_enum_decl(e: str, ut: str) -> str:
 
 
 def make_cpp_catalog_defn(m: Message) -> str:
-    return f"""/*
-    "{m.text}"
-    {m.args}
- */
+    return dedent(
+        f"""
+// "{m.text}"
+// {m.args}
 template<> auto catalog<{m.to_cpp_type()}>() -> string_id {{
     return {m.id};
-}}"""
+}}"""[1:]
+    )
 
 
 def make_cpp_module_defn(m: Module) -> str:
-    return f"""/*
-    "{m.text}"
- */
+    return dedent(
+        f"""
+// "{m.text}"
 template<> auto module<{m.to_cpp_type()}>() -> module_id {{
     return {m.id};
-}}"""
+}}"""[1:]
+    )
 
 
 def write_cpp(messages, modules, scoped_enums, extra_headers: list[str], filename: str):
     with open(filename, "w") as f:
-        f.write(f"{gen.disclaimer()}")
-        f.write("\n")
-        f.write("\n".join(f'#include "{h}"' for h in extra_headers))
-        f.write("\n#include <log_binary/catalog/arguments.hpp>\n")
-        f.write("\n#include <log_binary/catalog/catalog.hpp>\n\n")
-        scoped_enum_decls = [
+        headers = (f'#include "{h}"' for h in extra_headers)
+        scoped_enum_decls = (
             make_cpp_scoped_enum_decl(e, ut) for e, ut in scoped_enums.items()
-        ]
-        f.write("\n".join(scoped_enum_decls))
-        f.write("\n\n")
-        cpp_catalog_defns = [make_cpp_catalog_defn(m) for m in messages]
-        f.write("\n".join(cpp_catalog_defns))
-        f.write("\n\n")
-        cpp_module_defns = [make_cpp_module_defn(m) for m in modules]
-        f.write("\n".join(cpp_module_defns))
+        )
+        cpp_catalog_defns = (make_cpp_catalog_defn(m) for m in messages)
+        cpp_module_defns = (make_cpp_module_defn(m) for m in modules)
+
+        f.write(
+            dedent(
+                f"""
+{gen.disclaimer()}
+
+{"\n".join(headers)}
+
+#include <log_binary/catalog/arguments.hpp>
+#include <log_binary/catalog/catalog.hpp>
+
+{"\n".join(scoped_enum_decls)}
+
+{"\n\n".join(cpp_catalog_defns)}
+
+{"\n\n".join(cpp_module_defns)}
+"""[1:]
+            )
+        )
 
 
 def extract_enums(filename: str):
