@@ -12,6 +12,5 @@ def disclaimer(comment_introducer=None):
         {c} {" ".join(sys.argv)}
         {c} At {datetime.now(timezone.utc)}
         {c} DO NOT MODIFY THIS FILE MANUALLY
-        {c}
-        """[1:]
+        {c}"""[1:]
     )
