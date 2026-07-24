@@ -35,7 +35,9 @@ template <typename Funcs = stdx::tuple<>, typename... ArgTypes> struct builder {
     constexpr static void run(ArgTypes... args) {
         constexpr auto b = BuilderValue::value;
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            (invoke_with<Ts...>(b.funcs[stdx::index<Is>], args...), ...);
+            (invoke_with<Ts...>(b.funcs[stdx::index<Is>],
+                                std::forward<ArgTypes>(args)...),
+             ...);
         }(std::make_index_sequence<b.size()>{});
     }
 

@@ -144,6 +144,34 @@ TEST_CASE("callback with args with no extensions", "[callback]") {
 template <int Id, typename... ArgTypes>
 static stdx::tuple<ArgTypes...> callback_args{};
 
+struct MoveOnlyPayload {
+    int value{};
+
+    MoveOnlyPayload() = default;
+    explicit MoveOnlyPayload(int v) : value{v} {}
+    MoveOnlyPayload(MoveOnlyPayload &&) = default;
+    MoveOnlyPayload &operator=(MoveOnlyPayload &&) = default;
+    MoveOnlyPayload(MoveOnlyPayload const &) = delete;
+    MoveOnlyPayload &operator=(MoveOnlyPayload const &) = delete;
+};
+
+static int moved_payload_value = 0;
+
+struct CallbackWithRvalueRefArg {
+    using service = callback::service<MoveOnlyPayload &&>;
+
+    static void extension(MoveOnlyPayload &&payload) {
+        is_callback_invoked<3> = true;
+        moved_payload_value = payload.value;
+        payload.value = -1;
+    }
+
+    constexpr static auto value = []() {
+        auto const builder = cib::builder_t<service>{};
+        return builder.add(extension);
+    }();
+};
+
 struct CallbackWithArgsWithMultipleExtensions {
     using service = callback::service<int, bool>;
 
@@ -203,4 +231,18 @@ TEST_CASE("callback with args with multiple extensions", "[callback]") {
                 CallbackWithArgsWithMultipleExtensions::service>(
             built_callback));
     }
+}
+
+TEST_CASE("callback forwards rvalue reference args", "[callback]") {
+    constexpr auto built_callback = build<CallbackWithRvalueRefArg>();
+
+    is_callback_invoked<3> = false;
+    moved_payload_value = 0;
+
+    MoveOnlyPayload payload{42};
+    built_callback(std::move(payload));
+
+    REQUIRE(is_callback_invoked<3>);
+    REQUIRE(moved_payload_value == 42);
+    REQUIRE(payload.value == -1);
 }
