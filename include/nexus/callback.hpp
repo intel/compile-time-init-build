@@ -35,7 +35,17 @@ template <typename Funcs = stdx::tuple<>, typename... ArgTypes> struct builder {
     constexpr static void run(ArgTypes... args) {
         constexpr auto b = BuilderValue::value;
         [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            (invoke_with<Ts...>(b.funcs[stdx::index<Is>], args...), ...);
+            if constexpr ((... and std::is_copy_constructible_v<ArgTypes>)) {
+                (invoke_with<Ts...>(b.funcs[stdx::index<Is>], args...), ...);
+            } else {
+                static_assert(sizeof...(Is) <= 1,
+                              "Callback service has more than one callback "
+                              "requiring a move-only arg: would result in a "
+                              "potential use-after-move.");
+                (invoke_with<Ts...>(b.funcs[stdx::index<Is>],
+                                    std::move(args)...),
+                 ...);
+            }
         }(std::make_index_sequence<b.size()>{});
     }
 

@@ -1,0 +1,1 @@
+add_compile_fail_test(moveonly_multiple_callbacks.cpp LIBRARIES cib_nexus)

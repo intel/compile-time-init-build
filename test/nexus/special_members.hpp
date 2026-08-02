@@ -2,7 +2,7 @@
 
 struct move_only {
     constexpr move_only() = default;
-    constexpr move_only(int i) : value{i} {}
+    constexpr explicit(true) move_only(int i) : value{i} {}
     constexpr move_only(move_only &&) = default;
     constexpr auto operator=(move_only &&) noexcept -> move_only & = default;
 
