@@ -25,9 +25,9 @@ include(cmake/string_catalog.cmake)
 
 add_versioned_package(URI "gh:boostorg/mp11#boost-1.83.0" TARGET boost_mp11)
 fmt_recipe(12.1.0)
-add_versioned_package("gh:intel/cpp-baremetal-concurrency#536bdd7")
-add_versioned_package("gh:intel/cpp-std-extensions#c932eba")
-add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#f3fa596")
+add_versioned_package("gh:intel/cpp-baremetal-concurrency#b8a486a")
+add_versioned_package("gh:intel/cpp-std-extensions#2ce9eab")
+add_versioned_package("gh:intel/cpp-baremetal-senders-and-receivers#3e3c8aa")
 
 if(NOT DEFINED CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 23)
