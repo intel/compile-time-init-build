@@ -65,7 +65,7 @@ template <float_packable T> struct encoding<T> {
 template <enum_packable T>
 struct encoding<T> : encoding<stdx::underlying_type_t<T>> {
     using encode_t = stdx::conditional_t<
-        stdx::is_scoped_enum_v<T>, encode_enum<T, stdx::underlying_type_t<T>>,
+        std::is_scoped_enum_v<T>, encode_enum<T, stdx::underlying_type_t<T>>,
         stdx::conditional_t<std::signed_integral<stdx::underlying_type_t<T>>,
                             detail::signed_encode_t<T>,
                             detail::unsigned_encode_t<T>>>;

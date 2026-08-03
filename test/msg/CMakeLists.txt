@@ -13,11 +13,22 @@ add_tests(
     indexed_handler_uninit
     message
     relaxed_message
-    send
     LIBRARIES
     warnings
     cib_log_fmt
     cib_msg
     cib_nexus)
+
+if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"
+   OR ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 19)
+    add_tests(
+        FILES
+        send
+        LIBRARIES
+        warnings
+        cib_log_fmt
+        cib_msg
+        cib_nexus)
+endif()
 
 add_subdirectory(fail)

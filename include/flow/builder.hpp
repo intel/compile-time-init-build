@@ -6,12 +6,11 @@
 
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
-#include <stdx/tuple_algorithms.hpp>
-#include <stdx/type_traits.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/list.hpp>
 
+#include <type_traits>
 #include <utility>
 
 namespace flow {
@@ -25,7 +24,7 @@ class builder_for {
     [[nodiscard]] constexpr auto add(Ns &&...ns) {
         return fragments.apply([&](auto &...frags) {
             return builder_for<Renderer, Fragments...,
-                               stdx::remove_cvref_t<Ns>...>{
+                               std::remove_cvref_t<Ns>...>{
                 {frags..., std::forward<Ns>(ns)...}};
         });
     }

@@ -17,7 +17,7 @@
 
 namespace flow::dsl {
 template <typename T>
-concept subgraph = requires { typename stdx::remove_cvref_t<T>::is_subgraph; };
+concept subgraph = requires { typename std::remove_cvref_t<T>::is_subgraph; };
 
 template <typename Source, typename Dest, typename Cond> struct edge {
     using source_t = Source;
@@ -116,7 +116,7 @@ template <typename Leaf>
 // Find the node in the existing leaf instantiations
 template <typename N, typename Leaves>
 [[nodiscard]] constexpr auto pick_node(Leaves const &leaves) {
-    using leaves_t = stdx::remove_cvref_t<Leaves>;
+    using leaves_t = std::remove_cvref_t<Leaves>;
     using leaf_instance_list = boost::mp11::mp_transform<star_t, leaves_t>;
     constexpr auto idx = boost::mp11::mp_find<leaf_instance_list, N>::value;
     if constexpr (idx < stdx::tuple_size_v<leaves_t>) {
@@ -135,17 +135,17 @@ template <typename... Ns, typename Leaves>
 
 namespace flow::dsl {
 template <typename T> [[nodiscard]] constexpr auto get_nodes(T const &t) {
-    return detail::pick_nodes(detail::nodes_of_t<stdx::remove_cvref_t<T>>{},
+    return detail::pick_nodes(detail::nodes_of_t<std::remove_cvref_t<T>>{},
                               detail::collect_node_values(t));
 }
 
 template <typename T>
 [[nodiscard]] constexpr auto get_all_mentioned_nodes(T const &) {
     return detail::to_tuple_v<
-        detail::all_mentioned_of_t<stdx::remove_cvref_t<T>>>;
+        detail::all_mentioned_of_t<std::remove_cvref_t<T>>>;
 }
 
 template <typename T> [[nodiscard]] constexpr auto get_edges(T const &) {
-    return detail::to_tuple_v<detail::edges_of_t<stdx::remove_cvref_t<T>>>;
+    return detail::to_tuple_v<detail::edges_of_t<std::remove_cvref_t<T>>>;
 }
 } // namespace flow::dsl
