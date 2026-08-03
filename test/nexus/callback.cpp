@@ -1,8 +1,11 @@
+#include "special_members.hpp"
+
 #include <nexus/callback.hpp>
 #include <nexus/service.hpp>
 
 #include <stdx/tuple.hpp>
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <type_traits>
@@ -203,4 +206,27 @@ TEST_CASE("callback with args with multiple extensions", "[callback]") {
                 CallbackWithArgsWithMultipleExtensions::service>(
             built_callback));
     }
+}
+
+template <typename T> struct CallbackWithMoveOnlyArg {
+    using service = callback::service<T>;
+
+    constexpr static auto value = []() {
+        auto const builder = cib::builder_t<service>{};
+        return builder.add([](T mo) {
+            is_callback_invoked<0> = true;
+            callback_args<0, int> = stdx::make_tuple(mo.value);
+        });
+    }();
+};
+
+TEMPLATE_TEST_CASE("callback handles move-only args", "[callback]", move_only,
+                   move_only &&) {
+    constexpr auto built_callback = build<CallbackWithMoveOnlyArg<TestType>>();
+
+    is_callback_invoked<0> = false;
+    built_callback(std::remove_cvref_t<TestType>{42});
+
+    REQUIRE(is_callback_invoked<0>);
+    CHECK(get<0>(callback_args<0, int>) == 42);
 }

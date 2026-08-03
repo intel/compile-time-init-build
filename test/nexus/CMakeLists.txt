@@ -8,3 +8,5 @@ add_tests(
     LIBRARIES
     warnings
     cib_nexus)
+
+add_subdirectory(fail)
