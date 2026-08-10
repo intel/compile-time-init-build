@@ -12,13 +12,39 @@ encoding_reader = {
     "encode_enum": lambda reader: bytes(itertools.islice(reader, 4)),
 }
 
-encoding_converter = {
-    "int": lambda seq: struct.unpack("<i", seq)[0],
-    "unsigned int": lambda seq: struct.unpack("<I", seq)[0],
-    "long": lambda seq: struct.unpack("<q", seq)[0],
-    "float": lambda seq: struct.unpack("<f", seq)[0],
-    "double": lambda seq: struct.unpack("<d", seq)[0],
+format_table = {
+    "char": (1, "c"),
+    "signed char": (1, "b"),
+    "unsigned char": (1, "B"),
+    "bool": (1, "b"),
+    "short": (2, "h"),
+    "unsigned short": (2, "H"),
+    "int": (4, "i"),
+    "unsigned int": (4, "I"),
+    "long": (4, "l"),
+    "unsigned long": (4, "L"),
+    "long long": (8, "q"),
+    "unsigned long long": (8, "Q"),
+    "float": (4, "f"),
+    "double": (8, "d"),
 }
+
+alt_format_table = {
+    "long": (8, "q"),
+    "unsigned long": (8, "Q"),
+}
+
+
+def convert(c_type, seq):
+    sz, fmt = format_table[c_type]
+    # if the production machine has 8-byte longs, adjust
+    if (c_type == "long" or c_type == "unsigned long") and len(seq) == 8:
+        sz, fmt = alt_format_table[c_type]
+    result = struct.unpack(f"<{fmt}", seq[:sz])[0]
+    # clang cindex reports "true" as value -1
+    if c_type == "bool" and result == 1:
+        result = -1
+    return result
 
 
 def enum_lookup(db, enum_type, value):
@@ -29,8 +55,7 @@ def enum_lookup(db, enum_type, value):
 
 
 def enum_converter(db, enum_type, underlying_type, seq):
-    convert = encoding_converter[underlying_type]
-    value = str(convert(seq))
+    value = str(convert(underlying_type, seq))
     return enum_lookup(db, enum_type, value)
 
 
@@ -124,8 +149,7 @@ class Catalog:
     @staticmethod
     def read_id(reader):
         read = encoding_reader["encode_u32"]
-        convert = encoding_converter["unsigned int"]
-        return convert(read(reader))
+        return convert("unsigned int", read(reader))
 
     @staticmethod
     def extract_arg(db, reader, arg):
@@ -134,14 +158,14 @@ class Catalog:
 
         if encode_tag == "encode_enum":
             cpp_type, underlying = spec.split(",")
-            convert = partial(enum_converter, db, cpp_type, underlying.strip())
+            conv = partial(enum_converter, db, cpp_type, underlying.strip())
         else:
-            if spec in encoding_converter:
-                convert = encoding_converter[spec]
+            if spec in format_table:
+                conv = partial(convert, spec)
             else:
-                convert = partial(enum_converter, db, spec, "unsigned int")
+                conv = partial(enum_converter, db, spec, "unsigned int")
 
-        return convert(read(reader))
+        return conv(read(reader))
 
     def __init__(self, reader, messages, modules, db):
         self.header = read_struct(HeaderStruct, reader)
