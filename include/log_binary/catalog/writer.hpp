@@ -8,10 +8,6 @@
 #include <utility>
 
 namespace logging::binary {
-template <typename T>
-concept writer_like =
-    requires(T &t, stdx::span<std::uint32_t const, 1> data) { t(data); };
-
 [[maybe_unused]] constexpr inline struct get_writer_t {
     template <typename T>
     consteval auto operator()(T &&t) const noexcept(
