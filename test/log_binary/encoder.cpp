@@ -191,8 +191,8 @@ TEST_CASE("argument encoding", "[mipi]") {
     STATIC_REQUIRE(std::same_as<P::encode_as_t<double>, encode_u64<double>>);
     STATIC_REQUIRE(
         std::same_as<P::encode_as_t<UnscopedE>, encode_u32<UnscopedE>>);
-    STATIC_REQUIRE(
-        std::same_as<P::encode_as_t<ScopedE>, encode_enum<ScopedE, int>>);
+    STATIC_REQUIRE(std::same_as<P::encode_as_t<ScopedE>,
+                                encode_enum<ScopedE, int, sizeof(int)>>);
 }
 
 TEST_CASE("log zero arguments", "[mipi]") {

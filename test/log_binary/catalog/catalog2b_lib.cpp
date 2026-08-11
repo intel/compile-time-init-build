@@ -47,6 +47,12 @@ auto log_rt_32bit_enum_arg() -> void {
         stdx::ct_format<"Scoped 32-bit enum argument: {}">(E_32bit::VALUE));
 }
 
+auto log_rt_64bit_enum_arg() -> void {
+    using namespace ns;
+    cfg.logger.log_msg<log_env2b>(
+        stdx::ct_format<"Scoped 64-bit enum argument: {}">(E_64bit::VALUE));
+}
+
 enum struct extra_enum {};
 
 auto log_rt_unnamed_enum_value_arg() -> void {

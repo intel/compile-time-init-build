@@ -9,8 +9,12 @@ encoding_reader = {
     "encode_32": lambda reader: bytes(itertools.islice(reader, 4)),
     "encode_u64": lambda reader: bytes(itertools.islice(reader, 8)),
     "encode_64": lambda reader: bytes(itertools.islice(reader, 8)),
-    "encode_enum": lambda reader: bytes(itertools.islice(reader, 4)),
 }
+
+
+def enum_reader(sz, reader):
+    return bytes(itertools.islice(reader, sz))
+
 
 format_table = {
     "char": (1, "c"),
@@ -154,16 +158,19 @@ class Catalog:
     @staticmethod
     def extract_arg(db, reader, arg):
         encode_tag, spec = arg[:-1].split("<")
-        read = encoding_reader[encode_tag]
 
         if encode_tag == "encode_enum":
-            cpp_type, underlying = spec.split(",")
+            cpp_type, underlying, sz = spec.split(",")
             conv = partial(enum_converter, db, cpp_type, underlying.strip())
+            read = partial(enum_reader, int(sz))
         else:
+            read = encoding_reader[encode_tag]
             if spec in format_table:
                 conv = partial(convert, spec)
-            else:
+            elif "32" in encode_tag:
                 conv = partial(enum_converter, db, spec, "unsigned int")
+            else:
+                conv = partial(enum_converter, db, spec, "unsigned long long")
 
         return conv(read(reader))
 

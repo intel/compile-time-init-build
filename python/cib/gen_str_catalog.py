@@ -534,10 +534,15 @@ def arg_type_encoding(arg):
     string_re = re.compile(r"encode_(32|u32|64|u64|enum)<(.*)>")
     m = string_re.match(arg)
     if "enum" in m.group(1):
-        args_re = re.compile(r"(.*), (.*)")
+        args_re = re.compile(r"(.*), (.*), (\d+)")
         args_m = args_re.match(m.group(2))
-        return (f"encode_{m.group(1)}", args_m.group(1), args_m.group(2))
-    return (f"encode_{m.group(1)}", m.group(2), m.group(2))
+        return (
+            f"encode_{m.group(1)}",
+            args_m.group(1),
+            args_m.group(2),
+            args_m.group(3),
+        )
+    return (f"encode_{m.group(1)}", m.group(2), m.group(2), m.group(2))
 
 
 def arg_printf_spec(arg: str):
@@ -560,7 +565,7 @@ def arg_printf_spec(arg: str):
         "long long": "%lld",
         "unsigned long long": "%llu",
     }
-    enc, _, ut = arg_type_encoding(arg)
+    enc, _, ut, _ = arg_type_encoding(arg)
     return printf_dict.get(ut, printf_dict.get(enc, "%d"))
 
 
@@ -748,7 +753,7 @@ def main():
     if args.cpp_output is not None:
         for m in messages:
             for arg_type in m.args:
-                enc, enum, ut = arg_type_encoding(arg_type)
+                enc, enum, ut, _ = arg_type_encoding(arg_type)
                 if "enum" in enc:
                     scoped_enums.update({enum: ut})
 
@@ -775,7 +780,7 @@ def main():
                 }
                 for m in messages:
                     for i, arg_type in enumerate(m.args):
-                        _, enum, _ = arg_type_encoding(arg_type)
+                        _, enum, _, _ = arg_type_encoding(arg_type)
                         if enum in enums:
                             m.enum_lookup = (i + 1, enums[enum][0])
             except Exception as e:

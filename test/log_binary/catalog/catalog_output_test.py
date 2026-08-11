@@ -52,6 +52,7 @@ def test_binary_logs():
         expected_lines.add("TRACE [default] Scoped 8-bit enum argument: VALUE")
         expected_lines.add("TRACE [default] Scoped 16-bit enum argument: VALUE")
         expected_lines.add("TRACE [default] Scoped 32-bit enum argument: VALUE")
+        expected_lines.add("TRACE [default] Scoped 64-bit enum argument: VALUE")
     else:
         expected_lines.add(
             "TRACE [default] Scoped enum argument: static_cast<ns::E1>(19)"
@@ -70,6 +71,9 @@ def test_binary_logs():
         )
         expected_lines.add(
             "TRACE [default] Scoped bool enum argument: static_cast<ns::E_32bit>(305419896)"
+        )
+        expected_lines.add(
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_64bit>(1311768467294899695)"
         )
 
     with open(json_filename, "r") as f:
