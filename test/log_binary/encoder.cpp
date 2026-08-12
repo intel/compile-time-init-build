@@ -11,6 +11,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <utility>
 
 namespace {
@@ -424,4 +425,38 @@ TEST_CASE("log with overridden writer", "[mipi]") {
 
     cfg.logger.log_msg<catalog_env>(stdx::ct_format<"Hello">());
     CHECK(num_custom_writer_calls == 1);
+}
+
+namespace {
+std::string_view built_nonmsg_payload{};
+
+struct nonmsg_builder : logging::mipi::default_builder<> {
+    template <auto Level, logging::packable... Ts>
+    static auto build(string_id, module_id, logging::mipi::unit_t, Ts...)
+        -> std::string_view {
+        return built_nonmsg_payload;
+    }
+};
+
+std::string_view written_nonmsg_payload{};
+
+struct nonmsg_writer {
+    auto operator()(std::string_view sv) const -> void {
+        written_nonmsg_payload = sv;
+    }
+};
+} // namespace
+
+TEST_CASE("log with custom non-message format", "[mipi]") {
+    using catalog_env =
+        stdx::make_env_t<logging::get_level, logging::level::TRACE,
+                         logging::binary::get_builder, nonmsg_builder{},
+                         logging::binary::get_writer, nonmsg_writer{}>;
+
+    static auto cfg =
+        logging::binary::config{test_log_destination<logging::level::TRACE>{}};
+
+    built_nonmsg_payload = "Hello, world!";
+    cfg.logger.log_msg<catalog_env>(stdx::ct_format<"">());
+    CHECK(written_nonmsg_payload == built_nonmsg_payload);
 }
