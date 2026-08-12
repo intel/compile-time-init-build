@@ -6,6 +6,7 @@ from pathlib import Path
 from cib import log_decode as decode
 
 catalog_output = Path("./catalog_test.bin")
+decoded_catalog_output = Path("./catalog_test.txt")
 json_filename = Path("./strings.json")
 
 
@@ -47,6 +48,11 @@ def test_binary_logs():
     if module_available("clang"):
         expected_lines.add("TRACE [default] Scoped enum argument: VAL_E1")
         expected_lines.add("TRACE [default] Unscoped enum argument: VAL_E2")
+        expected_lines.add("TRACE [default] Scoped bool enum argument: VALUE")
+        expected_lines.add("TRACE [default] Scoped 8-bit enum argument: VALUE")
+        expected_lines.add("TRACE [default] Scoped 16-bit enum argument: VALUE")
+        expected_lines.add("TRACE [default] Scoped 32-bit enum argument: VALUE")
+        expected_lines.add("TRACE [default] Scoped 64-bit enum argument: VALUE")
     else:
         expected_lines.add(
             "TRACE [default] Scoped enum argument: static_cast<ns::E1>(19)"
@@ -54,10 +60,27 @@ def test_binary_logs():
         expected_lines.add(
             "TRACE [default] Unscoped enum argument: static_cast<ns::E2>(23)"
         )
+        expected_lines.add(
+            "TRACE [default] Scoped enum argument: static_cast<ns::E_bool>(1)"
+        )
+        expected_lines.add(
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_8bit>(18)"
+        )
+        expected_lines.add(
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_16bit>(4660)"
+        )
+        expected_lines.add(
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_32bit>(305419896)"
+        )
+        expected_lines.add(
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_64bit>(1311768467294899695)"
+        )
 
     with open(json_filename, "r") as f:
         db = json.load(f)
-    for log_line in decode.read_logs(catalog_output, db):
-        assert log_line in expected_lines
-        expected_lines.remove(log_line)
+    with open(decoded_catalog_output, "w") as of:
+        for log_line in decode.read_logs(catalog_output, db):
+            of.write(f"{log_line}\n")
+            assert log_line in expected_lines
+            expected_lines.remove(log_line)
     assert not expected_lines

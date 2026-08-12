@@ -20,6 +20,11 @@ extern auto log_rt_named_arg() -> void;
 
 extern auto log_rt_scoped_enum_arg() -> void;
 extern auto log_rt_unscoped_enum_arg() -> void;
+extern auto log_rt_bool_enum_arg() -> void;
+extern auto log_rt_8bit_enum_arg() -> void;
+extern auto log_rt_16bit_enum_arg() -> void;
+extern auto log_rt_32bit_enum_arg() -> void;
+extern auto log_rt_64bit_enum_arg() -> void;
 extern auto log_rt_auto_scoped_enum_arg() -> void;
 extern auto log_rt_unnamed_enum_value_arg() -> void;
 extern auto log_ct_unnamed_enum_value_arg() -> void;
@@ -163,6 +168,46 @@ TEST_CASE_PERSISTENT_FIXTURE(fixture, "catalog tests") {
         log_calls = 0;
         test_critical_section::count = 0;
         log_rt_unscoped_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime bool enum argument") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_bool_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime 8-bit enum argument") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_8bit_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime 16-bit enum argument") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_16bit_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime 32-bit enum argument") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_32bit_enum_arg();
+        CHECK(test_critical_section::count == 2);
+        CHECK(log_calls == 1);
+    }
+
+    SECTION("log runtime 64-bit enum argument") {
+        log_calls = 0;
+        test_critical_section::count = 0;
+        log_rt_64bit_enum_arg();
         CHECK(test_critical_section::count == 2);
         CHECK(log_calls == 1);
     }
