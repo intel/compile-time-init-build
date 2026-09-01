@@ -8,6 +8,8 @@ project(
         "A header-only C++ library for composing modular firmware at compile-time."
     HOMEPAGE_URL "https://github.com/intel/compile-time-init-build")
 
+set(INFRA_PROVIDE_PYTEST_REQS OFF)
+
 include(cmake/get_cpm.cmake)
 if(PROJECT_IS_TOP_LEVEL)
     cpmaddpackage("gh:intel/cicd-repo-infrastructure#dev")

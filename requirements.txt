@@ -1,0 +1,15 @@
+# The contents of this file can be generated at latest versions available by running:
+#
+# $ python3 -m venv ./test_venv
+# $ source ./test_venv/bin/activate
+# $ pip install pytest pytest-xdist hypothesis | tail -n1 | cut -d' ' -f 3- | tr ' ' '\n' | sed 's/\(.*\)-\(.*\)/\1==\2/'
+#
+attrs==24.2.0
+execnet==2.1.1
+hypothesis==6.115.3
+iniconfig==2.0.0
+packaging==24.1
+pluggy==1.5.0
+pytest==9.0.3
+pytest-xdist==3.6.1
+sortedcontainers==2.4.0
