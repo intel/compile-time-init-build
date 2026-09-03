@@ -61,19 +61,19 @@ def test_binary_logs():
             "TRACE [default] Unscoped enum argument: static_cast<ns::E2>(23)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped enum argument: static_cast<ns::E_bool>(1)"
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_bool>(-1)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_8bit>(18)"
+            "TRACE [default] Scoped 8-bit enum argument: static_cast<ns::E_8bit>(18)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_16bit>(4660)"
+            "TRACE [default] Scoped 16-bit enum argument: static_cast<ns::E_16bit>(4660)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_32bit>(305419896)"
+            "TRACE [default] Scoped 32-bit enum argument: static_cast<ns::E_32bit>(305419896)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_64bit>(1311768467294899695)"
+            "TRACE [default] Scoped 64-bit enum argument: static_cast<ns::E_64bit>(1311768467294899695)"
         )
 
     with open(json_filename, "r") as f:
