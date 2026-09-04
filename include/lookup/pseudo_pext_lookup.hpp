@@ -194,21 +194,19 @@ constexpr auto remove_cheapest_bit(detail::raw_integral_t<T> mask,
     auto cheapest_bit = std::size_t{};
     auto min_num_dups = std::numeric_limits<std::size_t>::max();
 
-    for_each(
-        [&](auto i) {
-            auto btry_mask = bmask;
-            btry_mask.reset(i);
+    bmask.for_each([&](auto i) {
+        auto btry_mask = bmask;
+        btry_mask.reset(i);
 
-            std::array<raw_t, S> try_keys =
-                with_mask(btry_mask.template to<raw_t>(), keys);
+        std::array<raw_t, S> try_keys =
+            with_mask(btry_mask.template to<raw_t>(), keys);
 
-            auto num_dups = count_duplicates(try_keys);
-            if (num_dups < min_num_dups) {
-                min_num_dups = num_dups;
-                cheapest_bit = i;
-            }
-        },
-        bmask);
+        auto num_dups = count_duplicates(try_keys);
+        if (num_dups < min_num_dups) {
+            min_num_dups = num_dups;
+            cheapest_bit = i;
+        }
+    });
 
     bmask.reset(cheapest_bit);
     return bmask.template to<raw_t>();
