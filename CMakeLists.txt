@@ -16,7 +16,7 @@ else()
 endif()
 
 find_package(
-    Python3
+    Python3 3.12
     COMPONENTS Interpreter
     REQUIRED)
 
