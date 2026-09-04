@@ -7,7 +7,7 @@ name = "intel-compile-time-init-build"
 version = "0.0.1"
 requires-python = ">=3.12"
 dependencies = [
-  "intel-cicd-repo-infrastructure",
+  "intel-cicd-repo-infrastructure@git+https://github.com/intel/cicd-repo-infrastructure@dev",
   "libclang"
 ]
 license = "BSL-1.0"
