@@ -225,17 +225,72 @@ happen before logging is initialized.
 
 ==== `action`
 
-Defines a new `flow` action. All `flow` actions are created with a name and a
-lambda expression. `flow` action and milestone names must be unique within a
-`flow`. The same action can be used in multiple flows. Actions cannot be added
-to a flow more than once, but can be referenced by other actions when adding
-dependencies.
+Defines a new `flow` action. A `flow` action is created with a name, and
+usually with a lambda expression giving its implementation. `flow` action and
+milestone names must be unique within a `flow`. The same action can be used in
+multiple flows. Actions cannot be added to a flow more than once, but can be
+referenced by other actions when adding dependencies.
 
 [source,cpp]
 ----
 constexpr static auto MY_ACTION = flow::action<"MY_ACTION_NAME">([] {
   // do useful stuff
 });
+----
+
+An action may also be declared with only a name and no function in the argument.
+The implementation for the action is supplied by specializaing `cib_func` with
+the action's name.
+
+[source,cpp]
+----
+// declaration: the action's implementation is not given here
+constexpr static auto MY_ACTION = flow::action<"MY_ACTION_NAME">();
+
+// definition, possibly in another translation unit
+#include <nexus/func_decl.hpp>
+
+template <> auto cib_func<"MY_ACTION_NAME">() -> void {
+  // do useful stuff
+}
+----
+
+This decouples the shape of a flow from the implementations of its steps. The
+graph can be composed independently so that the step implementation can live
+in a different translation unit. Because `cib_func` is declared `extern`,
+a missing definition is a link error instead of a compiler error.
+
+You can spell this name-only variation as `flow::step`.
+
+[source,cpp]
+----
+// exactly equivalent to flow::action<"MY_ACTION_NAME">()
+constexpr static auto MY_STEP = flow::step<"MY_ACTION_NAME">();
+----
+
+Name-only actions and steps can also be written with UDLs from the
+`flow::literals` namespace:
+
+[source,cpp]
+----
+namespace example_component {
+  using namespace flow::literals;
+
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(*"MY_ACTION_NAME"_action >> *"ANOTHER_NAME"_step));
+}
+----
+
+An action's lambda expression can take an explicit template parameter for the
+nexus type. This allows the action to receive the nexus it was built into. The
+nexus can be used to run other services:
+
+[source,cpp]
+----
+constexpr static auto MY_ACTION = flow::action<"MY_ACTION_NAME">(
+    []<typename Nexus>() {
+      Nexus::template service<SomeOtherFlow>();
+    });
 ----
 
 ==== `milestone`
@@ -249,6 +304,48 @@ may base their dependencies on.
 constexpr static auto MY_MILESTONE = flow::milestone<"MY_MILESTONE_NAME">();
 ----
 
+Milestones have a UDL in the `flow::literals` namespace too:
+
+[source,cpp]
+----
+namespace example_component {
+  using namespace flow::literals;
+
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(*"MY_MILESTONE_NAME"_milestone));
+}
+----
+
+==== `cib::extend`
+
+`cib::extend` is how a component adds to a flow. It is variadic which allows
+multiple fragments to be provided in one call. `cib::extend` can also be called
+multiple times by a component as it adds fragments. All fragments across the entire project
+are merged into one graph.
+
+[source,cpp]
+----
+namespace example_component {
+  constexpr auto config = cib::config(
+      // three unrelated additions, one call
+      cib::extend<MyFlow>(*A, *B, *C),
+      // and another call, adding an ordering
+      cib::extend<MyFlow>(A >> B));
+}
+----
+
+A flow can be named either by its type or by the name given to its
+`flow::service`. This is useful when the service type is not in scope:
+
+[source,cpp]
+----
+struct MorningRoutine : public flow::service<"MorningRoutine"> {};
+
+// these two are equivalent
+cib::extend<MorningRoutine>(*WAKE_UP)
+cib::extend<"MorningRoutine">(*WAKE_UP)
+----
+
 ==== `run`
 
 Runs a flow, executing all its actions in the prescribed order.
@@ -257,6 +354,16 @@ Runs a flow, executing all its actions in the prescribed order.
 ----
 flow::run<MyFlow>();
 ----
+
+A flow can also be run by name:
+
+[source,cpp]
+----
+cib::invoke_service<"MyFlow">();
+----
+
+NOTE: Running a flow before the nexus that contains it has been initialized
+calls `stdx::panic`.
 
 ==== `operator>>`
 
@@ -331,6 +438,162 @@ namespace example_component {
 }
 ----
 
+The `*` operator can also be applied to a whole subgraph, in which case every
+action mentioned in that subgraph is added:
+
+[source,cpp]
+----
+// these two are equivalent
+*(A >> B >> C)
+*A >> *B >> *C
+
+// and so are these
+*(A && B)
+*A && *B
+----
+
+==== `operator""_ref`
+
+The example above requires `example_component` to have
+`other_component::INIT_SOMETHING` in scope. A step can be referenced
+by name to allow decoupling. If an action or milestone is in another
+file or translation unit, it would cause coupling without some
+mechanism to reference a node by name. Just use the `_ref` UDL, which
+lives in the `flow::dsl::literals` namespace.
+
+[source,cpp]
+----
+namespace example_component {
+  using namespace flow::dsl::literals;
+
+  constexpr auto DO_A_THING = ...
+
+  constexpr auto config = cib::config(
+      cib::extend<MyFlow>(
+          // INIT_SOMETHING is added to the flow by some other component
+          "INIT_SOMETHING"_ref >>
+          *DO_A_THING));
+}
+----
+
+A node reference is always a reference and cannot be added to the flow with
+the `*` operator.
+
+==== Conditional steps
+
+A step can be added under a condition, in which case it is added only when the
+condition is true. There are two kinds.
+
+`cib::constexpr_condition` is evaluated at compile time. If it is false, the
+step is not added to the flow and nothing is generated for it. This is very
+useful for making compile-time choices that affect the flow graph.
+
+[source,cpp]
+----
+template <int V>
+constexpr auto when_42 =
+    cib::constexpr_condition<"when_42">([] { return V == 42; });
+
+struct my_component {
+  constexpr static auto config = cib::config(
+      when_42<TheValue>(cib::extend<MyFlow>(*MY_ACTION)));
+};
+----
+
+`cib::runtime_condition` wraps a run-time evaluated predicate. The step stays
+in the flow's sequence, but running it is guarded by the predicate.
+
+[source,cpp]
+----
+constexpr auto when_feature_enabled =
+    cib::runtime_condition<"feature_enabled">([] { return feature_is_on(); });
+
+struct my_component {
+  constexpr static auto config = cib::config(
+      when_feature_enabled(cib::extend<MyFlow>(*MY_ACTION)));
+};
+----
+
+Conditions compose with `and`:
+
+[source,cpp]
+----
+(when_feature_enabled and when_other_thing)(cib::extend<MyFlow>(*MY_ACTION))
+----
+
+A dependency between two conditional steps must itself carry conditions at least
+as strong as those on both of its endpoints. Otherwise the ordering could be
+required in a case where one of the steps does not run, and that is a
+compilation error. So when ordering two conditional steps, guard the dependency
+with the conjunction of both conditions:
+
+[source,cpp]
+----
+struct my_component {
+  constexpr static auto config = cib::config(
+      when_a(cib::extend<MyFlow>(*A)),
+      when_b(cib::extend<MyFlow>(*B)),
+      // both are required for the ordering
+      (when_a and when_b)(cib::extend<MyFlow>(A >> B)));
+};
+----
+
+Getting this wrong produces an error of the form `The conditions on the sequence
+(A >> B)[c] are weaker than those on A[ca] or B[cb]`, naming the missing
+predicate.
+
+NOTE: A runtime condition that guards a dependency (`>>` or `&&`, rather than a
+single step) must be declared at global namespace scope.
+
+NOTE: A node reference (`"NAME"_ref`) cannot be used inside a runtime
+conditional; there is no overload to apply a condition to one. Refer to the step
+by its `constexpr` constant instead.
+
+=== Logging
+
+A flow given a name logs its own start and end, and each step as it runs. The
+messages are:
+
+[source]
+----
+flow.start(FlowName)
+flow.action(StepName)
+flow.milestone(StepName)
+flow.end(FlowName)
+----
+
+Logging is controlled by the flow's log policy, which defaults to
+`flow::log_policies::normal` for a named flow and
+`flow::log_policies::none` for an unnamed one. Passing `none` explicitly
+silences a named flow, as shown under `service` above. Any type satisfying the
+`flow::log_policy` concept can be used.
+
+The level at which a flow logs is controlled by specializing `flow::log_env`,
+either for a whole flow or for an individual step. The name used is the flow's
+name or the step's name:
+
+[source,cpp]
+----
+using info_env = stdx::extend_env_t<flow::default_log_env,
+                                    logging::get_level, logging::level::INFO>;
+using user1_env = stdx::extend_env_t<flow::default_log_env,
+                                     logging::get_level, logging::level::USER1>;
+
+// every flow that doesn't say otherwise
+template <> constexpr auto flow::log_env<"default"> = info_env{};
+
+// this one flow
+template <> constexpr auto flow::log_env<"MyFlow"> = info_env{};
+
+// this one step, wherever it appears
+template <> constexpr auto flow::log_env<"MY_ACTION_NAME"> = user1_env{};
+----
+
+The environment for a given message is looked up by step name first, then by
+flow name, then `"default"`, and failing all of those the built-in default is
+`logging::level::TRACE`. So overriding a flow's environment also changes the
+steps within it that have no environment of their own.
+
 === Alternative flow builders
 
 The default flow service uses a graph builder that outputs the flow steps as an
@@ -341,11 +604,13 @@ what happens by default when we run the flow.
 [source,cpp]
 ----
 // the default flow builder and service
-template <stdx::ct_string Name = "">
-using builder = flow::builder_for<flow::graph_builder<Name>>;
+template <stdx::ct_string Name = "",
+          typename LogPolicy = flow::log_policy_t<Name>>
+using builder = flow::builder_for<flow::graph_builder<Name, LogPolicy>>;
 
-template <stdx::ct_string Name = "">
-using service = flow::service_for<builder<Name>>;
+template <stdx::ct_string Name = "",
+          typename LogPolicy = flow::log_policy_t<Name>>
+using service = flow::service_for<builder<Name, LogPolicy>>;
 
 // declare a flow service
 struct MorningRoutine : public service<"MorningRoutine"> {};
@@ -361,12 +626,14 @@ But given a flow, other renderings are possible.
 
 [source,cpp]
 ----
-// a flow builder and service that produces a graphviz rendering
-template <stdx::ct_string Name = "">
-using viz_builder = flow::graph<Name, flow::viz_builder>;
+// flow::viz_builder lives in <flow/viz_builder.hpp>
 
-template <stdx::ct_string Name = "">
-using viz_service = flow::service_for<viz_builder>;
+// a flow builder and service that produces a graphviz rendering
+template <stdx::ct_string Name = "", typename Renderer = flow::graphviz>
+using viz_builder = flow::builder_for<flow::viz_builder<Name, Renderer>>;
+
+template <stdx::ct_string Name = "", typename Renderer = flow::graphviz>
+using viz_service = flow::service_for<viz_builder<Name, Renderer>>;
 ----
 
 Here, `viz_service` will produce a graphviz rendering of a flow using the
@@ -382,6 +649,108 @@ struct MorningRoutine : public viz_service<"MorningRoutine"> {};
 auto graphviz_str = nexus.service<"MorningRoutine">();
 ----
 
+NOTE: A `viz_service` has a different interface type from the default
+`flow::service`: it returns a string instead of `void`. It should be invoked
+directly with `nexus.service<...>()`. A config containing one will not
+compile through `cib::nexus::init()`, so use a viz service in a separate
+debug configuration.
+
 `viz_builder` is available as a debugging aid. But in general, having the
 flow rendering separate from the flow definition enables any kind of rendering
 with corresponding runtime behaviour.
+
+Two renderers are provided:
+
+- `flow::graphviz` is the default
+- `flow::mermaid` produces a mermaid `flowchart`
+
+[source,cpp]
+----
+using viz = flow::builder_for<flow::viz_builder<"MorningRoutine", flow::mermaid>>;
+----
+
+==== Building a flow without a nexus
+
+A flow can be built and run directly, without going through `cib::nexus`. This
+is mostly useful in tests. The fragments are collected by a `flow::builder`, and
+the renderer turns them into something runnable.
+
+[source,cpp]
+----
+template <auto... Fragments> struct wrapper {
+    constexpr static auto value = flow::builder<>{}.add(Fragments...);
+};
+
+// build and run
+flow::graph_builder<"test">::render<wrapper<(*A >> *B)>>()();
+----
+
+NOTE: A fragment passed as a template argument needs parentheses around it, so
+that the `>>` is not parsed as closing the template argument list.
+
+=== Debugging a flow
+
+`flow::debug_builder` renders only the subgraph between two named steps.
+It reports the result through a `static_assert`, so the graph appears in the
+compiler output and the build stops.
+
+[source,cpp]
+----
+#include <flow/debug_builder.hpp>
+
+// render just the part of the flow between "b" and "c"
+struct DebugFlow
+    : public flow::service_for<
+          flow::builder_for<flow::debug_builder<"b", "c", flow::mermaid>>> {};
+----
+
+The CMake function`generate_flow_graph` can be used to automate this use:
+
+[source,cmake]
+----
+generate_flow_graph(
+    TARGET my_target
+    FLOW_NAME my_flow
+    START_NODE b
+    END_NODE c)
+----
+
+This creates a target `my_target.my_flow.graph` that builds a copy of
+`my_target` with a header injected to override the named flow's service,
+extracts the mermaid source from the compiler output into
+`my_target.my_flow.graph.mmd`, and renders it to an `.svg`.
+
+NOTE: `generate_flow_graph` requires `mmdc` (mermaid-cli) on the `PATH`. If it
+is not found the function is defined as a no-op.
+
+=== Diagnostics
+
+The flow library detects problems with the graph at compile-time. If a problem
+is found the library will `static_assert`. Things that are detected:
+
+A step was mentioned but never added::
+`One or more steps are referenced in the flow (F) but not explicitly added with
+the * operator. The missing steps are: ...`
++
+Either add the step with `*`, or remove the dependency that mentions it.
+
+Two components added the same step::
+`One or more steps in the flow (F) are explicitly added more than once using the
+* operator. The duplicate steps are: ...`
++
+Only one component should add any given step with `*`.
+
+The dependencies are contradictory::
+`Topological sort failed: cycle in flow.`, followed by the edges that were still
+unplaced when the sort gave up. Those edges are where the cycle is.
+
+A conditional dependency is not guarded strongly enough::
+`The conditions on the sequence (A >> B)[c] are weaker than those on A[ca] or
+B[cb]. Specifically, the sequence is missing the predicate: ...`
++
+See _Conditional steps_ above.
+
+The flow ran before the nexus was initialized::
+`Attempting to run flow (F) before it is initialized`. This one is a runtime
+panic rather than a compile-time error.
+
