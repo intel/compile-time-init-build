@@ -45,9 +45,6 @@ def convert(c_type, seq):
     if (c_type == "long" or c_type == "unsigned long") and len(seq) == 8:
         sz, fmt = alt_format_table[c_type]
     result = struct.unpack(f"<{fmt}", seq[:sz])[0]
-    # clang cindex reports "true" as value -1
-    if c_type == "bool" and result == 1:
-        result = -1
     return result
 
 

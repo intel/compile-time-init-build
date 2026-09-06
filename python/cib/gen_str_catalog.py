@@ -441,7 +441,13 @@ def extract_enums(filename: str):
     for node in translation_unit.cursor.walk_preorder():
         if node.kind == CursorKind.ENUM_DECL:
             new_decl = {
-                e.spelling: e.enum_value
+                # workaround for https://github.com/llvm/llvm-project/issues/221326
+                e.spelling: 1
+                if (
+                    e.type.get_declaration().enum_type.spelling == "bool"
+                    and e.enum_value == -1
+                )
+                else e.enum_value
                 for e in node.walk_preorder()
                 if e.kind == CursorKind.ENUM_CONSTANT_DECL
             }

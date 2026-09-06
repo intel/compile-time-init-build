@@ -61,7 +61,7 @@ def test_binary_logs():
             "TRACE [default] Unscoped enum argument: static_cast<ns::E2>(23)"
         )
         expected_lines.add(
-            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_bool>(-1)"
+            "TRACE [default] Scoped bool enum argument: static_cast<ns::E_bool>(1)"
         )
         expected_lines.add(
             "TRACE [default] Scoped 8-bit enum argument: static_cast<ns::E_8bit>(18)"
