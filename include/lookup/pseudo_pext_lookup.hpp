@@ -26,6 +26,7 @@ constexpr auto as_raw_integral(auto v) {
     static_assert(sizeof(v) <= 8);
 
     if constexpr (std::is_floating_point_v<decltype(v)>) {
+        // Normalize signed zero so +0.0 and -0.0 have the same key bits.
         if (v == 0) {
             v = 0;
         }
