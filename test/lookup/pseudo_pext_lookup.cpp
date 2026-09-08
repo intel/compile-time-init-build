@@ -137,15 +137,15 @@ TEST_CASE("pbt regression 1", "[pseudo pext lookup]") {
 
 TEST_CASE("lookup respects the maximum search length", "[pseudo pext lookup]") {
     constexpr auto lookup = pseudo_pext_indirect_2::make(CX_VALUE([] {
-        lookup::input<std::uint32_t, std::uint32_t, 33> i{};
-        for (auto key = std::uint32_t{}; key < i.entries.size(); ++key) {
-            i.entries[key] = {key, key + 1};
+        std::array<lookup::entry<std::uint8_t, int>, 33> entries{};
+        for (auto key = std::uint8_t{}; key < entries.size(); ++key) {
+            entries[key] = {key, key + 1};
         }
-        return i;
+        return lookup::input{0, entries};
     }()));
 
     CHECK(decltype(lookup)::search_len <= 2);
-    for (auto key = std::uint32_t{}; key < 33; ++key) {
+    for (auto key = std::uint8_t{}; key < 33; ++key) {
         CHECK(lookup[key] == key + 1);
     }
     CHECK(lookup[33] == 0);
