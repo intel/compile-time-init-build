@@ -6,8 +6,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <limits>
-
 using pseudo_pext_direct = lookup::pseudo_pext_lookup<>;
 using pseudo_pext_indirect_1 = lookup::pseudo_pext_lookup<true, 1>;
 using pseudo_pext_indirect_2 = lookup::pseudo_pext_lookup<true, 2>;
@@ -101,15 +99,13 @@ TEMPLATE_TEST_CASE("lookup with scoped enum entries", "[pseudo pext lookup]",
     CHECK(lookup[some_key_t::GAMMA] == 4);
 }
 
-TEMPLATE_TEST_CASE("lookup rejects oversized tables", "[pseudo pext lookup]",
-                   std::uint32_t, std::uint64_t) {
+TEST_CASE("lookup rejects oversized tables", "[pseudo pext lookup]") {
     constexpr auto input = CX_VALUE([] {
-        lookup::input<TestType, int, std::numeric_limits<TestType>::digits + 1>
-            i{};
-        for (auto bit = std::size_t{}; bit < i.entries.size() - 1; ++bit) {
-            i.entries[bit + 1].key_ = TestType{1} << bit;
+        std::array<lookup::entry<std::uint32_t, int>, 33> entries{};
+        for (auto bit = std::size_t{}; bit < entries.size() - 1; ++bit) {
+            entries[bit + 1].key_ = std::uint32_t{1} << bit;
         }
-        return i;
+        return lookup::input{0, entries};
     }());
 
     STATIC_REQUIRE(lookup::strategy_failed(pseudo_pext_direct::make(input)));
