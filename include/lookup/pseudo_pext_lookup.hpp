@@ -243,7 +243,7 @@ constexpr auto calc_pseudo_pext_mask(std::array<entry<T, V>, S> const &pairs,
     while (max_search_len > 1 && std::popcount(mask) > 4) {
         auto try_mask = remove_cheapest_bit(mask, keys);
         auto current_longest_run = count_longest_run(with_mask(try_mask, keys));
-        if (current_longest_run <= max_search_len) {
+        if (current_longest_run < max_search_len) {
             mask = try_mask;
             prev_longest_run = current_longest_run;
         } else {
