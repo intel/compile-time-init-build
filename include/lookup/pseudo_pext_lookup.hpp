@@ -364,11 +364,17 @@ struct pseudo_pext_lookup {
         using search_len_t = smuggler<search_len>;
 
         constexpr auto p = detail::pseudo_pext_t(mask);
-        constexpr auto lookup_table_size = 1 << std::popcount(mask);
+        constexpr auto lookup_table_size =
+            std::popcount(mask) < std::numeric_limits<int>::digits
+                ? std::size_t{1} << std::popcount(mask)
+                : std::size_t{};
 
         using default_value = default_value_smuggler<decltype(i)>;
 
-        if constexpr (input.entries.empty()) {
+        if constexpr (lookup_table_size == 0) {
+            return strategy_failed_t{};
+
+        } else if constexpr (input.entries.empty()) {
             return empty_impl<key_type, value_type, default_value>{};
 
         } else if constexpr (use_indirect_strategy) {
