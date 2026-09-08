@@ -364,9 +364,10 @@ struct pseudo_pext_lookup {
         using search_len_t = smuggler<search_len>;
 
         constexpr auto p = detail::pseudo_pext_t(mask);
+        constexpr auto num_mask_bits = std::popcount(mask);
         constexpr auto lookup_table_size =
-            std::popcount(mask) < std::numeric_limits<int>::digits
-                ? std::size_t{1} << std::popcount(mask)
+            num_mask_bits < std::numeric_limits<int>::digits
+                ? std::size_t{1} << num_mask_bits
                 : std::size_t{};
 
         using default_value = default_value_smuggler<decltype(i)>;
