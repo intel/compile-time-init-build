@@ -333,9 +333,8 @@ struct message_with_unique_field_names<Name, Env, Fields...> {
     using type = message_without_unique_field_names<Name, Env, Fields...>;
 };
 
-template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
-    constexpr static auto name = Name;
-
+template <stdx::ct_string Name, typename Access, typename T>
+struct msg_base : stdx::with_name<Name> {
     constexpr auto as_derived() const -> T const & {
         return static_cast<T const &>(*this);
     }
