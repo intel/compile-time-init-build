@@ -5,6 +5,7 @@
 
 #include <stdx/bitset.hpp>
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/static_assert.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
@@ -31,7 +32,7 @@ template <typename Irq> using get_flows_t = typename Irq::flows_t;
 template <typename Irq> using get_all_flows_t = typename Irq::all_flows_t;
 
 template <typename Irq>
-using get_name_list_t = stdx::type_list<typename Irq::name_t>;
+using get_name_list_t = stdx::type_list<stdx::constant_name_of_t<Irq>>;
 
 template <typename Irq>
 using has_real_enable_field =
@@ -67,10 +68,9 @@ using collect_t = boost::mp11::mp_apply<
         boost::mp11::mp_append, boost::mp11::mp_transform<F, Desc<Root>>>>>;
 
 template <typename Name> struct has_name {
-    template <typename Irq> using fn = std::is_same<Name, typename Irq::name_t>;
+    template <typename Irq>
+    using fn = std::is_same<Name, stdx::constant_name_of_t<Irq>>;
 };
-
-template <typename Irq> using get_name_t = typename Irq::name_t;
 
 template <typename Item, template <typename> typename F> struct has_item_by {
     template <typename Irq> using fn = boost::mp11::mp_contains<F<Irq>, Item>;
@@ -78,20 +78,21 @@ template <typename Item, template <typename> typename F> struct has_item_by {
 
 template <typename Irqs> struct with_resource {
     template <typename Resource>
-    using fn = stdx::tt_pair<
-        Resource,
-        boost::mp11::mp_transform<
-            get_name_t, boost::mp11::mp_copy_if_q<
-                            Irqs, has_item_by<Resource, get_resources_t>>>>;
+    using fn =
+        stdx::tt_pair<Resource,
+                      boost::mp11::mp_transform<
+                          stdx::constant_name_of_t,
+                          boost::mp11::mp_copy_if_q<
+                              Irqs, has_item_by<Resource, get_resources_t>>>>;
 };
 
 template <typename Irqs> struct with_resource_propagated {
     template <typename Resource>
     using fn = stdx::tt_pair<
-        Resource,
-        boost::mp11::mp_transform<
-            get_name_t, boost::mp11::mp_copy_if_q<
-                            Irqs, has_item_by<Resource, get_all_resources_t>>>>;
+        Resource, boost::mp11::mp_transform<
+                      stdx::constant_name_of_t,
+                      boost::mp11::mp_copy_if_q<
+                          Irqs, has_item_by<Resource, get_all_resources_t>>>>;
 };
 
 template <typename Irqs> struct with_flow {
@@ -99,16 +100,17 @@ template <typename Irqs> struct with_flow {
     using fn = stdx::tt_pair<
         Flow,
         boost::mp11::mp_transform<
-            get_name_t,
+            stdx::constant_name_of_t,
             boost::mp11::mp_copy_if_q<Irqs, has_item_by<Flow, get_flows_t>>>>;
 };
 
 template <typename Irqs> struct with_flow_propagated {
     template <typename Flow>
-    using fn = stdx::tt_pair<
-        Flow, boost::mp11::mp_transform<
-                  get_name_t, boost::mp11::mp_copy_if_q<
-                                  Irqs, has_item_by<Flow, get_all_flows_t>>>>;
+    using fn =
+        stdx::tt_pair<Flow, boost::mp11::mp_transform<
+                                stdx::constant_name_of_t,
+                                boost::mp11::mp_copy_if_q<
+                                    Irqs, has_item_by<Flow, get_all_flows_t>>>>;
 };
 
 template <typename Field> struct register_for {
