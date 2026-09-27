@@ -58,22 +58,19 @@ struct edges_of<par<L, R, I>> {
 };
 } // namespace detail
 
-} // namespace flow::dsl
-
-template <flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs>
-[[nodiscard]] constexpr auto operator&&(Lhs const &lhs, Rhs const &rhs) {
-    return flow::dsl::par{lhs, rhs};
-}
-
-template <typename Cond, flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs,
-          flow::dsl::subgraph_identity Identity>
-constexpr auto make_runtime_conditional(Cond,
-                                        flow::dsl::par<Lhs, Rhs, Identity>) {
+template <typename Cond, subgraph Lhs, subgraph Rhs, subgraph_identity Identity>
+constexpr auto make_runtime_conditional(Cond, par<Lhs, Rhs, Identity>) {
     auto lhs = make_runtime_conditional(Cond{}, Lhs{});
     auto rhs = make_runtime_conditional(Cond{}, Rhs{});
 
     using lhs_t = decltype(lhs);
     using rhs_t = decltype(rhs);
 
-    return flow::dsl::par<lhs_t, rhs_t, Identity>{lhs, rhs};
+    return par<lhs_t, rhs_t, Identity>{lhs, rhs};
+}
+} // namespace flow::dsl
+
+template <flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs>
+[[nodiscard]] constexpr auto operator&&(Lhs const &lhs, Rhs const &rhs) {
+    return flow::dsl::par{lhs, rhs};
 }
