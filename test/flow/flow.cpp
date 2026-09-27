@@ -259,3 +259,21 @@ TEST_CASE("add multi action by reference", "[flow]") {
     cib::service<TestFlowBeta>();
     CHECK(actual == "abcd");
 }
+
+TEST_CASE("runtime conditional guarding action dependency by reference",
+          "[flow]") {
+    using namespace flow::dsl::literals;
+
+    auto check = []<bool ca, bool cb>(auto expected) {
+        check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
+                   when<ca>(cib::extend<TestFlowAlpha>(*a)),
+                   when<cb>(cib::extend<TestFlowAlpha>(*b)),
+                   (when<ca> and when<cb>)(cib::extend<TestFlowAlpha>(
+                       "a"_ref >> "b"_ref))>(expected);
+    };
+
+    check.operator()<true, true>("ab");
+    check.operator()<true, false>("a");
+    check.operator()<false, true>("b");
+    check.operator()<false, false>("");
+}
