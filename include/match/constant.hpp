@@ -1,7 +1,6 @@
 #pragma once
 
 #include <match/concepts.hpp>
-#include <match/implies.hpp>
 #include <match/negate.hpp>
 
 #include <stdx/ct_string.hpp>
@@ -26,11 +25,7 @@ struct always_t {
         return describe();
     }
 
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, auto &&, always_t)
-        -> bool {
-        return true;
-    }
+    constexpr auto implied_by(auto &&) const -> bool { return true; }
 };
 
 struct never_t {
@@ -47,24 +42,17 @@ struct never_t {
         return describe();
     }
 
+    constexpr auto implies(auto &&) const -> bool { return true; }
+
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(negate_t, never_t)
         -> always_t {
         return {};
     }
-
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, never_t, auto &&)
-        -> bool {
-        return true;
-    }
 };
 
 [[nodiscard]] constexpr auto tag_invoke(negate_t, always_t) -> never_t {
     return {};
-}
-
-[[nodiscard]] constexpr auto tag_invoke(implies_t, never_t, always_t) -> bool {
-    return true;
 }
 
 constexpr always_t always{};

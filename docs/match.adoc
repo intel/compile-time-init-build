@@ -172,8 +172,8 @@ customization of two things in particular:
 
 If you have a custom matcher, you can overload `tag_invoke` with `negate_t` for
 your type if there is a way to negate it that is outside the library's know-how,
-or with `implies_t` if you can warrant implications that the library can use to
-simplify expressions.
+or use `implies` on your type if you can warrant implications that the library
+can use to simplify expressions.
 
 ==== Customizing negation
 
@@ -219,20 +219,21 @@ following implication:
 
 Actually, this is true when `A == B` as well, but in the case where `A == B` the
 match library already knows this, because it knows the general case of `X => X`. In
-code, overloading implication to warrant this looks like this:
+code, providing `implies` to warrant this looks like this:
 
 [source,cpp]
 ----
 template <std::integral A>
 struct less_than {
   // ...
-private:
   template <std::integral B>
-  friend auto tag_invoke(match::implies_t, less_than const &, less_than<B> const &) {
+  [[nodiscard]] constexpr auto implies(less_than<B> const &) const {
     return A < B;
   }
 };
 ----
+
+NOTE: `implies` should be marked `const`.
 
 ==== Implication enables simplification
 

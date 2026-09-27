@@ -74,29 +74,28 @@ template <typename RelOp, auto Value> struct rel_matcher {
                                                stdx::ct<Value>());
     }
 
+    template <auto OtherValue>
+    [[nodiscard]] constexpr auto implies(rel_matcher<RelOp, OtherValue>) const {
+        return RelOp{}(Value, OtherValue);
+    }
+
+    template <auto OtherValue>
+        requires std::same_as<RelOp, std::less<>>
+    [[nodiscard]] constexpr auto
+    implies(rel_matcher<std::less_equal<>, OtherValue>) const {
+        return Value <= OtherValue + 1;
+    }
+
+    template <auto OtherValue>
+        requires std::same_as<RelOp, std::less_equal<>>
+    [[nodiscard]] constexpr auto
+    implies(rel_matcher<std::less<>, OtherValue>) const {
+        return Value < OtherValue;
+    }
+
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
                                                    rel_matcher const &) {
         return rel_matcher<decltype(detail::inverse_op<RelOp>()), Value>{};
     }
-
-    template <auto OtherValue>
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(match::implies_t, rel_matcher, rel_matcher<RelOp, OtherValue>) {
-        return RelOp{}(Value, OtherValue);
-    }
 };
-
-template <auto X, auto Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, rel_matcher<std::less<>, X> const &,
-           rel_matcher<std::less_equal<>, Y> const &) {
-    return X <= Y + 1;
-}
-
-template <auto X, auto Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, rel_matcher<std::less_equal<>, X> const &,
-           rel_matcher<std::less<>, Y> const &) {
-    return X < Y;
-}
