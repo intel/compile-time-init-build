@@ -93,9 +93,7 @@ template <typename RelOp, auto Value> struct rel_matcher {
         return Value < OtherValue;
     }
 
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
-                                                   rel_matcher const &) {
+    [[nodiscard]] constexpr auto negate() const {
         return rel_matcher<decltype(detail::inverse_op<RelOp>()), Value>{};
     }
 };

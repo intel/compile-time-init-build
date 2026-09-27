@@ -33,6 +33,8 @@ template <matcher M> struct not_t {
         return stdx::ct_format<"not ({})">(m.describe_match(event));
     }
 
+    [[nodiscard]] constexpr auto negate() const -> M { return m; }
+
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, not_t const &n) {
         if constexpr (std::is_same_v<M, always_t>) {
@@ -40,7 +42,7 @@ template <matcher M> struct not_t {
         } else if constexpr (std::is_same_v<M, never_t>) {
             return always;
         } else {
-            return negate(simplify(n.m));
+            return match::negate(simplify(n.m));
         }
     }
 
@@ -50,19 +52,15 @@ template <matcher M> struct not_t {
         return cost(std::type_identity<M>{}) + 1u;
     }
 
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, not_t const &n)
-        -> M {
-        return n.m;
-    }
-
     [[nodiscard]] friend constexpr auto tag_invoke(sum_of_products_t,
                                                    not_t const &n) {
         if constexpr (stdx::is_specialization_of_v<M, and_t>) {
-            return or_t{sum_of_products(negate(n.m.lhs)),
-                        sum_of_products(negate(n.m.rhs))};
+            return or_t{sum_of_products(match::negate(n.m.lhs)),
+                        sum_of_products(match::negate(n.m.rhs))};
         } else if constexpr (stdx::is_specialization_of_v<M, or_t>) {
-            return sum_of_products(and_t{sum_of_products(negate(n.m.lhs)),
-                                         sum_of_products(negate(n.m.rhs))});
+            return sum_of_products(
+                and_t{sum_of_products(match::negate(n.m.lhs)),
+                      sum_of_products(match::negate(n.m.rhs))});
         } else {
             return n;
         }

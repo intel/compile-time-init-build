@@ -11,6 +11,8 @@
 // provided for F => T.
 
 namespace match {
+struct never_t;
+
 struct always_t {
     using is_matcher = void;
 
@@ -25,7 +27,14 @@ struct always_t {
         return describe();
     }
 
-    constexpr auto implied_by(auto &&) const -> bool { return true; }
+    [[nodiscard]] constexpr auto implied_by(auto &&) const -> bool {
+        return true;
+    }
+
+    template <typename T = never_t>
+    [[nodiscard]] constexpr static auto negate() -> T {
+        return {};
+    }
 };
 
 struct never_t {
@@ -42,18 +51,10 @@ struct never_t {
         return describe();
     }
 
-    constexpr auto implies(auto &&) const -> bool { return true; }
+    [[nodiscard]] constexpr auto implies(auto &&) const -> bool { return true; }
 
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, never_t)
-        -> always_t {
-        return {};
-    }
+    [[nodiscard]] constexpr static auto negate() -> always_t { return {}; }
 };
-
-[[nodiscard]] constexpr auto tag_invoke(negate_t, always_t) -> never_t {
-    return {};
-}
 
 constexpr always_t always{};
 constexpr never_t never{};

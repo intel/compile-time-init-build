@@ -178,8 +178,8 @@ struct rel_matcher_t {
     }
 
     template <typename OtherRelOp, typename Field::type OtherValue>
-    [[nodiscard]] constexpr auto
-    implies(rel_matcher_t<OtherRelOp, Field, OtherValue>) const -> bool {
+    [[nodiscard]] constexpr static auto
+    implies(rel_matcher_t<OtherRelOp, Field, OtherValue>) -> bool {
         if constexpr (std::same_as<RelOp, OtherRelOp>) {
             return RelOp{}(ExpectedValue, OtherValue);
         } else if constexpr (std::same_as<RelOp, std::less<>>) {
@@ -214,9 +214,7 @@ struct rel_matcher_t {
         return false;
     }
 
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
-                                                   rel_matcher_t const &) {
+    [[nodiscard]] constexpr static auto negate() {
         return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field,
                              ExpectedValue>{};
     }
