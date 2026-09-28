@@ -22,15 +22,16 @@ struct TestCallback : public callback::service<Args...> {
     constexpr static auto name = +stdx::ct_format<"test_cb_{}">(stdx::ct<Id>());
 };
 
-struct SimpleConfig {
-    constexpr static auto config = cib::config(
-        cib::exports<TestCallback<0>>,
-        cib::extend<TestCallback<0>>([]() { is_callback_invoked<0> = true; }));
+template <typename... Args> struct SimpleConfig {
+    constexpr static auto config =
+        cib::config(cib::exports<TestCallback<0, Args...>>,
+                    cib::extend<TestCallback<0, Args...>>(
+                        [](Args...) { is_callback_invoked<0> = true; }));
 };
 
 TEST_CASE("simple configuration with a single extension point and feature",
           "[nexus]") {
-    cib::nexus<SimpleConfig> nexus{};
+    cib::nexus<SimpleConfig<>> nexus{};
     is_callback_invoked<0> = false;
 
     SECTION("services can be invoked directly from nexus") {
@@ -39,9 +40,26 @@ TEST_CASE("simple configuration with a single extension point and feature",
     }
 
     SECTION(
-        "nexus can be initialized services can be invoked from cib::service") {
+        "with initialized nexus, services can be invoked from cib::service") {
         nexus.init();
         cib::service<TestCallback<0>>();
+        REQUIRE(is_callback_invoked<0>);
+    }
+}
+
+TEST_CASE("simple configuration, passing arguments", "[nexus]") {
+    cib::nexus<SimpleConfig<int>> nexus{};
+    is_callback_invoked<0> = false;
+
+    SECTION("services can be invoked directly from nexus") {
+        nexus.service<TestCallback<0, int>>(42);
+        REQUIRE(is_callback_invoked<0>);
+    }
+
+    SECTION(
+        "with initialized nexus, services can be invoked from cib::service") {
+        nexus.init();
+        cib::service<TestCallback<0, int>>(42);
         REQUIRE(is_callback_invoked<0>);
     }
 }
@@ -55,6 +73,7 @@ struct Foo {
 
 namespace {
 auto test_cb_1() { is_callback_invoked<1> = true; }
+int callback3_value{};
 } // namespace
 
 struct Bar {
@@ -64,8 +83,13 @@ struct Bar {
 };
 
 struct Gorp {
-    constexpr static auto config =
-        cib::config(cib::exports<TestCallback<1>, TestCallback<2>>);
+    constexpr static auto config = cib::config(
+        cib::exports<TestCallback<1>, TestCallback<2>, TestCallback<3, int>>,
+
+        cib::extend<TestCallback<3, int>>([](int i) {
+            is_callback_invoked<3> = true;
+            callback3_value = i;
+        }));
 };
 
 struct MediumConfig {
@@ -78,6 +102,8 @@ TEST_CASE("configuration with multiple components, services, and features",
     is_callback_invoked<0> = false;
     is_callback_invoked<1> = false;
     is_callback_invoked<2> = false;
+    is_callback_invoked<3> = false;
+    callback3_value = 0;
 
     SECTION("services can be invoked directly from nexus (by type)") {
         REQUIRE_FALSE(is_callback_invoked<0>);
@@ -91,6 +117,11 @@ TEST_CASE("configuration with multiple components, services, and features",
         REQUIRE_FALSE(is_callback_invoked<2>);
         nexus.service<TestCallback<2>>();
         REQUIRE(is_callback_invoked<2>);
+
+        REQUIRE_FALSE(is_callback_invoked<3>);
+        nexus.service<TestCallback<3, int>>(42);
+        REQUIRE(is_callback_invoked<3>);
+        REQUIRE(callback3_value == 42);
     }
 
     SECTION("services can be invoked directly from nexus (by name)") {
@@ -105,6 +136,11 @@ TEST_CASE("configuration with multiple components, services, and features",
         REQUIRE_FALSE(is_callback_invoked<2>);
         nexus.service<"test_cb_2">();
         REQUIRE(is_callback_invoked<2>);
+
+        REQUIRE_FALSE(is_callback_invoked<3>);
+        nexus.service<"test_cb_3">(42);
+        REQUIRE(is_callback_invoked<3>);
+        REQUIRE(callback3_value == 42);
     }
 
     SECTION("services can be invoked from cib::service (by type)") {
@@ -121,6 +157,11 @@ TEST_CASE("configuration with multiple components, services, and features",
         REQUIRE_FALSE(is_callback_invoked<2>);
         cib::service<TestCallback<2>>();
         REQUIRE(is_callback_invoked<2>);
+
+        REQUIRE_FALSE(is_callback_invoked<3>);
+        cib::service<TestCallback<3, int>>(42);
+        REQUIRE(is_callback_invoked<3>);
+        REQUIRE(callback3_value == 42);
     }
 
     SECTION("services can be invoked from cib::service (by name)") {
@@ -137,6 +178,11 @@ TEST_CASE("configuration with multiple components, services, and features",
         REQUIRE_FALSE(is_callback_invoked<2>);
         cib::invoke_service<"test_cb_2">();
         REQUIRE(is_callback_invoked<2>);
+
+        REQUIRE_FALSE(is_callback_invoked<3>);
+        cib::invoke_service<"test_cb_3", void, int>(42);
+        REQUIRE(is_callback_invoked<3>);
+        REQUIRE(callback3_value == 42);
     }
 }
 

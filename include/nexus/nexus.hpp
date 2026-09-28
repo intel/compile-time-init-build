@@ -4,10 +4,12 @@
 #include <nexus/service.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/function_traits.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 
 #include <type_traits>
+#include <utility>
 
 namespace cib {
 /**
@@ -27,11 +29,13 @@ template <typename Config> struct nexus {
         initialized<Config, T>::value
             .template build<initialized<Config, T>, nexus>();
 
-    template <typename T> constexpr static auto service() {
-        return service_v<T>();
+    template <typename T, typename... Args>
+    constexpr static auto service(Args &&...args) {
+        return service_v<T>(std::forward<Args>(args)...);
     }
 
-    template <stdx::ct_string Name> constexpr static auto service() {
+    template <stdx::ct_string Name, typename... Args>
+    constexpr static auto service(Args &&...args) {
         using Exports = decltype(Config::config.get_exports());
         using Idx =
             boost::mp11::mp_find_if_q<Exports, stdx::matching_name_q<Name>>;
@@ -40,19 +44,24 @@ template <typename Config> struct nexus {
                 false, "Trying to invoke a service ({}) that is not exported",
                 Name);
         } else {
-            return service<boost::mp11::mp_at<Exports, Idx>>();
+            return service<boost::mp11::mp_at<Exports, Idx>>(
+                std::forward<Args>(args)...);
         }
     }
 
     static auto init() -> void {
         auto const init_interface = []<builder_meta T> {
-            cib::service<T> =
-                to_interface<typename T::interface_t>(service_v<T>);
-            if constexpr (stdx::named<T>) {
-                using R = decltype(service<T>());
-                cib::invoke_service<stdx::name_of_v<T>, R> = []() -> R {
-                    return service<stdx::name_of_v<T>>();
-                };
+            using F = typename T::interface_t;
+            cib::service<T> = to_interface<F>(service_v<T>);
+            if constexpr (requires { stdx::name_of_v<T>; }) {
+                using R = stdx::return_t<F>;
+                []<typename... Args>(boost::mp11::mp_list<Args...>) {
+                    cib::invoke_service<stdx::name_of_v<T>, R, Args...> =
+                        [](Args... args) -> R {
+                        return service<stdx::name_of_v<T>>(
+                            std::forward<std::remove_cvref_t<Args>>(args)...);
+                    };
+                }(stdx::args_t<F, boost::mp11::mp_list>{});
             }
         };
         initialized_builders<Config>.apply([&]<typename... Ts>(Ts const &...) {
