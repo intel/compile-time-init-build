@@ -67,10 +67,12 @@ template <builder_meta T> using interface_t = typename T::interface_t;
 template <builder_meta ServiceMeta>
 constinit inline auto service = ServiceMeta::uninitialized();
 
-template <typename R> using by_name_service_t = auto (*)() -> R;
+template <typename R, typename... Args>
+using by_name_service_t = auto (*)(Args...) -> R;
 
-template <stdx::ct_string Name, typename R>
-constexpr inline by_name_service_t<R> undefined_by_name_service_v = []() -> R {
+template <stdx::ct_string Name, typename R, typename... Args>
+constexpr inline by_name_service_t<R, Args...> undefined_by_name_service_v =
+    [](Args...) -> R {
     constexpr auto msg = STDX_CT_FORMAT("Invoking service ({} :: () -> {}) by "
                                         "name before it is initialized",
                                         Name, R);
@@ -78,8 +80,7 @@ constexpr inline by_name_service_t<R> undefined_by_name_service_v = []() -> R {
     stdx::unreachable();
 };
 
-template <stdx::ct_string Name, typename R = void>
-constinit inline by_name_service_t<R> invoke_service =
-    undefined_by_name_service_v<Name, R>;
-
+template <stdx::ct_string Name, typename R = void, typename... Args>
+constinit inline by_name_service_t<R, Args...> invoke_service =
+    undefined_by_name_service_v<Name, R, Args...>;
 } // namespace cib
