@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdx/concepts.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 #include <stdx/type_traits.hpp>
@@ -86,7 +87,8 @@ struct dynamic_enable_policy {
                                               Flows const &flow_enables)
         -> bool {
         // an IRQ is OFF if it is disabled by name
-        if (not named_enables[stdx::type_identity_v<typename Irq::name_t>]) {
+        if (not named_enables
+                [stdx::type_identity_v<stdx::constant_name_of_t<Irq>>]) {
             return false;
         }
 

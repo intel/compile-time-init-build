@@ -34,7 +34,7 @@ template <typename Config> struct nexus {
     template <stdx::ct_string Name> constexpr static auto service() {
         using Exports = decltype(Config::config.get_exports());
         using Idx =
-            boost::mp11::mp_find_if_q<Exports, detail::matching_name<Name>>;
+            boost::mp11::mp_find_if_q<Exports, stdx::matching_name_q<Name>>;
         if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
             STATIC_ASSERT(
                 false, "Trying to invoke a service ({}) that is not exported",
@@ -48,10 +48,10 @@ template <typename Config> struct nexus {
         auto const init_interface = []<builder_meta T> {
             cib::service<T> =
                 to_interface<typename T::interface_t>(service_v<T>);
-            if constexpr (requires { T::name; }) {
+            if constexpr (stdx::named<T>) {
                 using R = decltype(service<T>());
-                cib::invoke_service<T::name, R> = []() -> R {
-                    return service<T::name>();
+                cib::invoke_service<stdx::name_of_v<T>, R> = []() -> R {
+                    return service<stdx::name_of_v<T>>();
                 };
             }
         };
