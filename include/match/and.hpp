@@ -23,16 +23,23 @@ template <matcher L, matcher R> struct and_t : bin_op_t<and_t, "and", L, R> {
         return this->lhs(event) and this->rhs(event);
     }
 
+    template <matcher M>
+        requires(not stdx::is_specialization_of_v<M, or_t>)
+    [[nodiscard]] constexpr auto implies(M const &m) const -> bool {
+        return match::implies(this->lhs, m) or match::implies(this->rhs, m);
+    }
+
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, and_t const &m) {
         auto l = simplify(m.lhs);
         auto r = simplify(m.rhs);
 
-        if constexpr (implies(l, r)) {
+        if constexpr (match::implies(l, r)) {
             return STDX_NRVO(l);
-        } else if constexpr (implies(r, l)) {
+        } else if constexpr (match::implies(r, l)) {
             return STDX_NRVO(r);
-        } else if constexpr (implies(l, negate(r)) or implies(r, negate(l))) {
+        } else if constexpr (match::implies(l, negate(r)) or
+                             match::implies(r, negate(l))) {
             return never;
         } else {
             return detail::de_morgan<and_t, or_t>(std::move(l), std::move(r));
@@ -64,13 +71,6 @@ template <matcher L, matcher R> struct and_t : bin_op_t<and_t, "and", L, R> {
         } else {
             return and_t<LS, RS>{l, r};
         }
-    }
-
-    template <matcher M>
-        requires(not stdx::is_specialization_of_v<M, or_t>)
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, and_t const &a,
-                                                   M const &m) -> bool {
-        return implies(a.lhs, m) or implies(a.rhs, m);
     }
 };
 template <matcher L, matcher R> and_t(L, R) -> and_t<L, R>;

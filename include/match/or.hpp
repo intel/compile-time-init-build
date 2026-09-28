@@ -23,6 +23,11 @@ template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
         return this->lhs(event) or this->rhs(event);
     }
 
+    template <matcher M>
+    [[nodiscard]] constexpr auto implied_by(M const &m) const -> bool {
+        return implies(m, this->lhs) or implies(m, this->rhs);
+    }
+
   private:
     [[nodiscard]] friend constexpr auto tag_invoke(simplify_t, or_t const &m) {
         auto l = simplify(m.lhs);
@@ -53,12 +58,6 @@ template <matcher L, matcher R> struct or_t : bin_op_t<or_t, "or", L, R> {
         using LS = decltype(l);
         using RS = decltype(r);
         return or_t<LS, RS>{l, r};
-    }
-
-    template <matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, M const &m,
-                                                   or_t const &o) -> bool {
-        return implies(m, o.lhs) or implies(m, o.rhs);
     }
 };
 template <matcher L, matcher R> or_t(L, R) -> or_t<L, R>;

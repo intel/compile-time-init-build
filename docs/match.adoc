@@ -164,16 +164,15 @@ straightforward thing to decide when considering matchers known to the library.
 But the broader question is how to allow customization of matchers in a way that
 preserve's the library's ability to analyze and manipulate expressions.
 
-The match library uses a https://wg21.link/p1895[`tag_invoke`] technique to allow
-customization of two things in particular:
+The match library allows customization of two things in particular:
 
 - negation (i.e. applying `not`)
 - implication (i.e. warranting that A => B)
 
-If you have a custom matcher, you can overload `tag_invoke` with `negate_t` for
+If you have a custom matcher, you can provide a `negate` member function for
 your type if there is a way to negate it that is outside the library's know-how,
-or with `implies_t` if you can warrant implications that the library can use to
-simplify expressions.
+or an `implies` member function on your type if you can warrant implications
+that the library can use to simplify expressions.
 
 ==== Customizing negation
 
@@ -182,12 +181,14 @@ For instance, if we have a less-than matcher (with only the salient part shown h
 ----
 template <std::integral N>
 struct less_than {
-  auto operator()(auto value) const { return value < N; }
+  [[nodiscard]] constexpr auto operator()(auto value) const -> bool {
+    return value < N;
+  }
   // ...
 };
 ----
 
-We might overload `tag_invoke` on the `negate_t` tag to return a
+We might provide a `negate` member fucntion to return a
 greater-than-or-equal-to matcher:
 [source,cpp]
 ----
@@ -195,8 +196,8 @@ template <std::integral A>
 struct less_than {
   // ...
 private:
-  friend auto tag_invoke(match::negate_t, less_than const &) {
-    return greater_than_or_equal_to<A>{;
+  [[nodiscard]] constexpr static auto negate() {
+    return greater_than_or_equal_to<A>{};
   }
 };
 ----
@@ -219,16 +220,15 @@ following implication:
 
 Actually, this is true when `A == B` as well, but in the case where `A == B` the
 match library already knows this, because it knows the general case of `X => X`. In
-code, overloading implication to warrant this looks like this:
+code, providing `implies` to warrant this looks like this:
 
 [source,cpp]
 ----
 template <std::integral A>
 struct less_than {
   // ...
-private:
   template <std::integral B>
-  friend auto tag_invoke(match::implies_t, less_than const &, less_than<B> const &) {
+  [[nodiscard]] constexpr static auto implies(less_than<B> const &) -> bool {
     return A < B;
   }
 };

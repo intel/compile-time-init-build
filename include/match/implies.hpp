@@ -2,23 +2,28 @@
 
 #include <match/concepts.hpp>
 
+#include <stdx/concepts.hpp>
+
 #include <utility>
 
 namespace match {
-constexpr inline class implies_t {
+constexpr inline struct implies_t {
     template <matcher X, matcher Y>
-    [[nodiscard]] friend constexpr auto tag_invoke(implies_t, X const &,
-                                                   Y const &) -> bool {
-        return std::is_same_v<X, Y>;
-    }
-
-  public:
-    template <typename... Ts>
-    constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<implies_t>(),
-                                     std::forward<Ts>(ts)...)))
-            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
-        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    [[nodiscard]] constexpr auto operator()(X &&x, Y &&y) const noexcept
+        -> bool {
+        if constexpr (stdx::same_as_unqualified<X, Y>) {
+            return true;
+        } else if constexpr (requires {
+                                 std::forward<X>(x).implies(std::forward<Y>(y));
+                             }) {
+            return std::forward<X>(x).implies(std::forward<Y>(y));
+        } else if constexpr (requires {
+                                 std::forward<Y>(y).implied_by(
+                                     std::forward<X>(x));
+                             }) {
+            return std::forward<Y>(y).implied_by(std::forward<X>(x));
+        }
+        return false;
     }
 } implies{};
 } // namespace match
