@@ -137,6 +137,26 @@ TEST_CASE("dependencies between runtime conditional actions through cib::nexus",
     check.operator()<false, false>("");
 }
 
+namespace ns {
+template <bool V>
+constexpr auto when = cib::runtime_condition<"when">([] { return V; });
+} // namespace ns
+
+TEST_CASE("namespaced runtime conditional guarding seq", "[flow]") {
+    auto check = []<bool ca, bool cb>(auto expected) {
+        check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
+                   ns::when<ca>(cib::extend<TestFlowAlpha>(*a)),
+                   ns::when<cb>(cib::extend<TestFlowAlpha>(*b)),
+                   (ns::when<ca> and ns::when<cb>)(cib::extend<TestFlowAlpha>(
+                       a >> b))>(expected);
+    };
+
+    check.operator()<true, true>("ab");
+    check.operator()<true, false>("a");
+    check.operator()<false, true>("b");
+    check.operator()<false, false>("");
+}
+
 TEST_CASE("dependency conditions imply action conditions", "[flow]") {
     auto check = []<bool ca, bool cb, bool cc>(auto expected) {
         check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
@@ -176,6 +196,18 @@ TEST_CASE("add par runtime conditional (true) actions through cib::nexus",
 
     auto n0 = wrapper<cib::exports<TestFlowAlpha>,
                       when<true>(cib::extend<TestFlowAlpha>(*a && *b))>{};
+
+    n0.run<TestFlowAlpha>();
+
+    CHECK(actual.find('a') != std::string::npos);
+    CHECK(actual.find('b') != std::string::npos);
+}
+
+TEST_CASE("namespaced runtime conditional guarding par", "[flow]") {
+    actual.clear();
+
+    auto n0 = wrapper<cib::exports<TestFlowAlpha>,
+                      ns::when<true>(cib::extend<TestFlowAlpha>(*a && *b))>{};
 
     n0.run<TestFlowAlpha>();
 
@@ -226,4 +258,22 @@ TEST_CASE("add multi action by reference", "[flow]") {
     cib::service<TestFlowAlpha>();
     cib::service<TestFlowBeta>();
     CHECK(actual == "abcd");
+}
+
+TEST_CASE("runtime conditional guarding action dependency by reference",
+          "[flow]") {
+    using namespace flow::dsl::literals;
+
+    auto check = []<bool ca, bool cb>(auto expected) {
+        check_flow<TestFlowAlpha, cib::exports<TestFlowAlpha>,
+                   when<ca>(cib::extend<TestFlowAlpha>(*a)),
+                   when<cb>(cib::extend<TestFlowAlpha>(*b)),
+                   (when<ca> and when<cb>)(cib::extend<TestFlowAlpha>(
+                       "a"_ref >> "b"_ref))>(expected);
+    };
+
+    check.operator()<true, true>("ab");
+    check.operator()<true, false>("a");
+    check.operator()<false, true>("b");
+    check.operator()<false, false>("");
 }

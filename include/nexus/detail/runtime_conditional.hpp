@@ -34,7 +34,11 @@ struct runtime_conditional : config_item {
 
                 return stdx::apply(
                     []<typename... Args>(Args...) {
-                        return extend<typename E::service_type>(Args{}...);
+                        if constexpr (requires { typename E::service_type; }) {
+                            return extend<typename E::service_type>(Args{}...);
+                        } else {
+                            return extend<E::name>(Args{}...);
+                        }
                     },
                     args_tuple);
             },

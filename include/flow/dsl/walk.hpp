@@ -36,6 +36,11 @@ template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_ref() {
     return node_reference<S>{};
 }
 } // namespace literals
+
+template <typename Cond, stdx::ct_string Name>
+constexpr auto make_runtime_conditional(Cond, node_reference<Name>) {
+    return node_reference<Name>{};
+}
 } // namespace flow::dsl
 
 namespace flow::dsl::detail {
