@@ -20,14 +20,14 @@ struct my_flow : flow::service<"my flow"> {};
 using interrupt::operator""_irq;
 
 using config = interrupt::root<
-    interrupt::irq<17_irq, 4, enable_field_t, interrupt::policies<>, my_flow>>;
+    interrupt::irq<"my irq", 17_irq, 4, enable_field_t, interrupt::policies<>, my_flow>>;
 
 struct my_project {
   constexpr static auto config = cib::config(cib::exports<my_flow>);
 };
 using nexus_t = cib::nexus<my_project>;
 
-auto mgr = interrupt::manager<config, nexus_t>{};
+auto mgr = interrupt::manager<config, hal, nexus_t>{};
 ----
 
 Given this setup, the idea is that when interrupt 17 is triggered, `my_flow`
@@ -44,12 +44,15 @@ A basic top-level interrupt configuration is specified with `interrupt::irq`.
 [source,cpp]
 ----
 using irq_t = interrupt::irq<
+    "name",                    // name of this interrupt
     17_irq,                    // the IRQ number
     4,                         // priority
     top_enable_field_t,        // control field in some register
     interrupt::policies<>,     // policies
     my_flow>;                  // flow(s) to run when triggered
 ----
+
+NOTE: If no enable control field is required, `interrupt::no_field_t` may be used.
 
 ==== `interrupt::sub_irq`
 
@@ -60,6 +63,7 @@ field.
 [source,cpp]
 ----
 using irq_t = interrupt::sub_irq<
+    "name",
     enable_field_t,
     status_field_t,
     interrupt::policies<>,
@@ -81,15 +85,18 @@ Of course a `sub_irq` has to have a parent, and that is often a `shared_irq`.
 [source,cpp]
 ----
 using irq_t = interrupt::shared_irq<
-    17_irq, 4, top_enable_field_t, interrupt::policies<>, // as for irq
+    "name", 17_irq, 4, top_enable_field_t, interrupt::policies<>, // as for irq
     interrupt::sub_irq<
+        "sub name",
         enable_field_t,
         status_field_t,
         interrupt::policies<>,
         my_flow>>;
 ----
 
-A `shared_irq` may have any number of `sub_irq` children.
+A `shared_irq` may have any number of `sub_irq` children. Notice that `irq` and
+`shared_irq` are identically configured except that `irq` has flows, and
+`shared_irq` has `sub_irq`​s as children.
 
 ==== `interrupt::shared_sub_irq`
 
@@ -100,14 +107,14 @@ like `shared_irq`, `shared_sub_irq` can have any number of children.
 [source,cpp]
 ----
 using irq_t = interrupt::shared_irq<
-    17_irq, 4, top_enable_field_t, interrupt::policies<>,
-    interrupt::sub_irq<enable_field_t, status_field_t,
+    "name", 17_irq, 4, top_enable_field_t, interrupt::policies<>,
+    interrupt::sub_irq<"sub name 0", enable_field_t, status_field_t,
                        interrupt::policies<>, my_flow>,
     interrupt::shared_sub_irq<
-        enable_field_1_t, status_field_1_t, interrupt::policies<>,
-        interrupt::sub_irq<enable_field_1_0_t, status_field_1_0_t,
+        "sub name 1", enable_field_1_t, status_field_1_t, interrupt::policies<>,
+        interrupt::sub_irq<"sub name 1_0", enable_field_1_0_t, status_field_1_0_t,
                            interrupt::policies<>, my_flow_0>,
-        interrupt::sub_irq<enable_field_1_1_t, status_field_1_1_t,
+        interrupt::sub_irq<"sub name 1_1", enable_field_1_1_t, status_field_1_1_t,
                            interrupt::policies<>, my_flow_1>>>;
 ----
 
@@ -159,48 +166,155 @@ on that resource will not run their flows when the interrupt is triggered.
 === The interrupt HAL
 
 The interrupt manager interacts with hardware through a HAL interface that must
-be provided. It has three functions.
+be provided. The HAL must provide functions for initializing; for manipulating
+field and register values and types; and for reading, writing and clearing
+enable and status fields.
+
+It is provided as a template argument to the `interrupt::manager`.
 
 [source,cpp]
 ----
 struct my_hal {
+  // ------------------------------------------------------------
+  // Initialization functions: mcu-level and per-interrupt
+
   static auto init() -> void {
-    // do any preliminary interrupt initialization work
+    // do any mcu-level interrupt initialization work
   }
 
   template <bool Enable, interrupt::irq_num_t IrqNumber, std::size_t Priority>
   static auto irq_init() -> void {
-    // enable/disable the given IRQ at the given priority
+    // enable/disable the given top-level IRQ at the given priority
   }
 
-  template <interrupt::status_policy P>
-  static auto run(interrupt::irq_num_t irq, stdx::invocable auto const &isr) -> void {
-    // run according to policy
-    P::run([] {},            // clear status, if any
-           [&] { isr(); });  // execute the interrupt service routine
+  // ------------------------------------------------------------
+  // Field and register functions: this allows a separation between field types
+  // used in configuration and field/register types used in hardware
+  // interaction. Note that each field and each register must have a distinct
+  // type.
+
+  // It is possible to use the same types for both configuration and hardware
+  // interaction, in which case these translations become trivial.
+
+  template <typename ConfigField> static auto get_field() {
+    // given a field from config, return a field that can be used to read/write
+    // (these could be the same type, or could be different types)
+  }
+  template <typename ConfigField> static auto get_register() {
+    // given a field from config, return a register for that field
+    // for example, maybe get_field<ConfigField>().parent
+  }
+
+  // the return type of get_register() has an associated datatype
+  template <typename Register>
+  using register_datatype_t = /* e.g. std::uint32_t */;
+
+  // a field in a register has an associated mask (of the register's datatype)
+  template <typename Register, typename ConfigField>
+  constexpr static register_datatype_t<Register> mask = /* mask for the field in the register */;
+
+
+  // ------------------------------------------------------------
+  // Hardware interaction functions: these use the field and register types
+  // returned by get_field and get_register.
+
+  template <typename Register>
+  static auto write(Register r, auto raw_value) -> void {
+    // write the value to the register
+    // (the type of raw_value will be the corresponding register_datatype_t)
+  }
+
+  template <typename Field> static auto read(Field f) -> bool {
+    // read the value of the (enable or status) field
+    // Field is the type returned from get_field()
+  }
+  
+  template <typename Field> static auto clear(Field f) -> void {
+    // clear the (enable or status) field
+    // Field is the type returned from get_field()
   }
 };
 ----
 
-This global interface is injected by specializing a variable template.
-
-[source,cpp]
-----
-template <> inline auto interrupt::injected_hal<> = my_hal{};
-----
+An example HAL using
+https://intel.github.io/generic-register-operation-optimizer[groov] can be found
+in
+https://github.com/intel/compile-time-init-build/blob/main/test/interrupt/common.hpp[tests].
 
 === Initialization
 
 The `interrupt::manager`​'s `init()` method enables and initializes all
 interrupts with associated flows.
 
-=== Running
+[source,cpp]
+----
+auto mgr =
+  interrupt::manager<config, hal, nexus>{};
+mgr.init();
+----
+
+`init` does three things:
+
+- calls `init` on the `hal` to do any system-level prep
+- calls `irq_init` on the `hal` to enable each top-level interrupt
+- initializes the dynamic controller state and writes the dynamic interrupt enables
+
+NOTE: xref:flows.adoc#_the_flow_library[Flows] which have not been
+(compile-time) extended with any steps are not considered active, and
+consequently will not have their interrupts enabled.
+
+==== Initialization policy
+
+Which interrupts are dynamically enabled and which enable fields are written at
+initialization can be customized with a policy. The default policy:
+
+- avoids dynamically re-enabling top-level interrupts with enable fields
+- assumes NO resources are enabled
+- assumes all the (active) flows mentioned in config are enabled
+- assumes all named IRQs are enabled
+
+Each of these can be customized.
+
+[source,cpp]
+----
+struct my_init_policy {
+  // I want the dynamic controller to initialize top-level interrupts
+  // (presumably because my HAL's init_irq function doesn't)
+  constexpr static auto dynamic_enable_top_level = true;
+
+  template <typename>
+  using active_resources_t = stdx::type_list</* the resources I want to be initially active */>;
+
+  template <typename>
+  using active_flows_t = stdx::type_list</* the flows I want to be initially active */>;
+
+  template <typename>
+  using active_irqs_t = stdx::type_list</* the irqs I want to be initially active */>;
+};
+
+mgr.init<my_init_policy>();
+----
+
+NOTE: "Active" flows here is not the same thing as a flow being inactive because
+it has no steps. If a flow has no steps, it cannot be active.
+
+The template argument passed to each of the aliases in the initialization policy
+is a list of potentially active items. A policy may filter that list, or may
+just ignore it and hard-code the items.
+
+Helper classes for making the initialization policy (e.g.
+`all_resources_policy`/`no_resources_policy`, etc.) can be found in
+https://github.com/intel/compile-time-init-build/blob/main/include/interrupt/policies.hpp[policies.hpp].
+
+
+=== The ISR: running flows
 
 The `interrupt::manager`​'s `run<irq_number>()` method clears the pending
-interrupt status and runs any flows associated with that IRQ. If it's a shared
-interrupt, each registered `sub_irq` will have its interrupt status field
-checked to determine if its flow should be executed, and the field will be
-cleared according to the specified policy for that `sub_irq` configuration.
+interrupt status (according to policy) and runs any flows associated with
+that IRQ. If it's a shared interrupt, each registered `sub_irq` will have its
+interrupt status field checked to determine if its flow should be executed, and
+the field will be cleared (also according to policy for that `sub_irq`
+configuration).
 
 This is the method that should be wired to an ISR vector table.
 
@@ -209,20 +323,79 @@ This is the method that should be wired to an ISR vector table.
 At runtime, interrupts can be enabled and disabled dynamically according to
 resources, enable fields, or just by enabling/disabling flows. This is done with
 the `dynamic_controller`. It is initialized with the same configuration (a
-`root` object) as the `interrupt::manager`.
+`root` object) as the `interrupt::manager`, and exposed as `dynamic_t`.
 
 [source,cpp]
 ----
-using dynamic_t = interrupt::dynamic_controller<config>;
+using manager_t  interrupt::manager<config, hal, nexus>;
+using dynamic_t = typename manager_t::dynamic_t;
 
 // disable my_flow: the interrupt wired to trigger my_flow will be disabled if
 // nothing else depends on it
 dynamic_t::disable<my_flow>();
 
-// turn off a resource: interrupts that depend on this resource will be disabled
-dynamic_t::turn_off_resource<my_hw_resource>();
+// disable a resource: interrupts that depend on this resource will be disabled
+dynamic_t::disable<my_hw_resource>();
 
 // turning flows and resources back on re-enables any dependent interrupts
 dynamic_t::enable<my_flow>();
-dynamic_t::turn_on_resource<my_hw_resource>();
+dynamic_t::enable<my_hw_resource>();
+
+// disable/enable an interrupt by name
+dynamic_t::disable<"irq name">();
+dynamic_t::enable<"irq name">();
 ----
+
+TIP: Multiple flows and/or resources can be enabled or disabled at once; this will
+minimize the number of register writes.
+
+TIP: Sometimes code has to support multiple interrupt configurations, and an
+interrupt/flow/resource might be present in one config and not in another. For
+ease of development, you can pass `interrupt::ignore_unknowns` as a runtime
+argument to `enable`/`disable`; this will prevent the normal compilation error
+when using an unrecognized object.
+
+Interrupts are considered enabled if:
+
+- they are enabled by name, AND
+- ALL of their resources are enabled, AND
+- ANY of their flows are enabled, OR ANY or their children are enabled
+
+==== Dynamic state
+
+CAUTION: For efficiency, the dynamic controller keeps shadow state for the
+registers involved in enabling interrupts. Don't alter the state of these
+registers other than through the dynamic controller interface!
+
+If a hardware event (like sleep) changes the state of interrupt enables so that
+the dynamic controller's shadow state is invalidated, we can resync the state on
+wake:
+
+[source,cpp]
+----
+dynamic_t::refresh_all_enables();
+----
+
+This will rewrite all enable fields according to the current shadow state of the
+dynamic controller. We can also reset only the top-level enable fields:
+
+[source,cpp]
+----
+dynamic_t::refresh_top_level_enables();
+----
+
+which is useful if e.g. the top-level IRQ enable bits are in a different domain
+from the other dynamic fields; sleep may preserve one and not the other.
+
+Finally, if we need to completely reset things, the manager supports that.
+
+[source,cpp]
+----
+mgr.init_mcu();                       // MCU-level initialization
+mgr.init_top_level();                 // re-init the top-level interrupts
+mgr.init_dynamic<my_init_policy>();   // reset and re-init everything dynamic
+----
+
+(These three functions are precisely what `init` does, but on re-init we may
+need to omit one or more.) As with `init`, `init_dynamic` takes an optional
+xref:interrupts.adoc#_initialization[initialization policy].
