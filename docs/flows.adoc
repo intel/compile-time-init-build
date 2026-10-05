@@ -735,8 +735,7 @@ the * operator. The missing steps are: ...`
 Either add the step with `*`, or remove the dependency that mentions it.
 
 Two components added the same step::
-`One or more steps in the flow (F) are explicitly added more than once using the
-* operator. The duplicate steps are: ...`
+`One or more steps in the flow (F) are explicitly added more than once using the * operator. The duplicate steps are: ...`
 +
 Only one component should add any given step with `*`.
 

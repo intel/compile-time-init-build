@@ -7,20 +7,19 @@
 namespace match {
 template <matcher> struct not_t;
 
-constexpr inline class negate_t {
+constexpr inline struct negate_t {
     template <matcher M>
-    [[nodiscard]] friend constexpr auto tag_invoke(negate_t, M const &m)
-        -> not_t<M> {
-        return {m};
+    [[nodiscard]] constexpr auto operator()(M &&m) const
+        -> not_t<std::remove_cvref_t<M>> {
+        return {std::forward<M>(m)};
     }
 
-  public:
-    template <typename... Ts>
-    constexpr auto operator()(Ts &&...ts) const
-        noexcept(noexcept(tag_invoke(std::declval<negate_t>(),
-                                     std::forward<Ts>(ts)...)))
-            -> decltype(tag_invoke(*this, std::forward<Ts>(ts)...)) {
-        return tag_invoke(*this, std::forward<Ts>(ts)...);
+    template <matcher M>
+        requires true
+    [[nodiscard]] constexpr auto operator()(M &&m) const
+        noexcept(noexcept(std::forward<M>(m).negate()))
+            -> decltype(std::forward<M>(m).negate()) {
+        return std::forward<M>(m).negate();
     }
 } negate{};
 } // namespace match

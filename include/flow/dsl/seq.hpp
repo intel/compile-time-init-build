@@ -63,17 +63,10 @@ struct edges_of<seq<L, R, I, C>> {
 };
 } // namespace detail
 
-} // namespace flow::dsl
-
-template <flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs>
-[[nodiscard]] constexpr auto operator>>(Lhs const &lhs, Rhs const &rhs) {
-    return flow::dsl::seq{lhs, rhs};
-}
-
-template <typename Cond, flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs,
-          flow::dsl::subgraph_identity Identity, typename EdgeCond>
-constexpr auto
-make_runtime_conditional(Cond, flow::dsl::seq<Lhs, Rhs, Identity, EdgeCond>) {
+template <typename Cond, subgraph Lhs, subgraph Rhs, subgraph_identity Identity,
+          typename EdgeCond>
+constexpr auto make_runtime_conditional(Cond,
+                                        seq<Lhs, Rhs, Identity, EdgeCond>) {
     auto lhs = make_runtime_conditional(Cond{}, Lhs{});
     auto rhs = make_runtime_conditional(Cond{}, Rhs{});
 
@@ -81,5 +74,11 @@ make_runtime_conditional(Cond, flow::dsl::seq<Lhs, Rhs, Identity, EdgeCond>) {
     using rhs_t = decltype(rhs);
     using cond_t = decltype(EdgeCond{} and Cond{});
 
-    return flow::dsl::seq<lhs_t, rhs_t, Identity, cond_t>{lhs, rhs};
+    return seq<lhs_t, rhs_t, Identity, cond_t>{lhs, rhs};
+}
+} // namespace flow::dsl
+
+template <flow::dsl::subgraph Lhs, flow::dsl::subgraph Rhs>
+[[nodiscard]] constexpr auto operator>>(Lhs const &lhs, Rhs const &rhs) {
+    return flow::dsl::seq{lhs, rhs};
 }

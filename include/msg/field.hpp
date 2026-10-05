@@ -24,9 +24,9 @@
 
 namespace msg {
 template <typename T>
-concept field_spec = std::unsigned_integral<decltype(T::size)> and
-                     std::is_trivially_copyable_v<typename T::type> and
-                     requires { typename T::name_t; };
+concept field_spec =
+    std::unsigned_integral<decltype(T::size)> and
+    std::is_trivially_copyable_v<typename T::type> and stdx::named<T>;
 
 template <typename T>
 concept bits_extractor =
@@ -67,11 +67,8 @@ concept field_locator_for =
 
 namespace detail {
 template <stdx::ct_string Name, typename T, std::uint32_t BitSize>
-struct field_spec_t {
+struct field_spec_t : stdx::with_name<Name> {
     using type = T;
-    using name_t = stdx::cts_t<Name>;
-
-    constexpr static name_t name{};
     constexpr static auto size = BitSize;
 };
 
@@ -414,7 +411,6 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
                   "Field size is smaller than sum of locations!");
 
   public:
-    using name_t = stdx::cts_t<Name>;
     using field_id = field_id_t<Name, T, Ats...>;
     using value_type = T;
     using matcher_t = M;
@@ -464,7 +460,8 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
     }
 
     [[nodiscard]] constexpr static auto describe(value_type v) {
-        return stdx::ct_format<"{}: 0x{:x}">(spec_t::name, v);
+        return stdx::ct_format<"{}: 0x{:x}">(stdx::constant_name_of_v<spec_t>,
+                                             v);
     }
 
     constexpr static auto can_hold(value_type v) -> bool {
@@ -512,8 +509,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     template <T V>
     using with_less_than =
-        field_t<Name, T, Default, msg::less_than_or_equal_to_t<field_t, V>,
-                Ats...>;
+        field_t<Name, T, Default, msg::less_than_t<field_t, V>, Ats...>;
 
     template <T V>
     using with_less_than_or_equal_to =

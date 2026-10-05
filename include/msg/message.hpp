@@ -38,7 +38,7 @@ concept matcher_maker = requires { typename T::is_matcher_maker; };
 namespace detail {
 template <stdx::ct_string N> struct matching_name {
     template <typename Field>
-    using fn = std::bool_constant<N == Field::name_t::value>;
+    using fn = std::bool_constant<N == stdx::name_of_v<Field>>;
 };
 
 template <stdx::ct_string Name, typename RelOp, auto V> struct matcher_maker {
@@ -119,17 +119,15 @@ constexpr auto operator or(T, U) -> mm_or_t<T, matcher_wrapper<U>> {
     return {};
 }
 
-template <stdx::ct_string Name, typename T> struct field_value {
-    using name_t = stdx::cts_t<Name>;
+template <stdx::ct_string Name, typename T>
+struct field_value : stdx::with_name<Name> {
     T value;
 };
 
-template <stdx::ct_string Name> struct field_name {
-    using name_t = stdx::cts_t<Name>;
-
+template <stdx::ct_string Name> struct field_name : stdx::with_name<Name> {
     // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     template <typename T> constexpr auto operator=(T value) const {
-        return field_value<Name, T>{value};
+        return field_value<Name, T>{{}, value};
     }
 
     template <auto... Vs>
@@ -181,9 +179,8 @@ template <stdx::ct_string S> constexpr auto operator""_f() {
 
 namespace detail {
 template <typename T>
-concept some_field_value = requires(T const &t) {
+concept some_field_value = stdx::named<T> and requires(T const &t) {
     { t.value };
-    typename T::name_t;
 };
 
 template <typename... Fields> struct storage_size {
@@ -192,15 +189,15 @@ template <typename... Fields> struct storage_size {
         std::max({std::size_t{}, Fields::template extent_in<T>()...});
 };
 
-template <typename F> using name_for = typename F::name_t;
-
 template <stdx::ct_string Name, typename... Fields> class msg_access {
     using FieldsTuple =
-        decltype(stdx::make_indexed_tuple<name_for>(Fields{}...));
+        decltype(stdx::make_indexed_tuple<stdx::constant_name_of_t>(
+            Fields{}...));
 
     template <typename N, stdx::range R> constexpr static auto check() {
-        static_assert((std::is_same_v<N, name_for<Fields>> or ...),
-                      "Field does not belong to this message!");
+        static_assert(
+            (std::is_same_v<N, stdx::constant_name_of_t<Fields>> or ...),
+            "Field does not belong to this message!");
         using Field = field_t<N>;
         constexpr auto belongs = (std::is_same_v<typename Field::field_id,
                                                  typename Fields::field_id> or
@@ -212,8 +209,8 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, some_field_value V>
     constexpr static auto set1(R &&r, V v) -> void {
-        check<name_for<V>, std::remove_cvref_t<R>>();
-        using Field = field_t<name_for<V>>;
+        check<stdx::constant_name_of_t<V>, std::remove_cvref_t<R>>();
+        using Field = field_t<stdx::constant_name_of_t<V>>;
         Field::insert(std::forward<R>(r),
                       static_cast<typename Field::value_type>(v.value));
     }
@@ -245,7 +242,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
 
     template <stdx::range R, typename... Fs>
     constexpr static auto set(R &&r, Fs...) -> void {
-        (set_default<name_for<Fs>>(r), ...);
+        (set_default<stdx::constant_name_of_t<Fs>>(r), ...);
     }
 
     template <stdx::range R, stdx::ct_string N>
@@ -254,7 +251,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
     }
 
     template <stdx::range R, typename F> constexpr static auto get(R &&r, F) {
-        return get<name_for<F>>(std::forward<R>(r));
+        return get<stdx::constant_name_of_t<F>>(std::forward<R>(r));
     }
 
     template <stdx::range R>
@@ -302,7 +299,8 @@ template <typename F1, typename F2>
 using field_sort_fn = std::bool_constant < F1::sort_key<F2::sort_key>;
 
 template <typename F1, typename F2>
-using name_equal_fn = std::is_same<name_for<F1>, name_for<F2>>;
+using name_equal_fn =
+    std::is_same<stdx::constant_name_of_t<F1>, stdx::constant_name_of_t<F2>>;
 
 template <typename... Fields>
 using unique_by_name = boost::mp11::mp_unique_if<
@@ -316,9 +314,10 @@ using message_without_unique_field_names =
 
 template <stdx::ct_string Name, typename... Fields>
 struct message_with_unique_field_names {
-    static_assert(boost::mp11::mp_is_set<boost::mp11::mp_transform<
-                      name_for, boost::mp11::mp_list<Fields...>>>::value,
-                  "Message contains fields with duplicate names");
+    static_assert(
+        boost::mp11::mp_is_set<boost::mp11::mp_transform<
+            stdx::constant_name_of_t, boost::mp11::mp_list<Fields...>>>::value,
+        "Message contains fields with duplicate names");
 
     using type =
         message_without_unique_field_names<Name, stdx::env<>, Fields...>;
@@ -326,16 +325,16 @@ struct message_with_unique_field_names {
 
 template <stdx::ct_string Name, stdx::envlike Env, typename... Fields>
 struct message_with_unique_field_names<Name, Env, Fields...> {
-    static_assert(boost::mp11::mp_is_set<boost::mp11::mp_transform<
-                      name_for, boost::mp11::mp_list<Fields...>>>::value,
-                  "Message contains fields with duplicate names");
+    static_assert(
+        boost::mp11::mp_is_set<boost::mp11::mp_transform<
+            stdx::constant_name_of_t, boost::mp11::mp_list<Fields...>>>::value,
+        "Message contains fields with duplicate names");
 
     using type = message_without_unique_field_names<Name, Env, Fields...>;
 };
 
-template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
-    constexpr static auto name = Name;
-
+template <stdx::ct_string Name, typename Access, typename T>
+struct msg_base : stdx::with_name<Name> {
     constexpr auto as_derived() const -> T const & {
         return static_cast<T const &>(*this);
     }
@@ -380,12 +379,11 @@ template <stdx::ct_string Name, typename Access, typename T> struct msg_base {
 };
 
 template <stdx::ct_string Name, typename Env, typename... Fields>
-struct message {
+struct message : stdx::with_name<Name> {
     using fields_t = stdx::type_list<Fields...>;
     using num_fields_t = std::integral_constant<std::size_t, sizeof...(Fields)>;
     template <std::size_t I> using nth_field_t = stdx::nth_t<I, Fields...>;
 
-    using name_t = stdx::cts_t<Name>;
     using env_t = Env;
     using access_t = msg_access<Name, Fields...>;
     using default_storage_t = typename access_t::default_storage_t;
@@ -502,15 +500,15 @@ struct message {
 
         template <some_field_value... Vs> constexpr explicit owner_t(Vs... vs) {
             using defaulted_fields = boost::mp11::mp_transform<
-                name_for,
+                stdx::constant_name_of_t,
                 boost::mp11::mp_copy_if<boost::mp11::mp_list<Fields...>,
                                         initializable_t>>;
             using initialized_fields =
-                boost::mp11::mp_transform<name_for,
+                boost::mp11::mp_transform<stdx::constant_name_of_t,
                                           boost::mp11::mp_list<Vs...>>;
 
             using all_fields =
-                boost::mp11::mp_transform<name_for,
+                boost::mp11::mp_transform<stdx::constant_name_of_t,
                                           boost::mp11::mp_list<Fields...>>;
             using uninit_fields =
                 boost::mp11::mp_set_difference<all_fields, defaulted_fields,
@@ -822,7 +820,7 @@ using relaxed_message = typename detail::field_locator<Name, Ts...>::msg_type;
 namespace detail {
 template <typename Msg> struct replace_fields_q {
     template <typename... Fs>
-    using fn = ::msg::message<Msg::name_t::value, typename Msg::env_t, Fs...>;
+    using fn = ::msg::message<stdx::name_of_v<Msg>, typename Msg::env_t, Fs...>;
 };
 
 template <typename Msg, stdx::ct_string OldName, stdx::ct_string NewName>

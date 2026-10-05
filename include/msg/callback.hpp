@@ -22,7 +22,7 @@ namespace detail {
  */
 template <stdx::ct_string Name, typename Msg, match::matcher M,
           stdx::callable F>
-struct callback {
+struct callback : stdx::with_name<Name> {
     [[nodiscard]] auto is_match(auto const &data) const -> bool {
         return msg::call_with_message<Msg>(matcher, data);
     }
@@ -66,7 +66,6 @@ struct callback {
     template <match::matcher NewM>
     using rebind_matcher = callback<Name, Msg, NewM, F>;
 
-    constexpr static auto name = Name;
     [[no_unique_address]] matcher_t matcher;
     [[no_unique_address]] callable_t callable;
 };
@@ -78,7 +77,7 @@ template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
         using matcher_t =
             decltype(match::sum_of_products(M{} and typename Msg::matcher_t{}));
         return callback<Name, Msg, matcher_t, std::remove_cvref_t<F>>{
-            matcher_t{}, std::forward<F>(f)};
+            {}, matcher_t{}, std::forward<F>(f)};
     }
 
     template <msg::matcher_maker M, stdx::callable F>
@@ -91,14 +90,8 @@ template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
     [[nodiscard]] constexpr auto operator()(F &&f) const {
         using matcher_t = typename Msg::matcher_t;
         return callback<Name, Msg, matcher_t, std::remove_cvref_t<F>>{
-            matcher_t{}, std::forward<F>(f)};
+            {}, matcher_t{}, std::forward<F>(f)};
     }
-
-  private:
-    template <typename N> struct matching_name {
-        template <typename Field>
-        using fn = std::is_same<N, typename Field::name_t>;
-    };
 };
 
 template <typename Cond, stdx::ct_string Name, typename Msg, match::matcher M,
@@ -115,7 +108,7 @@ constexpr auto make_runtime_conditional(Cond, callback<Name, Msg, M, F> cb) {
 
     using new_cb_t = callback<Name, Msg, new_matcher_t, F>;
 
-    return new_cb_t{new_matcher, cb.callable};
+    return new_cb_t{{}, new_matcher, cb.callable};
 }
 
 } // namespace detail

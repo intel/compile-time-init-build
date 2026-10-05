@@ -15,13 +15,9 @@ struct handler_interface {
 };
 
 namespace detail {
-template <typename M>
-concept named_msg_base =
-    stdx::is_specialization_of<decltype(M::name), stdx::ct_string>().value;
-
 template <typename M> consteval auto name_for_msg() {
-    if constexpr (detail::named_msg_base<M>) {
-        return M::name;
+    if constexpr (stdx::named<M>) {
+        return stdx::name_of_v<M>;
     } else {
         constexpr auto name = stdx::type_as_string<M>();
         return stdx::ct_string<name.size() + 1>{name};

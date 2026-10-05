@@ -152,11 +152,11 @@ struct rel_matcher_t {
 
     [[nodiscard]] constexpr auto describe() const {
         if constexpr (std::integral<typename Field::type>) {
-            return stdx::ct_format<"{} {} 0x{:x}">(Field::name,
-                                                   detail::to_string<RelOp>(),
-                                                   stdx::ct<ExpectedValue>());
+            return stdx::ct_format<"{} {} 0x{:x}">(
+                stdx::constant_name_of_v<Field>, detail::to_string<RelOp>(),
+                stdx::ct<ExpectedValue>());
         } else {
-            return stdx::ct_format<"{} {} {}">(Field::name,
+            return stdx::ct_format<"{} {} {}">(stdx::constant_name_of_v<Field>,
                                                detail::to_string<RelOp>(),
                                                stdx::ct<ExpectedValue>());
         }
@@ -166,28 +166,57 @@ struct rel_matcher_t {
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
         if constexpr (std::integral<typename Field::type>) {
             return stdx::ct_format<"{} (0x{:x}) {} 0x{:x}">(
-                Field::name, detail::extract_field<Field>(msg),
-                detail::to_string<RelOp>(), stdx::ct<ExpectedValue>());
+                stdx::constant_name_of_v<Field>,
+                detail::extract_field<Field>(msg), detail::to_string<RelOp>(),
+                stdx::ct<ExpectedValue>());
         } else {
             return stdx::ct_format<"{} ({}) {} {}">(
-                Field::name, detail::extract_field<Field>(msg),
-                detail::to_string<RelOp>(), stdx::ct<ExpectedValue>());
+                stdx::constant_name_of_v<Field>,
+                detail::extract_field<Field>(msg), detail::to_string<RelOp>(),
+                stdx::ct<ExpectedValue>());
         }
     }
 
-  private:
-    [[nodiscard]] friend constexpr auto tag_invoke(match::negate_t,
-                                                   rel_matcher_t const &) {
-        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field,
-                             ExpectedValue>{};
+    template <typename OtherRelOp, typename Field::type OtherValue>
+    [[nodiscard]] constexpr static auto
+    implies(rel_matcher_t<OtherRelOp, Field, OtherValue>) -> bool {
+        if constexpr (std::same_as<RelOp, OtherRelOp>) {
+            return RelOp{}(ExpectedValue, OtherValue);
+        } else if constexpr (std::same_as<RelOp, std::less<>>) {
+            if constexpr (std::same_as<OtherRelOp, std::less_equal<>>) {
+                auto inc = typename Field::type{};
+                return ExpectedValue <= OtherValue + ++inc;
+            } else if constexpr (std::same_as<OtherRelOp,
+                                              std::not_equal_to<>>) {
+                return ExpectedValue <= OtherValue;
+            }
+        } else if constexpr (std::same_as<RelOp, std::greater<>>) {
+            if constexpr (std::same_as<OtherRelOp, std::greater_equal<>>) {
+                auto inc = typename Field::type{};
+                return ExpectedValue + ++inc >= OtherValue;
+            } else if constexpr (std::same_as<OtherRelOp,
+                                              std::not_equal_to<>>) {
+                return ExpectedValue >= OtherValue;
+            }
+        } else if constexpr (std::same_as<RelOp, std::less_equal<>>) {
+            if constexpr (std::same_as<OtherRelOp, std::less<>> or
+                          std::same_as<OtherRelOp, std::not_equal_to<>>) {
+                return ExpectedValue < OtherValue;
+            }
+        } else if constexpr (std::same_as<RelOp, std::greater_equal<>>) {
+            if constexpr (std::same_as<OtherRelOp, std::greater<>> or
+                          std::same_as<OtherRelOp, std::not_equal_to<>>) {
+                return ExpectedValue > OtherValue;
+            }
+        } else if (std::same_as<RelOp, std::equal_to<>>) {
+            return OtherRelOp{}(ExpectedValue, OtherValue);
+        }
+        return false;
     }
 
-    template <typename Field::type OtherValue>
-    [[nodiscard]] friend constexpr auto
-    tag_invoke(match::implies_t, rel_matcher_t,
-               rel_matcher_t<RelOp, Field, OtherValue>) -> bool {
-        return ExpectedValue == OtherValue or
-               RelOp{}(ExpectedValue, OtherValue);
+    [[nodiscard]] constexpr static auto negate() {
+        return rel_matcher_t<decltype(detail::inverse_op<RelOp>()), Field,
+                             ExpectedValue>{};
     }
 };
 
@@ -215,48 +244,10 @@ template <typename Field, auto ExpectedValue>
 constexpr auto greater_than_or_equal_to =
     greater_than_or_equal_to_t<Field, ExpectedValue>{};
 
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, X> const &,
-           less_than_t<Field, Y> const &) -> bool {
-    return X < Y;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_t<Field, X> const &,
-           less_than_or_equal_to_t<Field, Y> const &) -> bool {
-    auto inc = decltype(X){};
-    return X <= Y + ++inc;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, X> const &,
-           greater_than_t<Field, Y> const &) -> bool {
-    return X > Y;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_t<Field, X> const &,
-           greater_than_or_equal_to_t<Field, Y> const &) -> bool {
-    auto inc = decltype(X){};
-    return X + ++inc >= Y;
-}
-
 template <typename Field, auto ExpectedValue>
 using equal_to_t = rel_matcher_t<std::equal_to<>, Field, ExpectedValue>;
 template <typename Field, auto ExpectedValue>
 constexpr auto equal_to = equal_to_t<Field, ExpectedValue>{};
-
-template <typename Field, auto X, typename RelOp, decltype(X) Y>
-[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
-                                        equal_to_t<Field, X> const &,
-                                        rel_matcher_t<RelOp, Field, Y> const &)
-    -> bool {
-    return RelOp{}(X, Y);
-}
 
 template <typename Field, auto X>
 constexpr auto tag_invoke(index_terms_t, equal_to_t<Field, X> const &,
@@ -301,36 +292,6 @@ template <typename Field, auto X, typename... Fields>
     }
 }
 
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
-                                        less_than_t<Field, X> const &,
-                                        not_equal_to_t<Field, Y> const &)
-    -> bool {
-    return X <= Y;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto tag_invoke(match::implies_t,
-                                        greater_than_t<Field, X> const &,
-                                        not_equal_to_t<Field, Y> const &)
-    -> bool {
-    return X >= Y;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, less_than_or_equal_to_t<Field, X> const &,
-           not_equal_to_t<Field, Y> const &) -> bool {
-    return X < Y;
-}
-
-template <typename Field, auto X, decltype(X) Y>
-[[nodiscard]] constexpr auto
-tag_invoke(match::implies_t, greater_than_or_equal_to_t<Field, X> const &,
-           not_equal_to_t<Field, Y> const &) -> bool {
-    return X > Y;
-}
-
 template <typename Field, auto... ExpectedValues>
 using in_t =
     decltype((equal_to_t<Field, ExpectedValues>{} or ... or match::never));
@@ -351,17 +312,20 @@ template <typename Field, auto P> struct pred_matcher_t {
     }
 
     [[nodiscard]] constexpr auto describe() const {
-        return stdx::ct_format<"<predicate>({})">(Field::name);
+        return stdx::ct_format<"<predicate>({})">(
+            stdx::constant_name_of_v<Field>);
     }
 
     template <typename MsgType>
     [[nodiscard]] constexpr auto describe_match(MsgType const &msg) const {
         if constexpr (std::integral<typename Field::type>) {
             return stdx::ct_format<"<predicate>({}(0x{:x}))">(
-                Field::name, detail::extract_field<Field>(msg));
+                stdx::constant_name_of_v<Field>,
+                detail::extract_field<Field>(msg));
         } else {
             return stdx::ct_format<"<predicate>({}({}))">(
-                Field::name, detail::extract_field<Field>(msg));
+                stdx::constant_name_of_v<Field>,
+                detail::extract_field<Field>(msg));
         }
     }
 };

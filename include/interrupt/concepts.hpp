@@ -84,10 +84,8 @@ template <typename T> constexpr auto config_string1() {
                       []<auto N>(stdx::ct_string<N>) {}(T::config());
                   }) {
         return stdx::ct<T::config()>();
-    } else if constexpr (requires {
-                             []<auto N>(stdx::ct_string<N>) {}(T::name);
-                         }) {
-        return stdx::ct<T::name>();
+    } else if constexpr (stdx::named<T>) {
+        return stdx::ct<stdx::name_of_v<T>>();
     } else {
         constexpr auto s = stdx::type_as_string<T>();
         return stdx::ct<stdx::ct_string<s.size() + 1>{s}>();

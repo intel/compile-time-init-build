@@ -8,8 +8,7 @@
 
 namespace cib::detail {
 template <stdx::ct_string Name, typename... Args>
-struct name_extend : config_item {
-    constexpr static auto name = Name;
+struct name_extend : stdx::with_name<Name>, config_item {
     stdx::tuple<Args...> args_tuple;
 
     consteval explicit name_extend(Args const &...args) : args_tuple{args...} {}

@@ -134,12 +134,11 @@ struct root : detail::parent_config<Cfgs...> {
 namespace detail {
 template <stdx::ct_string Name, typename ControlCfg, typename Policies,
           typename... Flows>
-struct element_irq : policy_config<Policies>,
+struct element_irq : stdx::with_name<Name>,
+                     policy_config<Policies>,
                      detail::parent_config<>,
                      ControlCfg,
                      detail::flow_config<Flows...> {
-    using name_t = stdx::cts_t<Name>;
-
     template <typename... Nexi>
     using built_t = element_irq_impl<element_irq, Nexi...>;
 
@@ -165,13 +164,13 @@ namespace detail {
 template <stdx::ct_string Name, typename ControlCfg, typename Policies,
           sub_irq_config... Cfgs>
 struct container_irq
-    : policy_config<Policies, Cfgs...>,
+    : stdx::with_name<Name>,
+      policy_config<Policies, Cfgs...>,
       detail::parent_config<Cfgs...>,
       ControlCfg,
       boost::mp11::mp_apply<detail::container_flow_config,
                             boost::mp11::mp_unique<boost::mp11::mp_append<
                                 typename Cfgs::all_flows_t...>>> {
-    using name_t = stdx::cts_t<Name>;
 
     template <typename... Subs>
     using sub_built_t = container_irq_impl<container_irq, Subs...>;

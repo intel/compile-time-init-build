@@ -8,12 +8,22 @@ TEST_CASE("X => X", "[match implies]") {
     STATIC_REQUIRE(match::implies(test_matcher{}, test_matcher{}));
 }
 
-TEST_CASE("false => X", "[match implies]") {
+TEST_CASE("false => X (rvalue)", "[match implies]") {
     STATIC_REQUIRE(match::implies(match::never, test_matcher{}));
 }
 
-TEST_CASE("X => true", "[match implies]") {
+TEST_CASE("false => X (lvalue)", "[match implies]") {
+    constexpr auto m = test_matcher{};
+    STATIC_REQUIRE(match::implies(match::never, m));
+}
+
+TEST_CASE("X => true (rvalue)", "[match implies]") {
     STATIC_REQUIRE(match::implies(test_matcher{}, match::always));
+}
+
+TEST_CASE("X => true (lvalue)", "[match implies]") {
+    constexpr auto m = test_matcher{};
+    STATIC_REQUIRE(match::implies(m, match::always));
 }
 
 TEST_CASE("disambiguate: false => true", "[match implies]") {

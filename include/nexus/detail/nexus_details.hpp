@@ -17,21 +17,14 @@ namespace cib {
 template <typename T> using extract_service_tag = typename T::Service;
 
 namespace detail {
-template <typename T, stdx::ct_string Name>
-concept name_matches = T::name == Name;
-
-template <stdx::ct_string Name> struct matching_name {
-    template <typename T> using fn = std::bool_constant<name_matches<T, Name>>;
-};
-
 template <typename Exports, typename T>
 constexpr auto locate_service_by_type() {
     using Idx = boost::mp11::mp_find<Exports, typename T::service_type>;
     if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
-        if constexpr (requires { T::name; }) {
+        if constexpr (stdx::named<T>) {
             STATIC_ASSERT(
                 false, "Trying to extend a service ({}) that is not exported",
-                T::name);
+                stdx::name_of_v<T>);
         } else {
             STATIC_ASSERT(
                 false, "Trying to extend a service ({}) that is not exported",
@@ -44,11 +37,11 @@ constexpr auto locate_service_by_type() {
 
 template <typename Exports, typename T>
 constexpr auto locate_service_by_name() {
-    using Idx = boost::mp11::mp_find_if_q<Exports, matching_name<T::name>>;
+    using Idx = boost::mp11::mp_find_if_q<Exports, stdx::same_name_q<T>>;
     if constexpr (Idx::value == boost::mp11::mp_size<Exports>::value) {
         STATIC_ASSERT(false,
                       "Trying to extend a service ({}) that is not exported",
-                      T::name);
+                      stdx::name_of_v<T>);
     } else {
         return stdx::type_identity<boost::mp11::mp_at<Exports, Idx>>{};
     }
@@ -59,7 +52,7 @@ template <typename Exports, typename T> constexpr auto locate_service() {
         return locate_service_by_type<Exports, T>();
     } else {
         STATIC_ASSERT(
-            requires { T::name; },
+            stdx::named<T>,
             "Can't locate a service ({}) that has no service_type and no name",
             T);
         return locate_service_by_name<Exports, T>();
