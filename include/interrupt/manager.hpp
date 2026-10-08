@@ -63,7 +63,7 @@ template <typename Dynamic, irq_interface... Impls> struct manager {
 
     template <irq_num_t Number> static auto run() -> void {
         using M = stdx::type_map<stdx::vt_pair<Impls::irq_number, Impls>...>;
-        using irq_t = stdx::value_lookup_t<M, Number>;
+        using irq_t = stdx::value_lookup_t<M, Number, void>;
 
         if constexpr (not std::is_void_v<irq_t>) {
             irq_t::template run<hal_t, typename dynamic_t::mutex_t>();
