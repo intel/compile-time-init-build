@@ -19,7 +19,12 @@ struct name_extend : stdx::with_name<Name>, config_item {
     }
 };
 
-template <typename Service, typename... Args> struct type_extend : config_item {
+template <typename Service> struct with_name_of {};
+template <stdx::named Service>
+struct with_name_of<Service> : stdx::with_name<stdx::name_of_v<Service>> {};
+
+template <typename Service, typename... Args>
+struct type_extend : with_name_of<Service>, config_item {
     using service_type = Service;
     stdx::tuple<Args...> args_tuple;
 
