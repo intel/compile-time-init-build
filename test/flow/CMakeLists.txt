@@ -58,11 +58,7 @@ function(add_debug_flow_test)
     endif()
 endfunction()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND ${CMAKE_CXX_COMPILER_VERSION}
-                                                 VERSION_GREATER_EQUAL 15)
-    add_debug_flow_test()
-endif()
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_CXX_COMPILER_VERSION}
-                                               VERSION_GREATER_EQUAL 13.2)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_VERSION}
+                                                VERSION_GREATER_EQUAL 13.2)
     add_debug_flow_test()
 endif()
