@@ -346,3 +346,20 @@ TEST_CASE("invoking a service by name before initialization causes panic",
     }
     CHECK(panicked);
 }
+
+namespace {
+struct unexported_service : public callback::service<> {
+    constexpr static auto name = stdx::ct_string{"unexported"};
+};
+
+struct maybe_extend_config {
+    constexpr static auto config =
+        cib::config(cib::maybe_extend<unexported_service>([]() {}));
+};
+} // namespace
+
+TEST_CASE("maybe_extend allows extending a service that isn't exported",
+          "[nexus]") {
+    cib::nexus<maybe_extend_config> nexus{};
+    nexus.init();
+}

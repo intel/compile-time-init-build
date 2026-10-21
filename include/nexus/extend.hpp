@@ -16,11 +16,23 @@ using maybe_funcptr_t =
 
 template <typename Service, typename... Args>
 [[nodiscard]] consteval auto extend(Args const &...args) {
-    return detail::type_extend<Service, detail::maybe_funcptr_t<Args>...>{
-        args...};
+    return detail::type_extend<Service, detail::export_required,
+                               detail::maybe_funcptr_t<Args>...>{args...};
 }
 template <stdx::ct_string Name, typename... Args>
 [[nodiscard]] consteval auto extend(Args const &...args) {
-    return detail::name_extend<Name, detail::maybe_funcptr_t<Args>...>{args...};
+    return detail::name_extend<Name, detail::export_required,
+                               detail::maybe_funcptr_t<Args>...>{args...};
+}
+
+template <typename Service, typename... Args>
+[[nodiscard]] consteval auto maybe_extend(Args const &...args) {
+    return detail::type_extend<Service, detail::export_optional,
+                               detail::maybe_funcptr_t<Args>...>{args...};
+}
+template <stdx::ct_string Name, typename... Args>
+[[nodiscard]] consteval auto maybe_extend(Args const &...args) {
+    return detail::name_extend<Name, detail::export_optional,
+                               detail::maybe_funcptr_t<Args>...>{args...};
 }
 } // namespace cib
