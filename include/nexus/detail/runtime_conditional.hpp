@@ -6,6 +6,7 @@
 
 #include <stdx/concepts.hpp>
 #include <stdx/ct_format.hpp>
+#include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
 
@@ -56,10 +57,8 @@ concept runtime_predicate =
     std::default_initializable<T> and stdx::predicate<T>;
 
 template <stdx::ct_string Name, runtime_predicate... Ps>
-struct runtime_condition {
+struct runtime_condition : stdx::with_name<Name> {
     constexpr static auto predicates = stdx::make_tuple(Ps{}...);
-
-    constexpr static auto ct_name = Name;
 
     template <typename... Configs>
     [[nodiscard]] consteval auto operator()(Configs const &...configs) const {

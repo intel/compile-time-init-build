@@ -99,7 +99,7 @@ template <typename Cond, stdx::ct_string Name, typename Msg, match::matcher M,
 constexpr auto make_runtime_conditional(Cond, callback<Name, Msg, M, F> cb) {
     using ::operator and;
 
-    auto predicate = match::predicate<Cond::ct_name>(
+    auto predicate = match::predicate<stdx::name_of_v<Cond>>(
         [](auto...) -> bool { return static_cast<bool>(Cond{}); });
     using predicate_t = decltype(predicate);
 

@@ -25,10 +25,9 @@ template <typename Source, typename Dest, typename Cond> struct edge {
     using cond_t = Cond;
 };
 
-template <stdx::ct_string Name> struct node_reference {
+template <stdx::ct_string Name> struct node_reference : stdx::with_name<Name> {
     using is_subgraph = void;
     constexpr static auto identity = subgraph_identity::REFERENCE;
-    using name_t = stdx::cts_t<Name>;
 };
 
 namespace literals {

@@ -28,15 +28,11 @@ struct rt_step {
 };
 
 template <stdx::ct_string Name, bool IsReference = true>
-struct ct_step : rt_step {
+struct ct_step : rt_step, stdx::with_name<Name> {
     using is_subgraph = void;
-    using name_t = stdx::cts_t<Name>;
 
     constexpr static auto identity = flow::dsl::subgraph_identity::VALUE;
-
     constexpr static auto condition = cib::detail::always_condition;
-
-    constexpr static auto ct_name = Name;
 
     constexpr auto operator*() const -> ct_step<Name, false> {
         return {forward_ptr, backward_ptr, log_name};

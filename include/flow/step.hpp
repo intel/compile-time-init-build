@@ -13,14 +13,12 @@
 namespace flow {
 template <stdx::ct_string Type, stdx::ct_string Name,
           dsl::subgraph_identity Identity, typename Cond, typename F>
-struct ct_node {
+struct ct_node : stdx::with_name<Name> {
     using is_subgraph = void;
-    using name_t = stdx::cts_t<Name>;
     using func_t = F;
     using cond_t = Cond;
 
     constexpr static auto ct_type = Type;
-    constexpr static auto ct_name = Name;
     constexpr static auto identity = Identity;
     constexpr static auto condition = cond_t{};
 

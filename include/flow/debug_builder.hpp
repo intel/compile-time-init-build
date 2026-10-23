@@ -21,7 +21,8 @@ struct debug_builder {
     [[nodiscard]] static auto build(Graph const &input) {
         auto const nodes = stdx::to_unsorted_set(flow::dsl::get_nodes(input));
         auto const edges = stdx::to_unsorted_set(flow::dsl::get_edges(input));
-        auto const named_nodes = stdx::apply_indices<name_for>(nodes);
+        auto const named_nodes =
+            stdx::apply_indices<stdx::constant_name_of_t>(nodes);
 
         using nodes_t = std::remove_cvref_t<decltype(nodes)>;
         using edges_t = std::remove_cvref_t<decltype(edges)>;
