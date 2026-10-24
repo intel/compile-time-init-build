@@ -17,18 +17,19 @@
 namespace flow {
 struct graphviz {
     template <stdx::ct_string Name> consteval static auto prologue() {
-        return +stdx::ct_format<"digraph {} {">(stdx::cts_t<Name>{});
+        return +stdx::ct_format<"digraph {} {">(stdx::ct<Name>());
     }
     template <stdx::ct_string Name> consteval static auto epilogue() {
         using namespace stdx::literals;
         return "}"_cts;
     }
     template <typename Node> consteval static auto render_node(Node) {
-        return +stdx::ct_format<"  {}">(typename Node::name_t{});
+        return +stdx::ct_format<"  {}">(stdx::constant_name_of_v<Node>);
     }
     template <typename Edge> consteval static auto render_edge(Edge) {
-        return +stdx::ct_format<"  {} -> {}">(typename Edge::source_t::name_t{},
-                                              typename Edge::dest_t::name_t{});
+        return +stdx::ct_format<"  {} -> {}">(
+            stdx::constant_name_of_v<typename Edge::source_t>,
+            stdx::constant_name_of_v<typename Edge::dest_t>);
     }
 };
 
@@ -45,9 +46,9 @@ class mermaid {
     template <typename Node> consteval static auto to_box() {
         using namespace stdx::literals;
         if constexpr (detail::is_milestone<Node>) {
-            return stdx::ct_format<"[{}]">(typename Node::name_t{});
+            return stdx::ct_format<"[{}]">(stdx::constant_name_of_v<Node>);
         } else {
-            return stdx::ct_format<"({})">(typename Node::name_t{});
+            return stdx::ct_format<"({})">(stdx::constant_name_of_v<Node>);
         }
     }
 
@@ -63,30 +64,30 @@ class mermaid {
     }
 
     template <typename Node> consteval static auto render_node(Node) {
-        return +stdx::ct_format<"  {}{}">(to_id<Node::name_t::value>(),
+        return +stdx::ct_format<"  {}{}">(to_id<stdx::name_of_v<Node>>(),
                                           to_box<Node>());
     }
 
     template <typename Node>
-        requires(Node::name_t::value == stdx::ct_string{"start"} or
-                 Node::name_t::value == stdx::ct_string{"end"})
+        requires(stdx::name_of_v<Node> == stdx::ct_string{"start"} or
+                 stdx::name_of_v<Node> == stdx::ct_string{"end"})
     consteval static auto render_node(Node) {
-        return +stdx::ct_format<"  {}(({}))">(to_id<Node::name_t::value>(),
-                                              typename Node::name_t{});
+        return +stdx::ct_format<"  {}(({}))">(to_id<stdx::name_of_v<Node>>(),
+                                              stdx::constant_name_of_v<Node>);
     }
 
     template <typename Edge> consteval static auto render_edge(Edge) {
         using namespace stdx::literals;
 
-        if constexpr (Edge::cond_t::ct_name == "always"_cts) {
+        if constexpr (stdx::name_of_v<typename Edge::cond_t> == "always"_cts) {
             return +stdx::ct_format<"  {} --> {}">(
-                to_id<Edge::source_t::name_t::value>(),
-                to_id<Edge::dest_t::name_t::value>());
+                to_id<stdx::name_of_v<typename Edge::source_t>>(),
+                to_id<stdx::name_of_v<typename Edge::dest_t>>());
         } else {
             return +stdx::ct_format<"  {} --{}--> {}">(
-                to_id<Edge::source_t::name_t::value>(),
-                stdx::cts_t<Edge::cond_t::ct_name>{},
-                to_id<Edge::dest_t::name_t::value>());
+                to_id<stdx::name_of_v<typename Edge::source_t>>(),
+                stdx::constant_name_of_v<typename Edge::cond_t>,
+                to_id<stdx::name_of_v<typename Edge::dest_t>>());
         }
     }
 };
