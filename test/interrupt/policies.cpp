@@ -55,45 +55,34 @@ using P = interrupt::dynamic_enable_policy;
 template <stdx::ct_string Irq> struct flow;
 template <stdx::ct_string Irq> struct resource;
 
-struct grandchild {
-    constexpr static auto name = stdx::ct_string{"gc"};
-    using name_t = stdx::cts_t<name>;
-
+struct grandchild : stdx::with_name<"gc"> {
     constexpr static auto children = stdx::tuple{};
     using resources_t = interrupt::resource_list<resource<name>>;
     using flows_t = stdx::type_list<flow<name>>;
 };
 
-struct child_a {
-    constexpr static auto name = stdx::ct_string{"ca"};
-    using name_t = stdx::cts_t<name>;
-
+struct child_a : stdx::with_name<"ca"> {
     constexpr static auto children = stdx::tuple{grandchild{}};
     using resources_t =
         interrupt::resource_list<resource<"ca1">, resource<"ca2">>;
     using flows_t = stdx::type_list<flow<name>>;
 };
 
-struct child_b {
-    constexpr static auto name = stdx::ct_string{"cb"};
-    using name_t = stdx::cts_t<name>;
-
+struct child_b : stdx::with_name<"cb"> {
     constexpr static auto children = stdx::tuple{};
     using resources_t = interrupt::resource_list<resource<name>>;
     using flows_t = stdx::type_list<flow<"cb1">, flow<"cb2">>;
 };
 
-struct parent {
-    constexpr static auto name = stdx::ct_string{"p"};
-    using name_t = stdx::cts_t<name>;
-
+struct parent : stdx::with_name<"p"> {
     constexpr static auto children = stdx::tuple{child_a{}, child_b{}};
     using resources_t = interrupt::resource_list<resource<name>>;
     using flows_t = stdx::type_list<flow<name>>;
 };
 
-using name_enables_t = stdx::type_bitset<parent::name_t, child_a::name_t,
-                                         child_b::name_t, grandchild::name_t>;
+using name_enables_t = stdx::type_bitset<
+    stdx::constant_name_of_t<parent>, stdx::constant_name_of_t<child_a>,
+    stdx::constant_name_of_t<child_b>, stdx::constant_name_of_t<grandchild>>;
 using flow_enables_t = boost::mp11::mp_apply<
     stdx::type_bitset,
     boost::mp11::mp_append<parent::flows_t, child_a::flows_t, child_b::flows_t,
@@ -119,8 +108,9 @@ TEST_CASE("dynamic_enable_policy: is_on (all enables)", "[policies]") {
 TEST_CASE("dynamic_enable_policy: is_on (turned off by name)", "[policies]") {
     // everything enabled except parent name
     constexpr auto name_enables =
-        name_enables_t{stdx::type_list<child_a::name_t, child_b::name_t,
-                                       grandchild::name_t>{}};
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<child_a>,
+                                       stdx::constant_name_of_t<child_b>,
+                                       stdx::constant_name_of_t<grandchild>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     constexpr auto flow_enables = flow_enables_t{stdx::all_bits};
     STATIC_CHECK(
@@ -142,7 +132,7 @@ TEST_CASE("dynamic_enable_policy: is_on (turned off by resource)",
 TEST_CASE("dynamic_enable_policy: is_on (by flows)", "[policies]") {
     // only parent name enabled; children off
     constexpr auto name_enables =
-        name_enables_t{stdx::type_list<parent::name_t>{}};
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<parent>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     constexpr auto flow_enables = flow_enables_t{stdx::all_bits};
     STATIC_CHECK(P::is_on<parent>(name_enables, rsrc_enables, flow_enables));
@@ -151,7 +141,7 @@ TEST_CASE("dynamic_enable_policy: is_on (by flows)", "[policies]") {
 TEST_CASE("dynamic_enable_policy: is_on (by one flow)", "[policies]") {
     // only child_b enabled
     constexpr auto name_enables =
-        name_enables_t{stdx::type_list<child_b::name_t>{}};
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<child_b>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     // only one of child_b's flows enabled
     constexpr auto flow_enables =
@@ -160,8 +150,10 @@ TEST_CASE("dynamic_enable_policy: is_on (by one flow)", "[policies]") {
 }
 
 TEST_CASE("dynamic_enable_policy: is_on (by children)", "[policies]") {
-    constexpr auto name_enables = name_enables_t{
-        stdx::type_list<parent::name_t, child_a::name_t, child_b::name_t>{}};
+    constexpr auto name_enables =
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<parent>,
+                                       stdx::constant_name_of_t<child_a>,
+                                       stdx::constant_name_of_t<child_b>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     // parent flow not enabled, but children are
     constexpr auto flow_enables =
@@ -171,7 +163,8 @@ TEST_CASE("dynamic_enable_policy: is_on (by children)", "[policies]") {
 
 TEST_CASE("dynamic_enable_policy: is_on (by one child)", "[policies]") {
     constexpr auto name_enables =
-        name_enables_t{stdx::type_list<parent::name_t, child_a::name_t>{}};
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<parent>,
+                                       stdx::constant_name_of_t<child_a>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     // parent flow not enabled, but child_a's is
     constexpr auto flow_enables = flow_enables_t{stdx::type_list<flow<"ca">>{}};
@@ -179,8 +172,10 @@ TEST_CASE("dynamic_enable_policy: is_on (by one child)", "[policies]") {
 }
 
 TEST_CASE("dynamic_enable_policy: is_on (by grandchild)", "[policies]") {
-    constexpr auto name_enables = name_enables_t{
-        stdx::type_list<parent::name_t, child_a::name_t, grandchild::name_t>{}};
+    constexpr auto name_enables =
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<parent>,
+                                       stdx::constant_name_of_t<child_a>,
+                                       stdx::constant_name_of_t<grandchild>>{}};
     constexpr auto rsrc_enables = resource_enables_t{stdx::all_bits};
     // grandchild on => child_a on => parent on
     constexpr auto flow_enables = flow_enables_t{stdx::type_list<flow<"gc">>{}};
@@ -189,10 +184,7 @@ TEST_CASE("dynamic_enable_policy: is_on (by grandchild)", "[policies]") {
 }
 
 namespace {
-struct alt_grandchild {
-    constexpr static auto name = stdx::ct_string{"gc"};
-    using name_t = stdx::cts_t<name>;
-
+struct alt_grandchild : stdx::with_name<"gc"> {
     constexpr static auto children = stdx::tuple{};
     using resources_t = interrupt::resource_list<>;
     using flows_t = stdx::type_list<flow<name>>;
@@ -200,8 +192,8 @@ struct alt_grandchild {
 } // namespace
 
 TEST_CASE("dynamic_enable_policy: is_on (no resources)", "[policies]") {
-    constexpr auto name_enables =
-        name_enables_t{stdx::type_list<alt_grandchild::name_t>{}};
+    constexpr auto name_enables = name_enables_t{
+        stdx::type_list<stdx::constant_name_of_t<alt_grandchild>>{}};
     constexpr auto rsrc_enables = resource_enables_t{};
     constexpr auto flow_enables = flow_enables_t{stdx::type_list<flow<"gc">>{}};
     STATIC_CHECK(
@@ -209,10 +201,7 @@ TEST_CASE("dynamic_enable_policy: is_on (no resources)", "[policies]") {
 }
 
 namespace {
-struct alt_parent {
-    constexpr static auto name = stdx::ct_string{"p"};
-    using name_t = stdx::cts_t<name>;
-
+struct alt_parent : stdx::with_name<"p"> {
     constexpr static auto children = stdx::tuple{child_a{}};
     using resources_t = interrupt::resource_list<>;
     using flows_t = stdx::type_list<>;
@@ -222,7 +211,8 @@ struct alt_parent {
 TEST_CASE("dynamic_enable_policy: is_on (parent with no resources/flows)",
           "[policies]") {
     constexpr auto name_enables =
-        name_enables_t{stdx::type_list<alt_parent::name_t, child_a::name_t>{}};
+        name_enables_t{stdx::type_list<stdx::constant_name_of_t<alt_parent>,
+                                       stdx::constant_name_of_t<child_a>>{}};
     constexpr auto rsrc_enables =
         resource_enables_t{stdx::type_list<resource<"ca1">, resource<"ca2">>{}};
     constexpr auto flow_enables = flow_enables_t{stdx::type_list<flow<"ca">>{}};
