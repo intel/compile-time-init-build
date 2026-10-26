@@ -9,18 +9,16 @@
 #include <type_traits>
 
 namespace flow {
-template <typename T> using name_for = typename T::name_t;
-
 [[nodiscard]] constexpr auto edge_size(auto const &nodes, auto const &edges)
     -> std::size_t {
     auto const edge_capacities = transform(
         [&]<typename N>(N const &) {
             return edges.fold_left(
                 std::size_t{}, []<typename E>(auto acc, E const &) {
-                    if constexpr (std::is_same_v<name_for<typename E::source_t>,
-                                                 name_for<N>> or
-                                  std::is_same_v<name_for<typename E::dest_t>,
-                                                 name_for<N>>) {
+                    if constexpr (stdx::name_of_v<typename E::source_t> ==
+                                      stdx::name_of_v<N> or
+                                  stdx::name_of_v<typename E::dest_t> ==
+                                      stdx::name_of_v<N>) {
                         return ++acc;
                     } else {
                         return acc;
@@ -37,16 +35,19 @@ template <typename T> using name_for = typename T::name_t;
 namespace detail {
 template <typename N> struct matching_source {
     template <typename Edge>
-    using fn = std::is_same<name_for<N>, name_for<typename Edge::source_t>>;
+    using fn = std::bool_constant<stdx::name_of_v<N> ==
+                                  stdx::name_of_v<typename Edge::source_t>>;
 };
 
 template <typename N> struct matching_dest {
     template <typename Edge>
-    using fn = std::is_same<name_for<N>, name_for<typename Edge::dest_t>>;
+    using fn = std::bool_constant<stdx::name_of_v<N> ==
+                                  stdx::name_of_v<typename Edge::dest_t>>;
 };
 
 template <typename T> struct matching_name {
-    template <typename U> using fn = std::is_same<name_for<T>, name_for<U>>;
+    template <typename U>
+    using fn = std::bool_constant<stdx::name_of_v<T> == stdx::name_of_v<U>>;
 };
 
 template <typename Nodes> struct contained_edge_q {
@@ -85,7 +86,7 @@ using any_descendants =
 template <typename Start, typename Edges> struct descendant_of_q<Start, Edges> {
     template <typename Node>
     using fn = boost::mp11::mp_eval_if_c<
-        std::is_same_v<name_for<Node>, name_for<Start>>, std::true_type,
+        stdx::name_of_v<Node> == stdx::name_of_v<Start>, std::true_type,
         any_descendants, parents_of<Node, Edges>, Start, Edges>;
 };
 
@@ -97,7 +98,7 @@ using any_ancestors = boost::mp11::mp_any_of_q<L, ancestor_of_q<Start, Edges>>;
 template <typename Start, typename Edges> struct ancestor_of_q<Start, Edges> {
     template <typename Node>
     using fn = boost::mp11::mp_eval_if_c<
-        std::is_same_v<name_for<Node>, name_for<Start>>, std::true_type,
+        stdx::name_of_v<Node> == stdx::name_of_v<Start>, std::true_type,
         any_ancestors, children_of<Node, Edges>, Start, Edges>;
 };
 } // namespace detail

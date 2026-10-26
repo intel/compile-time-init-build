@@ -78,12 +78,15 @@ struct graph_builder {
                      Node n) { g.put(Output::template create_node<Nexus>(n)); },
                  nodes);
 
-        auto const named_nodes = stdx::apply_indices<name_for>(nodes);
+        auto const named_nodes =
+            stdx::apply_indices<stdx::constant_name_of_t>(nodes);
         for_each(
             [&]<typename Lhs, typename Rhs, typename Cond>(
                 dsl::edge<Lhs, Rhs, Cond> const &) {
-                auto const lhs = get<name_for<Lhs>>(named_nodes);
-                auto const rhs = get<name_for<Rhs>>(named_nodes);
+                auto const lhs =
+                    get<stdx::constant_name_of_t<Lhs>>(named_nodes);
+                auto const rhs =
+                    get<stdx::constant_name_of_t<Rhs>>(named_nodes);
 
                 using lhs_t = std::remove_cvref_t<decltype(lhs)>;
                 using rhs_t = std::remove_cvref_t<decltype(rhs)>;
@@ -102,9 +105,13 @@ struct graph_builder {
                             "weaker than those on {}[{}] or {}[{}]. "
                             "Specifically, the sequence is missing the "
                             "predicate: {}",
-                            lhs_t::ct_name, rhs_t::ct_name, Cond::ct_name,
-                            lhs_t::ct_name, lhs_cond_t::ct_name, rhs_t::ct_name,
-                            rhs_cond_t::ct_name, P);
+                            stdx::constant_name_of_v<lhs_t>,
+                            stdx::constant_name_of_v<rhs_t>,
+                            stdx::constant_name_of_v<Cond>,
+                            stdx::constant_name_of_v<lhs_t>,
+                            stdx::constant_name_of_v<lhs_cond_t>,
+                            stdx::constant_name_of_v<rhs_t>,
+                            stdx::constant_name_of_v<rhs_cond_t>, P);
                     },
                     node_ps);
 
@@ -183,8 +190,10 @@ struct graph_builder {
     // NOLINTNEXTLINE (readability-function-cognitive-complexity)
     constexpr static void check_for_missing_nodes(auto nodes,
                                                   auto mentioned_nodes) {
-        constexpr auto get_name = []<typename N>(N) ->
-            typename N::name_t { return {}; };
+        constexpr auto get_name =
+            []<typename N>(N) -> stdx::constant_name_of_t<N> {
+            return stdx::constant_name_of_v<N>;
+        };
         auto node_names = stdx::transform(get_name, nodes);
         auto mentioned_node_names = stdx::transform(get_name, mentioned_nodes);
 
@@ -201,7 +210,7 @@ struct graph_builder {
             "{}.",
             Name, detail::error_join<missing_nodes_t>);
 
-        constexpr auto duplicates = stdx::transform(
+        auto duplicates = stdx::transform(
             [](auto e) { return stdx::get<0>(e); },
             stdx::filter<detail::is_duplicated>(stdx::gather(node_names)));
         using duplicate_nodes_t = decltype(duplicates);
