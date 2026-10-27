@@ -10,5 +10,3 @@ target_compile_options(
 
 target_link_libraries(compilation_nexus_benchmark PRIVATE cib
                                                           profile-compilation)
-target_include_directories(compilation_nexus_benchmark
-                           PRIVATE ${CMAKE_SOURCE_DIR}/test/)
