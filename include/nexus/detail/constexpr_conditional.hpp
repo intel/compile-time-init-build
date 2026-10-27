@@ -34,8 +34,9 @@ struct constexpr_conditional : config_item {
     }
 };
 
-template <stdx::ct_string Name, typename... Ps>
-struct constexpr_condition : stdx::with_name<Name> {
+namespace s {
+template <auto Name, typename... Ps>
+struct constexpr_condition : stdx::with_shrunk_name<Name> {
     constexpr static auto predicates = stdx::make_tuple(Ps{}...);
 
     template <typename... Configs>
@@ -46,5 +47,9 @@ struct constexpr_condition : stdx::with_name<Name> {
 
     explicit constexpr operator bool() const { return (Ps{}() and ...); }
 };
+} // namespace s
+
+template <stdx::ct_string Name, typename... Ps>
+using constexpr_condition = s::constexpr_condition<stdx::shrink<Name>(), Ps...>;
 
 } // namespace cib::detail
