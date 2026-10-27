@@ -17,12 +17,11 @@
 
 namespace flow {
 namespace detail {
-template <stdx::ct_string FlowName, log_policy LogPolicy, typename CTNode,
+template <auto FlowName, log_policy LogPolicy, typename CTNode,
           typename Nexus = void>
 constexpr static auto run_func = []() -> void {
     if (CTNode::condition) {
-        LogPolicy::template log<
-            decltype(get_log_env<CTNode, log_env_id_t<FlowName>>())>(
+        LogPolicy::template log<decltype(get_log_env<CTNode, FlowName>())>(
             __FILE__, __LINE__,
             stdx::ct_format<"flow.{}({})">(stdx::ct<CTNode::ct_type>(),
                                            stdx::constant_name_of_v<CTNode>));
@@ -51,9 +50,8 @@ struct inlined_func_list : stdx::with_shrunk_name<Name> {
             stdx::ct_format<"flow.end({})">(stdx::ct<Name>()));
     }
 };
-} // namespace detail
 
-template <stdx::ct_string Name, log_policy LogPolicy, std::size_t NumSteps>
+template <auto Name, log_policy LogPolicy, std::size_t NumSteps>
 struct func_list {
     using fp_t = auto (*)() -> void;
     using node_t = std::pair<fp_t, std::string_view>;
@@ -61,7 +59,7 @@ struct func_list {
 
     template <typename Nexus, typename CTNode>
     constexpr static auto create_node(CTNode) -> node_t {
-        constexpr auto fp = detail::run_func<Name, LogPolicy, CTNode, Nexus>;
+        constexpr auto fp = run_func<Name, LogPolicy, CTNode, Nexus>;
         constexpr auto name = std::string_view{stdx::name_of_v<CTNode>};
         return {fp, name};
     }
@@ -72,7 +70,10 @@ struct func_list {
     }
 
     template <fp_t... Fs>
-    using finalized_t =
-        detail::inlined_func_list<stdx::shrink<Name>(), LogPolicy, Fs...>;
+    using finalized_t = inlined_func_list<Name, LogPolicy, Fs...>;
 };
+} // namespace detail
+
+template <stdx::ct_string Name, log_policy LogPolicy, std::size_t NumSteps>
+using func_list = detail::func_list<stdx::shrink<Name>(), LogPolicy, NumSteps>;
 } // namespace flow

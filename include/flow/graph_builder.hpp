@@ -231,7 +231,7 @@ struct graph_builder : stdx::with_shrunk_name<Name> {
         constexpr auto node_capacity = stdx::tuple_size_v<decltype(node_set)>;
         constexpr auto edge_capacity = edge_size(node_set, edges);
 
-        using output_t = Impl<Graph::name, LogPolicy, node_capacity>;
+        using output_t = Impl<stdx::name_of_v<Graph>, LogPolicy, node_capacity>;
         static_assert(
             all_of(
                 []<typename N>(N const &) {

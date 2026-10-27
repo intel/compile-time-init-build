@@ -19,18 +19,16 @@ using default_log_env =
 template <stdx::ct_string, typename...>
 constexpr auto log_env = default_log_env{};
 
-template <stdx::ct_string Name> struct log_env_id_t : stdx::with_name<Name> {};
-
-template <typename T, typename Fallback = log_env_id_t<"default">,
+template <typename T, auto Fallback = stdx::shrink<"default">(),
           typename... DummyArgs>
     requires(sizeof...(DummyArgs) == 0)
-constexpr static auto get_log_env() {
+consteval auto get_log_env() {
     using log_env_t = decltype(log_env<stdx::name_of_v<T>, DummyArgs...>);
     if constexpr (std::is_same_v<log_env_t, default_log_env const>) {
-        if constexpr (stdx::name_of_v<Fallback> == stdx::ct_string{"default"}) {
+        if constexpr (stdx::expand(Fallback) == stdx::ct_string{"default"}) {
             return log_env<"default", DummyArgs...>;
         } else {
-            return get_log_env<Fallback>();
+            return get_log_env<stdx::with_shrunk_name<Fallback>>();
         }
     } else {
         return log_env_t{};
