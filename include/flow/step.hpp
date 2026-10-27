@@ -34,7 +34,7 @@ struct ct_node : stdx::with_name<Name> {
 
 namespace detail {
 template <stdx::ct_string Type, stdx::ct_string Name, typename F>
-[[nodiscard]] constexpr auto make_node() {
+[[nodiscard]] consteval auto make_node() {
     return ct_node<Type, Name, dsl::subgraph_identity::REFERENCE,
                    cib::detail::always_condition_t, F>{};
 }
@@ -47,33 +47,33 @@ constexpr bool is_milestone = Node::ct_type == stdx::ct_string{"milestone"};
 
 template <stdx::ct_string Name, typename F>
     requires(stdx::is_function_object_v<F> and std::is_empty_v<F>)
-[[nodiscard]] constexpr auto action(F const &) {
+[[nodiscard]] consteval auto action(F const &) {
     return detail::make_node<"action", Name, F>();
 }
 
-template <stdx::ct_string Name> [[nodiscard]] constexpr auto action() {
+template <stdx::ct_string Name> [[nodiscard]] consteval auto action() {
     return action<Name>(cib::func_decl<Name>);
 }
 
-template <stdx::ct_string Name> [[nodiscard]] constexpr auto step() {
+template <stdx::ct_string Name> [[nodiscard]] consteval auto step() {
     return action<Name>(cib::func_decl<Name>);
 }
 
-template <stdx::ct_string Name> [[nodiscard]] constexpr auto milestone() {
+template <stdx::ct_string Name> [[nodiscard]] consteval auto milestone() {
     return detail::make_node<"milestone", Name, decltype(detail::empty_func)>();
 }
 
 inline namespace literals {
-template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_action() {
+template <stdx::ct_string S> [[nodiscard]] consteval auto operator""_action() {
     return action<S>();
 }
 
-template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_step() {
+template <stdx::ct_string S> [[nodiscard]] consteval auto operator""_step() {
     return action<S>();
 }
 
 template <stdx::ct_string S>
-[[nodiscard]] constexpr auto operator""_milestone() {
+[[nodiscard]] consteval auto operator""_milestone() {
     return milestone<S>();
 }
 } // namespace literals
