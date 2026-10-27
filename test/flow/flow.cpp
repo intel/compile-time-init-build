@@ -74,13 +74,13 @@ title: debug
 flowchart TD
   _start((start))
   _end((end))
-  _a(a)
   _b(b)
+  _a(a)
   _a --when--> _b
   _start --> _a
   _b --when--> _end
 )__debug__"sv;
-    STATIC_REQUIRE(viz == expected);
+    STATIC_CHECK(viz == expected);
 }
 
 TEST_CASE("add single action (by flow type) through cib::nexus", "[flow]") {

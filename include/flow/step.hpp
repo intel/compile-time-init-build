@@ -11,9 +11,9 @@
 #include <type_traits>
 
 namespace flow {
-template <stdx::ct_string Type, stdx::ct_string Name,
-          dsl::subgraph_identity Identity, typename Cond, typename F>
-struct ct_node : stdx::with_name<Name> {
+template <auto Type, auto Name, dsl::subgraph_identity Identity, typename Cond,
+          typename F>
+struct ct_node : stdx::with_shrunk_name<Name> {
     using is_subgraph = void;
     using func_t = F;
     using cond_t = Cond;
@@ -35,14 +35,16 @@ struct ct_node : stdx::with_name<Name> {
 namespace detail {
 template <stdx::ct_string Type, stdx::ct_string Name, typename F>
 [[nodiscard]] consteval auto make_node() {
-    return ct_node<Type, Name, dsl::subgraph_identity::REFERENCE,
+    return ct_node<stdx::shrink<Type>(), stdx::shrink<Name>(),
+                   dsl::subgraph_identity::REFERENCE,
                    cib::detail::always_condition_t, F>{};
 }
 
 constexpr auto empty_func = []() -> void {};
 
 template <typename Node>
-constexpr bool is_milestone = Node::ct_type == stdx::ct_string{"milestone"};
+constexpr bool is_milestone =
+    stdx::expand(Node::ct_type) == stdx::ct_string{"milestone"};
 } // namespace detail
 
 template <stdx::ct_string Name, typename F>
@@ -78,8 +80,8 @@ template <stdx::ct_string S>
 }
 } // namespace literals
 
-template <typename Cond, stdx::ct_string Type, stdx::ct_string Name,
-          dsl::subgraph_identity Identity, typename NodeCond, typename F>
+template <typename Cond, auto Type, auto Name, dsl::subgraph_identity Identity,
+          typename NodeCond, typename F>
 constexpr auto
 make_runtime_conditional(Cond, ct_node<Type, Name, Identity, NodeCond, F>) {
     if constexpr (Identity == dsl::subgraph_identity::VALUE) {

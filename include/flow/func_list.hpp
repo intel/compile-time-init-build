@@ -35,8 +35,8 @@ constexpr static auto run_func = []() -> void {
     }
 };
 
-template <stdx::ct_string Name, log_policy LogPolicy, auto... FuncPtrs>
-struct inlined_func_list : stdx::with_name<Name> {
+template <auto Name, log_policy LogPolicy, auto... FuncPtrs>
+struct inlined_func_list : stdx::with_shrunk_name<Name> {
     constexpr static auto active = sizeof...(FuncPtrs) > 0;
 
     __attribute__((flatten, always_inline)) auto operator()() const -> void {
@@ -72,6 +72,7 @@ struct func_list {
     }
 
     template <fp_t... Fs>
-    using finalized_t = detail::inlined_func_list<Name, LogPolicy, Fs...>;
+    using finalized_t =
+        detail::inlined_func_list<stdx::shrink<Name>(), LogPolicy, Fs...>;
 };
 } // namespace flow
