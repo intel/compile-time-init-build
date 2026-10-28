@@ -29,7 +29,7 @@ template <typename F> struct send_action {
 };
 template <typename F> send_action(F) -> send_action<F>;
 
-template <stdx::ct_string Name, typename... Args> struct pipeable {
+template <auto Name, typename... Args> struct pipeable {
     template <typename Adaptor> struct type {
         [[no_unique_address]] Adaptor a;
 
@@ -38,7 +38,8 @@ template <stdx::ct_string Name, typename... Args> struct pipeable {
         friend constexpr auto operator|(S &&s, Self &&self) -> async::sender
             auto {
             return async::just(std::forward<S>(s).f) |
-                   async::incite_on(async::trigger_scheduler<Name, Args...>{}) |
+                   async::incite_on(async::trigger_scheduler<stdx::expand(Name),
+                                                             Args...>{}) |
                    std::forward<Self>(self).a;
         }
     };
@@ -58,9 +59,11 @@ constexpr auto send(F &&f, Args &&...args) {
 template <stdx::ct_string Name, typename... RecvArgs, typename F,
           typename... Args>
 [[nodiscard]] constexpr auto then_receive(F &&f, Args &&...args) {
-    return typename _send_recv::pipeable<Name, RecvArgs...>::type{async::then(
-        [f = std::forward<F>(f), ... args = std::forward<Args>(args)](
-            RecvArgs const &...as) { return f(as..., args...); })};
+    return
+        typename _send_recv::pipeable<stdx::shrink<Name>(), RecvArgs...>::type{
+            async::then(
+                [f = std::forward<F>(f), ... args = std::forward<Args>(args)](
+                    RecvArgs const &...as) { return f(as..., args...); })};
 }
 
 template <stdx::ct_string Name, _send_recv::valid_send_action S, typename F,

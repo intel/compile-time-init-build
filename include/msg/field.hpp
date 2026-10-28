@@ -66,8 +66,8 @@ concept field_locator_for =
     field_extractor_for<T, Spec> and field_inserter_for<T, Spec>;
 
 namespace detail {
-template <stdx::ct_string Name, typename T, std::uint32_t BitSize>
-struct field_spec_t : stdx::with_name<Name> {
+template <auto Name, typename T, std::uint32_t BitSize>
+struct field_spec_t : stdx::with_shrunk_name<Name> {
     using type = T;
     constexpr static auto size = BitSize;
 };
@@ -383,7 +383,7 @@ concept is_mutable_value = requires { typename T::is_mutable_t; };
 template <auto V, typename D>
 concept compatible_with_default = D::template is_compatible_value<V>;
 
-template <stdx::ct_string Name, typename T = std::uint32_t, auto... Ats>
+template <auto Name, typename T = std::uint32_t, auto... Ats>
 struct field_id_t {};
 
 template <at... Ats> struct sort_key_t {
@@ -391,7 +391,7 @@ template <at... Ats> struct sort_key_t {
 };
 template <> struct sort_key_t<> {};
 
-template <stdx::ct_string Name, typename T = std::uint32_t,
+template <auto Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t, at... Ats>
     requires std::is_trivially_copyable_v<T>
@@ -534,7 +534,7 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 
     // ======================================================================
     // rename field
-    template <stdx::ct_string NewName>
+    template <auto NewName>
     using with_new_name = field_t<NewName, T, Default, M, Ats...>;
 
     // ======================================================================
@@ -565,5 +565,5 @@ class field_t : public field_spec_t<Name, T, detail::field_size<Ats...>>,
 template <stdx::ct_string Name, typename T = std::uint32_t,
           typename Default = detail::with_default<T>,
           match::matcher M = match::always_t>
-using field = detail::field_t<Name, T, Default, M>;
+using field = detail::field_t<stdx::shrink<Name>(), T, Default, M>;
 } // namespace msg
