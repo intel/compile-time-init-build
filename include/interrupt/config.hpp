@@ -10,6 +10,7 @@
 #include <stdx/ct_string.hpp>
 #include <stdx/tuple.hpp>
 #include <stdx/tuple_algorithms.hpp>
+#include <stdx/type_traits.hpp>
 #include <stdx/utility.hpp>
 
 #include <boost/mp11/algorithm.hpp>
@@ -35,7 +36,7 @@ struct mcu_control_config {
     using enable_field_t = EnableField;
     using status_field_t = no_field_t;
 
-    template <stdx::ct_string Name, typename Policies, typename... Flows>
+    template <auto Name, typename Policies, typename... Flows>
     constexpr static auto config() {
         using namespace stdx::literals;
         return +stdx::ct_format<R"(interrupt::{}<"{}", {}_irq, {}, {}>)">(
@@ -53,7 +54,7 @@ struct field_control_config {
     using enable_field_t = EnableField;
     using status_field_t = StatusField;
 
-    template <stdx::ct_string Name, typename Policies, typename... Flows>
+    template <auto Name, typename Policies, typename... Flows>
     constexpr static auto config() {
         using namespace stdx::literals;
         return +stdx::ct_format<R"(interrupt::{}<"{}", {}>)">(
@@ -132,9 +133,8 @@ struct root : detail::parent_config<Cfgs...> {
 };
 
 namespace detail {
-template <stdx::ct_string Name, typename ControlCfg, typename Policies,
-          typename... Flows>
-struct element_irq : stdx::with_name<Name>,
+template <auto Name, typename ControlCfg, typename Policies, typename... Flows>
+struct element_irq : stdx::with_shrunk_name<Name>,
                      policy_config<Policies>,
                      detail::parent_config<>,
                      ControlCfg,
@@ -151,20 +151,22 @@ struct element_irq : stdx::with_name<Name>,
 template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
           typename EnableField, typename Policies, typename... Flows>
 using irq = detail::element_irq<
-    Name, detail::mcu_control_config<"irq", Number, Priority, EnableField>,
-    Policies, Flows...>;
+    stdx::shrink<Name>(),
+    detail::mcu_control_config<"irq", Number, Priority, EnableField>, Policies,
+    Flows...>;
 
 template <stdx::ct_string Name, typename EnableField, typename StatusField,
           typename Policies, typename... Flows>
 using sub_irq = detail::element_irq<
-    Name, detail::field_control_config<"sub_irq", EnableField, StatusField>,
-    Policies, Flows...>;
+    stdx::shrink<Name>(),
+    detail::field_control_config<"sub_irq", EnableField, StatusField>, Policies,
+    Flows...>;
 
 namespace detail {
-template <stdx::ct_string Name, typename ControlCfg, typename Policies,
+template <auto Name, typename ControlCfg, typename Policies,
           sub_irq_config... Cfgs>
 struct container_irq
-    : stdx::with_name<Name>,
+    : stdx::with_shrunk_name<Name>,
       policy_config<Policies, Cfgs...>,
       detail::parent_config<Cfgs...>,
       ControlCfg,
@@ -189,14 +191,14 @@ struct container_irq
 template <stdx::ct_string Name, irq_num_t Number, priority_t Priority,
           typename EnableField, typename Policies, sub_irq_config... Cfgs>
 using shared_irq = detail::container_irq<
-    Name,
+    stdx::shrink<Name>(),
     detail::mcu_control_config<"shared_irq", Number, Priority, EnableField>,
     Policies, Cfgs...>;
 
 template <stdx::ct_string Name, typename EnableField, typename StatusField,
           typename Policies, sub_irq_config... Cfgs>
 using shared_sub_irq = detail::container_irq<
-    Name,
+    stdx::shrink<Name>(),
     detail::field_control_config<"shared_sub_irq", EnableField, StatusField>,
     Policies, Cfgs...>;
 } // namespace interrupt
