@@ -9,13 +9,13 @@
 
 namespace cib {
 template <stdx::ct_string Name>
-constexpr auto constexpr_condition = []<typename P>(P) {
+constexpr auto constexpr_condition = []<typename P>(P) consteval {
     static_assert(std::is_default_constructible_v<P>);
     return detail::constexpr_condition<Name, P>{};
 };
 
 template <stdx::ct_string Name>
-constexpr auto runtime_condition = []<typename P>(P) {
+constexpr auto runtime_condition = []<typename P>(P) consteval {
     static_assert(std::is_default_constructible_v<P>);
     return detail::runtime_condition<Name, P>{};
 };
