@@ -55,8 +55,8 @@ constexpr auto remove_match_terms = []<typename C>(C &&c) {
     using callback_t = std::remove_cvref_t<C>;
     match::matcher auto new_matcher = remove_terms(
         std::forward<C>(c).matcher, std::type_identity<Fields>{}...);
-    return detail::callback<callback_t::name, typename callback_t::msg_t,
-                            decltype(new_matcher),
+    return detail::callback<stdx::shrink<stdx::name_of_v<callback_t>>(),
+                            typename callback_t::msg_t, decltype(new_matcher),
                             typename callback_t::callable_t>{
         {}, std::move(new_matcher), std::forward<C>(c).callable};
 };

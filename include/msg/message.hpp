@@ -36,19 +36,14 @@ template <typename T>
 concept matcher_maker = requires { typename T::is_matcher_maker; };
 
 namespace detail {
-template <stdx::ct_string N> struct matching_name {
-    template <typename Field>
-    using fn = std::bool_constant<N == stdx::name_of_v<Field>>;
-};
-
-template <stdx::ct_string Name, typename RelOp, auto V> struct matcher_maker {
+template <auto Name, typename RelOp, auto V> struct matcher_maker {
     using is_matcher_maker = void;
 
     template <typename Msg>
     constexpr static auto make_matcher() -> match::matcher auto {
         using fields_t = typename Msg::fields_t;
-        using index_t =
-            boost::mp11::mp_find_if_q<fields_t, matching_name<Name>>;
+        using index_t = boost::mp11::mp_find_if_q<
+            fields_t, stdx::same_name_q<stdx::with_shrunk_name<Name>>>;
         static_assert(index_t::value < boost::mp11::mp_size<fields_t>::value,
                       "Named field not in message!");
         return rel_matcher_t<RelOp, boost::mp11::mp_at<fields_t, index_t>, V>{};
@@ -119,12 +114,12 @@ constexpr auto operator or(T, U) -> mm_or_t<T, matcher_wrapper<U>> {
     return {};
 }
 
-template <stdx::ct_string Name, typename T>
-struct field_value : stdx::with_name<Name> {
+template <auto Name, typename T>
+struct field_value : stdx::with_shrunk_name<Name> {
     T value;
 };
 
-template <stdx::ct_string Name> struct field_name : stdx::with_name<Name> {
+template <auto Name> struct field_name : stdx::with_shrunk_name<Name> {
     // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     template <typename T> constexpr auto operator=(T value) const {
         return field_value<Name, T>{{}, value};
@@ -170,10 +165,10 @@ template <stdx::ct_string Name> struct field_name : stdx::with_name<Name> {
 
 inline namespace literals {
 template <stdx::ct_string S> constexpr auto operator""_field() {
-    return detail::field_name<S>{};
+    return detail::field_name<stdx::shrink<S>()>{};
 }
 template <stdx::ct_string S> constexpr auto operator""_f() {
-    return detail::field_name<S>{};
+    return detail::field_name<stdx::shrink<S>()>{};
 }
 } // namespace literals
 
@@ -189,7 +184,7 @@ template <typename... Fields> struct storage_size {
         std::max({std::size_t{}, Fields::template extent_in<T>()...});
 };
 
-template <stdx::ct_string Name, typename... Fields> class msg_access {
+template <auto Name, typename... Fields> class msg_access {
     using FieldsTuple =
         decltype(stdx::make_indexed_tuple<stdx::constant_name_of_t>(
             Fields{}...));
@@ -230,7 +225,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
     template <typename N>
     using field_t = std::remove_cvref_t<decltype(stdx::get<N>(FieldsTuple{}))>;
 
-    template <stdx::range R, stdx::ct_string... Ns>
+    template <stdx::range R, auto... Ns>
     constexpr static auto set(R &&r, field_name<Ns>...) -> void {
         (set_default<Ns>(r), ...);
     }
@@ -245,9 +240,9 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
         (set_default<stdx::constant_name_of_t<Fs>>(r), ...);
     }
 
-    template <stdx::range R, stdx::ct_string N>
+    template <stdx::range R, auto N>
     constexpr static auto get(R &&r, field_name<N>) {
-        return get<stdx::cts_t<N>>(std::forward<R>(r));
+        return get<stdx::constant_name_of_t<field_name<N>>>(std::forward<R>(r));
     }
 
     template <stdx::range R, typename F> constexpr static auto get(R &&r, F) {
@@ -267,7 +262,7 @@ template <stdx::ct_string Name, typename... Fields> class msg_access {
                 return ""_ctst;
             }
         }();
-        return stdx::ct_format<"{}({})">(stdx::cts_t<Name>{}, descs);
+        return stdx::ct_format<"{}({})">(stdx::ct<Name>(), descs);
     }
 
     using default_value_type = std::uint32_t;
@@ -288,10 +283,9 @@ concept storage_like = stdx::range<T> and requires {
     typename T::value_type;
 };
 
-template <stdx::ct_string Name, typename Env, typename... Fields>
-struct message;
+template <auto Name, typename Env, typename... Fields> struct message;
 
-template <stdx::ct_string Name, typename Env> struct msg_q {
+template <auto Name, typename Env> struct msg_q {
     template <typename... Fields> using fn = message<Name, Env, Fields...>;
 };
 
@@ -307,12 +301,12 @@ using unique_by_name = boost::mp11::mp_unique_if<
     boost::mp11::mp_sort<boost::mp11::mp_list<Fields...>, field_sort_fn>,
     name_equal_fn>;
 
-template <stdx::ct_string Name, typename Env, typename... Fields>
+template <auto Name, typename Env, typename... Fields>
 using message_without_unique_field_names =
     boost::mp11::mp_apply_q<detail::msg_q<Name, Env>,
                             detail::unique_by_name<Fields...>>;
 
-template <stdx::ct_string Name, typename... Fields>
+template <auto Name, typename... Fields>
 struct message_with_unique_field_names {
     static_assert(
         boost::mp11::mp_is_set<boost::mp11::mp_transform<
@@ -323,7 +317,7 @@ struct message_with_unique_field_names {
         message_without_unique_field_names<Name, stdx::env<>, Fields...>;
 };
 
-template <stdx::ct_string Name, stdx::envlike Env, typename... Fields>
+template <auto Name, stdx::envlike Env, typename... Fields>
 struct message_with_unique_field_names<Name, Env, Fields...> {
     static_assert(
         boost::mp11::mp_is_set<boost::mp11::mp_transform<
@@ -333,8 +327,8 @@ struct message_with_unique_field_names<Name, Env, Fields...> {
     using type = message_without_unique_field_names<Name, Env, Fields...>;
 };
 
-template <stdx::ct_string Name, typename Access, typename T>
-struct msg_base : stdx::with_name<Name> {
+template <auto Name, typename Access, typename T>
+struct msg_base : stdx::with_shrunk_name<Name> {
     constexpr auto as_derived() const -> T const & {
         return static_cast<T const &>(*this);
     }
@@ -349,7 +343,7 @@ struct msg_base : stdx::with_name<Name> {
     }
     constexpr auto set() -> void {}
 
-    template <stdx::ct_string N> struct proxy {
+    template <auto N> struct proxy {
         // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
         msg_base &b;
 
@@ -364,11 +358,11 @@ struct msg_base : stdx::with_name<Name> {
         constexpr operator V() const { return b.get(field_name<N>{}); }
     };
 
-    template <stdx::ct_string N>
+    template <auto N>
     [[nodiscard]] constexpr auto operator[](field_name<N> f) const {
         return get(f);
     }
-    template <stdx::ct_string N>
+    template <auto N>
     [[nodiscard]] constexpr auto operator[](field_name<N>) LIFETIMEBOUND {
         return proxy<N>{*this};
     }
@@ -378,8 +372,8 @@ struct msg_base : stdx::with_name<Name> {
     }
 };
 
-template <stdx::ct_string Name, typename Env, typename... Fields>
-struct message : stdx::with_name<Name> {
+template <auto Name, typename Env, typename... Fields>
+struct message : stdx::with_shrunk_name<Name> {
     using fields_t = stdx::type_list<Fields...>;
     using num_fields_t = std::integral_constant<std::size_t, sizeof...(Fields)>;
     template <std::size_t I> using nth_field_t = stdx::nth_t<I, Fields...>;
@@ -619,7 +613,7 @@ struct message : stdx::with_name<Name> {
 
     // NewFields go first because they override existing fields of the same
     // name (see unique_by_name)
-    template <stdx::ct_string NewName, typename... NewFields>
+    template <auto NewName, typename... NewFields>
     using extension =
         message_without_unique_field_names<NewName, Env, NewFields...,
                                            Fields...>;
@@ -631,7 +625,8 @@ struct message : stdx::with_name<Name> {
 
 template <stdx::ct_string Name, typename... Ts>
 using message =
-    typename detail::message_with_unique_field_names<Name, Ts...>::type;
+    typename detail::message_with_unique_field_names<stdx::shrink<Name>(),
+                                                     Ts...>::type;
 
 template <typename T> using owning = typename T::template owner_t<>;
 template <typename T> using mutable_view = typename T::mutable_view_t;
@@ -655,7 +650,8 @@ concept const_view_of =
     view_of<V, Def> and std::is_const_v<typename V::span_t::element_type>;
 
 template <typename Def, stdx::ct_string Name, typename... Fields>
-using extend = typename Def::template extension<Name, Fields...>;
+using extend =
+    typename Def::template extension<stdx::shrink<Name>(), Fields...>;
 
 template <owninglike O,
           view_of<typename std::remove_cvref_t<O>::definition_t> V>
@@ -754,11 +750,12 @@ using shifted_msgs =
                                 msg_offsets<AlignTo, Msgs...>,
                                 stdx::type_list<Msgs..., msg::message<"end">>>;
 
-template <stdx::ct_string Name, stdx::envlike Env> struct overlayer {
-    template <typename... Fields> using fn = msg::message<Name, Env, Fields...>;
+template <auto Name, stdx::envlike Env> struct overlayer {
+    template <typename... Fields>
+    using fn = msg::message<stdx::expand(Name), Env, Fields...>;
 };
 
-template <stdx::ct_string Name> struct overlay_q {
+template <auto Name> struct overlay_q {
     template <typename... Msgs>
         requires(sizeof...(Msgs) > 0)
     using fn = boost::mp11::mp_apply_q<
@@ -769,11 +766,12 @@ template <stdx::ct_string Name> struct overlay_q {
 
 template <stdx::ct_string Name, typename... Msgs>
     requires(sizeof...(Msgs) > 0)
-using overlay = typename detail::overlay_q<Name>::template fn<Msgs...>;
+using overlay =
+    typename detail::overlay_q<stdx::shrink<Name>()>::template fn<Msgs...>;
 
 template <stdx::ct_string Name, typename AlignTo, typename... Msgs>
     requires(sizeof...(Msgs) > 0)
-using pack = boost::mp11::mp_apply_q<detail::overlay_q<Name>,
+using pack = boost::mp11::mp_apply_q<detail::overlay_q<stdx::shrink<Name>()>,
                                      detail::shifted_msgs<AlignTo, Msgs...>>;
 
 namespace detail {
@@ -783,10 +781,10 @@ using is_locatable = std::bool_constant<requires { F::sort_key; }>;
 template <typename F1, typename F2>
 using field_size_sort_fn = std::bool_constant < F2::bitsize<F1::bitsize>;
 
-template <stdx::ct_string Name, typename... Fields>
+template <auto Name, typename... Fields>
 struct field_locator : field_locator<Name, stdx::env<>, Fields...> {};
 
-template <stdx::ct_string Name, stdx::envlike Env, typename... Fields>
+template <auto Name, stdx::envlike Env, typename... Fields>
 struct field_locator<Name, Env, Fields...> {
     using fields = boost::mp11::mp_partition<boost::mp11::mp_list<Fields...>,
                                              is_locatable>;
@@ -801,21 +799,22 @@ struct field_locator<Name, Env, Fields...> {
 
     template <typename F>
     using as_singleton_message =
-        msg::message<Name, Env, typename F::default_located>;
+        msg::message<stdx::expand(Name), Env, typename F::default_located>;
     using auto_msgs =
         boost::mp11::mp_transform<as_singleton_message, auto_fields>;
 
     using all_msgs = boost::mp11::mp_push_front<auto_msgs, located_msg>;
 
     template <typename... Msgs>
-    using pack = msg::pack<Name, std::uint8_t, Msgs...>;
+    using pack = msg::pack<stdx::expand(Name), std::uint8_t, Msgs...>;
     using msg_type =
         typename boost::mp11::mp_apply<pack, all_msgs>::template with_env<Env>;
 };
 } // namespace detail
 
 template <stdx::ct_string Name, typename... Ts>
-using relaxed_message = typename detail::field_locator<Name, Ts...>::msg_type;
+using relaxed_message =
+    typename detail::field_locator<stdx::shrink<Name>(), Ts...>::msg_type;
 
 namespace detail {
 template <typename Msg> struct replace_fields_q {
@@ -823,16 +822,17 @@ template <typename Msg> struct replace_fields_q {
     using fn = ::msg::message<stdx::name_of_v<Msg>, typename Msg::env_t, Fs...>;
 };
 
-template <typename Msg, stdx::ct_string OldName, stdx::ct_string NewName>
-struct with_renamed_field {
-    using split_fields = boost::mp11::mp_partition_q<typename Msg::fields_t,
-                                                     matching_name<OldName>>;
+template <typename Msg, auto OldName, auto NewName> struct with_renamed_field {
+    using split_fields = boost::mp11::mp_partition_q<
+        typename Msg::fields_t,
+        stdx::same_name_q<stdx::with_shrunk_name<OldName>>>;
 
     using untouched_fs = boost::mp11::mp_second<split_fields>;
-    static_assert(boost::mp11::mp_count_if_q<untouched_fs,
-                                             matching_name<NewName>>::value ==
-                      0,
-                  "rename_field: New field name already exists in message");
+    static_assert(
+        boost::mp11::mp_count_if_q<
+            untouched_fs,
+            stdx::same_name_q<stdx::with_shrunk_name<NewName>>>::value == 0,
+        "rename_field: New field name already exists in message");
 
     using replaced_fs = boost::mp11::mp_first<split_fields>;
     static_assert(not boost::mp11::mp_empty<replaced_fs>::value,
@@ -848,5 +848,6 @@ struct with_renamed_field {
 
 template <typename Msg, stdx::ct_string OldName, stdx::ct_string NewName>
 using rename_field =
-    typename detail::with_renamed_field<Msg, OldName, NewName>::msg;
+    typename detail::with_renamed_field<Msg, stdx::shrink<OldName>(),
+                                        stdx::shrink<NewName>()>::msg;
 } // namespace msg

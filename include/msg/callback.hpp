@@ -20,9 +20,8 @@ namespace detail {
  * A Class that defines a message callback and provides methods for validating
  * and handling incoming messages.
  */
-template <stdx::ct_string Name, typename Msg, match::matcher M,
-          stdx::callable F>
-struct callback : stdx::with_name<Name> {
+template <auto Name, typename Msg, match::matcher M, stdx::callable F>
+struct callback : stdx::with_shrunk_name<Name> {
     [[nodiscard]] auto is_match(auto const &data) const -> bool {
         return msg::call_with_message<Msg>(matcher, data);
     }
@@ -36,8 +35,7 @@ struct callback : stdx::with_name<Name> {
             CIB_APPEND_LOG_ENV(typename Msg::env_t);
             CIB_LOG("Incoming message matched [{}], because [{}]{}, executing "
                     "callback",
-                    stdx::cts_t<Name>{}, matcher.describe(),
-                    stdx::cts_t<Extra>{});
+                    stdx::ct<Name>(), matcher.describe(), stdx::cts_t<Extra>{});
             msg::call_with_message<Msg, Nexus>(callable, data,
                                                std::forward<Args>(args)...);
             return true;
@@ -55,7 +53,7 @@ struct callback : stdx::with_name<Name> {
                 },
                 data);
             CIB_APPEND_LOG_ENV(typename Msg::env_t);
-            CIB_LOG("    {} - F:({})", stdx::cts_t<Name>{}, desc);
+            CIB_LOG("    {} - F:({})", stdx::ct<Name>(), desc);
         }
     }
 
@@ -70,7 +68,7 @@ struct callback : stdx::with_name<Name> {
     [[no_unique_address]] callable_t callable;
 };
 
-template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
+template <auto Name, typename Msg> struct callback_construct_t {
     template <match::matcher M, stdx::callable F>
     [[nodiscard]] constexpr auto operator()(M, F &&f) const {
         using ::operator and;
@@ -94,7 +92,7 @@ template <stdx::ct_string Name, typename Msg> struct callback_construct_t {
     }
 };
 
-template <typename Cond, stdx::ct_string Name, typename Msg, match::matcher M,
+template <typename Cond, auto Name, typename Msg, match::matcher M,
           stdx::callable F>
 constexpr auto make_runtime_conditional(Cond, callback<Name, Msg, M, F> cb) {
     using ::operator and;
@@ -114,5 +112,6 @@ constexpr auto make_runtime_conditional(Cond, callback<Name, Msg, M, F> cb) {
 } // namespace detail
 
 template <stdx::ct_string Name, typename Msg>
-constexpr inline auto callback = detail::callback_construct_t<Name, Msg>{};
+constexpr inline auto callback =
+    detail::callback_construct_t<stdx::shrink<Name>(), Msg>{};
 } // namespace msg
