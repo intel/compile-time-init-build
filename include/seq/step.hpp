@@ -14,6 +14,7 @@ enum struct status : std::uint8_t { NOT_DONE, DONE };
 using func_ptr = auto (*)() -> status;
 using log_func_ptr = auto (*)() -> void;
 
+namespace detail {
 struct rt_step {
     using is_subgraph = void;
 
@@ -27,8 +28,8 @@ struct rt_step {
         -> bool = default;
 };
 
-template <stdx::ct_string Name, bool IsReference = true>
-struct ct_step : rt_step, stdx::with_name<Name> {
+template <auto Name, bool IsReference = true>
+struct ct_step : rt_step, stdx::with_shrunk_name<Name> {
     using is_subgraph = void;
 
     constexpr static auto identity = flow::dsl::subgraph_identity::VALUE;
@@ -38,6 +39,10 @@ struct ct_step : rt_step, stdx::with_name<Name> {
         return {forward_ptr, backward_ptr, log_name};
     }
 };
+} // namespace detail
+
+template <stdx::ct_string Name, bool IsReference = true>
+using ct_step = detail::ct_step<stdx::shrink<Name>(), IsReference>;
 
 /**
  * @param forward
