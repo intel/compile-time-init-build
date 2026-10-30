@@ -23,7 +23,7 @@ struct impl {
     status prev_status{status::DONE};
     direction prev_direction{direction::BACKWARD};
 
-    using node_t = rt_step;
+    using node_t = detail::rt_step;
 
     template <typename /*Nexus*/, typename CTNode>
     constexpr static auto create_node(CTNode n) -> node_t {

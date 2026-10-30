@@ -61,7 +61,7 @@ template <typename TDestinations> struct log_handler {
             [&](auto &out) {
                 ::fmt::format_to(out, "{:>8}us {} [{}]: ", currentTime,
                                  level_wrapper<get_level(Env{})>{},
-                                 get_module(Env{}));
+                                 stdx::expand(get_module(Env{})));
                 constexpr auto fmtstr =
                     std::string_view{decltype(fr.str)::value};
                 fr.args.apply([&]<typename... Args>(Args &&...args) {

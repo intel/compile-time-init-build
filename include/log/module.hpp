@@ -3,6 +3,7 @@
 #include <log/env.hpp>
 
 #include <stdx/ct_string.hpp>
+#include <stdx/type_traits.hpp>
 
 #include <utility>
 
@@ -18,10 +19,10 @@ namespace logging {
 
     consteval auto operator()(auto &&) const {
         using namespace stdx::literals;
-        return "default"_cts;
+        return stdx::shrink<"default">();
     }
 } get_module;
 } // namespace logging
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CIB_LOG_MODULE(S) CIB_LOG_ENV(logging::get_module, S)
+#define CIB_LOG_MODULE(S) CIB_LOG_ENV(logging::get_module, stdx::shrink<S>())

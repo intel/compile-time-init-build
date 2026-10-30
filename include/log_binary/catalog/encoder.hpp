@@ -26,8 +26,8 @@
 
 namespace logging::binary {
 namespace detail {
-template <stdx::ct_string S> consteval static auto to_string_type() {
-    constexpr auto s = std::string_view{S};
+template <auto S> consteval static auto to_string_type() {
+    constexpr auto s = std::string_view{stdx::expand_v<S>};
     return [&]<std::size_t... Is>(std::integer_sequence<std::size_t, Is...>) {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-*)
         return sc::string<s[Is]...>{};
@@ -39,13 +39,15 @@ template <typename NamedArg> constexpr static auto to_named_arg_type() {
     return sc::named_arg<str, NamedArg::begin, NamedArg::end>{};
 }
 
-template <stdx::ct_string... Name, stdx::ct_string... Value>
-constexpr static auto to_tags(tag_t<Name, Value>...) {
+template <auto... Name, auto... Value>
+constexpr static auto to_tags(::logging::detail::tag_t<Name, Value>...) {
     return sc::tags<sc::tag<decltype(to_string_type<Name>()),
                             decltype(to_string_type<Value>())>...>{};
 }
 
-constexpr static auto to_tags(no_tag_t) { return sc::tags<>{}; }
+constexpr static auto to_tags(::logging::detail::no_tag_t) {
+    return sc::tags<>{};
+}
 
 template <typename S, typename NamedArgs, auto Id, auto Tag, typename... Args>
 constexpr static auto to_message() {
@@ -58,7 +60,7 @@ constexpr static auto to_message() {
     });
 }
 
-template <stdx::ct_string S, auto Id> constexpr static auto to_module() {
+template <auto S, auto Id> constexpr static auto to_module() {
     using str = decltype(to_string_type<S>());
     return sc::module_string<sc::undefined<void, Id, str>>{};
 }
