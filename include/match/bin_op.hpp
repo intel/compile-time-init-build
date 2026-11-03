@@ -37,10 +37,10 @@ struct bin_op_t {
             if constexpr (stdx::is_specialization_of_v<M, Term>) {
                 return f(m);
             } else {
-                return "("_ctst + f(m) + ")"_ctst;
+                return stdx::ct_format<"({})">(f(m));
             }
         };
-        return stdx::ct_format<"{} {} {}">(desc(lhs), stdx::cts_t<OpName>{},
+        return stdx::ct_format<"{} {} {}">(desc(lhs), stdx::ct<OpName>(),
                                            desc(rhs));
     }
 };

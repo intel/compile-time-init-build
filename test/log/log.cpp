@@ -44,7 +44,8 @@ struct test_log_handler {
         constexpr auto fmtstr = std::string_view{decltype(fr.str)::value};
         CHECK(fmtstr == expected_why);
         buffer = fmtstr;
-        CHECK(std::string_view{logging::get_module(Env{})} == expected_module);
+        CHECK(std::string_view{stdx::expand_v<logging::get_module(Env{})>} ==
+              expected_module);
     }
 };
 

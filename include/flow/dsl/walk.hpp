@@ -25,18 +25,18 @@ template <typename Source, typename Dest, typename Cond> struct edge {
     using cond_t = Cond;
 };
 
-template <stdx::ct_string Name> struct node_reference : stdx::with_name<Name> {
+template <auto Name> struct node_reference : stdx::with_shrunk_name<Name> {
     using is_subgraph = void;
     constexpr static auto identity = subgraph_identity::REFERENCE;
 };
 
 namespace literals {
 template <stdx::ct_string S> [[nodiscard]] constexpr auto operator""_ref() {
-    return node_reference<S>{};
+    return node_reference<stdx::shrink<S>()>{};
 }
 } // namespace literals
 
-template <typename Cond, stdx::ct_string Name>
+template <typename Cond, auto Name>
 constexpr auto make_runtime_conditional(Cond, node_reference<Name>) {
     return node_reference<Name>{};
 }

@@ -56,20 +56,6 @@ static auto log(TArgs &&...args) -> void {
     auto &cfg = get_config<Env, Ts...>();
     cfg.logger.template log<Env>(std::forward<TArgs>(args)...);
 }
-
-namespace detail {
-template <typename> constexpr auto is_already_ct = false;
-template <typename T, T V>
-constexpr auto is_already_ct<std::integral_constant<T, V>> = true;
-template <stdx::ct_string S>
-constexpr auto is_already_ct<stdx::cts_t<S>> = true;
-template <typename T>
-constexpr auto is_already_ct<stdx::type_identity<T>> = true;
-
-template <stdx::ct_string Msg> constexpr auto cx_log_wrap(int, auto &&...args) {
-    return stdx::ct_format<Msg>(FWD(args)...);
-}
-} // namespace detail
 } // namespace logging
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)

@@ -67,11 +67,6 @@ using collect_t = boost::mp11::mp_apply<
     boost::mp11::mp_unique<boost::mp11::mp_apply<
         boost::mp11::mp_append, boost::mp11::mp_transform<F, Desc<Root>>>>>;
 
-template <typename Name> struct has_name {
-    template <typename Irq>
-    using fn = std::is_same<Name, stdx::constant_name_of_t<Irq>>;
-};
-
 template <typename Item, template <typename> typename F> struct has_item_by {
     template <typename Irq> using fn = boost::mp11::mp_contains<F<Irq>, Item>;
 };
@@ -321,7 +316,8 @@ struct dynamic_controller {
                          affected_irq_names_by_resource_t,
                          affected_irq_names_by_flow_t>>>([]<typename... Ss>() {
                 return boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
-                    detail::descendants_t<Root>, detail::has_name<Ss>>...>{};
+                    detail::descendants_t<Root>,
+                    stdx::matching_name_q<Ss::value>>...>{};
             }));
         return affected_irqs_t{};
     }
@@ -504,10 +500,9 @@ struct dynamic_controller {
 
     template <stdx::ct_string... IrqNames, typename... Policies>
     static auto enable(Policies...) -> void {
-        using affected_irqs_t =
-            boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
-                detail::descendants_t<Root>,
-                detail::has_name<stdx::cts_t<IrqNames>>>...>;
+        using affected_irqs_t = boost::mp11::mp_append<
+            boost::mp11::mp_copy_if_q<detail::descendants_t<Root>,
+                                      stdx::matching_name_q<IrqNames>>...>;
         conc::call_in_critical_section<mutex_t>([] {
             (enable_one<stdx::cts_t<IrqNames>,
                         detail::select_unknown_policy_t<error_unknowns_t,
@@ -518,10 +513,9 @@ struct dynamic_controller {
     }
     template <stdx::ct_string... IrqNames, typename... Policies>
     static auto disable(Policies...) -> void {
-        using affected_irqs_t =
-            boost::mp11::mp_append<boost::mp11::mp_copy_if_q<
-                detail::descendants_t<Root>,
-                detail::has_name<stdx::cts_t<IrqNames>>>...>;
+        using affected_irqs_t = boost::mp11::mp_append<
+            boost::mp11::mp_copy_if_q<detail::descendants_t<Root>,
+                                      stdx::matching_name_q<IrqNames>>...>;
         conc::call_in_critical_section<mutex_t>([] {
             (disable_one<stdx::cts_t<IrqNames>,
                          detail::select_unknown_policy_t<error_unknowns_t,

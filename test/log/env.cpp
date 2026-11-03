@@ -65,7 +65,7 @@ struct log_handler {
     auto log(FilenameStringType, LineNumberType, MsgType const &) -> void {
         using namespace stdx::literals;
         logged_modules.emplace_back(
-            std::string_view{logging::get_module(Env{})});
+            std::string_view{stdx::expand_v<logging::get_module(Env{})>});
     }
 };
 
