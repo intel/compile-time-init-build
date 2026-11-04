@@ -172,6 +172,9 @@ template <stdx::ct_string S> constexpr auto operator""_f() {
 }
 } // namespace literals
 
+template <stdx::ct_string S>
+constexpr auto field_named = detail::field_name<stdx::shrink<S>()>{};
+
 namespace detail {
 template <typename T>
 concept some_field_value = stdx::named<T> and requires(T const &t) {
