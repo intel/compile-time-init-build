@@ -846,3 +846,16 @@ TEST_CASE("field extents", "[message]") {
     STATIC_CHECK(f2::extent_in<std::uint32_t>() == 1);
     STATIC_CHECK(f2::extent_in<std::uint8_t>() == 4);
 }
+
+TEST_CASE("field lookup from ct_string", "[message]") {
+    test_msg msg{msg::field_named<"f1"> = 0xba11, msg::field_named<"f2"> = 0x42,
+                 msg::field_named<"f3"> = 0xd00d};
+
+    auto check_field = [&]<stdx::ct_string Name>(auto value) {
+        CHECK(value == msg.get(msg::field_named<Name>));
+    };
+    check_field.template operator()<"id">(0x80u);
+    check_field.template operator()<"f1">(0xba11u);
+    check_field.template operator()<"f2">(0x42u);
+    check_field.template operator()<"f3">(0xd00du);
+}
