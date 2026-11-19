@@ -243,6 +243,16 @@ using is_propagate_policy = std::bool_constant<propagate_policylike<T>>;
 template <typename Default, typename... Ps>
 using select_propagate_policy_t =
     select_policy_t<Default, is_propagate_policy, Ps...>;
+
+template <typename R, typename F, typename N> struct enable_state_t {
+    constinit static inline R resources{};
+    constinit static inline F flows{};
+    constinit static inline N named{};
+};
+template <typename R, typename F, typename N>
+inline auto enable_state = enable_state_t<R, F, N>{};
+
+template <typename T, typename R> inline auto shadow_enable = T{};
 } // namespace detail
 
 template <typename Root, detail::dynamic_hal_for<Root> Hal,
@@ -252,23 +262,22 @@ struct dynamic_controller {
     // keep track of which resources/flows/irqs have been manually
     // enabled/disabled
     using resources_t = detail::collect_t<Root, detail::get_resources_t>;
-    constinit static inline resources_t resource_enables{};
-
     using flows_t = detail::collect_t<Root, detail::get_flows_t>;
-    constinit static inline flows_t flow_enables{};
-
     using irq_names_t = detail::collect_t<Root, detail::get_name_list_t>;
-    constinit static inline irq_names_t named_enables{};
+
+    static auto enables() -> auto & {
+        return detail::enable_state<resources_t, flows_t, irq_names_t>;
+    }
 
     // update bitsets as necessary
     template <typename T, detail::unknown_policylike UP>
     static auto enable_one() -> void {
         if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
-            resource_enables.template set<T>();
+            enables().resources.template set<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
-            flow_enables.template set<T>();
+            enables().flows.template set<T>();
         } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
-            named_enables.template set<T>();
+            enables().named.template set<T>();
         } else {
             UP::template enable<T>();
         }
@@ -277,11 +286,11 @@ struct dynamic_controller {
     template <typename T, detail::unknown_policylike UP>
     static auto disable_one() -> void {
         if constexpr (boost::mp11::mp_contains<resources_t, T>::value) {
-            resource_enables.template reset<T>();
+            enables().resources.template reset<T>();
         } else if constexpr (boost::mp11::mp_contains<flows_t, T>::value) {
-            flow_enables.template reset<T>();
+            enables().flows.template reset<T>();
         } else if constexpr (boost::mp11::mp_contains<irq_names_t, T>::value) {
-            named_enables.template reset<T>();
+            enables().named.template reset<T>();
         } else {
             UP::template disable<T>();
         }
@@ -293,8 +302,9 @@ struct dynamic_controller {
     template <typename Register>
     using register_t = typename Hal::template register_datatype_t<Register>;
 
-    template <typename Register>
-    constinit static inline register_t<Register> shadow_enable{};
+    template <typename Register> static auto shadow_enable() -> auto & {
+        return detail::shadow_enable<register_t<Register>, Register>;
+    }
 
     // which IRQs are potentially affected by a change?
     template <typename PropagatePolicy, typename... Ts>
@@ -331,8 +341,8 @@ struct dynamic_controller {
     // compute value for register
     template <typename Reg, typename Irq, typename T>
     static auto compute_register(T &new_value) -> void {
-        if (EnablePolicy::template is_on<Irq>(named_enables, resource_enables,
-                                              flow_enables)) {
+        if (EnablePolicy::template is_on<Irq>(
+                enables().named, enables().resources, enables().flows)) {
             new_value |= mask_for<Reg, Irq>();
         }
     }
@@ -372,9 +382,13 @@ struct dynamic_controller {
                     (compute_register<reg_t, I>(value), ...,
                      compute_register<reg_t, Is>(value));
 
-                    auto &shadow_value = shadow_enable<reg_t>;
+                    auto &shadow_value = shadow_enable<reg_t>();
                     auto new_value = (shadow_value & ~mask) | value;
-                    WriteFn(r, shadow_value, new_value);
+
+                    // workaround for
+                    // https://github.com/llvm/llvm-project/issues/129778
+                    auto fn = WriteFn;
+                    fn(r, shadow_value, new_value);
                 }
             },
             by_registers);
@@ -392,9 +406,9 @@ struct dynamic_controller {
     // and clear all shadow state
     template <typename ActiveResources, typename ActiveFlows, typename IrqList>
     static auto reset_internal_state() -> void {
-        resource_enables = resources_t{ActiveResources{}};
-        flow_enables = flows_t{ActiveFlows{}};
-        named_enables = irq_names_t{stdx::all_bits};
+        enables().resources = resources_t{ActiveResources{}};
+        enables().flows = flows_t{ActiveFlows{}};
+        enables().named = irq_names_t{stdx::all_bits};
 
         constexpr auto by_registers =
             stdx::gather_by<detail::get_register_q<Hal>::template from_irq>(
@@ -405,7 +419,7 @@ struct dynamic_controller {
                     decltype(detail::register_for<
                              typename I::enable_field_t>::template fn<Hal>());
                 if constexpr (not is_no_register_v<reg_t>) {
-                    shadow_enable<reg_t> = {};
+                    shadow_enable<reg_t>() = {};
                 }
             },
             by_registers);
@@ -422,7 +436,7 @@ struct dynamic_controller {
                     decltype(detail::register_for<
                              typename I::enable_field_t>::template fn<Hal>());
                 if constexpr (not is_no_register_v<reg_t>) {
-                    auto &value = shadow_enable<reg_t>;
+                    auto &value = shadow_enable<reg_t>();
                     ((value |= mask_for<reg_t, I>()), ...,
                      (value |= mask_for<reg_t, Is>()));
                 }
@@ -435,9 +449,9 @@ struct dynamic_controller {
     struct mutex_t;
 
     static auto reset() -> void {
-        resource_enables.reset();
-        flow_enables.reset();
-        named_enables.reset();
+        enables().resources.reset();
+        enables().flows.reset();
+        enables().named.reset();
 
         using enable_irqs_t =
             boost::mp11::mp_copy_if<detail::descendants_t<Root>,
