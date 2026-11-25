@@ -14,4 +14,17 @@ add_tests(
     cib_interrupt
     groov)
 
+add_unit_test(
+    "dynamic_multi_tu_test"
+    CATCH2
+    FILES
+    "dynamic1.cpp"
+    "dynamic2.cpp"
+    INCLUDE_DIRECTORIES
+    ${PROJECT_SOURCE_DIR}/test
+    LIBRARIES
+    warnings
+    cib_interrupt
+    groov)
+
 add_subdirectory(fail)
